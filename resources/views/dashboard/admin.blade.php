@@ -48,33 +48,5 @@
         </div>
     </div>
 
-    <!-- Quick Navigation Panels -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-        <!-- Admin Management Panel -->
-        <div class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title"><i class="bx bxs-user-account" style="vertical-align: middle; margin-right: 0.5rem; color: var(--accent-cyan);"></i> User Management</h2>
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;">
-                Administrate registered user accounts, assign roles (COO, PM, HOD, Others), edit profile credentials, or register new administrators.
-            </p>
-            <a href="{{ route('users') }}" class="btn-custom" style="display: inline-block; text-align: center; text-decoration: none;">
-                Open User Settings
-            </a>
-        </div>
-
-        <!-- Donors Browse Panel -->
-        <div class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title"><i class="bx bxs-book-reader" style="vertical-align: middle; margin-right: 0.5rem; color: var(--accent-purple);"></i> Partners Registry</h2>
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;">
-                Browse the complete index of donor organizations, financial partners, contact details, support initiation dates, and official websites.
-            </p>
-            <a href="{{ route('donors.index') }}" class="btn-custom" style="display: inline-block; text-align: center; text-decoration: none;">
-                Open Registry List
-            </a>
-        </div>
-    </div>
-
+    
 @endsection

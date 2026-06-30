@@ -14,20 +14,28 @@
         <li>
             <a href="{{ route('users') }}" class="{{ Route::currentRouteName() === 'users' ? 'active' : '' }}">
                 <i class="bx bxs-user-account"></i>
-                <span>User Management</span>
+                <span>Staffs</span>
             </a>
         </li>
         @endif
         <li>
-            <a href="{{ route('donors.index') }}" class="{{ Route::currentRouteName() === 'donors.index' ? 'active' : '' }}">
+            <a href="{{ route('donors.index') }}" class="{{ request()->routeIs('donors.*') ? 'active' : '' }}">
                 <i class="bx bxs-heart"></i>
-                <span>Donors / Partners</span>
+                <span>Donors </span>
             </a>
         </li>
+        
         <li>
-            <a href="{{ route('applications.index') }}" class="{{ Route::currentRouteName() === 'applications.index' ? 'active' : '' }}">
+            <a href="{{ route('applications.index') }}" class="{{ request()->routeIs('applications.*') ? 'active' : '' }}">
                 <i class="bx bxs-file-doc"></i>
                 <span>Applications</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('projects.index') }}" class="{{ request()->routeIs('projects.*') ? 'active' : '' }}">
+                <i class="bx bxs-briefcase"></i>
+                <span>Projects</span>
             </a>
         </li>
     </ul>

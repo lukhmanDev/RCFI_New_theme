@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Donor;
-use App\Models\Application;
 
 class AdminController extends Controller
 {
@@ -12,7 +11,17 @@ class AdminController extends Controller
     {
         $userCount = User::count();
         $donorsCount = Donor::count();
-        $applicationsCount = Application::count();
+        $applicationsCount = \App\Models\EducationCenterApplication::count()
+            + \App\Models\CulturalCenterApplication::count()
+            + \App\Models\HospitalClinicApplication::count()
+            + \App\Models\ShopOtherApplication::count()
+            + \App\Models\HouseApplication::count()
+            + \App\Models\DrinkingWaterGroupApplication::count()
+            + \App\Models\DrinkingWaterIndividualApplication::count()
+            + \App\Models\OrphanCareApplication::count()
+            + \App\Models\DifferentlyAbledApplication::count()
+            + \App\Models\FamilyAidApplication::count()
+            + \App\Models\GeneralApplication::count();
 
         $role = auth()->user()->role;
         

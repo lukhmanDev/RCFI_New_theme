@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DonorController;
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\ProjectController;
 
 // Redirect root to login page
 Route::get('/', function () {
@@ -34,7 +35,19 @@ Route::middleware(['auth'])->group(function () {
     // Applications routes
     Route::get('/admin/applications', [ApplicationController::class, 'index'])->name('applications.index');
     Route::get('/admin/applications/category/{category}', [ApplicationController::class, 'showCategory'])->name('applications.category');
+    Route::get('/admin/applications/export/{category}', [ApplicationController::class, 'export'])->name('applications.export');
     Route::post('/admin/applications', [ApplicationController::class, 'store'])->name('applications.store');
     Route::put('/admin/applications/{id}', [ApplicationController::class, 'update'])->name('applications.update');
     Route::delete('/admin/applications/{id}', [ApplicationController::class, 'destroy'])->name('applications.destroy');
+
+    // Projects routes
+    Route::get('/admin/projects', [ProjectController::class, 'index'])->name('projects.index');
+    Route::get('/admin/projects/category/{category}', [ProjectController::class, 'showCategory'])->name('projects.category');
+    Route::get('/admin/projects/export/{category}', [ProjectController::class, 'export'])->name('projects.export');
+    Route::post('/admin/projects', [ProjectController::class, 'store'])->name('projects.store');
+    Route::put('/admin/projects/{id}', [ProjectController::class, 'update'])->name('projects.update');
+    Route::delete('/admin/projects/{id}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+    Route::get('/admin/projects/{id}', [ProjectController::class, 'show'])->name('projects.show');
+    Route::post('/admin/projects/{id}/approve', [ProjectController::class, 'approveStage'])->name('projects.approve');
+    Route::post('/admin/projects/{id}/assign-application', [ProjectController::class, 'assignApplication'])->name('projects.assign_application');
 });

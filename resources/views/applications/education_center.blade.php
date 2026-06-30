@@ -29,25 +29,73 @@
         </div>
     @endif
 
-    <!-- Applications Table Panel -->
+    <style>
+        /* Progressively hide columns from right-to-left as screen size decreases, keeping Application ID, Applicant Name and Actions always visible */
+        @media (max-width: 1800px) {
+            .col-contact2 { display: none !important; }
+        }
+        @media (max-width: 1700px) {
+            .col-contact1 { display: none !important; }
+        }
+        @media (max-width: 1600px) {
+            .col-state { display: none !important; }
+        }
+        @media (max-width: 1500px) {
+            .col-district { display: none !important; }
+        }
+        @media (max-width: 1400px) {
+            .col-panchayath { display: none !important; }
+        }
+        @media (max-width: 1300px) {
+            .col-post { display: none !important; }
+        }
+        @media (max-width: 1200px) {
+            .col-village { display: none !important; }
+        }
+        @media (max-width: 1100px) {
+            .col-location { display: none !important; }
+        }
+        @media (max-width: 1000px) {
+            .col-year { display: none !important; }
+        }
+        @media (max-width: 900px) {
+            .col-reg { display: none !important; }
+        }
+        @media (max-width: 800px) {
+            .col-committee { display: none !important; }
+        }
+    </style>
+
     <div class="panel" style="width: 100%;">
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h2 class="panel-title">Education Center Applications List</h2>
-            <button onclick="openModal()" class="btn-custom">
-                <i class="bx bx-plus-circle"></i> Add Application
-            </button>
+            <div style="display: flex; gap: 0.75rem;">
+                <a href="{{ route('applications.export', $categorySlug) }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
+                    <i class="bx bx-download"></i> Download Excel
+                </a>
+                <button onclick="openModal()" class="btn-custom">
+                    <i class="bx bx-plus-circle"></i> Add Application
+                </button>
+            </div>
         </div>
         
         <div style="overflow-x: auto;">
             <table class="table-custom">
                 <thead>
                     <tr>
-                        <th>Applicant (Committee)</th>
-                        <th>Reg. Number / Year</th>
-                        <th>Location (District)</th>
-                        <th>Project Type</th>
-                        <th>Requirement</th>
-                        <th style="text-align: center;">Status</th>
+                        <th>Application ID</th>
+                        <th>Name of Applicant</th>
+                        <th class="col-committee">Committee Name</th>
+                        <th class="col-reg">Reg. Number</th>
+                        <th class="col-year">Year</th>
+                        <th class="col-location">Location</th>
+                        <th class="col-village">Village</th>
+                        <th class="col-post">Post</th>
+                        <th class="col-panchayath">Panchayath</th>
+                        <th class="col-district">District</th>
+                        <th class="col-state">State</th>
+                        <th class="col-contact1">Contact 1</th>
+                        <th class="col-contact2">Contact 2</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
                 </thead>
@@ -55,52 +103,50 @@
                     @forelse($applications as $appItem)
                         @php
                             $meta = $appItem->meta ?? [];
+                            $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
+                            $appId = 'APLRCFI' . $appYear . 'EC' . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
                         @endphp
                         <tr>
-                            <!-- Applicant / Committee -->
-                            <td style="font-weight: 600; color: #ffffff;">
-                                {{ $appItem->applicant_name }}
-                                @if(!empty($meta['committee_name']))
-                                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;">
-                                        ({{ $meta['committee_name'] }})
-                                    </div>
-                                @endif
+                            <!-- Application ID -->
+                            <td style="font-weight: 600; color: var(--accent-cyan);">
+                                {{ $appId }}
                             </td>
 
-                            <!-- Reg No / Year -->
-                            <td>
-                                {{ $meta['reg_number'] ?? 'N/A' }} 
-                                <span style="font-size: 0.85rem; color: var(--text-muted);">({{ $meta['year'] ?? '-' }})</span>
-                            </td>
+                            <!-- Name of Applicant -->
+                            <td style="font-weight: 600; color: #ffffff;">{{ $appItem->applicant_name }}</td>
+
+                            <!-- Committee Name -->
+                            <td class="col-committee">{{ $meta['committee_name'] ?? 'N/A' }}</td>
+
+                            <!-- Reg. Number -->
+                            <td class="col-reg">{{ $meta['reg_number'] ?? 'N/A' }}</td>
+
+                            <!-- Year -->
+                            <td class="col-year">{{ $meta['year'] ?? 'N/A' }}</td>
 
                             <!-- Location -->
-                            <td>
-                                {{ $meta['location'] ?? 'N/A' }} 
-                                @if(!empty($meta['district']))
-                                    <span style="font-size: 0.85rem; color: var(--text-muted);">({{ $meta['district'] }})</span>
-                                @endif
-                            </td>
+                            <td class="col-location">{{ $meta['location'] ?? 'N/A' }}</td>
 
-                            <!-- Project Type -->
-                            <td style="text-transform: capitalize;">{{ $meta['project_type'] ?? 'N/A' }}</td>
+                            <!-- Village -->
+                            <td class="col-village">{{ $meta['village'] ?? 'N/A' }}</td>
 
-                            <!-- Requirement -->
-                            <td>{{ $meta['requirement'] ?? 'N/A' }}</td>
+                            <!-- Post -->
+                            <td class="col-post">{{ $meta['post'] ?? 'N/A' }}</td>
 
-                            <!-- Status Badge -->
-                            <td style="text-align: center;">
-                                @php
-                                    $statusColors = [
-                                        'Pending' => ['bg' => 'rgba(245, 158, 11, 0.2)', 'text' => '#f59e0b'],
-                                        'Approved' => ['bg' => 'rgba(16, 185, 129, 0.2)', 'text' => 'var(--accent-green)'],
-                                        'Rejected' => ['bg' => 'rgba(239, 68, 68, 0.2)', 'text' => 'var(--accent-red)'],
-                                    ];
-                                    $color = $statusColors[$appItem->status] ?? ['bg' => 'rgba(156, 163, 175, 0.2)', 'text' => 'var(--text-muted)'];
-                                @endphp
-                                <span style="background-color: {{ $color['bg'] }}; color: {{ $color['text'] }}; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
-                                    {{ $appItem->status }}
-                                </span>
-                            </td>
+                            <!-- Panchayath -->
+                            <td class="col-panchayath">{{ $meta['panchayath'] ?? 'N/A' }}</td>
+
+                            <!-- District -->
+                            <td class="col-district">{{ $meta['district'] ?? 'N/A' }}</td>
+
+                            <!-- State -->
+                            <td class="col-state">{{ $meta['state'] ?? 'N/A' }}</td>
+
+                            <!-- Contact 1 -->
+                            <td class="col-contact1">{{ $meta['contact_number_1'] ?? 'N/A' }}</td>
+
+                            <!-- Contact 2 -->
+                            <td class="col-contact2">{{ $meta['contact_number_2'] ?? 'N/A' }}</td>
 
                             <!-- Actions -->
                             <td style="text-align: center; white-space: nowrap;">
@@ -122,7 +168,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 2rem;">No education center applications registered yet.</td>
+                            <td colspan="14" style="text-align: center; padding: 2rem;">No education center applications registered yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -178,77 +224,71 @@
                             <input type="text" class="form-control-dark" id="applicant_name" name="applicant_name" value="{{ old('applicant_name') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="committee_name">Name of Committee</label>
-                            <input type="text" class="form-control-dark" id="committee_name" name="meta[committee_name]" value="{{ old('meta.committee_name') }}">
+                            <label class="form-label" for="committee_name">Name of Committee *</label>
+                            <input type="text" class="form-control-dark" id="committee_name" name="meta[committee_name]" value="{{ old('meta.committee_name') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="reg_number">Reg. Number</label>
-                            <input type="text" class="form-control-dark" id="reg_number" name="meta[reg_number]" value="{{ old('meta.reg_number') }}">
+                            <label class="form-label" for="reg_number">Reg. Number *</label>
+                            <input type="text" class="form-control-dark" id="reg_number" name="meta[reg_number]" value="{{ old('meta.reg_number') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="year">Year</label>
-                            <input type="number" class="form-control-dark" id="year" name="meta[year]" value="{{ old('meta.year') }}">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="location">Location</label>
-                            <input type="text" class="form-control-dark" id="location" name="meta[location]" value="{{ old('meta.location') }}">
-                        </div>
-                        <div>
-                            <label class="form-label" for="village">Village</label>
-                            <input type="text" class="form-control-dark" id="village" name="meta[village]" value="{{ old('meta.village') }}">
-                        </div>
-                        <div>
-                            <label class="form-label" for="post">Post</label>
-                            <input type="text" class="form-control-dark" id="post" name="meta[post]" value="{{ old('meta.post') }}">
+                            <label class="form-label" for="year">Year *</label>
+                            <input type="number" class="form-control-dark" id="year" name="meta[year]" value="{{ old('meta.year') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="panchayath">Panchayath</label>
-                            <input type="text" class="form-control-dark" id="panchayath" name="meta[panchayath]" value="{{ old('meta.panchayath') }}">
+                            <label class="form-label" for="location">Location *</label>
+                            <input type="text" class="form-control-dark" id="location" name="meta[location]" value="{{ old('meta.location') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="district">District</label>
-                            <input type="text" class="form-control-dark" id="district" name="meta[district]" value="{{ old('meta.district') }}">
+                            <label class="form-label" for="village">Village *</label>
+                            <input type="text" class="form-control-dark" id="village" name="meta[village]" value="{{ old('meta.village') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="state">State</label>
-                            <input type="text" class="form-control-dark" id="state" name="meta[state]" value="{{ old('meta.state') }}">
+                            <label class="form-label" for="post">Post *</label>
+                            <input type="text" class="form-control-dark" id="post" name="meta[post]" value="{{ old('meta.post') }}" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="panchayath">Panchayath *</label>
+                            <input type="text" class="form-control-dark" id="panchayath" name="meta[panchayath]" value="{{ old('meta.panchayath') }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="district">District *</label>
+                            <input type="text" class="form-control-dark" id="district" name="meta[district]" value="{{ old('meta.district') }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="state">State *</label>
+                            <input type="text" class="form-control-dark" id="state" name="meta[state]" value="{{ old('meta.state') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="contact_number_1">Contact Number 1</label>
-                            <input type="text" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}">
+                            <label class="form-label" for="contact_number_1">Contact Number 1 *</label>
+                            <input type="text" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="contact_number_2">Contact Number 2</label>
-                            <input type="text" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}">
+                            <label class="form-label" for="contact_number_2">Contact Number 2 *</label>
+                            <input type="text" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="submitted_before">Submitted Application Before</label>
-                            <select class="form-select-dark" id="submitted_before" name="meta[submitted_before]">
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                            </select>
+                            <label class="form-label" for="submitted_before">Submitted Application Before *</label>
+                            <input type="text" class="form-control-dark" id="submitted_before" name="meta[submitted_before]" value="{{ old('meta.submitted_before') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="received_support_before">Received Financial Support from RCFI</label>
-                            <select class="form-select-dark" id="received_support_before" name="meta[received_support_before]">
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                            </select>
+                            <label class="form-label" for="received_support_before">Received Financial Support from RCFI *</label>
+                            <input type="text" class="form-control-dark" id="received_support_before" name="meta[received_support_before]" value="{{ old('meta.received_support_before') }}" required>
                         </div>
                     </div>
                 </div>
@@ -259,38 +299,38 @@
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="mahallu_name">Name of the Mahallu</label>
-                            <input type="text" class="form-control-dark" id="mahallu_name" name="meta[mahallu_name]" value="{{ old('meta.mahallu_name') }}">
+                            <label class="form-label" for="mahallu_name">Name of the Mahallu *</label>
+                            <input type="text" class="form-control-dark" id="mahallu_name" name="meta[mahallu_name]" value="{{ old('meta.mahallu_name') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="locality_location">Location</label>
-                            <input type="text" class="form-control-dark" id="locality_location" name="meta[locality_location]" value="{{ old('meta.locality_location') }}">
+                            <label class="form-label" for="locality_location">Location *</label>
+                            <input type="text" class="form-control-dark" id="locality_location" name="meta[locality_location]" value="{{ old('meta.locality_location') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="locality_village">Village</label>
-                            <input type="text" class="form-control-dark" id="locality_village" name="meta[locality_village]" value="{{ old('meta.locality_village') }}">
+                            <label class="form-label" for="locality_village">Village *</label>
+                            <input type="text" class="form-control-dark" id="locality_village" name="meta[locality_village]" value="{{ old('meta.locality_village') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="locality_district">District</label>
-                            <input type="text" class="form-control-dark" id="locality_district" name="meta[locality_district]" value="{{ old('meta.locality_district') }}">
+                            <label class="form-label" for="locality_district">District *</label>
+                            <input type="text" class="form-control-dark" id="locality_district" name="meta[locality_district]" value="{{ old('meta.locality_district') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="locality_state">State</label>
-                            <input type="text" class="form-control-dark" id="locality_state" name="meta[locality_state]" value="{{ old('meta.locality_state') }}">
+                            <label class="form-label" for="locality_state">State *</label>
+                            <input type="text" class="form-control-dark" id="locality_state" name="meta[locality_state]" value="{{ old('meta.locality_state') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="families_in_mahallu">No of Families in Mahallu</label>
-                            <input type="number" class="form-control-dark" id="families_in_mahallu" name="meta[families_in_mahallu]" value="{{ old('meta.families_in_mahallu') }}">
+                            <label class="form-label" for="families_in_mahallu">No of Families in Mahallu *</label>
+                            <input type="number" class="form-control-dark" id="families_in_mahallu" name="meta[families_in_mahallu]" value="{{ old('meta.families_in_mahallu') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="requirement">Requirement</label>
-                            <select class="form-select-dark" id="requirement" name="meta[requirement]">
+                            <label class="form-label" for="requirement">Requirement *</label>
+                            <select class="form-select-dark" id="requirement" name="meta[requirement]" required>
                                 <option value="New construction">New construction</option>
                                 <option value="Repairing">Repairing</option>
                             </select>
@@ -304,50 +344,43 @@
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="site_has_building">Proposed Site Has Building</label>
-                            <select class="form-select-dark" id="site_has_building" name="meta[site_has_building]">
+                            <label class="form-label" for="site_has_building">Proposed Site Has Building *</label>
+                            <select class="form-select-dark" id="site_has_building" name="meta[site_has_building]" required>
                                 <option value="No">No</option>
                                 <option value="Yes">Yes</option>
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="status_of_current_building">Status of Current Building</label>
-                            <input type="text" class="form-control-dark" id="status_of_current_building" name="meta[status_of_current_building]" placeholder="dilapidated, semi-completed, etc." value="{{ old('meta.status_of_current_building') }}">
+                            <label class="form-label" for="status_of_current_building">Status of Current Building *</label>
+                            <input type="text" class="form-control-dark" id="status_of_current_building" name="meta[status_of_current_building]" placeholder="dilapidated, semi-completed, etc." value="{{ old('meta.status_of_current_building') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="students_boys">Number of Boys</label>
-                            <input type="number" class="form-control-dark" id="students_boys" name="meta[students_boys]" value="{{ old('meta.students_boys') }}">
+                            <label class="form-label" for="students_boys">Number of Boys *</label>
+                            <input type="number" class="form-control-dark" id="students_boys" name="meta[students_boys]" value="{{ old('meta.students_boys') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="students_girls">Number of Girls</label>
-                            <input type="number" class="form-control-dark" id="students_girls" name="meta[students_girls]" value="{{ old('meta.students_girls') }}">
+                            <label class="form-label" for="students_girls">Number of Girls *</label>
+                            <input type="number" class="form-control-dark" id="students_girls" name="meta[students_girls]" value="{{ old('meta.students_girls') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="education_center_nearby">Education Center Nearby</label>
-                            <input type="text" class="form-control-dark" id="education_center_nearby" name="meta[education_center_nearby]" value="{{ old('meta.education_center_nearby') }}">
+                            <label class="form-label" for="education_center_nearby">Education Center Nearby *</label>
+                            <input type="text" class="form-control-dark" id="education_center_nearby" name="meta[education_center_nearby]" value="{{ old('meta.education_center_nearby') }}" required>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="distance_cultural_centre">Distance to Cultural Center (KM)</label>
-                            <input type="number" step="0.1" class="form-control-dark" id="distance_cultural_centre" name="meta[distance_cultural_centre]" value="{{ old('meta.distance_cultural_centre') }}">
+                            <label class="form-label" for="distance_cultural_centre">Distance to Cultural Center (KM) *</label>
+                            <input type="number" step="0.1" class="form-control-dark" id="distance_cultural_centre" name="meta[distance_cultural_centre]" value="{{ old('meta.distance_cultural_centre') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="syllabus">Syllabus</label>
-                            <input type="text" class="form-control-dark" id="syllabus" name="meta[syllabus]" value="{{ old('meta.syllabus') }}">
+                            <label class="form-label" for="syllabus">Syllabus *</label>
+                            <input type="text" class="form-control-dark" id="syllabus" name="meta[syllabus]" value="{{ old('meta.syllabus') }}" required>
                         </div>
-                        <div>
-                            <label class="form-label" for="status">Initial Review Status *</label>
-                            <select class="form-select-dark" id="status" name="status" required>
-                                <option value="Pending">Pending Review</option>
-                                <option value="Approved">Approved</option>
-                                <option value="Rejected">Rejected</option>
-                            </select>
-                        </div>
+                        <input type="hidden" name="status" value="Pending">
                     </div>
                 </div>
 
@@ -357,52 +390,52 @@
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="project_type">Select Project Type</label>
-                            <select class="form-select-dark" id="project_type" name="meta[project_type]">
+                            <label class="form-label" for="project_type">Select Project Type *</label>
+                            <select class="form-select-dark" id="project_type" name="meta[project_type]" required>
                                 <option value="orphanage">Orphanage</option>
                                 <option value="classroom">Classroom</option>
                                 <option value="education acadamy">Education Academy</option>
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="building_area_sq">Building Area (Sq. Ft)</label>
-                            <input type="text" class="form-control-dark" id="building_area_sq" name="meta[building_area_sq]" value="{{ old('meta.building_area_sq') }}">
+                            <label class="form-label" for="building_area_sq">Building Area (Sq. Ft) *</label>
+                            <input type="text" class="form-control-dark" id="building_area_sq" name="meta[building_area_sq]" value="{{ old('meta.building_area_sq') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="land_area_sq">Land Area (Sq. Ft)</label>
-                            <input type="text" class="form-control-dark" id="land_area_sq" name="meta[land_area_sq]" value="{{ old('meta.land_area_sq') }}">
+                            <label class="form-label" for="land_area_sq">Land Area (Sq. Ft) *</label>
+                            <input type="text" class="form-control-dark" id="land_area_sq" name="meta[land_area_sq]" value="{{ old('meta.land_area_sq') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="num_classrooms">Number of Classrooms</label>
-                            <input type="number" class="form-control-dark" id="num_classrooms" name="meta[num_classrooms]" value="{{ old('meta.num_classrooms') }}">
+                            <label class="form-label" for="num_classrooms">Number of Classrooms *</label>
+                            <input type="number" class="form-control-dark" id="num_classrooms" name="meta[num_classrooms]" value="{{ old('meta.num_classrooms') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="num_students">Number of Students</label>
-                            <input type="number" class="form-control-dark" id="num_students" name="meta[num_students]" value="{{ old('meta.num_students') }}">
+                            <label class="form-label" for="num_students">Number of Students *</label>
+                            <input type="number" class="form-control-dark" id="num_students" name="meta[num_students]" value="{{ old('meta.num_students') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="proposed_budget">Proposed Budget ($)</label>
-                            <input type="number" class="form-control-dark" id="proposed_budget" name="amount_requested" placeholder="Total Budget" value="{{ old('amount_requested') }}">
+                            <label class="form-label" for="proposed_budget">Proposed Budget ($) *</label>
+                            <input type="number" class="form-control-dark" id="proposed_budget" name="amount_requested" placeholder="Total Budget" value="{{ old('amount_requested') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="legal_approvals_status">Status of Legal Approvals</label>
-                            <input type="text" class="form-control-dark" id="legal_approvals_status" name="meta[legal_approvals_status]" value="{{ old('meta.legal_approvals_status') }}">
+                            <label class="form-label" for="legal_approvals_status">Status of Legal Approvals *</label>
+                            <input type="text" class="form-control-dark" id="legal_approvals_status" name="meta[legal_approvals_status]" value="{{ old('meta.legal_approvals_status') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="area">Area / Zone</label>
-                            <input type="text" class="form-control-dark" id="area" name="meta[area]" value="{{ old('meta.area') }}">
+                            <label class="form-label" for="area">Area / Zone *</label>
+                            <input type="text" class="form-control-dark" id="area" name="meta[area]" value="{{ old('meta.area') }}" required>
                         </div>
                     </div>
 
                     <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="details">Additional Notes</label>
-                        <textarea class="form-control-dark" id="details" name="details" style="height: 60px; resize: vertical;">{{ old('details') }}</textarea>
+                        <label class="form-label" for="details">Additional Notes *</label>
+                        <textarea class="form-control-dark" id="details" name="details" style="height: 60px; resize: vertical;" required>{{ old('details') }}</textarea>
                     </div>
                 </div>
 
@@ -442,77 +475,71 @@
                             <input type="text" class="form-control-dark" id="edit_applicant_name" name="applicant_name" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_committee_name">Name of Committee</label>
-                            <input type="text" class="form-control-dark" id="edit_committee_name" name="meta[committee_name]">
+                            <label class="form-label" for="edit_committee_name">Name of Committee *</label>
+                            <input type="text" class="form-control-dark" id="edit_committee_name" name="meta[committee_name]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_reg_number">Reg. Number</label>
-                            <input type="text" class="form-control-dark" id="edit_reg_number" name="meta[reg_number]">
+                            <label class="form-label" for="edit_reg_number">Reg. Number *</label>
+                            <input type="text" class="form-control-dark" id="edit_reg_number" name="meta[reg_number]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_year">Year</label>
-                            <input type="number" class="form-control-dark" id="edit_year" name="meta[year]">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_location">Location</label>
-                            <input type="text" class="form-control-dark" id="edit_location" name="meta[location]">
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_village">Village</label>
-                            <input type="text" class="form-control-dark" id="edit_village" name="meta[village]">
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_post">Post</label>
-                            <input type="text" class="form-control-dark" id="edit_post" name="meta[post]">
+                            <label class="form-label" for="edit_year">Year *</label>
+                            <input type="number" class="form-control-dark" id="edit_year" name="meta[year]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_panchayath">Panchayath</label>
-                            <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]">
+                            <label class="form-label" for="edit_location">Location *</label>
+                            <input type="text" class="form-control-dark" id="edit_location" name="meta[location]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_district">District</label>
-                            <input type="text" class="form-control-dark" id="edit_district" name="meta[district]">
+                            <label class="form-label" for="edit_village">Village *</label>
+                            <input type="text" class="form-control-dark" id="edit_village" name="meta[village]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_state">State</label>
-                            <input type="text" class="form-control-dark" id="edit_state" name="meta[state]">
+                            <label class="form-label" for="edit_post">Post *</label>
+                            <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_panchayath">Panchayath *</label>
+                            <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_district">District *</label>
+                            <input type="text" class="form-control-dark" id="edit_district" name="meta[district]" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_state">State *</label>
+                            <input type="text" class="form-control-dark" id="edit_state" name="meta[state]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_contact_number_1">Contact Number 1</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]">
+                            <label class="form-label" for="edit_contact_number_1">Contact Number 1 *</label>
+                            <input type="text" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_contact_number_2">Contact Number 2</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]">
+                            <label class="form-label" for="edit_contact_number_2">Contact Number 2 *</label>
+                            <input type="text" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_submitted_before">Submitted Application Before</label>
-                            <select class="form-select-dark" id="edit_submitted_before" name="meta[submitted_before]">
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                            </select>
+                            <label class="form-label" for="edit_submitted_before">Submitted Application Before *</label>
+                            <input type="text" class="form-control-dark" id="edit_submitted_before" name="meta[submitted_before]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_received_support_before">Received Financial Support from RCFI</label>
-                            <select class="form-select-dark" id="edit_received_support_before" name="meta[received_support_before]">
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                            </select>
+                            <label class="form-label" for="edit_received_support_before">Received Financial Support from RCFI *</label>
+                            <input type="text" class="form-control-dark" id="edit_received_support_before" name="meta[received_support_before]" required>
                         </div>
                     </div>
                 </div>
@@ -523,38 +550,38 @@
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_mahallu_name">Name of the Mahallu</label>
-                            <input type="text" class="form-control-dark" id="edit_mahallu_name" name="meta[mahallu_name]">
+                            <label class="form-label" for="edit_mahallu_name">Name of the Mahallu *</label>
+                            <input type="text" class="form-control-dark" id="edit_mahallu_name" name="meta[mahallu_name]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_locality_location">Location</label>
-                            <input type="text" class="form-control-dark" id="edit_locality_location" name="meta[locality_location]">
+                            <label class="form-label" for="edit_locality_location">Location *</label>
+                            <input type="text" class="form-control-dark" id="edit_locality_location" name="meta[locality_location]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_locality_village">Village</label>
-                            <input type="text" class="form-control-dark" id="edit_locality_village" name="meta[locality_village]">
+                            <label class="form-label" for="edit_locality_village">Village *</label>
+                            <input type="text" class="form-control-dark" id="edit_locality_village" name="meta[locality_village]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_locality_district">District</label>
-                            <input type="text" class="form-control-dark" id="edit_locality_district" name="meta[locality_district]">
+                            <label class="form-label" for="edit_locality_district">District *</label>
+                            <input type="text" class="form-control-dark" id="edit_locality_district" name="meta[locality_district]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_locality_state">State</label>
-                            <input type="text" class="form-control-dark" id="edit_locality_state" name="meta[locality_state]">
+                            <label class="form-label" for="edit_locality_state">State *</label>
+                            <input type="text" class="form-control-dark" id="edit_locality_state" name="meta[locality_state]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_families_in_mahallu">No of Families in Mahallu</label>
-                            <input type="number" class="form-control-dark" id="edit_families_in_mahallu" name="meta[families_in_mahallu]">
+                            <label class="form-label" for="edit_families_in_mahallu">No of Families in Mahallu *</label>
+                            <input type="number" class="form-control-dark" id="edit_families_in_mahallu" name="meta[families_in_mahallu]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_requirement">Requirement</label>
-                            <select class="form-select-dark" id="edit_requirement" name="meta[requirement]">
+                            <label class="form-label" for="edit_requirement">Requirement *</label>
+                            <select class="form-select-dark" id="edit_requirement" name="meta[requirement]" required>
                                 <option value="New construction">New construction</option>
                                 <option value="Repairing">Repairing</option>
                             </select>
@@ -568,51 +595,44 @@
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_site_has_building">Proposed Site Has Building</label>
-                            <select class="form-select-dark" id="edit_site_has_building" name="meta[site_has_building]">
+                            <label class="form-label" for="edit_site_has_building">Proposed Site Has Building *</label>
+                            <select class="form-select-dark" id="edit_site_has_building" name="meta[site_has_building]" required>
                                 <option value="No">No</option>
                                 <option value="Yes">Yes</option>
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_status_of_current_building">Status of Current Building</label>
-                            <input type="text" class="form-control-dark" id="edit_status_of_current_building" name="meta[status_of_current_building]">
+                            <label class="form-label" for="edit_status_of_current_building">Status of Current Building *</label>
+                            <input type="text" class="form-control-dark" id="edit_status_of_current_building" name="meta[status_of_current_building]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_students_boys">Number of Boys</label>
-                            <input type="number" class="form-control-dark" id="edit_students_boys" name="meta[students_boys]">
+                            <label class="form-label" for="edit_students_boys">Number of Boys *</label>
+                            <input type="number" class="form-control-dark" id="edit_students_boys" name="meta[students_boys]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_students_girls">Number of Girls</label>
-                            <input type="number" class="form-control-dark" id="edit_students_girls" name="meta[students_girls]">
+                            <label class="form-label" for="edit_students_girls">Number of Girls *</label>
+                            <input type="number" class="form-control-dark" id="edit_students_girls" name="meta[students_girls]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_education_center_nearby">Education Center Nearby</label>
-                            <input type="text" class="form-control-dark" id="edit_education_center_nearby" name="meta[education_center_nearby]">
+                            <label class="form-label" for="edit_education_center_nearby">Education Center Nearby *</label>
+                            <input type="text" class="form-control-dark" id="edit_education_center_nearby" name="meta[education_center_nearby]" required>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_distance_cultural_centre">Distance to Cultural Center (KM)</label>
-                            <input type="number" step="0.1" class="form-control-dark" id="edit_distance_cultural_centre" name="meta[distance_cultural_centre]">
+                            <label class="form-label" for="edit_distance_cultural_centre">Distance to Cultural Center (KM) *</label>
+                            <input type="number" step="0.1" class="form-control-dark" id="edit_distance_cultural_centre" name="meta[distance_cultural_centre]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_syllabus">Syllabus</label>
-                            <input type="text" class="form-control-dark" id="edit_syllabus" name="meta[syllabus]">
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_status">Review Status *</label>
-                            <select class="form-select-dark" id="edit_status" name="status" required>
-                                <option value="Pending">Pending Review</option>
-                                <option value="Approved">Approved</option>
-                                <option value="Rejected">Rejected</option>
-                            </select>
+                            <label class="form-label" for="edit_syllabus">Syllabus *</label>
+                            <input type="text" class="form-control-dark" id="edit_syllabus" name="meta[syllabus]" required>
                         </div>
                     </div>
+                    <input type="hidden" name="status" id="edit_status">
                 </div>
 
                 <!-- Form Section 4: Proposed Project Details -->
@@ -621,52 +641,52 @@
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_project_type">Select Project Type</label>
-                            <select class="form-select-dark" id="edit_project_type" name="meta[project_type]">
+                            <label class="form-label" for="edit_project_type">Select Project Type *</label>
+                            <select class="form-select-dark" id="edit_project_type" name="meta[project_type]" required>
                                 <option value="orphanage">Orphanage</option>
                                 <option value="classroom">Classroom</option>
                                 <option value="education acadamy">Education Academy</option>
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_building_area_sq">Building Area (Sq. Ft)</label>
-                            <input type="text" class="form-control-dark" id="edit_building_area_sq" name="meta[building_area_sq]">
+                            <label class="form-label" for="edit_building_area_sq">Building Area (Sq. Ft) *</label>
+                            <input type="text" class="form-control-dark" id="edit_building_area_sq" name="meta[building_area_sq]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_land_area_sq">Land Area (Sq. Ft)</label>
-                            <input type="text" class="form-control-dark" id="edit_land_area_sq" name="meta[land_area_sq]">
+                            <label class="form-label" for="edit_land_area_sq">Land Area (Sq. Ft) *</label>
+                            <input type="text" class="form-control-dark" id="edit_land_area_sq" name="meta[land_area_sq]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_num_classrooms">Number of Classrooms</label>
-                            <input type="number" class="form-control-dark" id="edit_num_classrooms" name="meta[num_classrooms]">
+                            <label class="form-label" for="edit_num_classrooms">Number of Classrooms *</label>
+                            <input type="number" class="form-control-dark" id="edit_num_classrooms" name="meta[num_classrooms]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_num_students">Number of Students</label>
-                            <input type="number" class="form-control-dark" id="edit_num_students" name="meta[num_students]">
+                            <label class="form-label" for="edit_num_students">Number of Students *</label>
+                            <input type="number" class="form-control-dark" id="edit_num_students" name="meta[num_students]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_proposed_budget">Proposed Budget ($)</label>
-                            <input type="number" class="form-control-dark" id="edit_proposed_budget" name="amount_requested">
+                            <label class="form-label" for="edit_proposed_budget">Proposed Budget ($) *</label>
+                            <input type="number" class="form-control-dark" id="edit_proposed_budget" name="amount_requested" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_legal_approvals_status">Status of Legal Approvals</label>
-                            <input type="text" class="form-control-dark" id="edit_legal_approvals_status" name="meta[legal_approvals_status]">
+                            <label class="form-label" for="edit_legal_approvals_status">Status of Legal Approvals *</label>
+                            <input type="text" class="form-control-dark" id="edit_legal_approvals_status" name="meta[legal_approvals_status]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_area">Area / Zone</label>
-                            <input type="text" class="form-control-dark" id="edit_area" name="meta[area]">
+                            <label class="form-label" for="edit_area">Area / Zone *</label>
+                            <input type="text" class="form-control-dark" id="edit_area" name="meta[area]" required>
                         </div>
                     </div>
 
                     <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="edit_details">Additional Notes</label>
-                        <textarea class="form-control-dark" id="edit_details" name="details" style="height: 60px; resize: vertical;"></textarea>
+                        <label class="form-label" for="edit_details">Additional Notes *</label>
+                        <textarea class="form-control-dark" id="edit_details" name="details" style="height: 60px; resize: vertical;" required></textarea>
                     </div>
                 </div>
 
@@ -713,8 +733,8 @@
             document.getElementById('edit_state').value = meta.state || '';
             document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
             document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
-            document.getElementById('edit_submitted_before').value = meta.submitted_before || 'No';
-            document.getElementById('edit_received_support_before').value = meta.received_support_before || 'No';
+            document.getElementById('edit_submitted_before').value = meta.submitted_before || '';
+            document.getElementById('edit_received_support_before').value = meta.received_support_before || '';
             
             document.getElementById('edit_mahallu_name').value = meta.mahallu_name || '';
             document.getElementById('edit_locality_location').value = meta.locality_location || '';

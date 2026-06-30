@@ -476,6 +476,41 @@
         window.addEventListener('click', function() {
             document.getElementById('profileDropdown').style.display = 'none';
         });
+
+        // Global Download Excel (CSV) function for all list tables
+        function downloadExcel() {
+            const table = document.querySelector('.table-custom');
+            if (!table) return;
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = [], cols = rows[i].querySelectorAll('td, th');
+                
+                // Exclude last column (Action column)
+                for (let j = 0; j < cols.length - 1; j++) {
+                    let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/(\s\s+)/gm, ' ');
+                    data = data.replace(/"/g, '""');
+                    row.push('"' + data + '"');
+                }
+                csv.push(row.join(','));
+            }
+            
+            const csvContent = "data:text/csv;charset=utf-8," + csv.join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            // Get category/list name for download filename if possible
+            let filename = "export.csv";
+            const titleEl = document.querySelector('.panel-title');
+            if (titleEl) {
+                filename = titleEl.innerText.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '.csv';
+            }
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     </script>
 </body>
 </html>

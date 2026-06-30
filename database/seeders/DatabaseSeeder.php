@@ -23,5 +23,8 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('support@123'),
             'designation' => 'Super Admin',
         ]);
+
+        $this->call(DummyDataSeeder::class);
+        $this->call(ProjectSeeder::class);
     }
 }

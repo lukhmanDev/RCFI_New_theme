@@ -27,9 +27,14 @@
 <div class="panel" style="width: 100%;">
     <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
         <h2 class="panel-title">{{ $categoryName }} Applications List</h2>
-        <button onclick="openModal()" class="btn-custom">
-            <i class="bx bx-plus-circle"></i> Add Application
-        </button>
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{{ route('applications.export', $categorySlug) }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
+                <i class="bx bx-download"></i> Download Excel
+            </a>
+            <button onclick="openModal()" class="btn-custom">
+                <i class="bx bx-plus-circle"></i> Add Application
+            </button>
+        </div>
     </div>
     
     <div style="overflow-x: auto;">
@@ -186,15 +191,7 @@
                 <input type="email" class="form-control-dark" id="edit_contact_email" name="contact_email">
             </div>
 
-            <!-- Status -->
-            <div style="margin-bottom: 1rem;">
-                <label class="form-label" for="edit_status">Application Status</label>
-                <select class="form-select-dark" id="edit_status" name="status" required>
-                    <option value="Pending">Pending Review</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
-                </select>
-            </div>
+            <input type="hidden" name="status" id="edit_status">
 
             <!-- Details -->
             <div style="margin-bottom: 1.5rem;">
