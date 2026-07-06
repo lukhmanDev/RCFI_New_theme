@@ -8,7 +8,7 @@
 
 <!-- Success & Error Alert Panels -->
 @if (session('success'))
-    <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
         {{ session('success') }}
     </div>
 @endif
@@ -54,7 +54,7 @@
                     <tr>
                         <td style="font-weight: 600; color: #ffffff;">{{ $appItem->applicant_name }}</td>
                         <td style="text-align: right; font-weight: 600; color: #ffffff;">
-                            {{ $appItem->amount_requested ? '$' . number_format($appItem->amount_requested) : 'N/A' }}
+                            {{ $appItem->amount_requested ? '₹' . number_format($appItem->amount_requested) : 'N/A' }}
                         </td>
                         <td style="text-align: center;">
                             @php
@@ -74,16 +74,18 @@
                             {{ $appItem->details ?? '-' }}
                         </td>
                         <td style="text-align: center; white-space: nowrap;">
-                            <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem;">
-                                Edit
-                            </button>
+                            <button onclick="alert('Applicant details:\nName: {{ $appItem->applicant_name }}\nAmount: ₹{{ number_format($appItem->amount_requested) }}\nStatus: {{ $appItem->status }}\nEmail: {{ $appItem->contact_email ?? \'N/A\' }}\nDetails: {{ $appItem->details ?? \'-\' }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
+
+                            @if(in_array(Auth::user()->role, [1, 2, 4]))
+                            <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
                             
                             <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this application?');" style="display: inline-block;">
                                 @csrf
                                 @method('DELETE')
                                 <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                <button type="submit" class="btn-danger-custom">Delete</button>
+                                <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
+                            @endif
                         </td>
                     </tr>
                 @empty
@@ -121,7 +123,7 @@
 
             <!-- Amount Requested -->
             <div style="margin-bottom: 1rem;">
-                <label class="form-label" for="amount_requested">Requested Funding Amount ($)</label>
+                <label class="form-label" for="amount_requested">Requested Funding Amount (₹)</label>
                 <input type="number" class="form-control-dark" id="amount_requested" name="amount_requested" placeholder="Enter amount" value="{{ old('amount_requested') }}">
             </div>
 
@@ -181,7 +183,7 @@
 
             <!-- Amount Requested -->
             <div style="margin-bottom: 1rem;">
-                <label class="form-label" for="edit_amount_requested">Requested Funding Amount ($)</label>
+                <label class="form-label" for="edit_amount_requested">Requested Funding Amount (₹)</label>
                 <input type="number" class="form-control-dark" id="edit_amount_requested" name="amount_requested">
             </div>
 

@@ -6,7 +6,7 @@
 
     @php
         $groupedCategoryConfigs = [
-            'Construction Projects' => [
+            'Construction Applications' => [
                 'education-center' => [
                     'name' => 'Education Center',
                     'icon' => 'bx bxs-graduation',
@@ -33,7 +33,7 @@
                     'bg' => 'linear-gradient(135deg, #10b981, #059669)'
                 ]
             ],
-            'Drinking Water Projects' => [
+            'Drinking Water Applications' => [
                 'drinking-water-group-level' => [
                     'name' => 'Drinking Water - Group Level',
                     'icon' => 'bx bx-water',
@@ -141,7 +141,7 @@
     </style>
 
     <div style="margin-bottom: 2rem;">
-        <h2 class="panel-title" style="font-size: 1.5rem; color: #ffffff;">Project Applications Dashboard</h2>
+        <h2 class="panel-title" style="font-size: 1.5rem; color: #ffffff;">Applications Dashboard</h2>
         <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Select a category card to manage registered applications.</p>
     </div>
 

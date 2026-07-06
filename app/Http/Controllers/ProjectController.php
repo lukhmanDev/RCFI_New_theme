@@ -88,46 +88,57 @@ class ProjectController extends Controller
     private $categories = [
         'education-center' => [
             'name' => 'Education Center',
+            'view' => 'projects.education_center',
             'model' => \App\Models\EducationCenterProject::class
         ],
         'cultural-center' => [
             'name' => 'Cultural Center',
+            'view' => 'projects.cultural_center',
             'model' => \App\Models\CulturalCenterProject::class
         ],
         'hospital-or-clinics' => [
             'name' => 'Hospital or Clinics',
+            'view' => 'projects.hospital_clinics',
             'model' => \App\Models\HospitalClinicProject::class
         ],
         'shops-and-others' => [
             'name' => 'Shops and Others',
+            'view' => 'projects.shops_others',
             'model' => \App\Models\ShopOtherProject::class
         ],
         'house' => [
             'name' => 'House',
+            'view' => 'projects.house',
             'model' => \App\Models\HouseProject::class
         ],
         'drinking-water-group-level' => [
             'name' => 'Drinking Water - Group Level',
+            'view' => 'projects.drinking_water_group',
             'model' => \App\Models\DrinkingWaterGroupProject::class
         ],
         'drinking-water-individual-level' => [
             'name' => 'Drinking Water - Individual Level',
+            'view' => 'projects.drinking_water_individual',
             'model' => \App\Models\DrinkingWaterIndividualProject::class
         ],
         'orphan-care' => [
             'name' => 'Orphan Care',
+            'view' => 'projects.orphan_care',
             'model' => \App\Models\OrphanCareProject::class
         ],
         'differently-abled' => [
             'name' => 'Differently Abled',
+            'view' => 'projects.differently_abled',
             'model' => \App\Models\DifferentlyAbledProject::class
         ],
         'family-aid' => [
             'name' => 'Family Aid',
+            'view' => 'projects.family_aid',
             'model' => \App\Models\FamilyAidProject::class
         ],
         'general' => [
             'name' => 'General',
+            'view' => 'projects.general',
             'model' => \App\Models\GeneralProject::class
         ]
     ];
@@ -164,13 +175,13 @@ class ProjectController extends Controller
             ->orWhere('designation', 'like', '%project manager%')
             ->get();
 
-        return view('admin.projects_list', [
-            'categoryName' => $categoryName,
-            'categorySlug' => $categorySlug,
-            'projects' => $projects,
-            'donors' => $donors,
-            'managers' => $managers
-        ]);
+        return view($config['view'], compact(
+            'categoryName',
+            'categorySlug',
+            'projects',
+            'donors',
+            'managers'
+        ));
     }
 
     public function store(Request $request)
@@ -208,6 +219,11 @@ class ProjectController extends Controller
 
     public function update(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!in_array($user->role, [1, 2, 4])) {
+            return redirect()->back()->with('error', 'You are not authorized to edit projects.');
+        }
+
         $data = $request->validate([
             'agency_project_no' => ['required', 'string', 'max:255'],
             'donor_id' => ['required', 'exists:donors,id'],
@@ -242,6 +258,11 @@ class ProjectController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!in_array($user->role, [1, 2, 4])) {
+            return redirect()->back()->with('error', 'You are not authorized to delete projects.');
+        }
+
         $redirectCategory = $request->input('redirect_category');
         $config = $this->categories[$redirectCategory] ?? null;
 
@@ -295,7 +316,7 @@ class ProjectController extends Controller
             if ($project->application_id) {
                 $application = $appModel::find($project->application_id);
             }
-            if (!$application) {
+            if (!$application && $project->type_of_project !== 'Education Center') {
                 $application = $appModel::find($project->id) ?? $appModel::first();
             }
         }
@@ -305,6 +326,8 @@ class ProjectController extends Controller
 
     public function assignApplication(Request $request, $id)
     {
+        $user = auth()->user();
+        
         $project = null;
         foreach ($this->categories as $slug => $config) {
             $project = $config['model']::find($id);
@@ -317,12 +340,75 @@ class ProjectController extends Controller
             abort(404);
         }
 
+        $isCoo = ($user->role === 2 || strtolower($user->designation) === 'coo');
+        $isPm = ($user->role === 3 || strtolower($user->designation) === 'project manager');
+
+        if ($project->type_of_project === 'Education Center') {
+            if (!$isCoo && !$isPm) {
+                return redirect()->back()->with('error', 'Only Project Manager and COO are authorized to assign applications.');
+            }
+        } else {
+            if (!$isCoo) {
+                return redirect()->back()->with('error', 'Only COO is authorized to assign applications.');
+            }
+        }
+
         $request->validate([
             'application_id' => 'required'
         ]);
 
-        $project->application_id = $request->input('application_id');
+        $oldApplicationId = $project->application_id;
+        $applicationId = $request->input('application_id');
+
+        // Block if this application is already linked to a DIFFERENT project of the same type
+        if ($applicationId && $applicationId != $oldApplicationId) {
+            $projectModel = get_class($project);
+            $alreadyUsed = $projectModel::where('application_id', $applicationId)
+                ->where('id', '!=', $project->id)
+                ->exists();
+
+            if ($alreadyUsed) {
+                return redirect()->back()->with('error', 'This application is already assigned to another project and cannot be assigned again.');
+            }
+        }
+
+        $project->application_id = $applicationId;
         $project->save();
+
+        $appModels = [
+            'Education Center' => \App\Models\EducationCenterApplication::class,
+            'Cultural Center' => \App\Models\CulturalCenterApplication::class,
+            'Hospital or Clinics' => \App\Models\HospitalClinicApplication::class,
+            'Shops and Others' => \App\Models\ShopOtherApplication::class,
+            'House' => \App\Models\HouseApplication::class,
+            'Drinking Water - Group Level' => \App\Models\DrinkingWaterGroupApplication::class,
+            'Drinking Water - Individual Level' => \App\Models\DrinkingWaterIndividualApplication::class,
+            'Orphan Care' => \App\Models\OrphanCareApplication::class,
+            'Differently Abled' => \App\Models\DifferentlyAbledApplication::class,
+            'Family Aid' => \App\Models\FamilyAidApplication::class,
+            'General' => \App\Models\GeneralApplication::class
+        ];
+        
+        $appClass = $appModels[$project->type_of_project] ?? null;
+        if ($appClass) {
+            // Revert old application status to Pending
+            if ($oldApplicationId && $oldApplicationId != $applicationId) {
+                $oldApp = $appClass::find($oldApplicationId);
+                if ($oldApp) {
+                    $oldApp->status = 'Pending';
+                    $oldApp->save();
+                }
+            }
+            
+            // Set new application status to Approved
+            if ($applicationId) {
+                $newApp = $appClass::find($applicationId);
+                if ($newApp) {
+                    $newApp->status = 'Approved';
+                    $newApp->save();
+                }
+            }
+        }
 
         return redirect()->route('projects.show', $id)->with('success', 'Application connected to this project successfully!');
     }
@@ -330,10 +416,6 @@ class ProjectController extends Controller
     public function approveStage(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
-            return redirect()->back()->with('error', 'Only COO is authorized to approve projects.');
-        }
-
         $project = null;
         foreach ($this->categories as $slug => $config) {
             $project = $config['model']::find($id);
@@ -344,6 +426,77 @@ class ProjectController extends Controller
 
         if (!$project) {
             abort(404);
+        }
+
+        // Education Center project stage flow implementation
+        if ($project->type_of_project === 'Education Center') {
+            $currentStage = $project->stage;
+
+            if ($currentStage == 1) {
+                if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
+                    return redirect()->back()->with('error', 'Only COO is authorized to verify Stage 1.');
+                }
+                $project->stage = 2;
+                $project->save();
+                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 1 verified successfully by COO! Project promoted to Stage 2.');
+            }
+
+            if ($currentStage == 2) {
+                $isCoo = ($user->role === 2 || strtolower($user->designation) === 'coo');
+                $isHod = ($user->role === 4 || strtolower($user->designation) === 'hod');
+                if (!$isCoo && !$isHod) {
+                    return redirect()->back()->with('error', 'Only COO or HOD is authorized to approve Stage 2.');
+                }
+                if (empty($project->application_id)) {
+                    return redirect()->back()->with('error', 'Please connect an application first before approving Stage 2.');
+                }
+                $project->stage = 3;
+                $project->save();
+                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 2 approved successfully! Project promoted to Stage 3.');
+            }
+
+            if ($currentStage == 3) {
+                if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
+                    return redirect()->back()->with('error', 'Only COO is authorized to approve Stage 3.');
+                }
+                $project->stage = 4;
+                $project->save();
+                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 3 approved successfully! Project promoted to Stage 4.');
+            }
+
+            if ($currentStage == 4) {
+                if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
+                    return redirect()->back()->with('error', 'Only COO is authorized to approve Stage 4.');
+                }
+                $project->stage = 5;
+                $project->save();
+                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 4 approved successfully! Project promoted to Stage 5.');
+            }
+
+            if ($currentStage == 5) {
+                if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
+                    return redirect()->back()->with('error', 'Only COO is authorized to approve Stage 5.');
+                }
+                $project->stage = 6;
+                $project->save();
+                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 5 approved successfully! Project promoted to Stage 6.');
+            }
+
+            if ($currentStage == 6) {
+                if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
+                    return redirect()->back()->with('error', 'Only COO is authorized to finalize the project.');
+                }
+                $project->status = 'Approved';
+                $project->save();
+                return redirect()->route('projects.show', $project->id)->with('success', 'Project completely approved and finalized by COO!');
+            }
+
+            return redirect()->back()->with('error', 'Invalid stage progression.');
+        }
+
+        // Standard approval for other projects
+        if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
+            return redirect()->back()->with('error', 'Only COO is authorized to approve projects.');
         }
         
         $project->status = 'Approved';
@@ -407,5 +560,416 @@ class ProjectController extends Controller
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
             "Expires"             => "0"
         ]);
+    }
+
+    public function uploadFile(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to add files.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $request->validate([
+            'document_name' => 'required|string',
+            'file' => 'required|file|max:10240' // 10MB max
+        ]);
+
+        if ($request->hasFile('file')) {
+            $uploadedFile = $request->file('file');
+            
+            // Save file in public/uploads/projects/{project_id}/
+            $docNameClean = str_replace(' ', '_', strtolower($request->input('document_name')));
+            $filename = $docNameClean . '_' . time() . '.' . $uploadedFile->getClientOriginalExtension();
+            
+            $uploadedFile->move(public_path('uploads/projects/' . $project->id), $filename);
+            
+            $files = $project->files ?? [];
+            $files[$request->input('document_name')] = 'uploads/projects/' . $project->id . '/' . $filename;
+            
+            $project->files = $files;
+            $project->save();
+
+            return redirect()->route('projects.show', $id)->with('success', $request->input('document_name') . ' uploaded successfully!');
+        }
+
+        return redirect()->back()->with('error', 'File upload failed.');
+    }
+
+    public function addMaterial(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to manage materials.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $request->validate([
+            'material' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0'
+        ]);
+
+        $materials = $project->materials;
+        if (empty($materials)) {
+            $materials = [
+                ['material' => 'cement', 'amount' => 8000],
+                ['material' => 'metal', 'amount' => 8000]
+            ];
+        }
+
+        $materials[] = [
+            'material' => $request->input('material'),
+            'amount' => (float)$request->input('amount')
+        ];
+
+        $project->materials = $materials;
+        $project->save();
+
+        return redirect()->route('projects.show', $id)->with('success', 'Material added successfully!');
+    }
+
+    public function updateMaterial(Request $request, $id, $index)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to manage materials.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $request->validate([
+            'material' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0'
+        ]);
+
+        $materials = $project->materials;
+        if (empty($materials)) {
+            $materials = [
+                ['material' => 'cement', 'amount' => 8000],
+                ['material' => 'metal', 'amount' => 8000]
+            ];
+        }
+
+        if (isset($materials[$index])) {
+            $materials[$index] = [
+                'material' => $request->input('material'),
+                'amount' => (float)$request->input('amount')
+            ];
+            $project->materials = $materials;
+            $project->save();
+            return redirect()->route('projects.show', $id)->with('success', 'Material updated successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Material not found.');
+    }
+
+    public function deleteMaterial(Request $request, $id, $index)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to manage materials.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $materials = $project->materials;
+        if (empty($materials)) {
+            $materials = [
+                ['material' => 'cement', 'amount' => 8000],
+                ['material' => 'metal', 'amount' => 8000]
+            ];
+        }
+
+        if (isset($materials[$index])) {
+            array_splice($materials, $index, 1);
+            $project->materials = $materials;
+            $project->save();
+            return redirect()->route('projects.show', $id)->with('success', 'Material deleted successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Material not found.');
+    }
+
+    public function addExpense(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to manage expenses.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $request->validate([
+            'material_index' => 'required|integer',
+            'expense_name' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0'
+        ]);
+
+        $expenses = $project->expenses;
+        if (empty($expenses)) {
+            $expenses = [];
+        }
+
+        $expenses[] = [
+            'material_index' => (int)$request->input('material_index'),
+            'expense_name' => $request->input('expense_name'),
+            'amount' => (float)$request->input('amount')
+        ];
+
+        $project->expenses = $expenses;
+        $project->save();
+
+        return redirect()->route('projects.show', $id)->with('success', 'Expense added successfully!');
+    }
+
+    public function updateExpense(Request $request, $id, $index)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to manage expenses.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $request->validate([
+            'material_index' => 'required|integer',
+            'expense_name' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0'
+        ]);
+
+        $expenses = $project->expenses;
+        if (empty($expenses)) {
+            $expenses = [];
+        }
+
+        if (isset($expenses[$index])) {
+            $expenses[$index] = [
+                'material_index' => (int)$request->input('material_index'),
+                'expense_name' => $request->input('expense_name'),
+                'amount' => (float)$request->input('amount')
+            ];
+            $project->expenses = $expenses;
+            $project->save();
+            return redirect()->route('projects.show', $id)->with('success', 'Expense updated successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Expense not found.');
+    }
+
+    public function deleteExpense(Request $request, $id, $index)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to manage expenses.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $expenses = $project->expenses;
+        if (empty($expenses)) {
+            $expenses = [];
+        }
+
+        if (isset($expenses[$index])) {
+            array_splice($expenses, $index, 1);
+            $project->expenses = $expenses;
+            $project->save();
+            return redirect()->route('projects.show', $id)->with('success', 'Expense deleted successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Expense not found.');
+    }
+
+    public function uploadPhoto(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to add photos.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $request->validate([
+            'photo' => 'required|image|max:10240' // 10MB max
+        ]);
+
+        if ($request->hasFile('photo')) {
+            $uploadedFile = $request->file('photo');
+            $filename = 'photo_' . time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+            $uploadedFile->move(public_path('uploads/projects/' . $project->id), $filename);
+            
+            $files = $project->files ?? [];
+            $photos = $files['photos'] ?? [];
+            $photos[] = 'uploads/projects/' . $project->id . '/' . $filename;
+            $files['photos'] = $photos;
+            
+            $project->files = $files;
+            $project->save();
+
+            return redirect()->route('projects.show', $id)->with('success', 'Photo uploaded successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Photo upload failed.');
+    }
+
+    public function deletePhoto(Request $request, $id, $index)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to manage photos.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $files = $project->files ?? [];
+        $photos = $files['photos'] ?? [];
+
+        if (isset($photos[$index])) {
+            $filepath = public_path($photos[$index]);
+            if (file_exists($filepath)) {
+                unlink($filepath);
+            }
+            array_splice($photos, $index, 1);
+            $files['photos'] = $photos;
+            $project->files = $files;
+            $project->save();
+            return redirect()->route('projects.show', $id)->with('success', 'Photo deleted successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Photo not found.');
+    }
+
+    public function saveCompletionDetails(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && $user->role !== 1 && strtolower($user->designation) !== 'project manager') {
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to manage completion details.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            abort(404);
+        }
+
+        $request->validate([
+            'total_amount' => 'required|numeric|min:0',
+            'amount_paid_by_donor' => 'required|numeric|min:0',
+            'community_contribution' => 'required|numeric|min:0',
+            'any_other' => 'required|numeric|min:0',
+            'geo_location' => 'nullable|string|max:255'
+        ]);
+
+        $files = $project->files ?? [];
+        $files['completion_details'] = [
+            'total_amount' => (float)$request->input('total_amount'),
+            'amount_paid_by_donor' => (float)$request->input('amount_paid_by_donor'),
+            'community_contribution' => (float)$request->input('community_contribution'),
+            'any_other' => (float)$request->input('any_other'),
+            'geo_location' => $request->input('geo_location')
+        ];
+        
+        $project->files = $files;
+        $project->save();
+
+        return redirect()->route('projects.show', $id)->with('success', 'Completion details saved successfully!');
     }
 }

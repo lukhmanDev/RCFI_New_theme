@@ -8,6 +8,7 @@ class OrphanCareProject extends Model
 {
     protected $table = 'orphan_care_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {

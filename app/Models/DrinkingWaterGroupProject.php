@@ -8,6 +8,7 @@ class DrinkingWaterGroupProject extends Model
 {
     protected $table = 'drinking_water_group_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {

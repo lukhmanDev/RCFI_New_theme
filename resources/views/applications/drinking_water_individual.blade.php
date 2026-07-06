@@ -14,7 +14,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -82,6 +82,11 @@
         <div style="overflow-x: auto;">
             <table class="table-custom">
                 <thead>
+                    <tr style="border-bottom: none;">
+                        <th colspan="5" style="text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding-bottom: 0.25rem; background: transparent; border-bottom: none;">Application Details</th>
+                        <th colspan="4" style="text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-cyan); padding-bottom: 0.25rem; background: transparent; border-bottom: none; border-left: 2px solid rgba(0,188,212,0.4); padding-left: 1rem;">Project Details</th>
+                        <th style="border-bottom: none; background: transparent;"></th>
+                    </tr>
                     <tr>
                         <th>Application ID</th>
                         <th>Name of Applicant</th>
@@ -96,6 +101,10 @@
                         <th class="col-state">State</th>
                         <th class="col-contact1">Contact 1</th>
                         <th class="col-contact2">Contact 2</th>
+                        <th style="border-left: 2px solid rgba(0,188,212,0.4); padding-left: 1rem;">Project ID</th>
+                        <th>Project Manager</th>
+                        <th>Donor</th>
+                        <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
                 </thead>
@@ -105,70 +114,68 @@
                             $meta = $appItem->meta ?? [];
                             $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
                             $appId = 'APLRCFI' . $appYear . 'DWI' . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
+                            $linkedProject = ($projectsMap ?? [])[$appItem->id] ?? null;
                         @endphp
                         <tr>
-                            <!-- Application ID -->
-                            <td style="font-weight: 600; color: var(--accent-cyan);">
-                                {{ $appId }}
-                            </td>
-
-                            <!-- Name of Applicant -->
+                            <td style="font-weight: 600; color: var(--accent-cyan);">{{ $appId }}</td>
                             <td style="font-weight: 600; color: #ffffff;">{{ $appItem->applicant_name }}</td>
-
-                            <!-- Committee Name -->
                             <td class="col-committee">N/A</td>
-
-                            <!-- Reg. Number -->
                             <td class="col-reg">N/A</td>
-
-                            <!-- Year -->
                             <td class="col-year">N/A</td>
-
-                            <!-- Location -->
                             <td class="col-location">{{ $meta['location'] ?? 'N/A' }}</td>
-
-                            <!-- Village -->
                             <td class="col-village">{{ $meta['village'] ?? 'N/A' }}</td>
-
-                            <!-- Post -->
                             <td class="col-post">{{ $meta['post'] ?? 'N/A' }}</td>
-
-                            <!-- Panchayath -->
                             <td class="col-panchayath">{{ $meta['panchayath'] ?? 'N/A' }}</td>
-
-                            <!-- District -->
                             <td class="col-district">{{ $meta['district'] ?? 'N/A' }}</td>
-
-                            <!-- State -->
                             <td class="col-state">{{ $meta['state'] ?? 'N/A' }}</td>
-
-                            <!-- Contact 1 -->
                             <td class="col-contact1">{{ $meta['contact_number_1'] ?? 'N/A' }}</td>
-
-                            <!-- Contact 2 -->
                             <td class="col-contact2">{{ $meta['contact_number_2'] ?? 'N/A' }}</td>
-
-                            <!-- Actions -->
+                            <td style="border-left: 2px solid rgba(0,188,212,0.3); padding-left: 1rem;">
+                                @if($linkedProject)
+                                    <span style="font-weight: 600; color: var(--accent-cyan); font-size: 0.85rem;">{{ $linkedProject['project_id'] }}</span>
+                                @else
+                                    <span style="color: var(--text-muted); font-size: 0.82rem; font-style: italic;">No Project</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($linkedProject && !empty($linkedProject['project_manager']))
+                                    <span style="color: #ffffff; font-size: 0.9rem;">{{ $linkedProject['project_manager']['name'] ?? '—' }}</span>
+                                @else
+                                    <span style="color: var(--text-muted); font-size: 0.82rem;">—</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($linkedProject && !empty($linkedProject['donor']))
+                                    <span style="color: var(--accent-green); font-size: 0.9rem;">{{ $linkedProject['donor']['name'] ?? '—' }}</span>
+                                @else
+                                    <span style="color: var(--text-muted); font-size: 0.82rem;">—</span>
+                                @endif
+                            </td>
+                            <td style="text-align: center;">
+                                @if($linkedProject && ($linkedProject['status'] === 'Approved' || ($linkedProject['stage'] ?? 0) >= 6))
+                                    <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.35); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; white-space: nowrap;"><i class="bx bx-check-circle"></i> Project Completed</span>
+                                @elseif($linkedProject)
+                                    <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(0,188,212,0.12); color: var(--accent-cyan); border: 1px solid rgba(0,188,212,0.35); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; white-space: nowrap;"><i class="bx bx-loader-circle"></i> Project Running</span>
+                                @else
+                                    <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; white-space: nowrap;"><i class="bx bx-minus-circle"></i> Not Started</span>
+                                @endif
+                            </td>
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem;">
-                                    Details
-                                </button>
-
-                                <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem;">
-                                    Edit
-                                </button>
-                                
+                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
+                                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                                <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
                                 <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this application?');" style="display: inline-block;">
                                     @csrf
                                     @method('DELETE')
                                     <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                    <button type="submit" class="btn-danger-custom">Delete</button>
+                                    <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete"><i class="bx bx-trash"></i></button>
                                 </form>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="14" style="text-align: center; padding: 2rem;">No drinking water applications registered yet.</td>
+                            <td colspan="18" style="text-align: center; padding: 2rem;">No drinking water applications registered yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -387,7 +394,7 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="proposed_budget">Budget Estimated ($) *</label>
+                            <label class="form-label" for="proposed_budget">Budget Estimated (₹) *</label>
                             <input type="number" class="form-control-dark" id="proposed_budget" name="amount_requested" placeholder="Amount" value="{{ old('amount_requested') }}" required>
                         </div>
                         <div>
@@ -621,7 +628,7 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_proposed_budget">Budget Estimated ($) *</label>
+                            <label class="form-label" for="edit_proposed_budget">Budget Estimated (₹) *</label>
                             <input type="number" class="form-control-dark" id="edit_proposed_budget" name="amount_requested" required>
                         </div>
                         <div>
@@ -812,7 +819,7 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.panchayath)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact 1 / 2:</td><td>${formatVal(meta.contact_number_1)} / ${formatVal(meta.contact_number_2)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Job / Income:</td><td>${formatVal(meta.job)} / ${meta.monthly_income ? '$' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Job / Income:</td><td>${formatVal(meta.job)} / ${meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Details of Beneficiaries</h4>
@@ -840,7 +847,7 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Expected Depth:</td><td>${formatVal(meta.well_depth)} feet</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Diameter:</td><td>${formatVal(meta.well_diameter)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Nature of Land:</td><td>${formatVal(meta.land_nature)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Budget Estimated:</td><td style="color: var(--accent-green); font-weight: 600;">${appItem.amount_requested ? '$' + Number(appItem.amount_requested).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Budget Estimated:</td><td style="color: var(--accent-green); font-weight: 600;">${appItem.amount_requested ? '₹' + Number(appItem.amount_requested).toLocaleString() : 'N/A'}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Current Water Source:</td><td>${formatVal(meta.current_water_source)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Electric Pump?</td><td>${formatVal(meta.need_pump)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">For Agriculture?</td><td>${formatVal(meta.well_for_agriculture)}</td></tr>

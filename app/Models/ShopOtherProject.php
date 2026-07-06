@@ -8,6 +8,7 @@ class ShopOtherProject extends Model
 {
     protected $table = 'shop_other_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {

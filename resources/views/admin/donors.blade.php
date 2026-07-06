@@ -6,7 +6,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -107,15 +107,9 @@
                             <!-- Action buttons -->
                             @if(Auth::user()->role === 1)
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openEditModal({{ json_encode($donor) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem;">
-                                    Edit
-                                </button>
+                                <button onclick="openEditModal({{ json_encode($donor) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
                                 
-                                <form action="{{ route('donors.destroy', $donor->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this partner/donor?');" style="display: inline-block;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-danger-custom">Delete</button>
-                                </form>
+                                <button type="button" class="btn-danger-custom" onclick="openDeleteModal({{ $donor->id }}, '{{ addslashes($donor->name) }}')" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete"><i class="bx bx-trash"></i></button>
                             </td>
                             @endif
                         </tr>
@@ -343,7 +337,6 @@
             document.getElementById('edit_email').value = donor.email || '';
             document.getElementById('edit_phone').value = donor.phone || '';
 
-            // Set image preview if exists
             const previewContainer = document.getElementById('edit_image_preview_container');
             const previewImage = document.getElementById('edit_image_preview');
             if (donor.image_path) {
@@ -359,7 +352,20 @@
         function closeEditModal() {
             document.getElementById('editPartnerModal').style.display = 'none';
         }
+
+        function openDeleteModal(id, name) {
+            const form = document.getElementById('deleteConfirmationForm');
+            form.action = '/admin/donors/' + id;
+            document.getElementById('deleteConfirmationText').textContent = 'Are you sure you want to delete ' + name + '?';
+            document.getElementById('deleteConfirmationModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteConfirmationModal').style.display = 'none';
+        }
     </script>
+
+    @include('admin.delete_confirmation')
 
     <!-- Automatically open add modal if validation error occurs on new partner creation -->
     @if ($errors->any())

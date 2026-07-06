@@ -14,7 +14,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -150,20 +150,18 @@
 
                             <!-- Actions -->
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem;">
-                                    Details
-                                </button>
+                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
-                                <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem;">
-                                    Edit
-                                </button>
+                                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                                <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
                                 
                                 <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this application?');" style="display: inline-block;">
                                     @csrf
                                     @method('DELETE')
                                     <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                    <button type="submit" class="btn-danger-custom">Delete</button>
+                                    <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete"><i class="bx bx-trash"></i></button>
                                 </form>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -336,11 +334,11 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="monthly_income">Monthly Income ($) *</label>
+                            <label class="form-label" for="monthly_income">Monthly Income (₹) *</label>
                             <input type="number" class="form-control-dark" id="monthly_income" name="meta[monthly_income]" value="{{ old('meta.monthly_income') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="monthly_expense">Monthly Expense ($) *</label>
+                            <label class="form-label" for="monthly_expense">Monthly Expense (₹) *</label>
                             <input type="number" class="form-control-dark" id="monthly_expense" name="meta[monthly_expense]" value="{{ old('meta.monthly_expense') }}" required>
                         </div>
                     </div>
@@ -614,11 +612,11 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_monthly_income">Monthly Income ($) *</label>
+                            <label class="form-label" for="edit_monthly_income">Monthly Income (₹) *</label>
                             <input type="number" class="form-control-dark" id="edit_monthly_income" name="meta[monthly_income]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_monthly_expense">Monthly Expense ($) *</label>
+                            <label class="form-label" for="edit_monthly_expense">Monthly Expense (₹) *</label>
                             <input type="number" class="form-control-dark" id="edit_monthly_expense" name="meta[monthly_expense]" required>
                         </div>
                     </div>
@@ -862,8 +860,8 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Death Date:</td><td>${formatVal(meta.mother_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(${formatVal(meta.mother_death_cause)})</span></td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother Re-Married?</td><td>${formatVal(meta.mother_remarried_status)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Brothers & Sisters:</td><td>Total: ${formatVal(meta.siblings_total)} (M: ${formatVal(meta.siblings_male)} / F: ${formatVal(meta.siblings_female)})</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income ? '$' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Expense:</td><td>${meta.monthly_expense ? '$' + Number(meta.monthly_expense).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Expense:</td><td>${meta.monthly_expense ? '₹' + Number(meta.monthly_expense).toLocaleString() : 'N/A'}</td></tr>
                         </table>
                     </div>
 

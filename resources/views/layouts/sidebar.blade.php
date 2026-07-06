@@ -1,7 +1,9 @@
 <!-- Sidebar Drawer -->
 <nav class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <i class="bx bxs-shield"></i> RCFI Admin
+        <a href="{{ route('admin.home') }}" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; text-decoration: none;">
+            <img src="{{ asset('images/logo.png') }}" alt="RCFI Logo" class="sidebar-logo">
+        </a>
     </div>
     <ul class="sidebar-menu">
         <li>
@@ -26,9 +28,16 @@
         </li>
         
         <li>
-            <a href="{{ route('applications.index') }}" class="{{ request()->routeIs('applications.*') ? 'active' : '' }}">
+            <a href="{{ route('applications.index') }}" class="{{ Route::currentRouteName() === 'applications.index' || Route::currentRouteName() === 'applications.category' ? 'active' : '' }}">
                 <i class="bx bxs-file-doc"></i>
                 <span>Applications</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('applications.all') }}" class="{{ Route::currentRouteName() === 'applications.all' ? 'active' : '' }}">
+                <i class="bx bxs-spreadsheet"></i>
+                <span>All Applications</span>
             </a>
         </li>
 

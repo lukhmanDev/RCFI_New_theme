@@ -8,6 +8,7 @@ class CulturalCenterProject extends Model
 {
     protected $table = 'cultural_center_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {

@@ -22,7 +22,7 @@
             --text-muted: #9ca3af;
             --accent-purple: #6366f1;
             --accent-cyan: #06b6d4;
-            --accent-green: #10b981;
+            --accent-green: #08A472;
             --accent-red: #ef4444;
             --sidebar-width: 260px;
         }
@@ -59,22 +59,23 @@
 
         .sidebar-brand {
             height: 70px;
-            padding: 0 2rem;
-            font-size: 1.25rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            padding: 0.5rem 1rem;
             border-bottom: 1px solid var(--panel-border);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
         }
 
-        .sidebar-brand i {
-            color: var(--accent-cyan);
-            -webkit-text-fill-color: initial;
-            font-size: 1.5rem;
+        .sidebar-logo {
+            max-height: 55px;
+            max-width: 100%;
+            object-fit: contain;
+            display: block;
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar-brand:hover .sidebar-logo {
+            transform: scale(1.03);
         }
 
         .sidebar-menu {
@@ -107,7 +108,7 @@
         }
 
         .sidebar-menu a.active i {
-            color: var(--accent-cyan);
+            color: var(--accent-green);
         }
 
         .sidebar-menu i {
@@ -123,6 +124,8 @@
             display: flex;
             flex-direction: column;
             transition: margin-left 0.3s ease;
+            min-width: 0; /* Prevents overflow in flexbox layout */
+            width: calc(100% - var(--sidebar-width));
         }
 
         /* Topbar Header styling */
@@ -226,6 +229,8 @@
         .content-container {
             padding: 2rem;
             flex-grow: 1;
+            min-width: 0; /* Prevents flex children from overflowing */
+            width: 100%;
         }
 
         /* Premium Dashboard Card components */
@@ -389,7 +394,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            background: linear-gradient(135deg, #0bc28d, var(--accent-green));
             color: #ffffff;
             border: none;
             border-radius: 6px;
@@ -398,11 +403,12 @@
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
-            transition: transform 0.1s, opacity 0.2s;
+            transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
         }
 
         .btn-custom:hover {
-            opacity: 0.9;
+            opacity: 0.95;
+            box-shadow: 0 4px 12px rgba(8, 164, 114, 0.25);
         }
 
         .btn-custom:active {
@@ -437,11 +443,231 @@
 
             .main-wrapper {
                 margin-left: 0;
+                width: 100%;
             }
 
             .topbar-toggle {
                 display: block;
             }
+        }
+
+        /* Custom Modern Confirm Modal Styles */
+        #customConfirmModal {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            background-color: rgba(6, 9, 17, 0.85); 
+            backdrop-filter: blur(10px); 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 9999; 
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        #customConfirmModal.show {
+            display: flex;
+            opacity: 1;
+        }
+        .confirm-panel {
+            background: #111827; 
+            border: 1px solid rgba(239, 68, 68, 0.2); 
+            border-radius: 16px; 
+            padding: 2.25rem 2rem; 
+            width: 90%; 
+            max-width: 440px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); 
+            transform: scale(0.9); 
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            text-align: center;
+        }
+        #customConfirmModal.show .confirm-panel {
+            transform: scale(1);
+        }
+        .confirm-icon-box {
+            background-color: rgba(239, 68, 68, 0.12); 
+            color: #ef4444; 
+            border-radius: 50%; 
+            width: 60px; 
+            height: 60px; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-bottom: 1.25rem; 
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .confirm-btn-cancel {
+            flex: 1; 
+            background: transparent; 
+            border: 1px solid #1f2937; 
+            color: #9ca3af; 
+            padding: 0.75rem 1.5rem; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            font-size: 0.9rem;
+        }
+        .confirm-btn-cancel:hover {
+            background-color: rgba(255, 255, 255, 0.04);
+            color: #ffffff;
+            border-color: #374151;
+        }
+        .confirm-btn-ok {
+            flex: 1; 
+            background: linear-gradient(135deg, #ef4444, #dc2626); 
+            border: none; 
+            color: #ffffff; 
+            padding: 0.75rem 1.5rem; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            font-size: 0.9rem; 
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+        }
+        .confirm-btn-ok:hover {
+            background: linear-gradient(135deg, #ff6b6b, #ef4444);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+        }
+        .confirm-btn-ok:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive Layout Adjustments for Laptops & Small Screens */
+        @media (max-width: 1400px) {
+            .content-container {
+                padding: 1.25rem;
+            }
+            .panel {
+                padding: 1.25rem;
+                border-radius: 8px;
+            }
+        }
+        @media (max-width: 1200px) {
+            .content-container {
+                padding: 1rem;
+            }
+            .panel {
+                padding: 1rem;
+            }
+        }
+
+        /* Permanently hide address/contact detail columns from application tables */
+        .table-custom .col-village,
+        .table-custom .col-post,
+        .table-custom .col-panchayath,
+        .table-custom .col-district,
+        .table-custom .col-state,
+        .table-custom .col-contact1,
+        .table-custom .col-contact2,
+        .table-custom .col-committee {
+            display: none !important;
+        }
+
+        /* Responsive Column Adjustments for remaining columns */
+        @media (max-width: 1300px) {
+            .table-custom .col-location { display: none !important; }
+        }
+        @media (max-width: 1000px) {
+            .table-custom .col-year { display: none !important; }
+        }
+        @media (max-width: 900px) {
+            .table-custom .col-reg { display: none !important; }
+        }
+        @media (max-width: 800px) {
+            .table-custom .col-committee { display: none !important; }
+        }
+
+        /* Global Force Overflow Container Bounds */
+        div[style*="overflow-x: auto"] {
+            width: 100% !important;
+            display: block !important;
+            max-width: 100% !important;
+        }
+
+        /* Premium Floating Toast Notifications */
+        .alert {
+            position: fixed !important;
+            top: 24px !important;
+            right: 24px !important;
+            z-index: 99999 !important;
+            padding: 1rem 1.5rem !important;
+            border-radius: 10px !important;
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.75rem !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+            min-width: 300px !important;
+            max-width: 450px !important;
+            animation: toast-in-out 4s forwards cubic-bezier(0.68, -0.55, 0.27, 1.55) !important;
+            backdrop-filter: blur(10px) !important;
+            margin-bottom: 0 !important;
+        }
+
+        .alert-success {
+            background-color: rgba(17, 24, 39, 0.95) !important;
+            border: 1px solid rgba(16, 185, 129, 0.3) !important;
+            color: var(--accent-green) !important;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15), 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .alert-danger {
+            background-color: rgba(17, 24, 39, 0.95) !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+            color: var(--accent-red) !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.15), 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .alert-success::before {
+            content: "\eac4" !important; /* Boxicons check mark circle */
+            font-family: 'boxicons' !important;
+            font-size: 1.25rem !important;
+            color: var(--accent-green) !important;
+        }
+
+        .alert-danger::before {
+            content: "\ea8b" !important; /* Boxicons error circle */
+            font-family: 'boxicons' !important;
+            font-size: 1.25rem !important;
+            color: var(--accent-red) !important;
+        }
+
+        /* Toast animation */
+        @keyframes toast-in-out {
+            0% {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            8% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            90% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(120%);
+                opacity: 0;
+                display: none;
+            }
+        }
+
+        /* Hide Details button from project tables */
+        .btn-dots {
+            display: none !important;
         }
     </style>
 </head>
@@ -511,6 +737,137 @@
             link.click();
             document.body.removeChild(link);
         }
+
+        // Modern Custom Confirm Modal logic
+        let activeConfirmCallback = null;
+
+        function showCustomConfirm(message, callback) {
+            document.getElementById('customConfirmMessage').innerText = message;
+            activeConfirmCallback = callback;
+            
+            const modal = document.getElementById('customConfirmModal');
+            modal.style.display = 'flex';
+            // Force reflow
+            modal.offsetHeight;
+            modal.classList.add('show');
+        }
+
+        function closeCustomConfirm(confirmed) {
+            const modal = document.getElementById('customConfirmModal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                if (confirmed && activeConfirmCallback) {
+                    activeConfirmCallback();
+                }
+                activeConfirmCallback = null;
+            }, 200);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const confirmCancel = document.getElementById('customConfirmCancel');
+            const confirmOk = document.getElementById('customConfirmOk');
+            const confirmModal = document.getElementById('customConfirmModal');
+
+            if (confirmCancel) {
+                confirmCancel.addEventListener('click', () => closeCustomConfirm(false));
+            }
+            if (confirmOk) {
+                confirmOk.addEventListener('click', () => closeCustomConfirm(true));
+            }
+            if (confirmModal) {
+                confirmModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'customConfirmModal') {
+                        closeCustomConfirm(false);
+                    }
+                });
+            }
+        });
+
+        function initCustomConfirmForms() {
+            document.querySelectorAll('form[onsubmit], form[data-confirm]').forEach(form => {
+                let message = null;
+                const onsubmitValue = form.getAttribute('onsubmit');
+                if (onsubmitValue) {
+                    const match = onsubmitValue.match(/confirm\(['\"]([^\)]+?)['\"]\)/);
+                    if (match) {
+                        message = match[1];
+                        form.removeAttribute('onsubmit');
+                    }
+                }
+                if (!message && form.dataset.confirm) {
+                    message = form.dataset.confirm;
+                }
+                if (!message) return;
+
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    showCustomConfirm(message, () => form.submit());
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initCustomConfirmForms);
+
+        // Global helper to show dynamic toast alerts
+        function showToast(message, type = 'success') {
+            const existing = document.querySelectorAll('.alert');
+            existing.forEach(el => el.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type}`;
+            toast.innerText = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        // Global Override for window.confirm to use our Modern Custom Confirm Modal
+        window.confirm = function(message) {
+            const activeEl = document.activeElement;
+            if (activeEl && activeEl.dataset.confirmed) {
+                delete activeEl.dataset.confirmed;
+                return true;
+            }
+            
+            const activeForm = activeEl ? activeEl.closest('form') : null;
+            const activeLink = activeEl ? activeEl.closest('a') : null;
+            
+            if (activeForm) {
+                showCustomConfirm(message, function() {
+                    activeForm.submit();
+                });
+            } else if (activeLink && activeLink.href) {
+                showCustomConfirm(message, function() {
+                    window.location.href = activeLink.href;
+                });
+            } else if (activeEl) {
+                showCustomConfirm(message, function() {
+                    activeEl.dataset.confirmed = 'true';
+                    activeEl.click();
+                });
+            }
+            
+            return false;
+        };
     </script>
+
+    <!-- Modern Premium Custom Confirm Modal HTML -->
+    <div id="customConfirmModal">
+        <div class="confirm-panel">
+            <div class="confirm-icon-box">
+                <i class="bx bxs-trash-alt"></i>
+            </div>
+            <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">Confirm Action</h3>
+            <p id="customConfirmMessage" style="color: #9ca3af; font-size: 0.95rem; line-height: 1.5; margin-bottom: 2rem;">Are you sure you want to proceed?</p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="customConfirmCancel" class="confirm-btn-cancel">Cancel</button>
+                <button id="customConfirmOk" class="confirm-btn-ok">Delete</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

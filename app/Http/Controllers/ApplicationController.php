@@ -89,7 +89,29 @@ class ApplicationController extends Controller
         // Retrieve only applications in this category
         $applications = $model::orderBy('created_at', 'desc')->get();
 
-        return view($config['view'], compact('applications', 'categoryName', 'categorySlug'));
+        $projectsMap = [];
+        $projectModels = [
+            'education-center' => \App\Models\EducationCenterProject::class,
+            'cultural-center' => \App\Models\CulturalCenterProject::class,
+            'hospital-or-clinics' => \App\Models\HospitalClinicProject::class,
+            'shops-and-others' => \App\Models\ShopOtherProject::class,
+            'house' => \App\Models\HouseProject::class,
+            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupProject::class,
+            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualProject::class,
+            'general' => \App\Models\GeneralProject::class,
+        ];
+
+        if (array_key_exists($slug, $projectModels)) {
+            $projectModel = $projectModels[$slug];
+            $appIds = $applications->pluck('id')->toArray();
+            $projects = $projectModel::whereIn('application_id', $appIds)
+                ->with(['donor', 'projectManager'])
+                ->get()
+                ->keyBy('application_id');
+            $projectsMap = $projects->toArray();
+        }
+
+        return view($config['view'], compact('applications', 'categoryName', 'categorySlug', 'projectsMap'));
     }
 
     public function store(Request $request)
@@ -102,6 +124,14 @@ class ApplicationController extends Controller
             'contact_email' => ['nullable', 'email', 'max:255'],
             'details' => ['nullable', 'string'],
             'meta' => ['nullable', 'array'],
+            'house_name' => ['nullable', 'string', 'max:255'],
+            'place' => ['nullable', 'string', 'max:255'],
+            'post_office' => ['nullable', 'string', 'max:255'],
+            'village' => ['nullable', 'string', 'max:255'],
+            'panchayat' => ['nullable', 'string', 'max:255'],
+            'district' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', 'string', 'max:255'],
+            'pin_code' => ['nullable', 'string', 'max:255'],
         ]);
 
         $redirectCategory = $request->input('redirect_category');
@@ -120,7 +150,21 @@ class ApplicationController extends Controller
 
         if ($config) {
             $model = $config['model'];
+            
+            // Check if reg_number is unique
+            if ($request->filled('meta.reg_number')) {
+                $regNumber = $request->input('meta.reg_number');
+                if ($model::where('reg_number', $regNumber)->exists()) {
+                    return back()->withInput()->withErrors([
+                        'meta.reg_number' => 'The registration number has already been taken.'
+                    ]);
+                }
+            }
+
             $model::create($data);
+            if ($request->input('redirect_all') == '1') {
+                return redirect()->route('applications.all')->with('success', 'Application registered successfully!');
+            }
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application registered successfully!');
         }
 
@@ -130,6 +174,11 @@ class ApplicationController extends Controller
 
     public function update(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!in_array($user->role, [1, 2, 4])) {
+            return redirect()->back()->with('error', 'You are not authorized to edit applications.');
+        }
+
         $data = $request->validate([
             'applicant_name' => ['required', 'string', 'min:2', 'max:255'],
             'category' => ['required', 'string'],
@@ -138,6 +187,14 @@ class ApplicationController extends Controller
             'contact_email' => ['nullable', 'email', 'max:255'],
             'details' => ['nullable', 'string'],
             'meta' => ['nullable', 'array'],
+            'house_name' => ['nullable', 'string', 'max:255'],
+            'place' => ['nullable', 'string', 'max:255'],
+            'post_office' => ['nullable', 'string', 'max:255'],
+            'village' => ['nullable', 'string', 'max:255'],
+            'panchayat' => ['nullable', 'string', 'max:255'],
+            'district' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', 'string', 'max:255'],
+            'pin_code' => ['nullable', 'string', 'max:255'],
         ]);
 
         $redirectCategory = $request->input('redirect_category');
@@ -155,8 +212,22 @@ class ApplicationController extends Controller
 
         if ($config) {
             $model = $config['model'];
+            
+            // Check if reg_number is unique excluding current record ID
+            if ($request->filled('meta.reg_number')) {
+                $regNumber = $request->input('meta.reg_number');
+                if ($model::where('reg_number', $regNumber)->where('id', '!=', $id)->exists()) {
+                    return back()->withInput()->withErrors([
+                        'meta.reg_number' => 'The registration number has already been taken.'
+                    ]);
+                }
+            }
+
             $application = $model::findOrFail($id);
             $application->update($data);
+            if ($request->input('redirect_all') == '1') {
+                return redirect()->route('applications.all')->with('success', 'Application details updated successfully!');
+            }
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application details updated successfully!');
         }
 
@@ -165,6 +236,11 @@ class ApplicationController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        $user = auth()->user();
+        if (!in_array($user->role, [1, 2, 4])) {
+            return redirect()->back()->with('error', 'You are not authorized to delete applications.');
+        }
+
         $redirectCategory = $request->input('redirect_category');
         $config = $this->categories[$redirectCategory] ?? null;
 
@@ -182,6 +258,9 @@ class ApplicationController extends Controller
             $model = $config['model'];
             $application = $model::findOrFail($id);
             $application->delete();
+            if ($request->input('redirect_all') == '1') {
+                return redirect()->route('applications.all')->with('success', 'Application record deleted successfully.');
+            }
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application record deleted successfully.');
         }
 
@@ -285,5 +364,112 @@ class ApplicationController extends Controller
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
             "Expires"             => "0"
         ]);
+    }
+
+    public function showAll()
+    {
+        $allApplications = collect();
+        foreach ($this->categories as $slug => $config) {
+            $model = $config['model'];
+            $apps = $model::all();
+            foreach ($apps as $app) {
+                $app->category_slug = $slug;
+                $app->category_name = $config['name'];
+                $allApplications->push($app);
+            }
+        }
+
+        $allApplications = $allApplications->sortByDesc('created_at');
+        $categories = $this->categories;
+
+        return view('admin.all_applications', compact('allApplications', 'categories'));
+    }
+
+    public function approveApplication($category, $id)
+    {
+        $user = auth()->user();
+        if (!in_array($user->role, [1, 2, 4])) {
+            return redirect()->back()->with('error', 'You are not authorized to approve applications.');
+        }
+
+        $config = $this->categories[$category] ?? null;
+        if (!$config) {
+            abort(404, 'Category not found');
+        }
+
+        $model = $config['model'];
+        $app = $model::findOrFail($id);
+        $app->status = 'Approved';
+        $app->save();
+
+        // Automatically create a corresponding project
+        $projectModels = [
+            'education-center' => \App\Models\EducationCenterProject::class,
+            'cultural-center' => \App\Models\CulturalCenterProject::class,
+            'hospital-or-clinics' => \App\Models\HospitalClinicProject::class,
+            'shops-and-others' => \App\Models\ShopOtherProject::class,
+            'house' => \App\Models\HouseProject::class,
+            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupProject::class,
+            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualProject::class,
+            'orphan-care' => \App\Models\OrphanCareProject::class,
+            'differently-abled' => \App\Models\DifferentlyAbledProject::class,
+            'family-aid' => \App\Models\FamilyAidProject::class,
+            'general' => \App\Models\GeneralProject::class,
+        ];
+
+        $projectModel = $projectModels[$category] ?? null;
+        if ($projectModel) {
+            $exists = $projectModel::where('application_id', $app->id)->exists();
+            if (!$exists) {
+                $projectModel::create([
+                    'application_id' => $app->id,
+                    'type_of_project' => $config['name'],
+                    'status' => 'Pending',
+                    'available_budget' => $app->amount_requested ?? 0,
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Application approved successfully and project created!');
+    }
+
+    public function rejectApplication($category, $id)
+    {
+        $user = auth()->user();
+        if (!in_array($user->role, [1, 2, 4])) {
+            return redirect()->back()->with('error', 'You are not authorized to reject applications.');
+        }
+
+        $config = $this->categories[$category] ?? null;
+        if (!$config) {
+            abort(404, 'Category not found');
+        }
+
+        $model = $config['model'];
+        $app = $model::findOrFail($id);
+        $app->status = 'Rejected';
+        $app->save();
+
+        // Delete project if it exists
+        $projectModels = [
+            'education-center' => \App\Models\EducationCenterProject::class,
+            'cultural-center' => \App\Models\CulturalCenterProject::class,
+            'hospital-or-clinics' => \App\Models\HospitalClinicProject::class,
+            'shops-and-others' => \App\Models\ShopOtherProject::class,
+            'house' => \App\Models\HouseProject::class,
+            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupProject::class,
+            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualProject::class,
+            'orphan-care' => \App\Models\OrphanCareProject::class,
+            'differently-abled' => \App\Models\DifferentlyAbledProject::class,
+            'family-aid' => \App\Models\FamilyAidProject::class,
+            'general' => \App\Models\GeneralProject::class,
+        ];
+
+        $projectModel = $projectModels[$category] ?? null;
+        if ($projectModel) {
+            $projectModel::where('application_id', $app->id)->delete();
+        }
+
+        return redirect()->back()->with('success', 'Application rejected successfully.');
     }
 }

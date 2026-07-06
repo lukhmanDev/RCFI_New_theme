@@ -212,7 +212,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -286,6 +286,7 @@
                                     <i class="bx bx-dots-horizontal-rounded"></i>
                                 </button>
 
+                                @if(in_array(Auth::user()->role, [1, 2, 4]))
                                 <!-- Edit Button -->
                                 <button onclick="openEditModal({{ json_encode($project) }})" class="btn-action-icon btn-edit" title="Edit">
                                     <i class="bx bx-pencil"></i>
@@ -301,6 +302,7 @@
                                         <i class="bx bx-trash"></i>
                                     </button>
                                 </form>
+                                @endif
 
                                 <!-- View Details Stage Button -->
                                 <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project) }}" class="btn-action-icon btn-view" title="Stage Details">

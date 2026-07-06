@@ -8,6 +8,7 @@ class EducationCenterProject extends Model
 {
     protected $table = 'education_center_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array', 'expenses' => 'array'];
 
     protected static function boot()
     {

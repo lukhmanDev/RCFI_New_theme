@@ -37,31 +37,6 @@
         </div>
     </div>
 
-    <!-- Project Manager specific shortcuts -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-        <div class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title"><i class="bx bxs-briefcase-alt-2" style="vertical-align: middle; margin-right: 0.5rem; color: var(--accent-green);"></i> Project Partnerships</h2>
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;">
-                View donor groups and local partnerships supporting active projects, water groups, houses, and general programs.
-            </p>
-            <a href="{{ route('donors.index') }}" class="btn-custom" style="display: inline-block; text-align: center; text-decoration: none; background: transparent; border: 1px solid var(--accent-cyan); color: var(--accent-cyan);">
-                Browse Partners
-            </a>
-        </div>
-
-        <div class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title"><i class="bx bxs-pie-chart-alt" style="vertical-align: middle; margin-right: 0.5rem; color: var(--accent-cyan);"></i> Application Submissions</h2>
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;">
-                Access the 11 project category dashboards to track, edit, and approve funding requests submitted by applicants.
-            </p>
-            <a href="{{ route('applications.index') }}" class="btn-custom" style="display: inline-block; text-align: center; text-decoration: none;">
-                Open Applications Center
-            </a>
-        </div>
-    </div>
+   
 
 @endsection

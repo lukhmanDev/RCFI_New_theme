@@ -8,6 +8,7 @@ class HospitalClinicProject extends Model
 {
     protected $table = 'hospital_clinic_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {

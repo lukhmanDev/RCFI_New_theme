@@ -190,6 +190,13 @@
         <h4 class="login-title">Welcome Back</h4>
         <p class="login-subtitle">Sign in to your dashboard</p>
 
+        <!-- Status Messages -->
+        @if (session('status'))
+            <div class="alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.5rem; font-weight: 500;">
+                {{ session('status') }}
+            </div>
+        @endif
+
         <!-- General Role/Authorization Errors -->
         @if ($errors->has('role'))
             <div class="alert-error">
@@ -223,7 +230,10 @@
 
             <!-- Password Field -->
             <div class="form-group">
-                <label class="form-label" for="password">Password</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label class="form-label" for="password" style="margin-bottom: 0;">Password</label>
+                    <a href="{{ route('password.request') }}" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='var(--text-muted)'">Forgot Password?</a>
+                </div>
                 <div class="input-group-custom">
                     <i class="bx bx-lock-alt input-icon"></i>
                     <input type="password" class="form-control-dark @error('password') is-invalid @enderror" id="password" name="password" placeholder="Enter your password" required>

@@ -14,7 +14,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -150,20 +150,18 @@
 
                             <!-- Actions -->
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem;">
-                                    Details
-                                </button>
+                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
-                                <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem;">
-                                    Edit
-                                </button>
+                                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                                <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
                                 
                                 <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this application?');" style="display: inline-block;">
                                     @csrf
                                     @method('DELETE')
                                     <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                    <button type="submit" class="btn-danger-custom">Delete</button>
+                                    <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete"><i class="bx bx-trash"></i></button>
                                 </form>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -310,14 +308,14 @@
                             <input type="number" class="form-control-dark" id="people_with_disabilities" name="meta[people_with_disabilities]" value="{{ old('meta.people_with_disabilities') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="monthly_income">Monthly Income ($) *</label>
+                            <label class="form-label" for="monthly_income">Monthly Income (₹) *</label>
                             <input type="number" class="form-control-dark" id="monthly_income" name="meta[monthly_income]" value="{{ old('meta.monthly_income') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="monthly_cost">Monthly Cost ($) *</label>
+                            <label class="form-label" for="monthly_cost">Monthly Cost (₹) *</label>
                             <input type="number" class="form-control-dark" id="monthly_cost" name="meta[monthly_cost]" value="{{ old('meta.monthly_cost') }}" required>
                         </div>
                         <div>
@@ -568,14 +566,14 @@
                             <input type="number" class="form-control-dark" id="edit_people_with_disabilities" name="meta[people_with_disabilities]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_monthly_income">Monthly Income ($) *</label>
+                            <label class="form-label" for="edit_monthly_income">Monthly Income (₹) *</label>
                             <input type="number" class="form-control-dark" id="edit_monthly_income" name="meta[monthly_income]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_monthly_cost">Monthly Cost ($) *</label>
+                            <label class="form-label" for="edit_monthly_cost">Monthly Cost (₹) *</label>
                             <input type="number" class="form-control-dark" id="edit_monthly_cost" name="meta[monthly_cost]" required>
                         </div>
                         <div>
@@ -804,8 +802,8 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Male / Female Members:</td><td>M: ${formatVal(meta.male_members)} / F: ${formatVal(meta.female_members)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Total Members:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.total_members)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">People with Disabilities:</td><td>${formatVal(meta.people_with_disabilities)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income ? '$' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Cost:</td><td>${meta.monthly_cost ? '$' + Number(meta.monthly_cost).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Cost:</td><td>${meta.monthly_cost ? '₹' + Number(meta.monthly_cost).toLocaleString() : 'N/A'}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Source of Income:</td><td>${formatVal(meta.income_source)}</td></tr>
                         </table>
                     </div>

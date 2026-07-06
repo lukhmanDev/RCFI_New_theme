@@ -39,6 +39,18 @@
             color: var(--accent-cyan);
         }
 
+        .stage-tab.locked {
+            color: var(--text-muted) !important;
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            border-bottom-color: transparent !important;
+            background-color: transparent !important;
+        }
+        .stage-tab.locked:hover {
+            color: var(--text-muted) !important;
+            background-color: transparent !important;
+        }
+
         /* Project Detail Panel Header */
         .detail-header-panel {
             background-color: #2c3e50;
@@ -156,8 +168,22 @@
                 $isActive = $project->stage === $i;
                 $isCompleted = $project->stage > $i;
                 $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
+                
+                // Lock other stages if the project is not Approved by COO
+                // For Education Center projects, unlock stages up to the current stage
+                if ($project->type_of_project === 'Education Center') {
+                    $isLocked = ($project->status !== 'Approved' && $i > $project->stage);
+                } else {
+                    $isLocked = ($project->status !== 'Approved' && $i > 1);
+                }
+                if ($isLocked) {
+                    $class .= ' locked';
+                }
             @endphp
             <div class="stage-tab {{ $class }}" id="tab-{{ $i }}" onclick="switchStage({{ $i }})">
+                @if($isLocked)
+                    <i class="bx bx-lock-alt" style="margin-right: 0.25rem;"></i>
+                @endif
                 Stage {{ $i }}
             </div>
         @endfor
@@ -165,17 +191,18 @@
 
     @php
         $authUser = auth()->user();
-        $isCoo = ($authUser && ($authUser->role === 2 || strtolower($authUser->designation) === 'coo'));
+        $isCoo = ($authUser && ($authUser->role == 2 || strtolower($authUser->designation ?? '') === 'coo'));
+        $isProjectManager = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || strtolower($authUser->designation ?? '') === 'project manager'));
     @endphp
 
     <!-- Success Panel -->
     @if (session('success'))
-        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
     @if (session('error'))
-        <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff8a8a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-danger\" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff8a8a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('error') }}
         </div>
     @endif
@@ -189,29 +216,48 @@
                 <h2>PROJECT DETAIL</h2>
             </div>
             <div style="padding: 1.5rem;">
-                <div class="warning-box">
-                    <strong>Stage 1 (Verification):</strong> Please verify the project metadata details.
-                </div>
-
-                @if($project->status !== 'Approved')
-                    <div style="margin-bottom: 1.5rem;">
-                        @if($isCoo)
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn-custom" style="background: #eb3b5a; cursor: pointer; font-weight: 700; padding: 0.75rem 1.5rem;">
-                                    Approve Project
-                                </button>
-                            </form>
-                        @else
-                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                <i class="bx bx-time-five"></i> Pending COO Approval
-                            </div>
-                        @endif
-                    </div>
+                @if($project->type_of_project === 'Education Center')
+                    @if($project->stage === 1)
+                        <div style="margin-bottom: 1.5rem;">
+                            @if($isCoo)
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn-custom" style="background: #eb3b5a; cursor: pointer; font-weight: 700; padding: 0.75rem 1.5rem;">
+                                        Verify Stage 1
+                                    </button>
+                                </form>
+                            @else
+                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                    <i class="bx bx-time-five"></i> Pending COO Verification
+                                </div>
+                            @endif
+                        </div>
+                    @else
+                        <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                            <i class="bx bx-check-circle"></i> Stage 1 Verified by COO
+                        </div>
+                    @endif
                 @else
-                    <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                        <i class="bx bx-check-circle"></i> Project Approved & Active
-                    </div>
+                    @if($project->status !== 'Approved')
+                        <div style="margin-bottom: 1.5rem;">
+                            @if($isCoo)
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn-custom" style="background: #eb3b5a; cursor: pointer; font-weight: 700; padding: 0.75rem 1.5rem;">
+                                        Approve Project
+                                    </button>
+                                </form>
+                            @else
+                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                    <i class="bx bx-time-five"></i> Pending COO Approval
+                                </div>
+                            @endif
+                        </div>
+                    @else
+                        <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                            <i class="bx bx-check-circle"></i> Project Approved & Active
+                        </div>
+                    @endif
                 @endif
 
                 <div class="details-grid">
@@ -225,6 +271,7 @@
                 </div>
 
                 <!-- Connect Application Form -->
+                @if($isCoo && $project->type_of_project !== 'Education Center')
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
@@ -261,6 +308,7 @@
                         </button>
                     </form>
                 </div>
+                @endif
             </div>
         </div>
 
@@ -271,7 +319,7 @@
             </div>
             <div style="padding: 1.5rem;">
                 @php
-                    $appYear = !empty($application->created_at) ? date('y', strtotime($application->created_at)) : '24';
+                    $appYear = ($application && !empty($application->created_at)) ? date('y', strtotime($application->created_at)) : '24';
                     $prefixes = [
                         'Education Center' => 'EC',
                         'Cultural Center' => 'CC',
@@ -286,21 +334,112 @@
                         'General' => 'GN'
                     ];
                     $prefix = $prefixes[$project->type_of_project] ?? 'APP';
-                    $appId = $application ? ('APLRCFI' . $appYear . $prefix . str_pad($application->id, 5, '0', STR_PAD_LEFT)) : 'APLRCFI24EC00001';
+                    $appId = $application ? ('APLRCFI' . $appYear . $prefix . str_pad($application->id, 5, '0', STR_PAD_LEFT)) : 'N/A';
                 @endphp
-                <div class="stage-success-banner">
-                    Applicant ID {{ $appId }} has been Approved
-                </div>
 
-                @if($project->stage === 2)
-                    <div style="margin-bottom: 1.5rem;">
-                        <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                Approve & Promote to Stage 3
-                            </button>
-                        </form>
+                @if($project->type_of_project === 'Education Center')
+                    @if($project->stage === 2)
+                        <div class="warning-box">
+                            <strong>Stage 2 (Application Connection & Approval):</strong>
+                            @if(empty($project->application_id))
+                                Please connect this project to an application to proceed.
+                            @else
+                                Please review the application details below and approve to move to the next stage.
+                            @endif
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            @if(empty($project->application_id))
+                                <div style="background-color: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ff8a8a; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                    <i class="bx bx-error-circle"></i> Connection Required: A COO must assign an application first.
+                                </div>
+                            @else
+                                @php
+                                    $authUser = auth()->user();
+                                    $isCooOrHod = ($authUser && ($authUser->role === 2 || $authUser->role === 4 || strtolower($authUser->designation) === 'coo' || strtolower($authUser->designation) === 'hod'));
+                                @endphp
+                                @if($isCooOrHod)
+                                    <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="btn-custom" style="background: #eb3b5a; cursor: pointer; font-weight: 700; padding: 0.75rem 1.5rem;">
+                                            Approve Stage 2 & Promote to Stage 3
+                                        </button>
+                                    </form>
+                                @else
+                                    <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                        <i class="bx bx-time-five"></i> Pending HOD or COO Approval
+                                    </div>
+                                @endif
+                            @endif
+                        </div>
+                    @else
+                        @if(session('success'))
+                            <div class="stage-success-banner">
+                                {{ session('success') }}
+                            </div>
+                        @endif
+                    @endif
+                @else
+                    <div class="stage-success-banner">
+                        Applicant ID {{ $appId }} has been Approved
                     </div>
+
+                    @if($project->stage === 2)
+                        <div style="margin-bottom: 1.5rem;">
+                            @if($isCoo)
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn-custom" style="background: #eb3b5a;">
+                                        Approve & Promote to Stage 3
+                                    </button>
+                                </form>
+                            @else
+                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                    <i class="bx bx-time-five"></i> Pending COO Approval
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+                @endif
+
+                <!-- Connect Application Form inside Stage 2 for Education Center project (Show First) -->
+                @if(($isProjectManager || $isCoo) && $project->type_of_project === 'Education Center' && $project->status !== 'Approved')
+                <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
+                    <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
+                    <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
+                        @csrf
+                        <select name="application_id" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; flex-grow: 1; outline: none; font-size: 0.9rem;" required>
+                            <option value="">Select an application to assign...</option>
+                            @foreach($allApplications as $app)
+                                @php
+                                    $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
+                                    $prefixes = [
+                                        'Education Center' => 'EC',
+                                        'Cultural Center' => 'CC',
+                                        'Hospital or Clinics' => 'HC',
+                                        'Shops and Others' => 'SO',
+                                        'House' => 'HS',
+                                        'Drinking Water - Group Level' => 'DWG',
+                                        'Drinking Water - Individual Level' => 'DWI',
+                                        'Orphan Care' => 'OC',
+                                        'Differently Abled' => 'DA',
+                                        'Family Aid' => 'FA',
+                                        'General' => 'GN'
+                                    ];
+                                    $prefix = $prefixes[$project->type_of_project] ?? 'APP';
+                                    $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
+                                    $isSelected = $project->application_id == $app->id ? 'selected' : '';
+                                @endphp
+                                <option value="{{ $app->id }}" {{ $isSelected }}>
+                                    {{ $formattedAppId }} - {{ $app->applicant_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer;">
+                            Assign
+                        </button>
+                    </form>
+                </div>
                 @endif
 
                 @php
@@ -384,63 +523,71 @@
                         </p>
                     </div>
                 @else
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                        <!-- Col 1 -->
-                        <div>
-                            <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Committee</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: #ffffff; font-weight: 600;">Jane Smith</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>North City</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>456256</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>1990</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>North City</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>North Village</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>Mukkam</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>North Panchayat</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>North District / New State</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>9876543209 / <span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>No</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>No</td></tr>
-                            </table>
-
-                            <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span> / <span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Requirement:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                            </table>
+                    @if($project->type_of_project === 'Education Center')
+                        <div style="text-align: center; padding: 3rem; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--panel-border); margin: 2rem 0;">
+                            <i class="bx bx-link-external" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                            <h3 style="color: #ffffff; font-size: 1.2rem; margin-bottom: 0.5rem;">No Application Connected</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0 auto;">Please connect this project to an application using the form below to view application details.</p>
                         </div>
+                    @else
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <!-- Col 1 -->
+                            <div>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Committee</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: #ffffff; font-weight: 600;">Jane Smith</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>North City</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>456256</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>1990</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>North City</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>North Village</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>Mukkam</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>North Panchayat</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>North District / New State</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>9876543209 / <span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>No</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>No</td></tr>
+                                </table>
 
-                        <!-- Col 2 -->
-                        <div>
-                            <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Current Status & Students</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Has Building?</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Status:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Boys Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Girls Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Center Nearby?</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Distance to CC (KM):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Syllabus:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                            </table>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span> / <span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Requirement:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                </table>
+                            </div>
 
-                            <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Details</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: #ffffff;">Education Center</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Area (Sq):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Students:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">$25,000</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Area / Zone:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: #ffffff;">Pending</td></tr>
-                            </table>
+                            <!-- Col 2 -->
+                            <div>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Current Status & Students</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Has Building?</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Status:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Boys Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Girls Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Center Nearby?</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Distance to CC (KM):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Syllabus:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                </table>
+
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Details</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: #ffffff;">Education Center</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Area (Sq):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Students:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">$25,000</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Area / Zone:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: #ffffff;">Pending</td></tr>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 @endif
             </div>
         </div>
@@ -456,14 +603,16 @@
                 </div>
 
                 @if($project->stage === 3)
-                    <div style="margin-bottom: 1.5rem;">
-                        <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                Approve & Promote to Stage 4
-                            </button>
-                        </form>
-                    </div>
+                    @if($isCoo)
+                        <div style="margin-bottom: 1.5rem;">
+                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn-custom" style="background: #eb3b5a;">
+                                    Approve & Promote to Stage 4
+                                </button>
+                            </form>
+                        </div>
+                    @endif
                 @endif
 
                 <table class="stage-table">
@@ -476,15 +625,64 @@
                     <tbody>
                         @php
                             $docs = [
-                                'Land document', 'Possession certificate', 'Recommendation letter',
-                                'Committee minutes', 'Permit copy', 'Plan', 'Tender schedule sheet',
-                                'Site study', 'Quotations', 'Quotations approval form'
+                                'Land document', 
+                                'Possession certificate', 
+                                'Recommendation letter',
+                                'Committee minutes', 
+                                'Permit copy', 
+                                'Plan', 
+                                'Tender schedule sheet',
+                                'Site study', 
+                                'Quotations', 
+                                'Quotations approval form',
+                                'Work order letter',
+                                'Meeting minutes copy',
+                                'Agreement with contractor',
+                                'Agreement with committee',
+                                'Project summary form'
                             ];
+                            $projectFiles = $project->files ?? [];
                         @endphp
                         @foreach($docs as $doc)
+                            @php
+                                $filePath = $projectFiles[$doc] ?? null;
+                            @endphp
                             <tr>
-                                <td style="font-weight: 600; color: #ffffff;">{{ $doc }}</td>
-                                <td style="color: var(--accent-red); font-weight: 500;">No File</td>
+                                <td style="font-weight: 600; color: #ffffff; vertical-align: middle;">{{ $doc }}</td>
+                                <td style="vertical-align: middle;">
+                                    @if($filePath)
+                                        <div style="display: flex; align-items: center; gap: 1rem;">
+                                            <a href="{{ asset($filePath) }}" target="_blank" style="color: var(--accent-green); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                <i class="bx bx-file" style="font-size: 1.1rem;"></i> View Document
+                                            </a>
+                                            @if($isProjectManager)
+                                                <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="display: inline-flex; gap: 0.5rem; align-items: center; margin: 0;">
+                                                    @csrf
+                                                    <input type="hidden" name="document_name" value="{{ $doc }}">
+                                                    <label class="btn-custom" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(250, 130, 49, 0.1); border: 1px solid #fa8231; color: #fa8231; margin: 0;">
+                                                        <i class="bx bx-upload"></i> Re-upload
+                                                        <input type="file" name="file" onchange="this.form.submit()" style="display: none;" required>
+                                                    </label>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    @else
+                                        @if($isProjectManager)
+                                            <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="display: flex; gap: 0.5rem; align-items: center; margin: 0;">
+                                                @csrf
+                                                <input type="hidden" name="document_name" value="{{ $doc }}">
+                                                <label class="btn-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); margin: 0;">
+                                                    <i class="bx bx-upload"></i> Choose & Upload
+                                                    <input type="file" name="file" onchange="this.form.submit()" style="display: none;" required>
+                                                </label>
+                                            </form>
+                                        @else
+                                            <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                <i class="bx bx-x-circle"></i> No File
+                                            </span>
+                                        @endif
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -502,21 +700,67 @@
                     Fund Allocated are Approved
                 </div>
 
+                @php
+                    $materials = $project->materials;
+                    if (empty($materials)) {
+                        $materials = [
+                            ['material' => 'cement', 'amount' => 8000],
+                            ['material' => 'metal', 'amount' => 8000]
+                        ];
+                    }
+                    $totalAmount = 0;
+                    foreach($materials as $item) {
+                        $totalAmount += $item['amount'];
+                    }
+                @endphp
+
                 @if($project->stage === 4)
                     <div style="margin-bottom: 1.5rem;">
-                        <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                Approve & Promote to Stage 5
-                            </button>
-                        </form>
+                        @if($isCoo)
+                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn-custom" style="background: #eb3b5a;">
+                                    Approve & Promote to Stage 5
+                                </button>
+                            </form>
+                        @else
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                <i class="bx bx-time-five"></i> Pending COO Approval
+                            </div>
+                        @endif
                     </div>
                 @endif
 
+                <!-- Real-time Budget Metrics Bar -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <!-- Project Budget Card -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid #10b981;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Project Budget</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #ffffff;">₹{{ number_format($project->available_budget, 2) }}</div>
+                    </div>
+                    <!-- Proposed Budget Card -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(99, 102, 241, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid #6366f1;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Application Proposed Budget</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #ffffff;">{{ $application && $application->amount_requested ? '₹' . number_format($application->amount_requested, 2) : 'N/A' }}</div>
+                    </div>
+                    <!-- Total Allocated Card -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(6, 182, 212, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid var(--accent-cyan);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Total Allocated</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($totalAmount, 2) }}</div>
+                    </div>
+                </div>
+
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-                    <button class="btn-custom" style="background: #4b6584;" onclick="alert('Exporting stage budget to Excel...')">
-                        Download Excel
-                    </button>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <button class="btn-custom" style="background: #4b6584;" onclick="alert('Exporting stage budget to Excel...')">
+                            Download Excel
+                        </button>
+                        @if($isProjectManager)
+                            <button onclick="openAddMaterialModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                <i class="bx bx-plus"></i> Add Item
+                            </button>
+                        @endif
+                    </div>
                     <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
                         <span style="color: var(--text-muted);">Search:</span>
                         <input type="text" placeholder="Search budget..." class="form-control-dark" style="width: 160px; padding: 0.35rem 0.75rem; border-radius: 4px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
@@ -531,17 +775,35 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td style="font-weight: 600; color: #ffffff;">cement</td>
-                            <td style="text-align: right; font-weight: 600; color: #ffffff;">₹ 8000</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: #ffffff;">metal</td>
-                            <td style="text-align: right; font-weight: 600; color: #ffffff;">₹ 8000</td>
-                        </tr>
+                        @php
+                            $totalAmount = 0;
+                        @endphp
+                        @foreach($materials as $index => $item)
+                            @php $totalAmount += $item['amount']; @endphp
+                            <tr>
+                                <td style="font-weight: 600; color: #ffffff; vertical-align: middle;">{{ $item['material'] }}</td>
+                                <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">
+                                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
+                                        <span>₹ {{ number_format($item['amount'], 2) }}</span>
+                                        @if($isProjectManager)
+                                            <button onclick="openEditMaterialModal({{ $index }}, '{{ addslashes($item['material']) }}', {{ $item['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
+                                                <i class="bx bx-pencil"></i>
+                                            </button>
+                                            <form action="{{ route('projects.delete_material', [$project->id, $index]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this material?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn-danger-custom" style="padding: 0.25rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;" title="Delete">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
                         <tr style="border-top: 2px solid var(--panel-border);">
                             <td style="font-weight: 700; color: var(--accent-cyan);">Total</td>
-                            <td style="text-align: right; font-weight: 700; color: var(--accent-cyan);">₹ 16000.00</td>
+                            <td style="text-align: right; font-weight: 700; color: var(--accent-cyan);">₹ {{ number_format($totalAmount, 2) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -558,17 +820,258 @@
                     Evaluation & Site Inspections
                 </div>
 
+                @php
+                    $stage5Materials = $project->materials;
+                    if (empty($stage5Materials)) {
+                        $stage5Materials = [
+                            ['material' => 'cement', 'amount' => 8000],
+                            ['material' => 'metal', 'amount' => 8000]
+                        ];
+                    }
+                    $totalAllocatedAmount = 0;
+                    foreach ($stage5Materials as $item) {
+                        $totalAllocatedAmount += $item['amount'];
+                    }
+
+                    $expenses = $project->expenses;
+                    if (empty($expenses)) {
+                        $expenses = [];
+                    }
+                    $totalExpensesAmount = 0;
+                    foreach ($expenses as $item) {
+                        $totalExpensesAmount += $item['amount'];
+                    }
+
+                    $stage5TotalBudget = (float)$totalAllocatedAmount;
+                    $stage5SpentAmount = (float)$totalExpensesAmount;
+                    $stage5BalanceAmount = $stage5TotalBudget - $stage5SpentAmount;
+                    
+                    $stage5SpentPercentage = $stage5TotalBudget > 0 ? min(100, ($stage5SpentAmount / $stage5TotalBudget) * 100) : 0;
+                    $stage5BalancePercentage = 100 - $stage5SpentPercentage;
+                    
+                    // SVG Circumference is 2 * pi * 50 = 314.16
+                    $stage5Circumference = 314.16;
+                    $stage5SpentDashoffset = $stage5Circumference - ($stage5Circumference * ($stage5SpentPercentage / 100));
+                @endphp
+
                 @if($project->stage === 5)
                     <div style="margin-bottom: 1.5rem;">
-                        <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                Approve & Promote to Stage 6
-                            </button>
-                        </form>
+                        @if($isCoo)
+                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn-custom" style="background: #eb3b5a;">
+                                    Approve & Promote to Stage 6
+                                </button>
+                            </form>
+                        @else
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                <i class="bx bx-time-five"></i> Pending COO Approval
+                            </div>
+                        @endif
                     </div>
                 @endif
 
+                <!-- Beautiful Financial Breakdown and Diagram -->
+                <div style="display: flex; align-items: center; justify-content: center; gap: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; flex-wrap: wrap;">
+                    <!-- Circular Diagram -->
+                    <div style="position: relative; width: 120px; height: 120px; flex-shrink: 0;">
+                        <svg width="120" height="120" viewBox="0 0 120 120">
+                            <!-- Background Circle (Balance - Cyan) -->
+                            <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent-cyan)" stroke-width="12" />
+                            <!-- Foreground Circle (Spent - Red/Orange) -->
+                            <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent-red)" stroke-width="12"
+                                    stroke-dasharray="314.16" stroke-dashoffset="{{ $stage5SpentDashoffset }}"
+                                    stroke-linecap="round" transform="rotate(-90 60 60)"
+                                    style="transition: stroke-dashoffset 0.5s ease-in-out;" />
+                        </svg>
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
+                            <span style="font-size: 1.25rem; font-weight: 700;">{{ number_format($stage5SpentPercentage, 0) }}%</span>
+                            <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Spent</span>
+                        </div>
+                    </div>
+                    <!-- Stats Details -->
+                    <div style="flex-grow: 1; min-width: 250px;">
+                        <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Financial Summary (Allocated Budget)</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
+                            <!-- Total Budget Card -->
+                            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 0.75rem; border-radius: 6px;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">Total Allocated</div>
+                                <span style="font-size: 1.1rem; font-weight: 700; color: #ffffff;">₹{{ number_format($stage5TotalBudget, 2) }}</span>
+                            </div>
+                            <!-- Balance Card -->
+                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.75rem; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                    <span style="display: inline-block; width: 8px; height: 8px; background-color: var(--accent-cyan); border-radius: 50%;"></span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Total Balance</span>
+                                </div>
+                                <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($stage5BalanceAmount, 2) }}</span>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem;">{{ number_format($stage5BalancePercentage, 1) }}% left</div>
+                            </div>
+                            <!-- Expense Card -->
+                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                    <span style="display: inline-block; width: 8px; height: 8px; background-color: var(--accent-red); border-radius: 50%;"></span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Total Expenses</span>
+                                </div>
+                                <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-red);">₹{{ number_format($stage5SpentAmount, 2) }}</span>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem;">{{ number_format($stage5SpentPercentage, 1) }}% spent</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @php
+                    $materialsChart = [];
+                    $chartMaxValue = 1;
+                    foreach($stage5Materials as $materialIdx => $material) {
+                        $itemExpenses = array_filter($expenses, function($exp) use ($materialIdx) {
+                            return isset($exp['material_index']) && $exp['material_index'] == $materialIdx;
+                        });
+                        $itemTotalSpent = 0;
+                        foreach($itemExpenses as $exp) {
+                            $itemTotalSpent += $exp['amount'];
+                        }
+                        $allocated = (float)$material['amount'];
+                        $spent = (float)$itemTotalSpent;
+                        $chartMaxValue = max($chartMaxValue, $allocated, $spent);
+                        $materialsChart[] = [
+                            'material' => $material['material'],
+                            'allocated' => $allocated,
+                            'spent' => $spent,
+                        ];
+                    }
+                @endphp
+
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                    <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Materials Spend Graph</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: end;">
+                        @foreach($materialsChart as $materialData)
+                            @php
+                                $allocatedPercent = $chartMaxValue > 0 ? ($materialData['allocated'] / $chartMaxValue) * 100 : 0;
+                                $spentPercent = $chartMaxValue > 0 ? ($materialData['spent'] / $chartMaxValue) * 100 : 0;
+                            @endphp
+                            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1rem; border-radius: 10px; display: flex; flex-direction: column; gap: 1rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                                    <span style="font-weight: 700; color: #ffffff;">{{ $materialData['material'] }}</span>
+                                    <span style="font-size: 0.85rem; color: var(--text-muted);">₹{{ number_format($materialData['spent'], 2) }} / ₹{{ number_format($materialData['allocated'], 2) }}</span>
+                                </div>
+                                <div style="display: flex; align-items: flex-end; gap: 0.75rem; min-height: 180px;">
+                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                                        <div style="width: 100%; height: 100%; background: rgba(248,113,113,0.15); border-radius: 14px; position: relative; display: flex; align-items: flex-end;">
+                                            <div style="width: 100%; height: {{ $spentPercent }}%; background: rgba(239,68,68,0.95); border-radius: 14px 14px 0 0; transition: height 0.4s ease-in-out;"></div>
+                                        </div>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted);">Spent</span>
+                                    </div>
+                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                                        <div style="width: 100%; height: 100%; background: rgba(16,185,129,0.15); border-radius: 14px; position: relative; display: flex; align-items: flex-end;">
+                                            <div style="width: 100%; height: {{ $allocatedPercent }}%; background: rgba(6,182,212,0.95); border-radius: 14px 14px 0 0; transition: height 0.4s ease-in-out;"></div>
+                                        </div>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted);">Allocated</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Expenses Section -->
+                @if($project->type_of_project === 'Education Center')
+                <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
+                    <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Allocated Items & Spent Expenses</h3>
+
+                    <table class="stage-table">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th style="text-align: right;">Allocated</th>
+                                <th style="text-align: right;">Spent</th>
+                                <th style="text-align: right;">Balance</th>
+                                <th style="text-align: center; width: 140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($stage5Materials as $materialIdx => $material)
+                                @php
+                                    // Filter expenses for this material
+                                    $itemExpenses = array_filter($expenses, function($exp) use ($materialIdx) {
+                                        return isset($exp['material_index']) && $exp['material_index'] == $materialIdx;
+                                    });
+                                    $itemTotalSpent = 0;
+                                    foreach($itemExpenses as $exp) {
+                                        $itemTotalSpent += $exp['amount'];
+                                    }
+                                    $itemBalance = $material['amount'] - $itemTotalSpent;
+                                @endphp
+                                <!-- Material Header Row -->
+                                <tr style="background-color: rgba(255, 255, 255, 0.01); border-bottom: 1px solid var(--panel-border);">
+                                    <td style="font-weight: 700; color: #ffffff; vertical-align: middle;">
+                                        <i class="bx bx-package" style="color: var(--accent-cyan); margin-right: 0.5rem;"></i>{{ $material['material'] }}
+                                    </td>
+                                    <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">₹{{ number_format($material['amount'], 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--accent-red); vertical-align: middle;">₹{{ number_format($itemTotalSpent, 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: {{ $itemBalance >= 0 ? 'var(--accent-cyan)' : 'var(--accent-red)' }}; vertical-align: middle;">
+                                        ₹{{ number_format($itemBalance, 2) }}
+                                    </td>
+                                    <td style="text-align: center; vertical-align: middle;">
+                                        @if($isProjectManager)
+                                            <button onclick="openAddExpenseModal({{ $materialIdx }}, '{{ addslashes($material['material']) }}')" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; margin: 0;">
+                                                <i class="bx bx-plus"></i> Expense
+                                            </button>
+                                        @else
+                                            <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No actions</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <!-- Sub-table / Nested Expenses list -->
+                                @if(!empty($itemExpenses))
+                                    @foreach($itemExpenses as $expenseIdx => $expense)
+                                        <tr style="background-color: rgba(0, 0, 0, 0.15);">
+                                            <td style="padding-left: 2rem; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; margin-right: 0.5rem; vertical-align: middle;"></span>
+                                                {{ $expense['expense_name'] }}
+                                            </td>
+                                            <td></td>
+                                            <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">₹{{ number_format($expense['amount'], 2) }}</td>
+                                            <td></td>
+                                            <td style="text-align: center; vertical-align: middle;">
+                                                @if($isProjectManager)
+                                                    <div style="display: inline-flex; gap: 0.4rem;">
+                                                        <button onclick="openEditExpenseModal({{ $expenseIdx }}, {{ $materialIdx }}, '{{ addslashes($expense['expense_name']) }}', {{ $expense['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.2rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin: 0;" title="Edit Expense">
+                                                            <i class="bx bx-pencil"></i>
+                                                        </button>
+                                                        <form action="{{ route('projects.delete_expense', [$project->id, $expenseIdx]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this expense?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn-danger-custom" style="padding: 0.2rem; font-size: 0.75rem; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;" title="Delete Expense">
+                                                                <i class="bx bx-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @else
+                                    <tr style="background-color: rgba(0, 0, 0, 0.05);">
+                                        <td colspan="4" style="padding-left: 2rem; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No expenses recorded for this item.</td>
+                                        <td style="text-align: center; vertical-align: middle;">
+                                            @if($isProjectManager)
+                                                <button onclick="openAddExpenseModal({{ $materialIdx }}, '{{ addslashes($material['material']) }}')" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; margin: 0;">
+                                                    <i class="bx bx-plus"></i> Add Expense
+                                                </button>
+                                            @else
+                                                <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No actions</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @endif
+
+                @if($project->type_of_project !== 'Education Center')
                 <table class="stage-table">
                     <thead>
                         <tr>
@@ -595,41 +1098,210 @@
                         </tr>
                     </tbody>
                 </table>
+                @endif
             </div>
         </div>
 
-        <!-- ================= STAGE 6 PANEL (FINAL HANDOVER) ================= -->
+        <!-- ================= STAGE 6 PANEL (COMPLETION) ================= -->
         <div class="stage-content-panel" id="stage-content-6">
             <div class="detail-header-panel">
-                <h2>FINAL HANDOVER & COMPLETION</h2>
+                <h2>COMPLETION STAGE</h2>
             </div>
             <div style="padding: 1.5rem;">
-                <div class="stage-success-banner">
-                    Final Completion & Handover Ceremony
-                </div>
 
-                @if($project->stage === 6 && $project->status !== 'Approved')
-                    <div style="margin-bottom: 1.5rem;">
-                        <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn-custom" style="background: #2ecc71;">
-                                Finalize Project Approval
-                            </button>
-                        </form>
+                @php
+                    $pFiles = $project->files ?? [];
+                    $compCert = $pFiles['Completion Certificate'] ?? null;
+                    $measBook = $pFiles['Measurement Book'] ?? null;
+                    $compPhotos = $pFiles['photos'] ?? [];
+                    $compDetails = $pFiles['completion_details'] ?? [];
+                @endphp
+
+                @if($project->status === 'Approved')
+                    <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem 1.5rem; border-radius: 8px; font-weight: 600;">
+                        ✓ Project successfully approved
+                    </div>
+                @else
+                    <div class="stage-success-banner" style="margin-bottom: 1.5rem;">
+                        Final Completion & Handover Ceremony (Pending Approval)
                     </div>
                 @endif
 
-                <div class="details-grid">
-                    <div class="details-label">Completion Status</div><div class="details-colon">:</div>
-                    <div class="details-value">
-                        @if($project->status === 'Approved')
-                            <span style="background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 0.35rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(16, 185, 129, 0.3);">APPROVED & HANDED OVER</span>
+                @if($project->stage === 6 && $project->status !== 'Approved')
+                    <div style="margin-bottom: 2rem;">
+                        @if($isCoo)
+                            <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0;">
+                                @csrf
+                                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); border-color: #27ae60; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.6rem 1.8rem;">
+                                    ✓ Finalize Project Approval
+                                </button>
+                            </form>
                         @else
-                            <span style="background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.35rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(245, 158, 11, 0.3);">PENDING FINAL SIGN-OFF</span>
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                <i class="bx bx-time-five"></i> Pending COO Final Approval
+                            </div>
                         @endif
                     </div>
-                    <div class="details-label">Handover Certificate</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-red);">No Certificate Uploaded</div>
+                @endif
+
+                <!-- Completion Documents -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                    <h3 style="color: #ffffff; font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Completion Documents</h3>
+
+                    <!-- Completion Certificate row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
+                        <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Completion Certificate</span>
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            @if($compCert)
+                                <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="background: rgba(235,59,90,0.1); border: 1px solid #eb3b5a; color: #eb3b5a; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0;" title="View Completion Certificate">
+                                    <i class="bx bxs-file-pdf" style="font-size: 1.3rem;"></i>
+                                </a>
+                            @else
+                                <span style="color: var(--text-muted); font-style: italic; font-size: 0.9rem;">No certificate uploaded</span>
+                                @if($isProjectManager && $project->status !== 'Approved')
+                                    <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                        @csrf
+                                        <input type="hidden" name="document_name" value="Completion Certificate">
+                                        <input type="file" name="file" required style="font-size: 0.8rem; max-width: 200px; color: var(--text-muted);">
+                                        <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer;">Upload</button>
+                                    </form>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Measurement Book row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
+                        <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Measurement Book</span>
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            @if($measBook)
+                                <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="background: rgba(235,59,90,0.1); border: 1px solid #eb3b5a; color: #eb3b5a; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0;" title="View Measurement Book">
+                                    <i class="bx bxs-file-pdf" style="font-size: 1.3rem;"></i>
+                                </a>
+                            @else
+                                <span style="color: var(--text-muted); font-style: italic; font-size: 0.9rem;">No measurement book uploaded</span>
+                                @if($isProjectManager && $project->status !== 'Approved')
+                                    <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                        @csrf
+                                        <input type="hidden" name="document_name" value="Measurement Book">
+                                        <input type="file" name="file" required style="font-size: 0.8rem; max-width: 200px; color: var(--text-muted);">
+                                        <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer;">Upload</button>
+                                    </form>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Photo Gallery -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
+                        <h3 style="color: #ffffff; font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Completion Photos</h3>
+                        @if($isProjectManager && $project->status !== 'Approved')
+                            <form action="{{ route('projects.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                @csrf
+                                <input type="file" name="photo" accept="image/*" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
+                                <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                    <i class="bx bx-upload"></i> Upload Photo
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+
+                    @if(empty($compPhotos))
+                        <div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2.5rem; border: 1px dashed var(--panel-border); border-radius: 6px;">
+                            <i class="bx bx-image-add" style="font-size: 2rem; display: block; margin-bottom: 0.5rem; opacity: 0.4;"></i>
+                            No completion photos uploaded yet.
+                        </div>
+                    @else
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem;">
+                            @foreach($compPhotos as $idx => $photoPath)
+                                <div style="position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+                                    <a href="{{ asset($photoPath) }}" target="_blank">
+                                        <img src="{{ asset($photoPath) }}" style="width: 100%; height: 200px; object-fit: cover; display: block;" alt="Completion photo {{ $idx + 1 }}">
+                                    </a>
+                                    @if($isProjectManager && $project->status !== 'Approved')
+                                        <form action="{{ route('projects.delete_photo', [$project->id, $idx]) }}" method="POST" style="position: absolute; top: 0.5rem; right: 0.5rem; margin: 0;" onsubmit="return confirm('Delete this photo?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" style="width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(231,76,60,0.85); border: none; color: #fff; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.5);" title="Delete Photo">
+                                                <i class="bx bx-trash" style="font-size: 1rem;"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                    <div style="padding: 0.4rem 0.75rem; font-size: 0.78rem; color: var(--text-muted);">Photo {{ $idx + 1 }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Financial & Completion Details -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
+                    <h3 style="color: #ffffff; font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Financial & Handover Details</h3>
+
+                    @if($isProjectManager && $project->status !== 'Approved')
+                        <form action="{{ route('projects.save_completion_details', $project->id) }}" method="POST" style="margin: 0;">
+                            @csrf
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                                <div>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Total Amount (₹)</label>
+                                    <input type="number" name="total_amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('total_amount', $compDetails['total_amount'] ?? $project->available_budget) }}">
+                                </div>
+                                <div>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Amount Paid by Donor (₹)</label>
+                                    <input type="number" name="amount_paid_by_donor" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('amount_paid_by_donor', $compDetails['amount_paid_by_donor'] ?? 0) }}">
+                                </div>
+                                <div>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Community Contribution (₹)</label>
+                                    <input type="number" name="community_contribution" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('community_contribution', $compDetails['community_contribution'] ?? 0) }}">
+                                </div>
+                                <div>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Any Other (₹)</label>
+                                    <input type="number" name="any_other" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('any_other', $compDetails['any_other'] ?? 0) }}">
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Geo Location (Link / Coordinates)</label>
+                                    <input type="text" name="geo_location" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. https://maps.google.com/..." value="{{ old('geo_location', $compDetails['geo_location'] ?? '') }}">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-custom" style="padding: 0.5rem 1.5rem; cursor: pointer;">Save Details</button>
+                        </form>
+                    @else
+                        <div class="details-grid">
+                            <div class="details-label">Total Amount</div><div class="details-colon">:</div>
+                            <div class="details-value">₹{{ number_format($compDetails['total_amount'] ?? $project->available_budget, 2) }}</div>
+
+                            <div class="details-label">Amount Paid by Donor</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['amount_paid_by_donor'] ?? 0, 2) }}</div>
+
+                            <div class="details-label">Community Contribution</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['community_contribution'] ?? 0, 2) }}</div>
+
+                            <div class="details-label">Any Other</div><div class="details-colon">:</div>
+                            <div class="details-value">₹{{ number_format($compDetails['any_other'] ?? 0, 2) }}</div>
+
+                            <div class="details-label">Geo Location</div><div class="details-colon">:</div>
+                            <div class="details-value">
+                                @if(!empty($compDetails['geo_location']))
+                                    <a href="{{ $compDetails['geo_location'] }}" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">{{ Str::limit($compDetails['geo_location'], 60) }}</a>
+                                @else
+                                    <span style="color: var(--text-muted); font-style: italic;">Not provided</span>
+                                @endif
+                            </div>
+
+                            <div class="details-label">Completion Status</div><div class="details-colon">:</div>
+                            <div class="details-value">
+                                @if($project->status === 'Approved')
+                                    <span style="background-color: rgba(16,185,129,0.2); color: var(--accent-green); padding: 0.3rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(16,185,129,0.3);">APPROVED & HANDED OVER</span>
+                                @else
+                                    <span style="background-color: rgba(245,158,11,0.2); color: #f59e0b; padding: 0.3rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(245,158,11,0.3);">PENDING FINAL SIGN-OFF</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
             </div>
         </div>
 
@@ -662,8 +1334,33 @@
     <script>
         // Track the current actual project stage from the database
         const activeProjectStage = {{ $project->stage }};
+        const isProjectApproved = "{{ $project->status === 'Approved' ? '1' : '0' }}";
+        const projectType = "{{ $project->type_of_project }}";
 
         function switchStage(stageNum) {
+            let isLocked = false;
+            if (projectType === 'Education Center') {
+                if (stageNum > activeProjectStage && isProjectApproved !== '1') {
+                    isLocked = true;
+                }
+            } else {
+                if (stageNum !== 1 && isProjectApproved !== '1') {
+                    isLocked = true;
+                }
+            }
+
+            if (isLocked) {
+                const msg = projectType === 'Education Center' 
+                    ? "Access Locked: This stage is not yet unlocked." 
+                    : "Access Locked: This stage is only accessible after COO approval.";
+                if (typeof showToast === 'function') {
+                    showToast(msg, "danger");
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
             // Remove active highlight from all stage tabs
             const tabs = document.querySelectorAll('.stage-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
@@ -687,8 +1384,149 @@
 
         // Initialize display to show the active project stage panel
         document.addEventListener('DOMContentLoaded', () => {
-            switchStage(activeProjectStage);
+            if (projectType === 'Education Center') {
+                switchStage(activeProjectStage);
+            } else {
+                if (isProjectApproved === '1') {
+                    switchStage(activeProjectStage);
+                } else {
+                    switchStage(1);
+                }
+            }
         });
+
+        // Material Management Modal Controls
+        function openAddMaterialModal() {
+            document.getElementById('addMaterialModal').style.display = 'flex';
+        }
+        function closeAddMaterialModal() {
+            document.getElementById('addMaterialModal').style.display = 'none';
+        }
+        function openEditMaterialModal(index, name, amount) {
+            const form = document.getElementById('editMaterialForm');
+            form.action = `/admin/projects/{{ $project->id }}/materials/${index}`;
+            document.getElementById('editMaterialName').value = name;
+            document.getElementById('editMaterialAmount').value = amount;
+            document.getElementById('editMaterialModal').style.display = 'flex';
+        }
+        function closeEditMaterialModal() {
+            document.getElementById('editMaterialModal').style.display = 'none';
+        }
+
+        // Expense Management Modal Controls
+        function openAddExpenseModal(materialIndex, materialName) {
+            document.getElementById('addExpenseFormMaterialIndex').value = materialIndex;
+            document.getElementById('addExpenseModalMaterialName').innerText = materialName;
+            document.getElementById('addExpenseModal').style.display = 'flex';
+        }
+        function closeAddExpenseModal() {
+            document.getElementById('addExpenseModal').style.display = 'none';
+        }
+        function openEditExpenseModal(index, materialIndex, name, amount) {
+            const form = document.getElementById('editExpenseForm');
+            form.action = `/admin/projects/{{ $project->id }}/expenses/${index}`;
+            document.getElementById('editExpenseFormMaterialIndex').value = materialIndex;
+            document.getElementById('editExpenseName').value = name;
+            document.getElementById('editExpenseAmount').value = amount;
+            document.getElementById('editExpenseModal').style.display = 'flex';
+        }
+        function closeEditExpenseModal() {
+            document.getElementById('editExpenseModal').style.display = 'none';
+        }
     </script>
+
+    @if($isProjectManager)
+    <!-- Add Material Modal -->
+    <div id="addMaterialModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Material / Budget Item</h3>
+            <form action="{{ route('projects.add_material', $project->id) }}" method="POST" style="margin: 0;">
+                @csrf
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Material / Item Name</label>
+                    <input type="text" name="material" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. cement, bricks">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 5000">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeAddMaterialModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Material Modal -->
+    <div id="editMaterialModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Material / Budget Item</h3>
+            <form id="editMaterialForm" method="POST" style="margin: 0;">
+                @csrf
+                @method('PUT')
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Material / Item Name</label>
+                    <input type="text" id="editMaterialName" name="material" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <input type="number" id="editMaterialAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditMaterialModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="addExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Expense (<span id="addExpenseModalMaterialName" style="color: var(--accent-cyan);"></span>)</h3>
+            <form action="{{ route('projects.add_expense', $project->id) }}" method="POST" style="margin: 0;">
+                @csrf
+                <input type="hidden" name="material_index" id="addExpenseFormMaterialIndex">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Expense Description / Item</label>
+                    <input type="text" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 50 bags purchased, worker payment">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 4000">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeAddExpenseModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Add Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Expense Modal -->
+    <div id="editExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Expense</h3>
+            <form id="editExpenseForm" method="POST" style="margin: 0;">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="material_index" id="editExpenseFormMaterialIndex">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Expense Description / Item</label>
+                    <input type="text" id="editExpenseName" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <input type="number" id="editExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditExpenseModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
 
 @endsection

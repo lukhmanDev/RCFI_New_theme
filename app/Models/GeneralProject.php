@@ -8,6 +8,7 @@ class GeneralProject extends Model
 {
     protected $table = 'general_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {

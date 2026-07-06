@@ -8,7 +8,7 @@
     <div style="margin-bottom: 2rem;">
         <h1 style="color: #ffffff; font-size: 1.75rem; font-weight: 700; margin: 0;">Welcome, {{ Auth::user()->name }}!</h1>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">Role assigned: 
-            <span style="color: var(--accent-purple); font-weight: 600;">System Administrator</span>
+            <span style="color: var(--accent-green); font-weight: 600;">System Administrator</span>
         </p>
     </div>
 

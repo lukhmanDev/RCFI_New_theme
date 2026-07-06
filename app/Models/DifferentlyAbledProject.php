@@ -8,6 +8,7 @@ class DifferentlyAbledProject extends Model
 {
     protected $table = 'differently_abled_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {

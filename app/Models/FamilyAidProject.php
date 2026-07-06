@@ -8,6 +8,7 @@ class FamilyAidProject extends Model
 {
     protected $table = 'family_aid_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {

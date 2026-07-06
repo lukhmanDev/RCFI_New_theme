@@ -8,6 +8,7 @@ class HouseProject extends Model
 {
     protected $table = 'house_projects';
     protected $guarded = [];
+    protected $casts = ['files' => 'array', 'materials' => 'array'];
 
     protected static function boot()
     {
