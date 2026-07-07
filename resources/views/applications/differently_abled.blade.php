@@ -79,23 +79,28 @@
             </div>
         </div>
         
+        <!-- Search Toolbar -->
+        <div style="margin-bottom: 1.25rem; display: flex; justify-content: flex-end;">
+            <div style="position: relative; width: 100%; max-width: 320px;">
+                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"><i class="bx bx-search"></i></span>
+                <input type="text" id="tableSearchInput" placeholder="Search applications..." style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.25rem; background-color: #111c2d; border: 1px solid #2a3547; border-radius: 6px; color: #ffffff; font-size: 0.875rem; outline: none; transition: border-color 0.2s;" onkeyup="filterTable()">
+            </div>
+        </div>
+
         <div style="overflow-x: auto;">
-            <table class="table-custom">
+                        <table class="table-custom">
                 <thead>
+                    <!-- Column header row -->
                     <tr>
                         <th>Application ID</th>
-                        <th>Name of Applicant</th>
-                        <th class="col-committee">House Name</th>
-                        <th class="col-reg">Reg. Number</th>
-                        <th class="col-year">Year</th>
-                        <th class="col-location">Location</th>
-                        <th class="col-village">Village</th>
-                        <th class="col-post">Post</th>
-                        <th class="col-panchayath">Panchayath</th>
-                        <th class="col-district">District</th>
-                        <th class="col-state">State</th>
-                        <th class="col-contact1">Contact 1</th>
-                        <th class="col-contact2">Contact 2</th>
+                        <th>Name</th>
+                        <th>Father Name</th>
+                        <th>Gender</th>
+                        <th>Age</th>
+                        <th>Disability</th>
+                        <th>Place</th>
+                        <th>Panchayath</th>
+                        <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
                 </thead>
@@ -105,68 +110,110 @@
                             $meta = $appItem->meta ?? [];
                             $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
                             $appId = 'APLRCFI' . $appYear . 'DA' . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
+                            
+                            $searchTerms = [
+                                $appId,
+                                $appItem->applicant_name ?? '',
+                                $appItem->place ?? '',
+                                $appItem->village ?? $appItem->town ?? '',
+                                $appItem->panchayat ?? $appItem->panchayath ?? '',
+                                $appItem->status ?? '',
+                                $appItem->details ?? '',
+                            ];
+                            if (is_array($meta)) {
+                                foreach ($meta as $val) {
+                                    if (is_scalar($val)) {
+                                        $searchTerms[] = (string)$val;
+                                    }
+                                }
+                            }
+                            $searchStr = strtolower(implode(' ', array_filter($searchTerms)));
                         @endphp
-                        <tr>
+                        <tr class="app-row" data-search="{{ $searchStr }}">
                             <!-- Application ID -->
                             <td style="font-weight: 600; color: var(--accent-cyan);">
                                 {{ $appId }}
                             </td>
 
-                            <!-- Name of Applicant -->
+                            <!-- Name -->
                             <td style="font-weight: 600; color: #ffffff;">{{ $appItem->applicant_name }}</td>
 
-                            <!-- House Name -->
-                            <td class="col-committee">{{ $meta['house_name'] ?? 'N/A' }}</td>
+                            <!-- Father Name -->
+                            <td>{{ $meta['father_name'] ?? 'N/A' }}</td>
 
-                            <!-- Reg. Number -->
-                            <td class="col-reg">N/A</td>
+                            <!-- Gender -->
+                            <td>{{ $meta['gender'] ?? 'N/A' }}</td>
 
-                            <!-- Year -->
-                            <td class="col-year">N/A</td>
+                            <!-- Age -->
+                            <td>{{ $meta['age'] ?? 'N/A' }}</td>
 
-                            <!-- Location -->
-                            <td class="col-location">{{ $meta['place'] ?? 'N/A' }}</td>
+                            <!-- Disability -->
+                            <td>{{ $meta['disability_type'] ?? 'N/A' }}</td>
 
-                            <!-- Village -->
-                            <td class="col-village">N/A</td>
-
-                            <!-- Post -->
-                            <td class="col-post">N/A</td>
+                            <!-- Place -->
+                            <td>{{ $appItem->place ?? 'N/A' }}</td>
 
                             <!-- Panchayath -->
-                            <td class="col-panchayath">{{ $meta['panchayat'] ?? 'N/A' }}</td>
+                            <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? 'N/A' }}</td>
 
-                            <!-- District -->
-                            <td class="col-district">{{ $meta['district'] ?? 'N/A' }}</td>
+                            <!-- Status -->
+                            <td style="text-align: center;">
+                                @php
+                                    $statusColors = [
+                                        'Pending' => ['bg' => 'rgba(245, 158, 11, 0.2)', 'text' => '#f59e0b'],
+                                        'Approved' => ['bg' => 'rgba(16, 185, 129, 0.2)', 'text' => 'var(--accent-green)'],
+                                        'Rejected' => ['bg' => 'rgba(239, 68, 68, 0.2)', 'text' => 'var(--accent-red)'],
+                                    ];
+                                    $color = $statusColors[$appItem->status] ?? ['bg' => 'rgba(156, 163, 175, 0.2)', 'text' => 'var(--text-muted)'];
+                                @endphp
+                                <span style="background-color: {{ $color['bg'] }}; color: {{ $color['text'] }}; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                    {{ $appItem->status }}
+                                </span>
+                            </td>
 
-                            <!-- State -->
-                            <td class="col-state">N/A</td>
-
-                            <!-- Contact 1 -->
-                            <td class="col-contact1">{{ $meta['mobile'] ?? 'N/A' }}</td>
-
-                            <!-- Contact 2 -->
-                            <td class="col-contact2">N/A</td>
-
-                            <!-- Actions -->
                             <td style="text-align: center; white-space: nowrap;">
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
-                                @if(in_array(Auth::user()->role, [1, 2, 4]))
-                                <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
-                                
-                                <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this application?');" style="display: inline-block;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                    <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete"><i class="bx bx-trash"></i></button>
-                                </form>
+                                @if(Auth::user()->role === 2)
+                                    @if($appItem->status === 'Pending')
+                                        <!-- Approve -->
+                                        <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
+                                            @csrf
+                                            <button type="submit" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
+                                                <i class="bx bx-check"></i>
+                                            </button>
+                                        </form>
+
+                                        <!-- Reject -->
+                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                                            @csrf
+                                            <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject">
+                                                <i class="bx bx-x"></i>
+                                            </button>
+                                        </form>
+                                    @elseif($appItem->status === 'Approved')
+                                        <!-- Reject (for changing status) -->
+                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
+                                            @csrf
+                                            <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject Application">
+                                                <i class="bx bx-x"></i>
+                                            </button>
+                                        </form>
+                                    @elseif($appItem->status === 'Rejected')
+                                        <!-- Approve (for changing status) -->
+                                        <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
+                                            @csrf
+                                            <button type="submit" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve Application">
+                                                <i class="bx bx-check"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="14" style="text-align: center; padding: 2rem;">No differently abled applications registered yet.</td>
+                            <td colspan="10" style="text-align: center; padding: 2rem;">No differently abled applications registered yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -189,8 +236,19 @@
                 <!-- Tables populated by script -->
             </div>
             
-            <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
-                <button onclick="closeDetailsModal()" class="btn-custom" style="padding: 0.6rem 1.5rem;">Close Details</button>
+                                    <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; flex-wrap: wrap;">
+                @if(Auth::user()->role === 2)
+                    <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
+                @endif
+                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                    <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
+                        <i class="bx bx-pencil"></i> Edit
+                    </button>
+                    <button onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
+                        <i class="bx bx-trash"></i> Delete
+                    </button>
+                @endif
+                <button onclick="closeDetailsModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.6rem 1.5rem;">Close Details</button>
             </div>
         </div>
     </div>
@@ -778,7 +836,53 @@
         }
 
         // View Details Modal Toggle
-        function openDetailsModal(appItem) {
+                function openDetailsModal(appItem) {
+            currentDetailsAppItem = appItem;
+            
+            // Populate status actions in the modal footer dynamically
+            const statusActionsContainer = document.getElementById('modal_status_actions');
+            if (statusActionsContainer) {
+                let statusHtml = '';
+                const approveUrl = `/admin/applications/category/{{ $categorySlug }}/${appItem.id}/approve`;
+                const rejectUrl = `/admin/applications/category/{{ $categorySlug }}/${appItem.id}/reject`;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                if (appItem.status === 'Pending') {
+                    statusHtml = `
+                        <form action="${approveUrl}" method="POST" style="display: inline-block;">
+                            <input type="hidden" name="_token" value="${csrfToken}">
+                            <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                <i class="bx bx-check"></i> Approve
+                            </button>
+                        </form>
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                            <input type="hidden" name="_token" value="${csrfToken}">
+                            <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                <i class="bx bx-x"></i> Reject
+                            </button>
+                        </form>
+                    `;
+                } else if (appItem.status === 'Approved') {
+                    statusHtml = `
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
+                            <input type="hidden" name="_token" value="${csrfToken}">
+                            <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                <i class="bx bx-x"></i> Reject Application
+                            </button>
+                        </form>
+                    `;
+                } else if (appItem.status === 'Rejected') {
+                    statusHtml = `
+                        <form action="${approveUrl}" method="POST" style="display: inline-block;">
+                            <input type="hidden" name="_token" value="${csrfToken}">
+                            <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                <i class="bx bx-check"></i> Approve Application
+                            </button>
+                        </form>
+                    `;
+                }
+                statusActionsContainer.innerHTML = statusHtml;
+            }
             const meta = appItem.meta || {};
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
             
@@ -846,8 +950,63 @@
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
+                let currentDetailsAppItem = null;
+
+        function editFromDetails() {
+            if (currentDetailsAppItem) {
+                closeDetailsModal();
+                openEditModal(currentDetailsAppItem);
+            }
+        }
+
+        function deleteFromDetails() {
+            if (currentDetailsAppItem && confirm('Are you sure you want to delete this application?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/applications/' + currentDetailsAppItem.id;
+                
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+                
+                const methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'DELETE';
+                form.appendChild(methodInput);
+
+                const redirectInput = document.createElement('input');
+                redirectInput.type = 'hidden';
+                redirectInput.name = 'redirect_category';
+                redirectInput.value = '{{ $categorySlug }}';
+                form.appendChild(redirectInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
         function closeDetailsModal() {
             document.getElementById('detailsAppModal').style.display = 'none';
+        }
+
+        function filterTable() {
+            const input = document.getElementById('tableSearchInput');
+            const filter = input.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('.app-row');
+            
+            rows.forEach(row => {
+                const searchText = row.getAttribute('data-search') || '';
+                if (searchText.includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
 
         // Realtime calculation of total family members count
@@ -889,6 +1048,16 @@
         @if ($errors->any())
             document.addEventListener("DOMContentLoaded", function() {
                 openModal();
+            });
+        @endif
+    
+        // Automatically open edit modal if query parameter edit is present
+        @if(request()->has('edit'))
+            document.addEventListener("DOMContentLoaded", function() {
+                const editItem = {!! json_encode($applications->firstWhere('id', request()->get('edit'))) !!};
+                if (editItem) {
+                    openEditModal(editItem);
+                }
             });
         @endif
     </script>

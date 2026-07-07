@@ -39,8 +39,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/admin/donors/{id}', [DonorController::class, 'destroy'])->name('donors.destroy');
 
     // Applications routes
+    Route::get('/admin/applications/approved', [ApplicationController::class, 'showApprovedDashboard'])->name('applications.approved.index');
+    Route::get('/admin/applications/approved/category/{category}', [ApplicationController::class, 'showApprovedCategory'])->name('applications.approved.category');
     Route::get('/admin/applications', [ApplicationController::class, 'index'])->name('applications.index');
-    Route::get('/admin/applications/all', [ApplicationController::class, 'showAll'])->name('applications.all');
     Route::get('/admin/applications/category/{category}', [ApplicationController::class, 'showCategory'])->name('applications.category');
     Route::get('/admin/applications/export/{category}', [ApplicationController::class, 'export'])->name('applications.export');
     Route::post('/admin/applications', [ApplicationController::class, 'store'])->name('applications.store');
@@ -60,6 +61,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/projects/{id}/approve', [ProjectController::class, 'approveStage'])->name('projects.approve');
     Route::post('/admin/projects/{id}/assign-application', [ProjectController::class, 'assignApplication'])->name('projects.assign_application');
     Route::post('/admin/projects/{id}/upload-file', [ProjectController::class, 'uploadFile'])->name('projects.upload_file');
+    Route::post('/admin/projects/{id}/toggle-file', [ProjectController::class, 'toggleFile'])->name('projects.toggle_file');
+    Route::post('/admin/projects/{id}/update-phase', [ProjectController::class, 'updatePhase'])->name('projects.update_phase');
     Route::post('/admin/projects/{id}/materials', [ProjectController::class, 'addMaterial'])->name('projects.add_material');
     Route::put('/admin/projects/{id}/materials/{index}', [ProjectController::class, 'updateMaterial'])->name('projects.update_material');
     Route::delete('/admin/projects/{id}/materials/{index}', [ProjectController::class, 'deleteMaterial'])->name('projects.delete_material');

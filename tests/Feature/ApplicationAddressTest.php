@@ -48,7 +48,7 @@ class ApplicationAddressTest extends TestCase
         ]);
 
         // 3. Assert redirect and DB entry
-        $response->assertRedirect(route('applications.all'));
+        $response->assertRedirect(route('applications.category', 'house'));
         
         $this->assertDatabaseHas('house_applications', [
             'applicant_name' => 'John Doe House Test',
@@ -95,7 +95,7 @@ class ApplicationAddressTest extends TestCase
             'redirect_category' => 'education-center',
         ]);
 
-        $response->assertRedirect(route('applications.all'));
+        $response->assertRedirect(route('applications.category', 'education-center'));
 
         $this->assertDatabaseHas('education_center_applications', [
             'applicant_name' => 'Group Edu Test',

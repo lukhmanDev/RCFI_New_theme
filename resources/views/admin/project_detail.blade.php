@@ -216,28 +216,7 @@
                 <h2>PROJECT DETAIL</h2>
             </div>
             <div style="padding: 1.5rem;">
-                @if($project->type_of_project === 'Education Center')
-                    @if($project->stage === 1)
-                        <div style="margin-bottom: 1.5rem;">
-                            @if($isCoo)
-                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="btn-custom" style="background: #eb3b5a; cursor: pointer; font-weight: 700; padding: 0.75rem 1.5rem;">
-                                        Verify Stage 1
-                                    </button>
-                                </form>
-                            @else
-                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                    <i class="bx bx-time-five"></i> Pending COO Verification
-                                </div>
-                            @endif
-                        </div>
-                    @else
-                        <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                            <i class="bx bx-check-circle"></i> Stage 1 Verified by COO
-                        </div>
-                    @endif
-                @else
+                @if($project->type_of_project !== 'Education Center')
                     @if($project->status !== 'Approved')
                         <div style="margin-bottom: 1.5rem;">
                             @if($isCoo)
@@ -270,43 +249,143 @@
                     <div class="details-label">Remarks</div><div class="details-colon">:</div><div class="details-value" style="font-weight: normal; color: var(--text-muted);">{{ $project->remarks ?? 'N/A' }}</div>
                 </div>
 
+                {{-- ===== PROJECT PHASE / STATUS SELECTOR ===== --}}
+                @php
+                    $phases = [
+                        'Project Assigned',
+                        'Site identified',
+                        'Documents verified',
+                        'Drawing',
+                        'Tender',
+                        'Agreement',
+                        'Foundation',
+                        'Column',
+                        'Slab',
+                        'Mason work',
+                        'Plastering',
+                        'Flooring, Painting, Joinery and MEP',
+                        'Completed',
+                        'Inaugurated',
+                        'Finance settled and Project phase off',
+                        'Other',
+                    ];
+                    $currentPhase  = $project->project_phase ?? '';
+                    $currentCustom = $project->project_phase_custom ?? '';
+                @endphp
+                <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
+                    <h3 style="color: #ffffff; font-size: 1rem; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                        <i class="bx bx-git-branch" style="color: var(--accent-cyan); margin-right: 0.4rem;"></i>
+                        Project Status
+                    </h3>
+
+                    {{-- Current phase badge --}}
+                    <div id="current-phase-badge" style="margin-bottom: 1rem;">
+                        @if($currentPhase)
+                            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(6,182,212,0.12); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                                <i class="bx bx-radio-circle-marked" style="font-size: 1rem;"></i>
+                                {{ $currentPhase === 'Other' ? $currentCustom : $currentPhase }}
+                            </span>
+                        @else
+                            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(107,114,128,0.1); border: 1px solid rgba(107,114,128,0.3); color: var(--text-muted); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">
+                                <i class="bx bx-minus-circle"></i> Not set
+                            </span>
+                        @endif
+                    </div>
+
+                    @if($isProjectManager || $isCoo)
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; max-width: 560px;">
+                        <div style="flex: 1; min-width: 220px;">
+                            <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Select Phase</label>
+                            <select id="project-phase-select" onchange="onPhaseSelectChange()" style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; font-size: 0.9rem; outline: none; cursor: pointer;">
+                                <option value="">— Select phase —</option>
+                                @foreach($phases as $phase)
+                                    <option value="{{ $phase }}" {{ $currentPhase === $phase ? 'selected' : '' }}>{{ $phase }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div id="phase-custom-box" style="flex: 1; min-width: 180px; {{ $currentPhase === 'Other' ? '' : 'display: none;' }}">
+                            <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Describe (Other)</label>
+                            <input type="text" id="project-phase-custom" placeholder="Enter custom status…" maxlength="255"
+                                   value="{{ $currentCustom }}"
+                                   style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; font-size: 0.9rem; outline: none; box-sizing: border-box;">
+                        </div>
+                        <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                            <i class="bx bx-save"></i> Save Status
+                        </button>
+                    </div>
+                    @endif
+                </div>
+
                 <!-- Connect Application Form -->
                 @if($isCoo && $project->type_of_project !== 'Education Center')
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
-                    <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
-                        @csrf
-                        <select name="application_id" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; flex-grow: 1; outline: none; font-size: 0.9rem;" required>
-                            <option value="">Select an application to assign...</option>
-                            @foreach($allApplications as $app)
-                                @php
-                                    $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
-                                    $prefixes = [
-                                        'Education Center' => 'EC',
-                                        'Cultural Center' => 'CC',
-                                        'Hospital or Clinics' => 'HC',
-                                        'Shops and Others' => 'SO',
-                                        'House' => 'HS',
-                                        'Drinking Water - Group Level' => 'DWG',
-                                        'Drinking Water - Individual Level' => 'DWI',
-                                        'Orphan Care' => 'OC',
-                                        'Differently Abled' => 'DA',
-                                        'Family Aid' => 'FA',
-                                        'General' => 'GN'
-                                    ];
-                                    $prefix = $prefixes[$project->type_of_project] ?? 'APP';
-                                    $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
-                                    $isSelected = $project->application_id == $app->id ? 'selected' : '';
-                                @endphp
-                                <option value="{{ $app->id }}" {{ $isSelected }}>
-                                    {{ $formattedAppId }} - {{ $app->applicant_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer;">
-                            Assign
-                        </button>
-                    </form>
+                    @if(!empty($project->application_id))
+                        <div style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
+                            @php
+                                $app = $application;
+                                $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
+                                $prefixes = [
+                                    'Education Center' => 'EC',
+                                    'Cultural Center' => 'CC',
+                                    'Hospital or Clinics' => 'HC',
+                                    'Shops and Others' => 'SO',
+                                    'House' => 'HS',
+                                    'Drinking Water - Group Level' => 'DWG',
+                                    'Drinking Water - Individual Level' => 'DWI',
+                                    'Orphan Care' => 'OC',
+                                    'Differently Abled' => 'DA',
+                                    'Family Aid' => 'FA',
+                                    'General' => 'GN'
+                                ];
+                                $prefix = $prefixes[$project->type_of_project] ?? 'APP';
+                                $formattedAppId = $app ? 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT) : '—';
+                                $applicantName = $app ? $app->applicant_name : '—';
+                            @endphp
+                            <div onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked and cannot be changed.', 'warning'); } else { alert('Assigned application is locked and cannot be changed.'); }" style="cursor: pointer; flex-grow: 1;">
+                                <select name="application_id" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.9rem; pointer-events: none; opacity: 0.75;" required>
+                                    <option value="{{ $project->application_id }}" selected>{{ $formattedAppId }} - {{ $applicantName }}</option>
+                                </select>
+                            </div>
+                            <button type="button" onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked and cannot be changed.', 'warning'); } else { alert('Assigned application is locked and cannot be changed.'); }" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer; opacity: 0.6;">
+                                Assign
+                            </button>
+                        </div>
+                    @else
+                        <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
+                            @csrf
+                            <select name="application_id" onchange="updateRealtimeApplicationDetails(this.value)" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; flex-grow: 1; outline: none; font-size: 0.9rem;" required>
+                                <option value="">Select an application to assign...</option>
+                                @foreach($allApplications as $app)
+                                    @php
+                                        $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
+                                        $prefixes = [
+                                            'Education Center' => 'EC',
+                                            'Cultural Center' => 'CC',
+                                            'Hospital or Clinics' => 'HC',
+                                            'Shops and Others' => 'SO',
+                                            'House' => 'HS',
+                                            'Drinking Water - Group Level' => 'DWG',
+                                            'Drinking Water - Individual Level' => 'DWI',
+                                            'Orphan Care' => 'OC',
+                                            'Differently Abled' => 'DA',
+                                            'Family Aid' => 'FA',
+                                            'General' => 'GN'
+                                        ];
+                                        $prefix = $prefixes[$project->type_of_project] ?? 'APP';
+                                        $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
+                                        $isSelected = $project->application_id == $app->id ? 'selected' : '';
+                                    @endphp
+                                    <option value="{{ $app->id }}" {{ $isSelected }}>
+                                        {{ $formattedAppId }} - {{ $app->applicant_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer;">
+                                Assign
+                            </button>
+                        </form>
+                    @endif
                 </div>
                 @endif
             </div>
@@ -337,67 +416,19 @@
                     $appId = $application ? ('APLRCFI' . $appYear . $prefix . str_pad($application->id, 5, '0', STR_PAD_LEFT)) : 'N/A';
                 @endphp
 
-                @if($project->type_of_project === 'Education Center')
-                    @if($project->stage === 2)
-                        <div class="warning-box">
-                            <strong>Stage 2 (Application Connection & Approval):</strong>
-                            @if(empty($project->application_id))
-                                Please connect this project to an application to proceed.
-                            @else
-                                Please review the application details below and approve to move to the next stage.
-                            @endif
-                        </div>
-
-                        <div style="margin-bottom: 1.5rem;">
-                            @if(empty($project->application_id))
-                                <div style="background-color: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ff8a8a; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                    <i class="bx bx-error-circle"></i> Connection Required: A COO must assign an application first.
-                                </div>
-                            @else
-                                @php
-                                    $authUser = auth()->user();
-                                    $isCooOrHod = ($authUser && ($authUser->role === 2 || $authUser->role === 4 || strtolower($authUser->designation) === 'coo' || strtolower($authUser->designation) === 'hod'));
-                                @endphp
-                                @if($isCooOrHod)
-                                    <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="btn-custom" style="background: #eb3b5a; cursor: pointer; font-weight: 700; padding: 0.75rem 1.5rem;">
-                                            Approve Stage 2 & Promote to Stage 3
-                                        </button>
-                                    </form>
-                                @else
-                                    <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                        <i class="bx bx-time-five"></i> Pending HOD or COO Approval
-                                    </div>
-                                @endif
-                            @endif
-                        </div>
-                    @else
-                        @if(session('success'))
-                            <div class="stage-success-banner">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-                    @endif
-                @else
+                @if($project->type_of_project !== 'Education Center')
                     <div class="stage-success-banner">
                         Applicant ID {{ $appId }} has been Approved
                     </div>
 
                     @if($project->stage === 2)
                         <div style="margin-bottom: 1.5rem;">
-                            @if($isCoo)
-                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                        Approve & Promote to Stage 3
-                                    </button>
-                                </form>
-                            @else
-                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                    <i class="bx bx-time-five"></i> Pending COO Approval
-                                </div>
-                            @endif
+                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn-custom" style="background: #eb3b5a;">
+                                    Approve & Promote to Stage 3
+                                </button>
+                            </form>
                         </div>
                     @endif
                 @endif
@@ -406,39 +437,72 @@
                 @if(($isProjectManager || $isCoo) && $project->type_of_project === 'Education Center' && $project->status !== 'Approved')
                 <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
-                    <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
-                        @csrf
-                        <select name="application_id" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; flex-grow: 1; outline: none; font-size: 0.9rem;" required>
-                            <option value="">Select an application to assign...</option>
-                            @foreach($allApplications as $app)
-                                @php
-                                    $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
-                                    $prefixes = [
-                                        'Education Center' => 'EC',
-                                        'Cultural Center' => 'CC',
-                                        'Hospital or Clinics' => 'HC',
-                                        'Shops and Others' => 'SO',
-                                        'House' => 'HS',
-                                        'Drinking Water - Group Level' => 'DWG',
-                                        'Drinking Water - Individual Level' => 'DWI',
-                                        'Orphan Care' => 'OC',
-                                        'Differently Abled' => 'DA',
-                                        'Family Aid' => 'FA',
-                                        'General' => 'GN'
-                                    ];
-                                    $prefix = $prefixes[$project->type_of_project] ?? 'APP';
-                                    $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
-                                    $isSelected = $project->application_id == $app->id ? 'selected' : '';
-                                @endphp
-                                <option value="{{ $app->id }}" {{ $isSelected }}>
-                                    {{ $formattedAppId }} - {{ $app->applicant_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer;">
-                            Assign
-                        </button>
-                    </form>
+                    @if(!empty($project->application_id))
+                        <div style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
+                            @php
+                                $app = $application;
+                                $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
+                                $prefixes = [
+                                    'Education Center' => 'EC',
+                                    'Cultural Center' => 'CC',
+                                    'Hospital or Clinics' => 'HC',
+                                    'Shops and Others' => 'SO',
+                                    'House' => 'HS',
+                                    'Drinking Water - Group Level' => 'DWG',
+                                    'Drinking Water - Individual Level' => 'DWI',
+                                    'Orphan Care' => 'OC',
+                                    'Differently Abled' => 'DA',
+                                    'Family Aid' => 'FA',
+                                    'General' => 'GN'
+                                ];
+                                $prefix = $prefixes[$project->type_of_project] ?? 'APP';
+                                $formattedAppId = $app ? 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT) : '—';
+                                $applicantName = $app ? $app->applicant_name : '—';
+                            @endphp
+                            <div onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked and cannot be changed.', 'warning'); } else { alert('Assigned application is locked and cannot be changed.'); }" style="cursor: pointer; flex-grow: 1;">
+                                <select name="application_id" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.9rem; pointer-events: none; opacity: 0.75;" required>
+                                    <option value="{{ $project->application_id }}" selected>{{ $formattedAppId }} - {{ $applicantName }}</option>
+                                </select>
+                            </div>
+                            <button type="button" onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked and cannot be changed.', 'warning'); } else { alert('Assigned application is locked and cannot be changed.'); }" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer; opacity: 0.6;">
+                                Assign
+                            </button>
+                        </div>
+                    @else
+                        <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
+                            @csrf
+                            <select name="application_id" onchange="updateRealtimeApplicationDetails(this.value)" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; flex-grow: 1; outline: none; font-size: 0.9rem;" required>
+                                <option value="">Select an application to assign...</option>
+                                @foreach($allApplications as $app)
+                                    @php
+                                        $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
+                                        $prefixes = [
+                                            'Education Center' => 'EC',
+                                            'Cultural Center' => 'CC',
+                                            'Hospital or Clinics' => 'HC',
+                                            'Shops and Others' => 'SO',
+                                            'House' => 'HS',
+                                            'Drinking Water - Group Level' => 'DWG',
+                                            'Drinking Water - Individual Level' => 'DWI',
+                                            'Orphan Care' => 'OC',
+                                            'Differently Abled' => 'DA',
+                                            'Family Aid' => 'FA',
+                                            'General' => 'GN'
+                                        ];
+                                        $prefix = $prefixes[$project->type_of_project] ?? 'APP';
+                                        $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
+                                        $isSelected = $project->application_id == $app->id ? 'selected' : '';
+                                    @endphp
+                                    <option value="{{ $app->id }}" {{ $isSelected }}>
+                                        {{ $formattedAppId }} - {{ $app->applicant_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer;">
+                                Assign
+                            </button>
+                        </form>
+                    @endif
                 </div>
                 @endif
 
@@ -457,106 +521,35 @@
                     };
                 @endphp
 
-                @if($application)
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                        <!-- Col 1 -->
-                        <div>
-                            <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Committee</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: #ffffff; font-weight: 600;">{!! $formatVal($application->applicant_name) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>{!! $formatVal($metaData['committee_name'] ?? $metaData['mahallu_name'] ?? $metaData['place'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>{!! $formatVal($metaData['reg_number'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>{!! $formatVal($metaData['year'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['location'] ?? $metaData['place'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['village'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>{!! $formatVal($metaData['post'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>{!! $formatVal($metaData['panchayath'] ?? $metaData['panchayat'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? $metaData['contact1'] ?? $metaData['mobile'] ?? null) !!} / {!! $formatVal($metaData['contact_number_2'] ?? $metaData['contact2'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>{!! $formatVal($metaData['submitted_before'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>{!! $formatVal($metaData['received_support_before'] ?? null) !!}</td></tr>
-                            </table>
-
-                            <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td>{!! $formatVal($metaData['mahallu_name'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['locality_location'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['locality_village'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['locality_district'] ?? null) !!} / {!! $formatVal($metaData['locality_state'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td>{!! $formatVal($metaData['families_in_mahallu'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Requirement:</td><td>{!! $formatVal($metaData['requirement'] ?? null) !!}</td></tr>
-                            </table>
-                        </div>
-
-                        <!-- Col 2 -->
-                        <div>
-                            <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Current Status & Students</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Has Building?</td><td>{!! $formatVal($metaData['site_has_building'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Status:</td><td>{!! $formatVal($metaData['status_of_current_building'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Boys Count:</td><td>{!! $formatVal($metaData['students_boys'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Girls Count:</td><td>{!! $formatVal($metaData['students_girls'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Center Nearby?</td><td>{!! $formatVal($metaData['education_center_nearby'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Distance to CC (KM):</td><td>{!! $formatVal($metaData['distance_cultural_centre'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Syllabus:</td><td>{!! $formatVal($metaData['syllabus'] ?? null) !!}</td></tr>
-                            </table>
-
-                            <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Details</h4>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: #ffffff;">{!! $formatVal($metaData['project_type'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Area (Sq):</td><td>{!! $formatVal($metaData['building_area_sq'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td>{!! $formatVal($metaData['land_area_sq'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td>{!! $formatVal($metaData['num_classrooms'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Students:</td><td>{!! $formatVal($metaData['num_students'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">{{ $application->amount_requested ? '₹' . number_format($application->amount_requested) : 'N/A' }}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td>{!! $formatVal($metaData['legal_approvals_status'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Area / Zone:</td><td>{!! $formatVal($metaData['area'] ?? null) !!}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: #ffffff;">{{ $application->status }}</td></tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
-                        <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
-                        <p style="color: var(--text-muted); line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: #121824; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); min-height: 50px;">
-                            {{ $application->details ? $application->details : 'No additional notes provided.' }}
-                        </p>
-                    </div>
-                @else
-                    @if($project->type_of_project === 'Education Center')
-                        <div style="text-align: center; padding: 3rem; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--panel-border); margin: 2rem 0;">
-                            <i class="bx bx-link-external" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                            <h3 style="color: #ffffff; font-size: 1.2rem; margin-bottom: 0.5rem;">No Application Connected</h3>
-                            <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0 auto;">Please connect this project to an application using the form below to view application details.</p>
-                        </div>
-                    @else
+                <div id="realtime-application-details-container">
+                    @if($application)
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                             <!-- Col 1 -->
                             <div>
                                 <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Committee</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: #ffffff; font-weight: 600;">Jane Smith</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>North City</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>456256</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>1990</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>North City</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>North Village</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>Mukkam</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>North Panchayat</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>North District / New State</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>9876543209 / <span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>No</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>No</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: #ffffff; font-weight: 600;">{!! $formatVal($application->applicant_name) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>{!! $formatVal($metaData['committee_name'] ?? $metaData['mahallu_name'] ?? $metaData['place'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>{!! $formatVal($metaData['reg_number'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>{!! $formatVal($metaData['year'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['location'] ?? $metaData['place'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['village'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>{!! $formatVal($metaData['post'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>{!! $formatVal($metaData['panchayath'] ?? $metaData['panchayat'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? $metaData['contact1'] ?? $metaData['mobile'] ?? null) !!} / {!! $formatVal($metaData['contact_number_2'] ?? $metaData['contact2'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>{!! $formatVal($metaData['submitted_before'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>{!! $formatVal($metaData['received_support_before'] ?? null) !!}</td></tr>
                                 </table>
 
                                 <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span> / <span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Requirement:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td>{!! $formatVal($metaData['mahallu_name'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['locality_location'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['locality_village'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['locality_district'] ?? null) !!} / {!! $formatVal($metaData['locality_state'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td>{!! $formatVal($metaData['families_in_mahallu'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Requirement:</td><td>{!! $formatVal($metaData['requirement'] ?? null) !!}</td></tr>
                                 </table>
                             </div>
 
@@ -564,31 +557,44 @@
                             <div>
                                 <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Current Status & Students</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Has Building?</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Status:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Boys Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Girls Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Center Nearby?</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Distance to CC (KM):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Syllabus:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Has Building?</td><td>{!! $formatVal($metaData['site_has_building'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Status:</td><td>{!! $formatVal($metaData['status_of_current_building'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Boys Count:</td><td>{!! $formatVal($metaData['students_boys'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Girls Count:</td><td>{!! $formatVal($metaData['students_girls'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Center Nearby?</td><td>{!! $formatVal($metaData['education_center_nearby'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Distance to CC (KM):</td><td>{!! $formatVal($metaData['distance_cultural_centre'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Syllabus:</td><td>{!! $formatVal($metaData['syllabus'] ?? null) !!}</td></tr>
                                 </table>
 
                                 <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: #ffffff;">Education Center</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Area (Sq):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Students:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">$25,000</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Area / Zone:</td><td><span style="color: var(--text-muted); font-style: italic;">N/A</span></td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: #ffffff;">Pending</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: #ffffff;">{!! $formatVal($metaData['project_type'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Area (Sq):</td><td>{!! $formatVal($metaData['building_area_sq'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td>{!! $formatVal($metaData['land_area_sq'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td>{!! $formatVal($metaData['num_classrooms'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Students:</td><td>{!! $formatVal($metaData['num_students'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">{{ $application->amount_requested ? '₹' . number_format($application->amount_requested) : 'N/A' }}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td>{!! $formatVal($metaData['legal_approvals_status'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Area / Zone:</td><td>{!! $formatVal($metaData['area'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: #ffffff;">{{ $application->status }}</td></tr>
                                 </table>
                             </div>
                         </div>
+
+                        <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                            <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
+                            <p style="color: var(--text-muted); line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: #121824; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); min-height: 50px;">
+                                {{ $application->details ? $application->details : 'No additional notes provided.' }}
+                            </p>
+                        </div>
+                    @else
+                        <div style="text-align: center; padding: 3rem; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--panel-border); margin: 2rem 0;">
+                            <i class="bx bx-link-external" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                            <h3 style="color: #ffffff; font-size: 1.2rem; margin-bottom: 0.5rem;">No Application Connected</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0 auto;">Please connect this project to an application using the form below to view application details.</p>
+                        </div>
                     @endif
-                @endif
+                </div>
             </div>
         </div>
 
@@ -598,22 +604,7 @@
                 <h2>FILES</h2>
             </div>
             <div style="padding: 1.5rem;">
-                <div class="stage-success-banner">
-                    Uploaded files are Approved
-                </div>
 
-                @if($project->stage === 3)
-                    @if($isCoo)
-                        <div style="margin-bottom: 1.5rem;">
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                    Approve & Promote to Stage 4
-                                </button>
-                            </form>
-                        </div>
-                    @endif
-                @endif
 
                 <table class="stage-table">
                     <thead>
@@ -650,35 +641,22 @@
                             <tr>
                                 <td style="font-weight: 600; color: #ffffff; vertical-align: middle;">{{ $doc }}</td>
                                 <td style="vertical-align: middle;">
-                                    @if($filePath)
-                                        <div style="display: flex; align-items: center; gap: 1rem;">
-                                            <a href="{{ asset($filePath) }}" target="_blank" style="color: var(--accent-green); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                                <i class="bx bx-file" style="font-size: 1.1rem;"></i> View Document
-                                            </a>
-                                            @if($isProjectManager)
-                                                <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="display: inline-flex; gap: 0.5rem; align-items: center; margin: 0;">
-                                                    @csrf
-                                                    <input type="hidden" name="document_name" value="{{ $doc }}">
-                                                    <label class="btn-custom" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(250, 130, 49, 0.1); border: 1px solid #fa8231; color: #fa8231; margin: 0;">
-                                                        <i class="bx bx-upload"></i> Re-upload
-                                                        <input type="file" name="file" onchange="this.form.submit()" style="display: none;" required>
-                                                    </label>
-                                                </form>
+                                    @if($isProjectManager)
+                                        <button type="button" onclick="toggleChecklistDocument(this, '{{ $doc }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                            @if(!empty($filePath))
+                                                <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
+                                            @else
+                                                <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
                                             @endif
-                                        </div>
+                                        </button>
                                     @else
-                                        @if($isProjectManager)
-                                            <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="display: flex; gap: 0.5rem; align-items: center; margin: 0;">
-                                                @csrf
-                                                <input type="hidden" name="document_name" value="{{ $doc }}">
-                                                <label class="btn-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); margin: 0;">
-                                                    <i class="bx bx-upload"></i> Choose & Upload
-                                                    <input type="file" name="file" onchange="this.form.submit()" style="display: none;" required>
-                                                </label>
-                                            </form>
+                                        @if(!empty($filePath))
+                                            <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                                <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
+                                            </span>
                                         @else
-                                            <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                                <i class="bx bx-x-circle"></i> No File
+                                            <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                                <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
                                             </span>
                                         @endif
                                     @endif
@@ -1152,19 +1130,23 @@
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
                         <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Completion Certificate</span>
                         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                            @if($compCert)
-                                <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="background: rgba(235,59,90,0.1); border: 1px solid #eb3b5a; color: #eb3b5a; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0;" title="View Completion Certificate">
-                                    <i class="bx bxs-file-pdf" style="font-size: 1.3rem;"></i>
-                                </a>
+                            @if($isProjectManager && $project->status !== 'Approved')
+                                <button type="button" onclick="toggleChecklistDocument(this, 'Completion Certificate')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                    @if($compCert)
+                                        <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
+                                    @else
+                                        <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
+                                    @endif
+                                </button>
                             @else
-                                <span style="color: var(--text-muted); font-style: italic; font-size: 0.9rem;">No certificate uploaded</span>
-                                @if($isProjectManager && $project->status !== 'Approved')
-                                    <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                        @csrf
-                                        <input type="hidden" name="document_name" value="Completion Certificate">
-                                        <input type="file" name="file" required style="font-size: 0.8rem; max-width: 200px; color: var(--text-muted);">
-                                        <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer;">Upload</button>
-                                    </form>
+                                @if($compCert)
+                                    <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
+                                    </span>
+                                @else
+                                    <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
+                                    </span>
                                 @endif
                             @endif
                         </div>
@@ -1174,19 +1156,23 @@
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
                         <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Measurement Book</span>
                         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                            @if($measBook)
-                                <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="background: rgba(235,59,90,0.1); border: 1px solid #eb3b5a; color: #eb3b5a; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0;" title="View Measurement Book">
-                                    <i class="bx bxs-file-pdf" style="font-size: 1.3rem;"></i>
-                                </a>
+                            @if($isProjectManager && $project->status !== 'Approved')
+                                <button type="button" onclick="toggleChecklistDocument(this, 'Measurement Book')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                    @if($measBook)
+                                        <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
+                                    @else
+                                        <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
+                                    @endif
+                                </button>
                             @else
-                                <span style="color: var(--text-muted); font-style: italic; font-size: 0.9rem;">No measurement book uploaded</span>
-                                @if($isProjectManager && $project->status !== 'Approved')
-                                    <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                        @csrf
-                                        <input type="hidden" name="document_name" value="Measurement Book">
-                                        <input type="file" name="file" required style="font-size: 0.8rem; max-width: 200px; color: var(--text-muted);">
-                                        <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer;">Upload</button>
-                                    </form>
+                                @if($measBook)
+                                    <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
+                                    </span>
+                                @else
+                                    <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
+                                    </span>
                                 @endif
                             @endif
                         </div>
@@ -1332,6 +1318,207 @@
 
     <!-- Switch Stage Script -->
     <script>
+        const allApplicationsData = @json($allApplications);
+
+        async function toggleChecklistDocument(button, docName) {
+            button.disabled = true;
+            try {
+                const response = await fetch("{{ route('projects.toggle_file', $project->id) }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({ document_name: docName })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    const icon = button.querySelector('i');
+                    if (data.ticked) {
+                        icon.className = 'bx bxs-checkbox-checked';
+                        icon.style.color = 'var(--accent-green)';
+                    } else {
+                        icon.className = 'bx bx-checkbox';
+                        icon.style.color = 'var(--text-muted)';
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast(data.message, 'success');
+                    }
+                } else {
+                    if (typeof showToast === 'function') {
+                        showToast(data.error || 'Failed to toggle document.', 'danger');
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                if (typeof showToast === 'function') {
+                    showToast('Network error occurred.', 'danger');
+                }
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        function onPhaseSelectChange() {
+            const sel = document.getElementById('project-phase-select');
+            const box = document.getElementById('phase-custom-box');
+            if (sel && box) {
+                box.style.display = sel.value === 'Other' ? '' : 'none';
+            }
+        }
+
+        async function saveProjectPhase() {
+            const sel    = document.getElementById('project-phase-select');
+            const custom = document.getElementById('project-phase-custom');
+            const phase  = sel ? sel.value : '';
+            if (!phase) {
+                if (typeof showToast === 'function') showToast('Please select a phase first.', 'warning');
+                return;
+            }
+            if (phase === 'Other' && (!custom || !custom.value.trim())) {
+                if (typeof showToast === 'function') showToast('Please describe the custom status.', 'warning');
+                custom && custom.focus();
+                return;
+            }
+            try {
+                const resp = await fetch("{{ route('projects.update_phase', $project->id) }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        project_phase:        phase,
+                        project_phase_custom: custom ? custom.value.trim() : '',
+                    }),
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    const badge = document.getElementById('current-phase-badge');
+                    const label = phase === 'Other' ? data.custom : phase;
+                    if (badge) {
+                        badge.innerHTML = `<span style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(6,182,212,0.12);border:1px solid var(--accent-cyan);color:var(--accent-cyan);padding:0.4rem 1rem;border-radius:20px;font-size:0.85rem;font-weight:600;"><i class="bx bx-radio-circle-marked" style="font-size:1rem;"></i>${label}</span>`;
+                    }
+                    if (typeof showToast === 'function') showToast(data.message, 'success');
+                } else {
+                    if (typeof showToast === 'function') showToast(data.error || 'Failed to update status.', 'danger');
+                }
+            } catch (e) {
+                console.error(e);
+                if (typeof showToast === 'function') showToast('Network error occurred.', 'danger');
+            }
+        }
+
+        function updateRealtimeApplicationDetails(selectedId) {
+            const container = document.getElementById('realtime-application-details-container');
+            if (!container) return;
+
+            if (!selectedId) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--panel-border); margin: 2rem 0;">
+                        <i class="bx bx-link-external" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                        <h3 style="color: #ffffff; font-size: 1.2rem; margin-bottom: 0.5rem;">No Application Connected</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0 auto;">Please connect this project to an application using the form below to view application details.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const app = allApplicationsData.find(a => a.id == selectedId);
+            if (!app) return;
+
+            const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
+            
+            let meta = {};
+            if (app.meta) {
+                if (typeof app.meta === 'object') {
+                    meta = app.meta;
+                } else {
+                    try {
+                        meta = JSON.parse(app.meta) || {};
+                    } catch(e) {
+                        meta = {};
+                    }
+                }
+            }
+
+            const keys = Object.keys(meta).filter(k => k !== 'applicant_name' && k !== 'details');
+            const half = Math.ceil(keys.length / 2);
+            const col1Keys = keys.slice(0, half);
+            const col2Keys = keys.slice(half);
+
+            const formatKeyLabel = (key) => {
+                return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            };
+
+            let col1Rows = `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td>
+                    <td style="color: #ffffff; font-weight: 600;">${formatVal(app.applicant_name)}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Status:</td>
+                    <td>
+                        <span style="background-color: ${app.status === 'Approved' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}; color: ${app.status === 'Approved' ? 'var(--accent-green)' : '#f59e0b'}; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                            ${app.status}
+                        </span>
+                    </td>
+                </tr>
+            `;
+
+            col1Keys.forEach(k => {
+                col1Rows += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                        <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">${formatKeyLabel(k)}:</td>
+                        <td>${formatVal(meta[k])}</td>
+                    </tr>
+                `;
+            });
+
+            let col2Rows = '';
+            col2Keys.forEach(k => {
+                col2Rows += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                        <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">${formatKeyLabel(k)}:</td>
+                        <td>${formatVal(meta[k])}</td>
+                    </tr>
+                `;
+            });
+
+            const amountText = app.amount_requested ? '₹' + Number(app.amount_requested).toLocaleString() : 'N/A';
+
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Application Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                            ${col1Rows}
+                        </table>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Additional Specifications</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                            ${col2Rows || '<tr><td colspan="2" style="color: var(--text-muted); font-style: italic;">No additional metadata keys available.</td></tr>'}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td>
+                                <td style="color: var(--accent-green); font-weight: 600;">${amountText}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
+                    <p style="color: var(--text-muted); line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: #121824; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); min-height: 50px;">
+                        ${formatVal(app.details)}
+                    </p>
+                </div>
+            `;
+        }
+
         // Track the current actual project stage from the database
         const activeProjectStage = {{ $project->stage }};
         const isProjectApproved = "{{ $project->status === 'Approved' ? '1' : '0' }}";
@@ -1361,6 +1548,9 @@
                 return;
             }
 
+            // Save selected stage to sessionStorage
+            sessionStorage.setItem('current_project_stage_{{ $project->id }}', stageNum);
+
             // Remove active highlight from all stage tabs
             const tabs = document.querySelectorAll('.stage-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
@@ -1382,16 +1572,28 @@
             }
         }
 
-        // Initialize display to show the active project stage panel
+        // Initialize display to show the stage panel
         document.addEventListener('DOMContentLoaded', () => {
-            if (projectType === 'Education Center') {
-                switchStage(activeProjectStage);
-            } else {
-                if (isProjectApproved === '1') {
-                    switchStage(activeProjectStage);
+            const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id }}');
+            if (savedStage) {
+                const stageNum = Number(savedStage);
+                let isLocked = false;
+                if (projectType === 'Education Center') {
+                    if (stageNum > activeProjectStage && isProjectApproved !== '1') {
+                        isLocked = true;
+                    }
+                } else {
+                    if (stageNum !== 1 && isProjectApproved !== '1') {
+                        isLocked = true;
+                    }
+                }
+                if (!isLocked) {
+                    switchStage(stageNum);
                 } else {
                     switchStage(1);
                 }
+            } else {
+                switchStage(1);
             }
         });
 

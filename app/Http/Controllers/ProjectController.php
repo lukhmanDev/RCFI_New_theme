@@ -210,6 +210,7 @@ class ProjectController extends Controller
 
         if ($config) {
             $model = $config['model'];
+            $data['stage'] = 4;
             $model::create($data);
             return redirect()->route('projects.category', $redirectCategory)->with('success', 'Project created successfully!');
         }
@@ -312,7 +313,7 @@ class ProjectController extends Controller
         $application = null;
         $allApplications = [];
         if (class_exists($appModel)) {
-            $allApplications = $appModel::orderBy('created_at', 'desc')->get();
+            $allApplications = $appModel::where('status', 'Approved')->orderBy('created_at', 'desc')->get();
             if ($project->application_id) {
                 $application = $appModel::find($project->application_id);
             }
@@ -359,6 +360,33 @@ class ProjectController extends Controller
 
         $oldApplicationId = $project->application_id;
         $applicationId = $request->input('application_id');
+
+        $appModels = [
+            'Education Center' => \App\Models\EducationCenterApplication::class,
+            'Cultural Center' => \App\Models\CulturalCenterApplication::class,
+            'Hospital or Clinics' => \App\Models\HospitalClinicApplication::class,
+            'Shops and Others' => \App\Models\ShopOtherApplication::class,
+            'House' => \App\Models\HouseApplication::class,
+            'Drinking Water - Group Level' => \App\Models\DrinkingWaterGroupApplication::class,
+            'Drinking Water - Individual Level' => \App\Models\DrinkingWaterIndividualApplication::class,
+            'Orphan Care' => \App\Models\OrphanCareApplication::class,
+            'Differently Abled' => \App\Models\DifferentlyAbledApplication::class,
+            'Family Aid' => \App\Models\FamilyAidApplication::class,
+            'General' => \App\Models\GeneralApplication::class
+        ];
+
+        if ($applicationId) {
+            $appClass = $appModels[$project->type_of_project] ?? null;
+            if ($appClass) {
+                $checkApp = $appClass::find($applicationId);
+                if (!$checkApp) {
+                    return redirect()->back()->with('error', 'The selected application does not exist.');
+                }
+                if ($checkApp->status !== 'Approved') {
+                    return redirect()->back()->with('error', 'Only approved applications can be assigned.');
+                }
+            }
+        }
 
         // Block if this application is already linked to a DIFFERENT project of the same type
         if ($applicationId && $applicationId != $oldApplicationId) {
@@ -433,20 +461,12 @@ class ProjectController extends Controller
             $currentStage = $project->stage;
 
             if ($currentStage == 1) {
-                if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
-                    return redirect()->back()->with('error', 'Only COO is authorized to verify Stage 1.');
-                }
                 $project->stage = 2;
                 $project->save();
-                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 1 verified successfully by COO! Project promoted to Stage 2.');
+                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 1 verified successfully! Project promoted to Stage 2.');
             }
 
             if ($currentStage == 2) {
-                $isCoo = ($user->role === 2 || strtolower($user->designation) === 'coo');
-                $isHod = ($user->role === 4 || strtolower($user->designation) === 'hod');
-                if (!$isCoo && !$isHod) {
-                    return redirect()->back()->with('error', 'Only COO or HOD is authorized to approve Stage 2.');
-                }
                 if (empty($project->application_id)) {
                     return redirect()->back()->with('error', 'Please connect an application first before approving Stage 2.');
                 }
@@ -456,9 +476,6 @@ class ProjectController extends Controller
             }
 
             if ($currentStage == 3) {
-                if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
-                    return redirect()->back()->with('error', 'Only COO is authorized to approve Stage 3.');
-                }
                 $project->stage = 4;
                 $project->save();
                 return redirect()->route('projects.show', $project->id)->with('success', 'Stage 3 approved successfully! Project promoted to Stage 4.');
@@ -605,6 +622,99 @@ class ProjectController extends Controller
         }
 
         return redirect()->back()->with('error', 'File upload failed.');
+    }
+
+    public function toggleFile(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user->role !== 3 && strtolower($user->designation) !== 'project manager') {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'Only Project Manager is authorized to toggle checklist.'], 403);
+            }
+            return redirect()->back()->with('error', 'Only Project Manager is authorized to toggle checklist.');
+        }
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'Project not found.'], 404);
+            }
+            abort(404);
+        }
+
+        $request->validate([
+            'document_name' => 'required|string',
+        ]);
+
+        $docName = $request->input('document_name');
+        $files = $project->files ?? [];
+
+        if (isset($files[$docName])) {
+            unset($files[$docName]);
+            $ticked = false;
+            $msg = "$docName unticked.";
+        } else {
+            $files[$docName] = "1";
+            $ticked = true;
+            $msg = "$docName ticked.";
+        }
+
+        $project->files = $files;
+        $project->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => $msg, 'ticked' => $ticked]);
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    public function updatePhase(Request $request, $id)
+    {
+        $request->validate([
+            'project_phase'        => 'required|string',
+            'project_phase_custom' => 'nullable|string|max:255',
+        ]);
+
+        $project = null;
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                break;
+            }
+        }
+
+        if (!$project) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'Project not found.'], 404);
+            }
+            abort(404);
+        }
+
+        $phase = $request->input('project_phase');
+        $custom = ($phase === 'Other') ? trim($request->input('project_phase_custom', '')) : null;
+
+        $project->project_phase = $phase;
+        $project->project_phase_custom = $custom;
+        $project->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Project status updated to "' . ($phase === 'Other' ? $custom : $phase) . '".',
+                'phase'   => $phase,
+                'custom'  => $custom,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Project status updated successfully.');
     }
 
     public function addMaterial(Request $request, $id)

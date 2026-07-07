@@ -43,4 +43,9 @@ class Project extends Model
     {
         return $this->belongsTo(User::class, 'project_manager_id');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(Application::class, 'application_id');
+    }
 }

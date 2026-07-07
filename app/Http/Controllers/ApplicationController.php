@@ -67,12 +67,14 @@ class ApplicationController extends Controller
     public function index()
     {
         $counts = [];
+        $pendingCounts = [];
         foreach ($this->categories as $slug => $config) {
             $model = $config['model'];
             $counts[$config['name']] = $model::count();
+            $pendingCounts[$config['name']] = $model::where('status', 'Pending')->count();
         }
 
-        return view('admin.applications', compact('counts'));
+        return view('admin.applications', compact('counts', 'pendingCounts'));
     }
 
     public function showCategory($slug)
@@ -162,9 +164,6 @@ class ApplicationController extends Controller
             }
 
             $model::create($data);
-            if ($request->input('redirect_all') == '1') {
-                return redirect()->route('applications.all')->with('success', 'Application registered successfully!');
-            }
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application registered successfully!');
         }
 
@@ -225,9 +224,6 @@ class ApplicationController extends Controller
 
             $application = $model::findOrFail($id);
             $application->update($data);
-            if ($request->input('redirect_all') == '1') {
-                return redirect()->route('applications.all')->with('success', 'Application details updated successfully!');
-            }
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application details updated successfully!');
         }
 
@@ -258,9 +254,6 @@ class ApplicationController extends Controller
             $model = $config['model'];
             $application = $model::findOrFail($id);
             $application->delete();
-            if ($request->input('redirect_all') == '1') {
-                return redirect()->route('applications.all')->with('success', 'Application record deleted successfully.');
-            }
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application record deleted successfully.');
         }
 
@@ -388,7 +381,7 @@ class ApplicationController extends Controller
     public function approveApplication($category, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4])) {
+        if ($user->role !== 2) {
             return redirect()->back()->with('error', 'You are not authorized to approve applications.');
         }
 
@@ -402,41 +395,13 @@ class ApplicationController extends Controller
         $app->status = 'Approved';
         $app->save();
 
-        // Automatically create a corresponding project
-        $projectModels = [
-            'education-center' => \App\Models\EducationCenterProject::class,
-            'cultural-center' => \App\Models\CulturalCenterProject::class,
-            'hospital-or-clinics' => \App\Models\HospitalClinicProject::class,
-            'shops-and-others' => \App\Models\ShopOtherProject::class,
-            'house' => \App\Models\HouseProject::class,
-            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupProject::class,
-            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualProject::class,
-            'orphan-care' => \App\Models\OrphanCareProject::class,
-            'differently-abled' => \App\Models\DifferentlyAbledProject::class,
-            'family-aid' => \App\Models\FamilyAidProject::class,
-            'general' => \App\Models\GeneralProject::class,
-        ];
-
-        $projectModel = $projectModels[$category] ?? null;
-        if ($projectModel) {
-            $exists = $projectModel::where('application_id', $app->id)->exists();
-            if (!$exists) {
-                $projectModel::create([
-                    'application_id' => $app->id,
-                    'type_of_project' => $config['name'],
-                    'status' => 'Pending',
-                    'available_budget' => $app->amount_requested ?? 0,
-                ]);
-            }
-        }
-
-        return redirect()->back()->with('success', 'Application approved successfully and project created!');
+        return redirect()->back()->with('success', 'Application approved successfully.');
     }
 
     public function rejectApplication($category, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4])) {
+        if ($user->role !== 2) {
             return redirect()->back()->with('error', 'You are not authorized to reject applications.');
         }
 
@@ -471,5 +436,59 @@ class ApplicationController extends Controller
         }
 
         return redirect()->back()->with('success', 'Application rejected successfully.');
+    }
+
+    public function showApprovedDashboard()
+    {
+        $approvedCounts = [];
+        foreach ($this->categories as $slug => $config) {
+            $model = $config['model'];
+            $approvedCounts[$config['name']] = $model::where('status', 'Approved')->count();
+        }
+
+        return view('approved_applications.index', compact('approvedCounts'));
+    }
+
+    public function showApprovedCategory($category)
+    {
+        if (!array_key_exists($category, $this->categories)) {
+            abort(404);
+        }
+
+        $config = $this->categories[$category];
+        $categoryName = $config['name'];
+        $categorySlug = $category;
+        $model = $config['model'];
+
+        $applications = $model::where('status', 'Approved')->orderBy('created_at', 'desc')->get();
+        
+        // Find assigned projects
+        $projectsMap = [];
+        $projectModels = [
+            'education-center' => \App\Models\EducationCenterProject::class,
+            'cultural-center' => \App\Models\CulturalCenterProject::class,
+            'hospital-or-clinics' => \App\Models\HospitalClinicProject::class,
+            'shops-and-others' => \App\Models\ShopOtherProject::class,
+            'house' => \App\Models\HouseProject::class,
+            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupProject::class,
+            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualProject::class,
+            'orphan-care' => \App\Models\OrphanCareProject::class,
+            'differently-abled' => \App\Models\DifferentlyAbledProject::class,
+            'family-aid' => \App\Models\FamilyAidProject::class,
+            'general' => \App\Models\GeneralProject::class,
+        ];
+
+        $projectModel = $projectModels[$category] ?? null;
+        if ($projectModel) {
+            $appIds = $applications->pluck('id')->toArray();
+            $projectsMap = $projectModel::with(['donor', 'projectManager'])
+                ->whereIn('application_id', $appIds)
+                ->get()
+                ->keyBy('application_id');
+        }
+
+        $viewName = str_replace('applications.', 'approved_applications.', $config['view']);
+
+        return view($viewName, compact('applications', 'categoryName', 'categorySlug', 'projectsMap'));
     }
 }

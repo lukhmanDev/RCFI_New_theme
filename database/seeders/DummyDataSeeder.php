@@ -3,746 +3,236 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\ShopOtherApplication;
+use App\Models\OrphanCareApplication;
+use App\Models\HouseApplication;
+use App\Models\HospitalClinicApplication;
+use App\Models\GeneralApplication;
+use App\Models\FamilyAidApplication;
+use App\Models\EducationCenterApplication;
+use App\Models\DrinkingWaterIndividualApplication;
+use App\Models\DrinkingWaterGroupApplication;
+use App\Models\DifferentlyAbledApplication;
+use App\Models\CulturalCenterApplication;
 
 class DummyDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Education Center
-        \App\Models\EducationCenterApplication::create([
-            'applicant_name' => 'John Doe',
-            'category' => 'Education Center',
-            'amount_requested' => 25000,
-            'status' => 'Pending',
-            'details' => 'Urgent funding needed for classroom expansion.',
-            'meta' => [
-                'place' => 'Center Town',
-                'village' => 'Green Village',
-                'panchayat' => 'Main Panchayat',
-                'district' => 'West District',
-                'state' => 'New State',
-                'mobile' => '9876543210',
-                'area_sqft' => 1200,
-                'rooms' => 4,
-                'estimated_amount' => 25000
-            ]
-        ]);
-        \App\Models\EducationCenterApplication::create([
-            'applicant_name' => 'Jane Smith',
-            'category' => 'Education Center',
-            'amount_requested' => 18000,
-            'status' => 'Approved',
-            'details' => 'Funding for a new library block.',
-            'meta' => [
-                'place' => 'North City',
-                'village' => 'North Village',
-                'panchayat' => 'North Panchayat',
-                'district' => 'North District',
-                'state' => 'New State',
-                'mobile' => '9876543209',
-                'area_sqft' => 800,
-                'rooms' => 2,
-                'estimated_amount' => 18000
-            ]
-        ]);
+        // Truncate to start fresh
+        ShopOtherApplication::truncate();
+        OrphanCareApplication::truncate();
+        HouseApplication::truncate();
+        HospitalClinicApplication::truncate();
+        GeneralApplication::truncate();
+        FamilyAidApplication::truncate();
+        EducationCenterApplication::truncate();
+        DrinkingWaterIndividualApplication::truncate();
+        DrinkingWaterGroupApplication::truncate();
+        DifferentlyAbledApplication::truncate();
+        CulturalCenterApplication::truncate();
 
-        // 2. Cultural Center
-        \App\Models\CulturalCenterApplication::create([
-            'applicant_name' => 'Robert Smith',
-            'category' => 'Cultural Center',
-            'amount_requested' => 35000,
-            'status' => 'Approved',
-            'details' => 'Community hall project.',
-            'meta' => [
-                'place' => 'East City',
-                'village' => 'East Village',
-                'panchayat' => 'East Panchayat',
-                'district' => 'East District',
-                'state' => 'New State',
-                'mobile' => '9876543211',
-                'area_sqft' => 1500,
-                'rooms' => 6,
-                'estimated_amount' => 35000
-            ]
-        ]);
-        \App\Models\CulturalCenterApplication::create([
-            'applicant_name' => 'Emily Davis',
-            'category' => 'Cultural Center',
-            'amount_requested' => 22000,
-            'status' => 'Pending',
-            'details' => 'Renovation of public theater stage.',
-            'meta' => [
-                'place' => 'South Sector',
-                'village' => 'South Village',
-                'panchayat' => 'South Panchayat',
-                'district' => 'South District',
-                'state' => 'New State',
-                'mobile' => '9876543208',
-                'area_sqft' => 950,
-                'rooms' => 3,
-                'estimated_amount' => 22000
-            ]
-        ]);
+        $metaData = [
+            'committee_name' => 'Local Welfare Association',
+            'reg_number' => 'REG987654',
+            'year' => '2024',
+            'contact_number_1' => '9876543210',
+            'contact_number_2' => '9876543211',
+            'submitted_before' => 'No',
+            'received_support_before' => 'No',
+            'mahallu_name' => 'Local Mahallu',
+            'families_in_mahallu' => '200',
+            'requirement' => 'New construction',
+            'project_type' => 'Classroom',
+            'site_has_building' => 'No',
+            'status_of_current_building' => 'None',
+            'students_boys' => '30',
+            'students_girls' => '30',
+            'education_center_nearby' => 'Local Primary School (2 KM)',
+            'cultural_center_nearby' => 'Local Cultural Club (2 KM)',
+            'syllabus' => 'General Board',
+            'building_area_sq' => '1000',
+            'land_area_sq' => '2500',
+            'num_classrooms' => '2',
+            'num_students' => '60',
+            'legal_approvals_status' => 'Approved',
+            'area' => 'Town Center',
+            'permitted_type' => 'Clinic',
+            'num_rooms' => '2',
+            'office_shop' => 'Shop',
+            'num_beds' => 15,
+            'age' => '35',
+            'gender' => 'Male',
+            'father_name' => 'Sreedharan Nair',
+            'mother_name' => 'Devaki Amma',
+            'house_name' => 'Nair House',
+            'location' => 'Town Junction',
+            'married' => 'Yes',
+            'children_total' => '3',
+            'children_male' => '2',
+            'children_female' => '1',
+            'occupation' => 'Daily wage worker',
+            'monthly_income' => '8000',
+            'health_status' => 'Good',
+            'accommodation_details' => 'Rented house',
+            'own_place' => 'Yes',
+            'land_type' => 'Homestead',
+            'desired_model' => '2 BHK',
+            'expected_amount' => '350000',
+            'permission' => 'Yes',
+            'house_type' => 'Concrete',
+            'father_death_date' => '2020-10-12',
+            'father_death_cause' => 'Heart Attack',
+            'mother_alive_status' => 'Yes',
+            'siblings_total' => '2',
+            'school_name' => 'Government High School',
+            'school_class' => '6th Grade',
+            'madrassa_name' => 'Local Madrassa',
+            'madrassa_class' => 'Class 4',
+            'town' => 'Local Town',
+            'disability_type' => 'Physical',
+            'disability_percentage' => '75',
+            'disability_level' => 'Severe',
+            'guardian_name' => 'Hassan Kunhi',
+            'guardian_relation' => 'Father',
+            'mobile' => '9876543228',
+            'monthly_cost' => '1500',
+            'income_source' => 'Agriculture',
+            'own_house_condition' => 'Semi-concrete',
+            'own_place_size' => '5 Cents',
+            'own_place_status' => 'Own land'
+        ];
 
-        // 3. Hospital or Clinics
-        \App\Models\HospitalClinicApplication::create([
-            'applicant_name' => 'Mercy Hospital',
-            'category' => 'Hospital or Clinics',
-            'amount_requested' => 75000,
-            'status' => 'Pending',
-            'details' => 'Medical equipment purchase.',
-            'meta' => [
-                'place' => 'Capital City',
-                'village' => 'N/A',
-                'panchayat' => 'N/A',
-                'district' => 'Central District',
-                'state' => 'New State',
-                'mobile' => '9876543212',
-                'area_sqft' => 3000,
-                'rooms' => 12,
-                'estimated_amount' => 75000
-            ]
-        ]);
-        \App\Models\HospitalClinicApplication::create([
-            'applicant_name' => 'City Clinic Group',
-            'category' => 'Hospital or Clinics',
-            'amount_requested' => 45000,
-            'status' => 'Approved',
-            'details' => 'Primary healthcare facility extension.',
-            'meta' => [
-                'place' => 'West End',
-                'village' => 'West Village',
-                'panchayat' => 'West Panchayat',
-                'district' => 'West District',
-                'state' => 'New State',
-                'mobile' => '9876543207',
-                'area_sqft' => 1800,
-                'rooms' => 5,
-                'estimated_amount' => 45000
-            ]
-        ]);
+        $categories = [
+            'Education Center' => [
+                'model' => EducationCenterApplication::class,
+                'name' => 'Abdurahiman K.P.',
+                'details' => 'Requested financial aid to build two new classrooms for primary students.',
+                'place' => 'Kozhikode',
+                'village' => 'Mavoor',
+                'panchayat' => 'Chathamangalam',
+                'post_office' => 'Mavoor PO',
+            ],
+            'Cultural Center' => [
+                'model' => CulturalCenterApplication::class,
+                'name' => 'Siddique K.T.',
+                'details' => 'Requested assistance to build a new community library block.',
+                'place' => 'Mukkam',
+                'village' => 'Koduvally',
+                'panchayat' => 'Kizhakkoth',
+                'post_office' => 'Koduvally PO',
+            ],
+            'Hospital or Clinics' => [
+                'model' => HospitalClinicApplication::class,
+                'name' => 'Jose Sebastian',
+                'details' => 'Proposed medical dispensary building setup for poor residents.',
+                'place' => 'Perambra',
+                'village' => 'Perambra',
+                'panchayat' => 'Kunnummal',
+                'post_office' => 'Perambra PO',
+            ],
+            'Shops and Others' => [
+                'model' => ShopOtherApplication::class,
+                'name' => 'Zainaba Hassan',
+                'details' => 'Setting up a community grocery store to support self-employment.',
+                'place' => 'Vatakara',
+                'village' => 'Vatakara',
+                'panchayat' => 'Kottoor',
+                'post_office' => 'Vatakara PO',
+            ],
+            'House' => [
+                'model' => HouseApplication::class,
+                'name' => 'Rahul Nair',
+                'details' => 'Applying for financial aid to construct a 2 BHK shelter for a homeless family.',
+                'place' => 'Thamarassery',
+                'village' => 'Thamarassery',
+                'panchayat' => 'Nochad',
+                'post_office' => 'Thamarassery PO',
+            ],
+            'Drinking Water - Group Level' => [
+                'model' => DrinkingWaterGroupApplication::class,
+                'name' => 'Mohammed Faisal',
+                'details' => 'Requested boring well installation for a water-scarce colony.',
+                'place' => 'Kunnamangalam',
+                'village' => 'Kunnamangalam',
+                'panchayat' => 'Kayanna',
+                'post_office' => 'Kunnamangalam PO',
+            ],
+            'Drinking Water - Individual Level' => [
+                'model' => DrinkingWaterIndividualApplication::class,
+                'name' => 'Meera Suresh',
+                'details' => 'Requested support for open well construction on family land.',
+                'place' => 'Chelannur',
+                'village' => 'Chelannur',
+                'panchayat' => 'Koorachundu',
+                'post_office' => 'Chelannur PO',
+            ],
+            'General' => [
+                'model' => GeneralApplication::class,
+                'name' => 'Anas Ibrahim',
+                'details' => 'Applying for emergency financial aid for marriage expense support.',
+                'place' => 'Balussery',
+                'village' => 'Balussery',
+                'panchayat' => 'Kattippara',
+                'post_office' => 'Balussery PO',
+            ],
+            'Orphan Care' => [
+                'model' => OrphanCareApplication::class,
+                'name' => 'Tommy Atkins',
+                'details' => 'Financial aid application for monthly sponsorship of two orphans.',
+                'place' => 'Feroke',
+                'village' => 'Feroke',
+                'panchayat' => 'Thiruvambady',
+                'post_office' => 'Feroke PO',
+            ],
+            'Differently Abled' => [
+                'model' => DifferentlyAbledApplication::class,
+                'name' => 'Fatima Beevi',
+                'details' => 'Requested financial aid for wheelchair and medical support.',
+                'place' => 'Ramanattukara',
+                'village' => 'Ramanattukara',
+                'panchayat' => 'Kodenchery',
+                'post_office' => 'Ramanattukara PO',
+            ],
+            'Family Aid' => [
+                'model' => FamilyAidApplication::class,
+                'name' => 'Meera Suresh',
+                'details' => 'Requested family aid for monthly livelihood support.',
+                'place' => 'Beypore',
+                'village' => 'Beypore',
+                'panchayat' => 'Kizhakkoth',
+                'post_office' => 'Beypore PO',
+            ],
+        ];
 
-        // 4. Shops and Others
-        \App\Models\ShopOtherApplication::create([
-            'applicant_name' => 'Alice Green',
-            'category' => 'Shops and Others',
-            'amount_requested' => 10000,
-            'status' => 'Pending',
-            'details' => 'Small grocery shop startup.',
-            'meta' => [
-                'place' => 'Market Town',
-                'village' => 'Market Village',
-                'panchayat' => 'Market Panchayat',
-                'district' => 'South District',
-                'state' => 'New State',
-                'mobile' => '9876543213',
-                'area_sqft' => 350,
-                'rooms' => 1,
-                'estimated_amount' => 10000
-            ]
-        ]);
-        \App\Models\ShopOtherApplication::create([
-            'applicant_name' => 'Charlie Brown',
-            'category' => 'Shops and Others',
-            'amount_requested' => 8500,
-            'status' => 'Approved',
-            'details' => 'Mobile repair stall.',
-            'meta' => [
-                'place' => 'Metro Plaza',
-                'village' => 'N/A',
-                'panchayat' => 'N/A',
-                'district' => 'Central District',
-                'state' => 'New State',
-                'mobile' => '9876543206',
-                'area_sqft' => 150,
-                'rooms' => 1,
-                'estimated_amount' => 8500
-            ]
-        ]);
+        foreach ($categories as $categoryName => $config) {
+            $modelClass = $config['model'];
+            $instance = new $modelClass();
+            $metaFields = $instance->metaFields ?? [];
 
-        // 5. House
-        \App\Models\HouseApplication::create([
-            'applicant_name' => 'David Miller',
-            'category' => 'House',
-            'amount_requested' => 15000,
-            'status' => 'Pending',
-            'details' => 'New home building assistance.',
-            'meta' => [
-                'age' => 38,
-                'father_name' => 'Arthur Miller',
-                'mother_name' => 'Sarah Miller',
-                'house_name' => 'Miller Residence',
-                'location' => 'North Side',
-                'panchayat' => 'North Panchayat',
-                'post_office' => 'North PO',
-                'district' => 'North District',
-                'state' => 'New State',
-                'pin_code' => '123456',
-                'mobile_1' => '9876543214',
-                'mobile_2' => '9876543215',
-                'gender' => 'Male',
-                'education' => 'High School',
-                'married' => 'Yes',
-                'children_total' => 2,
-                'children_male' => 1,
-                'children_female' => 1,
-                'occupation' => 'Yes',
-                'monthly_income' => 500,
-                'other_income' => 'None',
-                'health_status' => 'Satisfactory',
-                'accommodation_details' => 'Ancestral Home',
-                'own_place' => 'Yes',
-                'land_type' => 'Homestead',
-                'desired_model' => '2 BHK',
-                'expected_amount' => 15000,
-                'permission' => 'Yes',
-                'house_type' => 'Sheet'
-            ]
-        ]);
-        \App\Models\HouseApplication::create([
-            'applicant_name' => 'Karen Wilson',
-            'category' => 'House',
-            'amount_requested' => 20000,
-            'status' => 'Approved',
-            'details' => 'Housing aid for family of six.',
-            'meta' => [
-                'age' => 45,
-                'father_name' => 'Peter Wilson',
-                'mother_name' => 'Linda Wilson',
-                'house_name' => 'Wilson Cottage',
-                'location' => 'South Sector',
-                'panchayat' => 'South Panchayat',
-                'post_office' => 'South PO',
-                'district' => 'South District',
-                'state' => 'New State',
-                'pin_code' => '123477',
-                'mobile_1' => '9876543205',
-                'mobile_2' => '9876543204',
-                'gender' => 'Female',
-                'education' => 'Secondary School',
-                'married' => 'Yes',
-                'children_total' => 4,
-                'children_male' => 2,
-                'children_female' => 2,
-                'occupation' => 'No',
-                'monthly_income' => 250,
-                'other_income' => 'Stitch work',
-                'health_status' => 'Chronically Ill',
-                'accommodation_details' => 'Rental Home',
-                'own_place' => 'No',
-                'land_type' => 'N/A',
-                'desired_model' => '3 BHK',
-                'expected_amount' => 20000,
-                'permission' => 'No',
-                'house_type' => 'Sheet'
-            ]
-        ]);
+            // Filter metaData to only keys in $metaFields
+            $filteredMeta = [];
+            foreach ($metaFields as $field) {
+                if (isset($metaData[$field])) {
+                    $filteredMeta[$field] = $metaData[$field];
+                }
+            }
 
-        // 6. Drinking Water - Group Level
-        \App\Models\DrinkingWaterGroupApplication::create([
-            'applicant_name' => 'Community Well Project A',
-            'category' => 'Drinking Water - Group Level',
-            'amount_requested' => 8000,
-            'status' => 'Pending',
-            'details' => 'Borewell for 4 families.',
-            'meta' => [
-                'father_name' => 'James Davis',
-                'mother_name' => 'Emma Davis',
-                'fathers_father' => 'William Davis',
-                'gender' => 'Male',
-                'dob' => '1985-05-15',
-                'age' => 41,
-                'aadhar_number' => '1234-5678-9012',
-                'location' => 'West Sector',
-                'address' => 'House 12, Sector 4',
-                'village' => 'West Village',
-                'post' => 'West PO',
-                'panchayath' => 'West Panchayat',
-                'district' => 'West District',
-                'state' => 'New State',
-                'pin' => '654321',
-                'contact_number_1' => '9876543216',
-                'contact_number_2' => '9876543217',
-                'male_adults' => 4,
-                'male_children' => 2,
-                'female_adults' => 3,
-                'female_children' => 3,
-                'num_benefited_people' => 12,
-                'land_owner_name' => 'Frank Thomas',
-                'land_owner_address' => 'Thomas Villa, West Sector',
-                'land_owner_place' => 'West Sector',
-                'land_owner_post' => 'West PO',
-                'land_owner_panchayath' => 'West Panchayat',
-                'land_owner_district' => 'West District',
-                'land_owner_mobile' => '9876543218',
-                'well_type' => 'Bore Well',
-                'well_depth' => 150,
-                'legal_permissions' => 'Yes'
-            ]
-        ]);
-        \App\Models\DrinkingWaterGroupApplication::create([
-            'applicant_name' => 'East Sector Water Committee',
-            'category' => 'Drinking Water - Group Level',
-            'amount_requested' => 12000,
-            'status' => 'Approved',
-            'details' => 'Open well project for East Sector.',
-            'meta' => [
-                'father_name' => 'George Clark',
-                'mother_name' => 'Nancy Clark',
-                'fathers_father' => 'Alan Clark',
-                'gender' => 'Female',
-                'dob' => '1978-10-22',
-                'age' => 47,
-                'aadhar_number' => '9876-5432-1098',
-                'location' => 'East Sector',
-                'address' => 'East Sector Main Rd',
-                'village' => 'East Village',
-                'post' => 'East PO',
-                'panchayath' => 'East Panchayat',
-                'district' => 'East District',
-                'state' => 'New State',
-                'pin' => '654300',
-                'contact_number_1' => '9876543203',
-                'contact_number_2' => '',
-                'male_adults' => 8,
-                'male_children' => 5,
-                'female_adults' => 10,
-                'female_children' => 7,
-                'num_benefited_people' => 30,
-                'land_owner_name' => 'East Panchayat Body',
-                'land_owner_address' => 'Panchayat Hall, East Sector',
-                'land_owner_place' => 'East Sector',
-                'land_owner_post' => 'East PO',
-                'land_owner_panchayath' => 'East Panchayat',
-                'land_owner_district' => 'East District',
-                'land_owner_mobile' => '9876543202',
-                'well_type' => 'Open Well',
-                'well_depth' => 80,
-                'legal_permissions' => 'Yes'
-            ]
-        ]);
-
-        // 7. Drinking Water - Individual Level
-        \App\Models\DrinkingWaterIndividualApplication::create([
-            'applicant_name' => 'Sarah Connor',
-            'category' => 'Drinking Water - Individual Level',
-            'amount_requested' => 5000,
-            'status' => 'Pending',
-            'details' => 'Open well for a family of 5.',
-            'meta' => [
-                'father_name' => 'John Connor',
-                'mother_name' => 'Jane Connor',
-                'fathers_father' => 'Robert Connor',
-                'gender' => 'Female',
-                'dob' => '1990-09-09',
-                'age' => 35,
-                'aadhar_number' => '2345-6789-0123',
-                'location' => 'South Sector',
-                'address' => 'House 4, Sector 1',
-                'village' => 'South Village',
-                'post' => 'South PO',
-                'panchayath' => 'South Panchayat',
-                'district' => 'South District',
-                'state' => 'New State',
-                'pin' => '654322',
-                'contact_number_1' => '9876543219',
-                'contact_number_2' => '9876543220',
-                'job' => 'Tailor',
-                'monthly_income' => 300,
-                'num_male_benefited' => 2,
-                'num_female_benefited' => 3,
-                'num_benefited_people' => 5,
-                'beneficiaries' => [
-                    ['name' => 'John Connor Jr', 'phone' => '9876543221'],
-                    ['name' => 'Jane Connor Jr', 'phone' => '9876543222']
-                ],
-                'land_owner_name' => 'Sarah Connor',
-                'land_owner_address' => 'House 4, Sector 1',
-                'land_owner_place' => 'South Sector',
-                'land_owner_post' => 'South PO',
-                'land_owner_panchayath' => 'South Panchayat',
-                'land_owner_district' => 'South District',
-                'land_owner_mobile' => '9876543219',
-                'well_type' => 'Open Well',
-                'well_depth' => 60,
-                'legal_permissions' => 'Yes'
-            ]
-        ]);
-        \App\Models\DrinkingWaterIndividualApplication::create([
-            'applicant_name' => 'Arthur Dent',
-            'category' => 'Drinking Water - Individual Level',
-            'amount_requested' => 4500,
-            'status' => 'Rejected',
-            'details' => 'Hand pump request for personal site.',
-            'meta' => [
-                'father_name' => 'Harold Dent',
-                'mother_name' => 'Molly Dent',
-                'fathers_father' => 'Thomas Dent',
-                'gender' => 'Male',
-                'dob' => '1982-04-12',
-                'age' => 44,
-                'aadhar_number' => '4567-1234-9012',
-                'location' => 'Country side',
-                'address' => 'Cottage 3, Lane 1',
-                'village' => 'Country Village',
-                'post' => 'Country PO',
-                'panchayath' => 'Country Panchayat',
-                'district' => 'West District',
-                'state' => 'New State',
-                'pin' => '654329',
-                'contact_number_1' => '9876543201',
-                'contact_number_2' => '',
-                'job' => 'Reporter',
-                'monthly_income' => 400,
-                'num_male_benefited' => 1,
-                'num_female_benefited' => 2,
-                'num_benefited_people' => 3,
-                'beneficiaries' => [
-                    ['name' => 'Trillian Dent', 'phone' => '9876543200']
-                ],
-                'land_owner_name' => 'Arthur Dent',
-                'land_owner_address' => 'Cottage 3, Lane 1',
-                'land_owner_place' => 'Country side',
-                'land_owner_post' => 'Country PO',
-                'land_owner_panchayath' => 'Country Panchayat',
-                'land_owner_district' => 'West District',
-                'land_owner_mobile' => '9876543201',
-                'well_type' => 'India Mark 2 Hand Pump',
-                'well_depth' => 45,
-                'legal_permissions' => 'Yes'
-            ]
-        ]);
-
-        // 8. Orphan Care
-        \App\Models\OrphanCareApplication::create([
-            'applicant_name' => 'Tommy Atkins',
-            'category' => 'Orphan Care',
-            'amount_requested' => 0,
-            'status' => 'Pending',
-            'details' => 'Needs educational sponsorship support.',
-            'meta' => [
-                'father_name' => 'Late Henry Atkins',
-                'grandfather_name' => 'Charles Atkins',
-                'mother_name' => 'Late Martha Atkins',
-                'mothers_father_name' => 'Edward Brown',
-                'gender' => 'Male',
-                'dob' => '2015-02-20',
-                'age' => 11,
-                'aadhar_number' => '3456-7890-1234',
-                'guardian_name' => 'Uncle George Atkins',
-                'guardian_relation' => 'Uncle',
-                'father_death_date' => '2020-10-12',
-                'father_death_cause' => 'Accident',
-                'mother_alive_status' => 'No',
-                'mother_death_date' => '2022-04-05',
-                'mother_death_cause' => 'Cancer',
-                'mother_remarried_status' => 'No',
-                'siblings_male' => 1,
-                'siblings_female' => 1,
-                'siblings_total' => 2,
-                'monthly_income' => 150,
-                'monthly_expense' => 120,
-                'house_type' => 'Rental',
-                'school_name' => 'St. Mary School',
-                'school_class' => '5th Grade',
-                'madrassa_name' => 'Bilal Madrassa',
-                'madrassa_class' => 'Level 2',
-                'not_studying_reason' => 'N/A',
-                'health_status' => 'Good',
-                'sponsorship_details' => 'None',
-                'house_name' => 'Atkins Cottage',
-                'place' => 'River Road',
-                'town' => 'Rivertown',
-                'post_office' => 'River PO',
-                'district' => 'Central District',
-                'state' => 'New State',
-                'pin_code' => '123457',
-                'mobile_1' => '9876543223',
-                'mobile_2' => '9876543224'
-            ]
-        ]);
-        \App\Models\OrphanCareApplication::create([
-            'applicant_name' => 'Lily Evans',
-            'category' => 'Orphan Care',
-            'amount_requested' => 0,
-            'status' => 'Approved',
-            'details' => 'Needs monthly support allowance.',
-            'meta' => [
-                'father_name' => 'Late James Evans',
-                'grandfather_name' => 'Richard Evans',
-                'mother_name' => 'Late Mary Evans',
-                'mothers_father_name' => 'George Green',
-                'gender' => 'Female',
-                'dob' => '2016-05-14',
-                'age' => 10,
-                'aadhar_number' => '7890-1234-5678',
-                'guardian_name' => 'Aunt Petunia Dursley',
-                'guardian_relation' => 'Aunt',
-                'father_death_date' => '2021-08-30',
-                'father_death_cause' => 'Illness',
-                'mother_alive_status' => 'No',
-                'mother_death_date' => '2021-08-30',
-                'mother_death_cause' => 'Illness',
-                'mother_remarried_status' => 'No',
-                'siblings_male' => 0,
-                'siblings_female' => 2,
-                'siblings_total' => 2,
-                'monthly_income' => 100,
-                'monthly_expense' => 90,
-                'house_type' => 'Flat',
-                'school_name' => 'Community School',
-                'school_class' => '4th Grade',
-                'madrassa_name' => 'Bilal Madrassa',
-                'madrassa_class' => 'Level 1',
-                'not_studying_reason' => 'N/A',
-                'health_status' => 'Good',
-                'sponsorship_details' => 'None',
-                'house_name' => 'House 4',
-                'place' => 'Privet Drive',
-                'town' => 'Little Whinging',
-                'post_office' => 'Surrey PO',
-                'district' => 'Surrey District',
-                'state' => 'New State',
-                'pin_code' => '123488',
-                'mobile_1' => '9876543110',
-                'mobile_2' => ''
-            ]
-        ]);
-
-        // 9. Differently Abled
-        \App\Models\DifferentlyAbledApplication::create([
-            'applicant_name' => 'Peter Parker',
-            'category' => 'Differently Abled',
-            'amount_requested' => 0,
-            'status' => 'Pending',
-            'details' => 'Needs support for wheel chair.',
-            'meta' => [
-                'father_name' => 'Richard Parker',
-                'fathers_father' => 'Ben Parker',
-                'mother_name' => 'Mary Parker',
-                'gender' => 'Male',
-                'dob' => '1995-08-10',
-                'age' => 30,
-                'aadhar_number' => '4567-8901-2345',
-                'marital_status' => 'Single',
-                'guardian_name' => 'May Parker',
-                'guardian_relation' => 'Aunt',
-                'male_members' => 2,
-                'female_members' => 2,
-                'total_members' => 4,
-                'people_with_disabilities' => 1,
-                'monthly_income' => 200,
-                'monthly_cost' => 180,
-                'income_source' => 'Daily wage labor',
-                'studying_institution' => 'N/A',
-                'not_studying_reason' => 'N/A',
-                'health_status' => 'Stable',
-                'disability_type' => 'Blindness',
-                'disability_percentage' => 60,
-                'disability_date' => '2010-06-15',
-                'disability_level' => 'Hard',
-                'other_help' => 'None',
-                'description' => 'Visually impaired since age of 14.',
-                'accommodation' => 'Own House',
-                'house_name' => 'Parker House',
-                'place' => 'Queen Street',
-                'panchayat' => 'Queens Panchayat',
-                'district' => 'New York District',
-                'pincode' => '123458',
-                'mobile' => '9876543225'
-            ]
-        ]);
-        \App\Models\DifferentlyAbledApplication::create([
-            'applicant_name' => 'Matt Murdock',
-            'category' => 'Differently Abled',
-            'amount_requested' => 0,
-            'status' => 'Approved',
-            'details' => 'Braille machine and support request.',
-            'meta' => [
-                'father_name' => 'Jack Murdock',
-                'fathers_father' => 'N/A',
-                'mother_name' => 'Maggie Murdock',
-                'gender' => 'Male',
-                'dob' => '1992-03-12',
-                'age' => 34,
-                'aadhar_number' => '8901-2345-6789',
-                'marital_status' => 'Single',
-                'guardian_name' => 'Self',
-                'guardian_relation' => 'Self',
-                'male_members' => 1,
-                'female_members' => 0,
-                'total_members' => 1,
-                'people_with_disabilities' => 1,
-                'monthly_income' => 450,
-                'monthly_cost' => 350,
-                'income_source' => 'Clerical assistance',
-                'studying_institution' => 'Law Academy',
-                'not_studying_reason' => 'N/A',
-                'health_status' => 'Good',
-                'disability_type' => 'Blindness',
-                'disability_percentage' => 100,
-                'disability_date' => '2005-09-20',
-                'disability_level' => 'Very Hard',
-                'other_help' => 'Govt Pension',
-                'description' => 'Total blindness since childhood due to accident.',
-                'accommodation' => 'Rental House',
-                'house_name' => 'Flat 2B',
-                'place' => 'Clinton Street',
-                'panchayat' => 'Clinton Panchayat',
-                'district' => 'Hell\'s Kitchen District',
-                'pincode' => '10019',
-                'mobile' => '9876543111'
-            ]
-        ]);
-
-        // 10. Family Aid
-        \App\Models\FamilyAidApplication::create([
-            'applicant_name' => 'Diana Prince',
-            'category' => 'Family Aid',
-            'amount_requested' => 0,
-            'status' => 'Pending',
-            'details' => 'Needs aid for house maintenance and health costs.',
-            'meta' => [
-                'father_name' => 'Hippolyta Prince',
-                'mother_name' => 'Zeus Prince',
-                'fathers_father' => 'Cronus Prince',
-                'dob' => '1988-12-12',
-                'age' => 37,
-                'aadhar_number' => '5678-9012-3456',
-                'house_name' => 'Paradise Manor',
-                'location' => 'Themyscira Island',
-                'post_office' => 'Paradise PO',
-                'panchayat' => 'Island Panchayat',
-                'district' => 'West District',
-                'pin_code' => '123459',
-                'mobile_1' => '9876543226',
-                'mobile_2' => '9876543227',
-                'children_total' => 3,
-                'children_male' => 1,
-                'children_female' => 2,
-                'nri_status' => 'No',
-                'occupation' => 'Weaver',
-                'monthly_income' => 120,
-                'other_income_sources' => 'None',
-                'health_status' => 'Poor',
-                'disability_status' => 'No',
-                'routine_treatment_explanation' => 'Requires regular arthritis medication',
-                'chronic_patients_description' => 'Mother has chronic heart condition',
-                'residence_info' => 'Homestead',
-                'own_house_condition' => 'Damaged roof',
-                'own_place_status' => 'Yes',
-                'own_place_size' => '500 Sqft',
-                'sequel_status' => 'Yes',
-                'welfare_assistance_areas' => 'Aid for roof repairing and medical subsidy'
-            ]
-        ]);
-        \App\Models\FamilyAidApplication::create([
-            'applicant_name' => 'Barry Allen',
-            'category' => 'Family Aid',
-            'amount_requested' => 0,
-            'status' => 'Approved',
-            'details' => 'Emergency family aid for support.',
-            'meta' => [
-                'father_name' => 'Henry Allen',
-                'mother_name' => 'Nora Allen',
-                'fathers_father' => 'N/A',
-                'dob' => '1992-05-18',
-                'age' => 34,
-                'aadhar_number' => '9012-3456-7890',
-                'house_name' => 'Allen Residence',
-                'location' => 'Central City',
-                'post_office' => 'Central PO',
-                'panchayat' => 'Central Panchayat',
-                'district' => 'Central District',
-                'pin_code' => '123499',
-                'mobile_1' => '9876543112',
-                'mobile_2' => '',
-                'children_total' => 0,
-                'children_male' => 0,
-                'children_female' => 0,
-                'nri_status' => 'No',
-                'occupation' => 'Forensic Assistant',
-                'monthly_income' => 600,
-                'other_income_sources' => 'None',
-                'health_status' => 'Good',
-                'disability_status' => 'No',
-                'routine_treatment_explanation' => '',
-                'chronic_patients_description' => '',
-                'residence_info' => 'Rental House',
-                'own_house_condition' => '',
-                'own_place_status' => 'No',
-                'own_place_size' => '',
-                'sequel_status' => 'No',
-                'welfare_assistance_areas' => 'General financial support'
-            ]
-        ]);
-
-        // 11. General
-        \App\Models\GeneralApplication::create([
-            'applicant_name' => 'Bruce Wayne',
-            'category' => 'General',
-            'amount_requested' => 1500,
-            'status' => 'Pending',
-            'details' => 'Needs wheelchair assistance.',
-            'meta' => [
-                'age' => 45,
-                'father_name' => 'Thomas Wayne',
-                'mother_name' => 'Martha Wayne',
-                'house_name' => 'Wayne Manor',
-                'location' => 'Gotham',
-                'panchayat' => 'Wayne Panchayat',
-                'post_office' => 'Wayne PO',
-                'district' => 'Gotham District',
-                'state' => 'New State',
-                'pin_code' => '123460',
-                'mobile_1' => '9876543228',
-                'mobile_2' => '9876543229',
-                'married' => 'No',
-                'male_family_members' => 1,
-                'female_family_members' => 1,
-                'total_family_members' => 2,
-                'occupation' => 'None',
-                'monthly_income' => 0,
-                'other_income' => 'None',
-                'health_status' => 'Differently Abled',
-                'office_app_type' => 'WheelChair',
-                'accommodation_details' => 'Own House',
-                'general_app_status' => 'Orphan',
-                'expected_amount' => 1500
-            ]
-        ]);
-        \App\Models\GeneralApplication::create([
-            'applicant_name' => 'Clark Kent',
-            'category' => 'General',
-            'amount_requested' => 2200,
-            'status' => 'Approved',
-            'details' => 'Family aid assistance.',
-            'meta' => [
-                'age' => 35,
-                'father_name' => 'Jonathan Kent',
-                'mother_name' => 'Martha Kent',
-                'house_name' => 'Kent Farmhouse',
-                'location' => 'Smallville',
-                'panchayat' => 'Smallville Panchayat',
-                'post_office' => 'Smallville PO',
-                'district' => 'Smallville District',
-                'state' => 'New State',
-                'pin_code' => '123450',
-                'mobile_1' => '9876543113',
-                'mobile_2' => '',
-                'married' => 'Yes',
-                'male_family_members' => 2,
-                'female_family_members' => 1,
-                'total_family_members' => 3,
-                'occupation' => 'Journalist',
-                'monthly_income' => 800,
-                'other_income' => 'Farm yields',
-                'health_status' => 'Satisfactory',
-                'office_app_type' => 'Family Aid',
-                'accommodation_details' => 'Own House',
-                'general_app_status' => 'With family',
-                'expected_amount' => 2200
-            ]
-        ]);
+            $modelClass::create([
+                'applicant_name' => $config['name'],
+                'category' => $categoryName,
+                'amount_requested' => 150000,
+                'status' => 'Pending',
+                'details' => $config['details'],
+                'place' => $config['place'],
+                'post_office' => $config['post_office'],
+                'village' => $config['village'],
+                'panchayat' => $config['panchayat'],
+                'district' => 'Kozhikode',
+                'state' => 'Kerala',
+                'pin_code' => '673001',
+                'meta' => $filteredMeta
+            ]);
+        }
     }
 }

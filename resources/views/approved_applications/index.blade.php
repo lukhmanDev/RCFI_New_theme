@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Applications Categories')
+@section('title', 'Approved Applications')
 
 @section('content')
 
@@ -10,63 +10,63 @@
                 'education-center' => [
                     'name' => 'Education Center',
                     'icon' => 'bx bxs-graduation',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ],
                 'cultural-center' => [
                     'name' => 'Cultural Center',
                     'icon' => 'bx bxs-landmark',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ],
                 'hospital-or-clinics' => [
                     'name' => 'Hospital or Clinics',
                     'icon' => 'bx bxs-plus-medical',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ],
                 'shops-and-others' => [
                     'name' => 'Shops and Others',
                     'icon' => 'bx bxs-store-alt',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ],
                 'house' => [
                     'name' => 'House',
                     'icon' => 'bx bxs-home',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ]
             ],
             'Drinking Water Applications' => [
                 'drinking-water-group-level' => [
                     'name' => 'Drinking Water - Group Level',
                     'icon' => 'bx bx-water',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ],
                 'drinking-water-individual-level' => [
                     'name' => 'Drinking Water - Individual Level',
                     'icon' => 'bx bxs-droplet',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ]
             ],
             'Social Aid & Care' => [
                 'orphan-care' => [
                     'name' => 'Orphan Care',
                     'icon' => 'bx bxs-face',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ],
                 'differently-abled' => [
                     'name' => 'Differently Abled',
                     'icon' => 'bx bx-accessibility',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ],
                 'family-aid' => [
                     'name' => 'Family Aid',
                     'icon' => 'bx bxs-group',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ]
             ],
             'General Schemes' => [
                 'general' => [
                     'name' => 'General',
                     'icon' => 'bx bxs-file-blank',
-                    'bg' => 'linear-gradient(135deg, #10b981, #059669)'
+                    'bg' => 'linear-gradient(135deg, #059669, #047857)'
                 ]
             ]
         ];
@@ -141,8 +141,8 @@
     </style>
 
     <div style="margin-bottom: 2rem;">
-        <h2 class="panel-title" style="font-size: 1.5rem; color: #ffffff;">Applications Dashboard</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Select a category card to manage registered applications.</p>
+        <h2 class="panel-title" style="font-size: 1.5rem; color: #ffffff;">Approved Applications Dashboard</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Select a category card to view approved application projects.</p>
     </div>
 
     <!-- Grouped Cards Grid -->
@@ -156,28 +156,20 @@
         <div class="app-grid">
             @foreach($configs as $slug => $config)
                 @php
-                    $count = $counts[$config['name']] ?? 0;
-                    $pendingCount = $pendingCounts[$config['name']] ?? 0;
+                    $count = $approvedCounts[$config['name']] ?? 0;
                 @endphp
-                <a href="{{ route('applications.category', $slug) }}" class="app-card" style="background: {{ $config['bg'] }}; position: relative;">
-                    @if($pendingCount > 0)
-                        <!-- Red dot and pending count badge on the right side -->
-                        <div style="position: absolute; top: 0.75rem; right: 0.75rem; background-color: var(--accent-red); color: #ffffff; padding: 0.2rem 0.45rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; gap: 0.25rem; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.15);">
-                            <span style="width: 5px; height: 5px; background-color: #ffffff; border-radius: 50%; display: inline-block; box-shadow: 0 0 2px #ffffff;"></span>
-                            {{ $pendingCount }} Pending
-                        </div>
-                    @endif
+                <a href="{{ route('applications.approved.category', $slug) }}" class="app-card" style="background: {{ $config['bg'] }};">
                     <div class="app-card-top">
                         <div class="app-card-icon-container">
                             <i class="{{ $config['icon'] }}"></i>
                         </div>
-                        <div class="app-card-info" style="padding-right: 75px;">
+                        <div class="app-card-info">
                             <h5>{{ $config['name'] }}</h5>
                             <h4>{{ $count }}</h4>
                         </div>
                     </div>
                     <div class="app-card-bottom">
-                        <span>View Applications</span>
+                        <span>View Approved Registry</span>
                         <i class="bx bx-right-arrow-alt" style="font-size: 1.25rem;"></i>
                     </div>
                 </a>

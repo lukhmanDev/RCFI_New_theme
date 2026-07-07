@@ -84,7 +84,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 100000.00,
             'type_of_project' => 'Education Center',
             'remarks' => 'wer',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -95,7 +95,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 100000.00,
             'type_of_project' => 'Education Center',
             'remarks' => 'nill',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -106,7 +106,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 30000.00,
             'type_of_project' => 'Education Center',
             'remarks' => 'Hai',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -117,7 +117,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 150000.00,
             'type_of_project' => 'Cultural Center',
             'remarks' => 'Renovation of center',
-            'stage' => 2,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -128,7 +128,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 250000.00,
             'type_of_project' => 'Hospital or Clinics',
             'remarks' => 'Equipment support',
-            'stage' => 3,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -139,7 +139,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 90000.00,
             'type_of_project' => 'House',
             'remarks' => 'New build support',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -151,7 +151,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 45000.00,
             'type_of_project' => 'Drinking Water - Group Level',
             'remarks' => 'Borewell installation',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -173,7 +173,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 35000.00,
             'type_of_project' => 'Orphan Care',
             'remarks' => 'Health checkup sponsorship',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -185,7 +185,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 60000.00,
             'type_of_project' => 'Differently Abled',
             'remarks' => 'Prosthetic limbs provision',
-            'stage' => 2,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
         \App\Models\DifferentlyAbledProject::create([
@@ -195,7 +195,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 40000.00,
             'type_of_project' => 'Differently Abled',
             'remarks' => 'Wheelchairs distribution',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -207,7 +207,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 70000.00,
             'type_of_project' => 'Family Aid',
             'remarks' => 'Livelihood support kits',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
 
@@ -219,7 +219,7 @@ class ProjectSeeder extends Seeder
             'available_budget' => 30000.00,
             'type_of_project' => 'General',
             'remarks' => 'Community welfare program',
-            'stage' => 1,
+            'stage' => 4,
             'status' => 'Pending'
         ]);
     }

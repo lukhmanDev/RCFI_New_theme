@@ -28,16 +28,16 @@
         </li>
         
         <li>
-            <a href="{{ route('applications.index') }}" class="{{ Route::currentRouteName() === 'applications.index' || Route::currentRouteName() === 'applications.category' ? 'active' : '' }}">
+            <a href="{{ route('applications.index') }}" class="{{ (request()->routeIs('applications.*') && !request()->routeIs('applications.approved.*')) ? 'active' : '' }}">
                 <i class="bx bxs-file-doc"></i>
                 <span>Applications</span>
             </a>
         </li>
 
         <li>
-            <a href="{{ route('applications.all') }}" class="{{ Route::currentRouteName() === 'applications.all' ? 'active' : '' }}">
-                <i class="bx bxs-spreadsheet"></i>
-                <span>All Applications</span>
+            <a href="{{ route('applications.approved.index') }}" class="{{ request()->routeIs('applications.approved.*') ? 'active' : '' }}">
+                <i class="bx bxs-badge-check" style="color: #2ecc71;"></i>
+                <span>Approved Applications</span>
             </a>
         </li>
 
