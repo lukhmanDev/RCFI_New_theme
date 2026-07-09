@@ -72,6 +72,8 @@ class ApplicationController extends Controller
             $model = $config['model'];
             $counts[$config['name']] = $model::count();
             $pendingCounts[$config['name']] = $model::where('status', 'Pending')->count();
+            $approvedProjectCount = $model::where('status', 'Approved')->count();
+            $totalProjectCount = $model::count();
         }
 
         return view('admin.applications', compact('counts', 'pendingCounts'));
