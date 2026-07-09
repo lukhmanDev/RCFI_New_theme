@@ -95,7 +95,7 @@ trait HasProjectColumns
     // Accessors for project_phase and project_phase_custom from projectStatus record
     public function getProjectPhaseAttribute()
     {
-        return $this->projectStatus ? $this->projectStatus->status : 'Project Assigned';
+        return $this->projectStatus ? ($this->projectStatus->status ?? '') : '';
     }
 
     public function getProjectPhaseCustomAttribute()
@@ -202,7 +202,7 @@ trait HasProjectColumns
             $model->projectDocument()->create($insertData);
 
             $model->projectStatus()->create([
-                'status' => 'Project Assigned',
+                'status' => null,
                 'status_custom' => null,
             ]);
         });
