@@ -221,12 +221,6 @@
     </div>
 @endif
 
-@if (session('error'))
-    <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff9999; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
-        <i class="bx bx-error-circle" style="margin-right: 0.4rem;"></i> {{ session('error') }}
-    </div>
-@endif
-
 @if ($errors->any())
     <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff9999; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
         <ul style="list-style-position: inside; margin: 0; padding: 0;">
@@ -266,8 +260,8 @@
                     <th class="col-budget" style="text-align: right;">Available Budget</th>
                     <th class="col-type" style="text-align: center;">Type of Project</th>
                     <th class="col-remarks">Remarks</th>
-                    <th style="text-align: center;">Status</th>
                     <th style="text-align: center; width: 180px;">Action</th>
+                    
                 </tr>
             </thead>
             <tbody>
@@ -289,19 +283,9 @@
                         <td class="col-remarks" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             {{ $project->remarks ?? 'N/A' }}
                         </td>
-                        <td style="text-align: center;">
-                            @php
-                                $phaseVal = $project->project_phase ?? 'Project Assigned';
-                                $phaseCustom = $project->project_phase_custom ?? '';
-                                $phaseLabel = $phaseVal === 'Other' ? ($phaseCustom ?: 'Other') : $phaseVal;
-                            @endphp
-                            <span style="background-color: rgba(6,182,212,0.12); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; white-space: nowrap;">
-                                {{ $phaseLabel }}
-            </span>
-                        </td>
                         <td style="text-align: center; white-space: nowrap;">
                             @if(in_array(Auth::user()->role, [1, 2, 4]))
-                            <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nAgency No: {{ $project->agency_project_no }}\nDonor: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
+                            <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nAgency No: {{ $project->agency_project_no }}\nDonor: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nEngineer: {{ $project->engineer ? $project->engineer->name : 'N/A' }}\nUnit: {{ $project->unit ?? 'RCFI' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
                                 <i class="bx bx-dots-horizontal-rounded"></i>
                             </button>
 
@@ -372,6 +356,24 @@
                 </div>
 
                 <div class="form-group-custom">
+                    <label for="engineer_id">Engineer</label>
+                    <select name="engineer_id" id="engineer_id">
+                        <option value="">Select an engineer</option>
+                        @foreach($engineers as $engineer)
+                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="unit">Unit</label>
+                    <select name="unit" id="unit" required>
+                        <option value="RCFI">RCFI</option>
+                        <option value="MARKAZ">MARKAZ</option>
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
                     <label for="available_budget">Available Budget</label>
                     <input type="number" step="0.01" name="available_budget" id="available_budget" required placeholder="Enter available budget">
                 </div>
@@ -433,6 +435,24 @@
                 </div>
 
                 <div class="form-group-custom">
+                    <label for="edit_engineer_id">Engineer</label>
+                    <select name="engineer_id" id="edit_engineer_id">
+                        <option value="">Select an engineer</option>
+                        @foreach($engineers as $engineer)
+                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="edit_unit">Unit</label>
+                    <select name="unit" id="edit_unit" required>
+                        <option value="RCFI">RCFI</option>
+                        <option value="MARKAZ">MARKAZ</option>
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
                     <label for="edit_available_budget">Available Budget</label>
                     <input type="number" step="0.01" name="available_budget" id="edit_available_budget" required>
                 </div>
@@ -472,6 +492,8 @@
         document.getElementById('edit_agency_project_no').value = project.agency_project_no || '';
         document.getElementById('edit_donor_id').value = project.donor_id || '';
         document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';
+        document.getElementById('edit_engineer_id').value = project.engineer_id || '';
+        document.getElementById('edit_unit').value = project.unit || 'RCFI';
         document.getElementById('edit_available_budget').value = project.available_budget || '';
         document.getElementById('edit_remarks').value = project.remarks || '';
 
