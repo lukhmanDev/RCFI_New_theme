@@ -170,9 +170,13 @@
                 $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
                 
                 // Lock other stages if the project is not Approved by COO
-                // For Education Center projects, unlock stages up to the current stage
-                if ($project->type_of_project === 'Education Center') {
-                    $isLocked = ($project->status !== 'Approved' && $i > $project->stage);
+                // For 6-stage projects, stages 1-4 are never locked, stages 5-6 require COO approval
+                if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'])) {
+                    if ($i <= 4) {
+                        $isLocked = false;
+                    } else {
+                        $isLocked = ($project->status !== 'Approved');
+                    }
                 } else {
                     $isLocked = ($project->status !== 'Approved' && $i > 1);
                 }
@@ -192,7 +196,9 @@
     @php
         $authUser = auth()->user();
         $isCoo = ($authUser && ($authUser->role == 2 || strtolower($authUser->designation ?? '') === 'coo'));
-        $isProjectManager = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || strtolower($authUser->designation ?? '') === 'project manager'));
+        $isProjectManager = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || $authUser->role == 6 || strtolower($authUser->designation ?? '') === 'project manager' || strtolower($authUser->designation ?? '') === 'engineer'));
+        $canEditStatus = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || $authUser->role == 2 || strtolower($authUser->designation ?? '') === 'project manager' || strtolower($authUser->designation ?? '') === 'coo'));
+        $hasApplication = !empty($project->application_id);
     @endphp
 
     <!-- Success Panel -->
@@ -216,7 +222,7 @@
                 <h2>PROJECT DETAIL</h2>
             </div>
             <div style="padding: 1.5rem;">
-                @if($project->type_of_project !== 'Education Center')
+                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
                     @if($project->status !== 'Approved')
                         <div style="margin-bottom: 1.5rem;">
                             @if($isCoo)
@@ -247,6 +253,7 @@
                     <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
                     <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
                     <div class="details-label">Remarks</div><div class="details-colon">:</div><div class="details-value" style="font-weight: normal; color: var(--text-muted);">{{ $project->remarks ?? 'N/A' }}</div>
+                    <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ $project->project_phase === 'Other' ? ($project->project_phase_custom ?: 'Other') : $project->project_phase }}</div>
                 </div>
 
                 {{-- ===== PROJECT PHASE / STATUS SELECTOR ===== --}}
@@ -274,25 +281,37 @@
                 @endphp
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1rem; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
-                        <i class="bx bx-git-branch" style="color: var(--accent-cyan); margin-right: 0.4rem;"></i>
+                        
                         Project Status
                     </h3>
 
-                    {{-- Current phase badge --}}
-                    <div id="current-phase-badge" style="margin-bottom: 1rem;">
-                        @if($currentPhase)
-                            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(6,182,212,0.12); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                                <i class="bx bx-radio-circle-marked" style="font-size: 1rem;"></i>
-                                {{ $currentPhase === 'Other' ? $currentCustom : $currentPhase }}
-                            </span>
-                        @else
-                            <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(107,114,128,0.1); border: 1px solid rgba(107,114,128,0.3); color: var(--text-muted); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">
-                                <i class="bx bx-minus-circle"></i> Not set
-                            </span>
-                        @endif
+                    @php
+                        $statusRecord = $project->projectStatus;
+                        $statusUpdatedAt = $statusRecord && $statusRecord->updated_at ? $statusRecord->updated_at->timezone('Asia/Kolkata') : null;
+                    @endphp
+
+                    {{-- Current phase badge & last updated time --}}
+                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                        <!-- <div id="current-phase-badge">
+                            @if($currentPhase)
+                                <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(6,182,212,0.12); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                                    <i class="bx bx-radio-circle-marked" style="font-size: 1rem;"></i>
+                                    {{ $currentPhase === 'Other' ? $currentCustom : $currentPhase }}
+                                </span>
+                            @else
+                                <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(107,114,128,0.1); border: 1px solid rgba(107,114,128,0.3); color: var(--text-muted); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">
+                                    <i class="bx bx-minus-circle"></i> Not set
+                                </span>
+                            @endif
+                        </div> -->
+
+                        <div id="status-updated-time-container" style="font-size: 0.85rem; color: var(--text-muted); display: {{ $statusUpdatedAt ? 'inline-flex' : 'none' }}; align-items: center; gap: 0.35rem;">
+                            <i class="bx bx-calendar-event" style="font-size: 1rem; color: var(--accent-cyan);"></i>
+                            <span>Last Updated: <strong id="status-updated-at" style="color: #ffffff;">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: var(--accent-cyan);">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
+                        </div>
                     </div>
 
-                    @if($isProjectManager || $isCoo)
+                    @if($canEditStatus && $hasApplication)
                     <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; max-width: 560px;">
                         <div style="flex: 1; min-width: 220px;">
                             <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Select Phase</label>
@@ -313,11 +332,21 @@
                             <i class="bx bx-save"></i> Save Status
                         </button>
                     </div>
+                    @else
+                        @if(empty($project->application_id))
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Project status updates are disabled. Please assign/connect an application in Stage 2 first.
+                            </div>
+                        @else
+                            <p style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">
+                                You are not authorized to edit the project status.
+                            </p>
+                        @endif
                     @endif
                 </div>
 
                 <!-- Connect Application Form -->
-                @if($isCoo && $project->type_of_project !== 'Education Center')
+                @if($isCoo && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @if(!empty($project->application_id))
@@ -416,7 +445,7 @@
                     $appId = $application ? ('APLRCFI' . $appYear . $prefix . str_pad($application->id, 5, '0', STR_PAD_LEFT)) : 'N/A';
                 @endphp
 
-                @if($project->type_of_project !== 'Education Center')
+                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
                     <div class="stage-success-banner">
                         Applicant ID {{ $appId }} has been Approved
                     </div>
@@ -433,8 +462,8 @@
                     @endif
                 @endif
 
-                <!-- Connect Application Form inside Stage 2 for Education Center project (Show First) -->
-                @if(($isProjectManager || $isCoo) && $project->type_of_project === 'Education Center' && $project->status !== 'Approved')
+                <!-- Connect Application Form inside Stage 2 for 6-stage projects (Show First) -->
+                @if(($isProjectManager || $isCoo) && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']) && $project->status !== 'Approved')
                 <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @if(!empty($project->application_id))
@@ -604,13 +633,19 @@
                 <h2>FILES</h2>
             </div>
             <div style="padding: 1.5rem;">
+                @if(empty($project->application_id))
+                    <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
+                        <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Checklist ticking is disabled. Please assign/connect an application in Stage 2 first.
+                    </div>
+                @endif
 
 
                 <table class="stage-table">
                     <thead>
                         <tr>
                             <th>Document Name</th>
-                            <th>Action</th>
+                            <th style="width: 250px;">Ticked At</th>
+                            <th style="width: 150px; text-align: center;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -632,16 +667,27 @@
                                 'Agreement with committee',
                                 'Project summary form'
                             ];
-                            $projectFiles = $project->files ?? [];
+                            $docRecord = $project->files_with_timestamps;
                         @endphp
                         @foreach($docs as $doc)
                             @php
-                                $filePath = $projectFiles[$doc] ?? null;
+                                $column = \App\Models\ProjectDocument::$docColumnMap[$doc] ?? null;
+                                $filePath = ($docRecord && $column) ? $docRecord->$column : null;
+                                $timeColumn = $column ? $column . '_ticked_at' : null;
+                                $tickedAtDate = ($docRecord && $timeColumn) ? $docRecord->$timeColumn : null;
+                                $tickedAt = $tickedAtDate ? $tickedAtDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                                
+                                if ($filePath === '0') {
+                                    $filePath = null;
+                                }
                             @endphp
                             <tr>
                                 <td style="font-weight: 600; color: #ffffff; vertical-align: middle;">{{ $doc }}</td>
-                                <td style="vertical-align: middle;">
-                                    @if($isProjectManager)
+                                <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
+                                    {{ $tickedAt ?? '-' }}
+                                </td>
+                                <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center;">
+                                    @if($isProjectManager && $hasApplication)
                                         <button type="button" onclick="toggleChecklistDocument(this, '{{ $doc }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
                                             @if(!empty($filePath))
                                                 <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
@@ -674,27 +720,44 @@
                 <h2>FUNDS ALLOCATED</h2>
             </div>
             <div style="padding: 1.5rem;">
-                <div class="stage-success-banner">
-                    Fund Allocated are Approved
-                </div>
+                @if(empty($project->application_id))
+                    <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
+                        <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Budget allocation editing is disabled. Please assign/connect an application in Stage 2 first.
+                    </div>
+                @endif
 
                 @php
                     $materials = $project->materials;
                     if (empty($materials)) {
-                        $materials = [
-                            ['material' => 'cement', 'amount' => 8000],
-                            ['material' => 'metal', 'amount' => 8000]
-                        ];
+                        $materials = [];
                     }
                     $totalAmount = 0;
                     foreach($materials as $item) {
                         $totalAmount += $item['amount'];
                     }
+
+                    $pFiles = $project->files ?? [];
+                    $commContribs = $pFiles['community_contributions'] ?? [];
+                    if (empty($commContribs)) {
+                        $compDetails = $pFiles['completion_details'] ?? [];
+                        $commContribs = [
+                            ['item' => 'Community Contribution', 'amount' => $compDetails['community_contribution'] ?? 0],
+                            ['item' => 'Other', 'amount' => $compDetails['any_other'] ?? 0]
+                        ];
+                    }
+                    $commTotal = 0;
+                    foreach ($commContribs as $c) {
+                        $commTotal += $c['amount'];
+                    }
+                    $grandTotal = $totalAmount + $commTotal;
                 @endphp
 
                 @if($project->stage === 4)
                     <div style="margin-bottom: 1.5rem;">
-                        @if($isCoo)
+                        @php
+                            $canApproveStage4 = $isCoo || ($project->type_of_project !== 'Education Center' && ($isProjectManager || $isCoo));
+                        @endphp
+                        @if($canApproveStage4)
                             <form action="{{ route('projects.approve', $project->id) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="btn-custom" style="background: #eb3b5a;">
@@ -716,15 +779,17 @@
                         <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Project Budget</div>
                         <div style="font-size: 1.3rem; font-weight: 700; color: #ffffff;">₹{{ number_format($project->available_budget, 2) }}</div>
                     </div>
-                    <!-- Proposed Budget Card -->
-                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(99, 102, 241, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid #6366f1;">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Application Proposed Budget</div>
-                        <div style="font-size: 1.3rem; font-weight: 700; color: #ffffff;">{{ $application && $application->amount_requested ? '₹' . number_format($application->amount_requested, 2) : 'N/A' }}</div>
-                    </div>
+
                     <!-- Total Allocated Card -->
                     <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(6, 182, 212, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid var(--accent-cyan);">
                         <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Total Allocated</div>
                         <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($totalAmount, 2) }}</div>
+                    </div>
+
+                    <!-- Total Card (Allocated + Community Contribution) -->
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(129, 140, 248, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid #818cf8;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Total</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #818cf8;">₹{{ number_format($grandTotal, 2) }}</div>
                     </div>
                 </div>
 
@@ -733,7 +798,7 @@
                         <button class="btn-custom" style="background: #4b6584;" onclick="alert('Exporting stage budget to Excel...')">
                             Download Excel
                         </button>
-                        @if($isProjectManager)
+                        @if($isProjectManager && $hasApplication)
                             <button onclick="openAddMaterialModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                                 <i class="bx bx-plus"></i> Add Item
                             </button>
@@ -763,7 +828,7 @@
                                 <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">
                                     <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
                                         <span>₹ {{ number_format($item['amount'], 2) }}</span>
-                                        @if($isProjectManager)
+                                        @if($isProjectManager && $hasApplication)
                                             <button onclick="openEditMaterialModal({{ $index }}, '{{ addslashes($item['material']) }}', {{ $item['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
                                                 <i class="bx bx-pencil"></i>
                                             </button>
@@ -785,6 +850,143 @@
                         </tr>
                     </tbody>
                 </table>
+
+                @php
+                    $pFiles = $project->files ?? [];
+                    $commContribs = $pFiles['community_contributions'] ?? [];
+                    if (empty($commContribs)) {
+                        $compDetails = $pFiles['completion_details'] ?? [];
+                        $commContribs = [
+                            ['item' => 'Community Contribution', 'amount' => $compDetails['community_contribution'] ?? 0],
+                            ['item' => 'Other', 'amount' => $compDetails['any_other'] ?? 0]
+                        ];
+                    }
+                    $commTotal = 0;
+                    foreach ($commContribs as $c) {
+                        $commTotal += $c['amount'];
+                    }
+                @endphp
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                    <h3 style="color: #ffffff; font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Community Contribution</h3>
+                    @if($isProjectManager && $hasApplication)
+                        <button onclick="openAddCommContribModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                            <i class="bx bx-plus"></i> Add Item
+                        </button>
+                    @endif
+                </div>
+
+                <table class="stage-table" style="margin-bottom: 1.5rem;">
+                    <thead>
+                        <tr>
+                            <th>Input</th>
+                            <th style="text-align: right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($commContribs as $index => $item)
+                            <tr>
+                                <td style="font-weight: 600; color: #ffffff; vertical-align: middle;">{{ $item['item'] }}</td>
+                                <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">
+                                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
+                                        <span>₹ {{ number_format($item['amount'], 2) }}</span>
+                                        @if($isProjectManager && $hasApplication)
+                                            <button onclick="openEditCommContribModal({{ $index }}, '{{ addslashes($item['item']) }}', {{ $item['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
+                                                <i class="bx bx-pencil"></i>
+                                            </button>
+                                            <form action="{{ route('projects.delete_community_contribution', [$project->id, $index]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this community contribution?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn-danger-custom" style="padding: 0.25rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;" title="Delete">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                        <tr style="border-top: 2px solid var(--panel-border);">
+                            <td style="font-weight: 700; color: var(--accent-cyan);">Total</td>
+                            <td style="text-align: right; font-weight: 700; color: var(--accent-cyan);">₹ {{ number_format($commTotal, 2) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                @php
+                    $contractors = $project->files['contractors'] ?? [];
+                    // Keep backward compatibility if they had a single contractor_details saved
+                    $legacyContractor = $project->files['contractor_details'] ?? null;
+                    if (empty($contractors) && $legacyContractor) {
+                        $contractors = [$legacyContractor];
+                    }
+                @endphp
+
+                <!-- Contractor Details Section -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                    <h3 style="color: #ffffff; font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Contractor Details</h3>
+                    @if($isProjectManager && $hasApplication)
+                        <button onclick="openAddContractorModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                            <i class="bx bx-plus"></i> Add Contractor
+                        </button>
+                    @endif
+                </div>
+
+                @if(!empty($contractors))
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        @foreach($contractors as $index => $contractor)
+                            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; position: relative;">
+                                @if($isProjectManager && $hasApplication)
+                                    <div style="position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; z-index: 10;">
+                                        <button onclick="openEditContractorModal({{ $index }}, {{ json_encode($contractor) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
+                                            <i class="bx bx-pencil"></i>
+                                        </button>
+                                        <form action="{{ route('projects.delete_contractor', [$project->id, $index]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this contractor?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-danger-custom" style="padding: 0.25rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;" title="Delete">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; padding-right: 4rem;">
+                                    <div>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Contractor Name</span>
+                                        <span style="color: #ffffff; font-weight: 600; font-size: 0.95rem;">{{ $contractor['contractor_name'] }}</span>
+                                    </div>
+                                    <div>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Phone Number</span>
+                                        <span style="color: #ffffff; font-weight: 600; font-size: 0.95rem;">{{ $contractor['phone'] }}</span>
+                                    </div>
+                                    <div>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Company Name</span>
+                                        <span style="color: #ffffff; font-weight: 600; font-size: 0.95rem;">{{ $contractor['company_name'] }}</span>
+                                    </div>
+                                    <div>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Type of Contract</span>
+                                        <span style="color: #ffffff; font-weight: 600; font-size: 0.95rem;">{{ $contractor['type_of_contract'] }}</span>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1rem; display: grid; grid-template-columns: 1fr; gap: 1.25rem;">
+                                    <div>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Purpose of Contract</span>
+                                        <p style="color: #ffffff; margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-line;">{{ $contractor['purpose_of_contract'] }}</p>
+                                    </div>
+                                    <div>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Address</span>
+                                        <p style="color: #ffffff; margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-line;">{{ $contractor['address'] }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div style="background: rgba(255, 255, 255, 0.01); border: 1px dashed var(--panel-border); padding: 2rem; border-radius: 8px; text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                        <i class="bx bx-info-circle" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: var(--text-muted);"></i>
+                        No contractor details added to this project yet.
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -794,17 +996,16 @@
                 <h2>EVALUATION & INSPECTION</h2>
             </div>
             <div style="padding: 1.5rem;">
-                <div class="stage-success-banner">
-                    Evaluation & Site Inspections
-                </div>
+                @if(empty($project->application_id))
+                    <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
+                        <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Expense management is disabled. Please assign/connect an application in Stage 2 first.
+                    </div>
+                @endif
 
                 @php
                     $stage5Materials = $project->materials;
                     if (empty($stage5Materials)) {
-                        $stage5Materials = [
-                            ['material' => 'cement', 'amount' => 8000],
-                            ['material' => 'metal', 'amount' => 8000]
-                        ];
+                        $stage5Materials = [];
                     }
                     $totalAllocatedAmount = 0;
                     foreach ($stage5Materials as $item) {
@@ -817,7 +1018,9 @@
                     }
                     $totalExpensesAmount = 0;
                     foreach ($expenses as $item) {
-                        $totalExpensesAmount += $item['amount'];
+                        if (!isset($item['comm_index'])) {
+                            $totalExpensesAmount += $item['amount'];
+                        }
                     }
 
                     $stage5TotalBudget = (float)$totalAllocatedAmount;
@@ -830,130 +1033,141 @@
                     // SVG Circumference is 2 * pi * 50 = 314.16
                     $stage5Circumference = 314.16;
                     $stage5SpentDashoffset = $stage5Circumference - ($stage5Circumference * ($stage5SpentPercentage / 100));
-                @endphp
 
-                @if($project->stage === 5)
-                    <div style="margin-bottom: 1.5rem;">
-                        @if($isCoo)
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                    Approve & Promote to Stage 6
-                                </button>
-                            </form>
-                        @else
-                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                <i class="bx bx-time-five"></i> Pending COO Approval
-                            </div>
-                        @endif
-                    </div>
-                @endif
-
-                <!-- Beautiful Financial Breakdown and Diagram -->
-                <div style="display: flex; align-items: center; justify-content: center; gap: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; flex-wrap: wrap;">
-                    <!-- Circular Diagram -->
-                    <div style="position: relative; width: 120px; height: 120px; flex-shrink: 0;">
-                        <svg width="120" height="120" viewBox="0 0 120 120">
-                            <!-- Background Circle (Balance - Cyan) -->
-                            <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent-cyan)" stroke-width="12" />
-                            <!-- Foreground Circle (Spent - Red/Orange) -->
-                            <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent-red)" stroke-width="12"
-                                    stroke-dasharray="314.16" stroke-dashoffset="{{ $stage5SpentDashoffset }}"
-                                    stroke-linecap="round" transform="rotate(-90 60 60)"
-                                    style="transition: stroke-dashoffset 0.5s ease-in-out;" />
-                        </svg>
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
-                            <span style="font-size: 1.25rem; font-weight: 700;">{{ number_format($stage5SpentPercentage, 0) }}%</span>
-                            <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Spent</span>
-                        </div>
-                    </div>
-                    <!-- Stats Details -->
-                    <div style="flex-grow: 1; min-width: 250px;">
-                        <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Financial Summary (Allocated Budget)</h4>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem;">
-                            <!-- Total Budget Card -->
-                            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 0.75rem; border-radius: 6px;">
-                                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">Total Allocated</div>
-                                <span style="font-size: 1.1rem; font-weight: 700; color: #ffffff;">₹{{ number_format($stage5TotalBudget, 2) }}</span>
-                            </div>
-                            <!-- Balance Card -->
-                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.75rem; border-radius: 6px;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                                    <span style="display: inline-block; width: 8px; height: 8px; background-color: var(--accent-cyan); border-radius: 50%;"></span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Total Balance</span>
-                                </div>
-                                <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($stage5BalanceAmount, 2) }}</span>
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem;">{{ number_format($stage5BalancePercentage, 1) }}% left</div>
-                            </div>
-                            <!-- Expense Card -->
-                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem; border-radius: 6px;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                                    <span style="display: inline-block; width: 8px; height: 8px; background-color: var(--accent-red); border-radius: 50%;"></span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Total Expenses</span>
-                                </div>
-                                <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-red);">₹{{ number_format($stage5SpentAmount, 2) }}</span>
-                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem;">{{ number_format($stage5SpentPercentage, 1) }}% spent</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                @php
-                    $materialsChart = [];
-                    $chartMaxValue = 1;
-                    foreach($stage5Materials as $materialIdx => $material) {
-                        $itemExpenses = array_filter($expenses, function($exp) use ($materialIdx) {
-                            return isset($exp['material_index']) && $exp['material_index'] == $materialIdx;
-                        });
-                        $itemTotalSpent = 0;
-                        foreach($itemExpenses as $exp) {
-                            $itemTotalSpent += $exp['amount'];
-                        }
-                        $allocated = (float)$material['amount'];
-                        $spent = (float)$itemTotalSpent;
-                        $chartMaxValue = max($chartMaxValue, $allocated, $spent);
-                        $materialsChart[] = [
-                            'material' => $material['material'],
-                            'allocated' => $allocated,
-                            'spent' => $spent,
+                    // Community Contributions
+                    $stage5CommContribs = $project->files['community_contributions'] ?? [];
+                    if (empty($stage5CommContribs)) {
+                        $compDetails = $project->files['completion_details'] ?? [];
+                        $stage5CommContribs = [
+                            ['item' => 'Community Contribution', 'amount' => $compDetails['community_contribution'] ?? 0],
+                            ['item' => 'Other', 'amount' => $compDetails['any_other'] ?? 0]
                         ];
                     }
+                    $stage5CommTotal = 0;
+                    foreach ($stage5CommContribs as $c) {
+                        $stage5CommTotal += $c['amount'];
+                    }
+
+                    // Community Contribution Expenses
+                    $stage5CommSpent = 0;
+                    foreach ($expenses as $exp) {
+                        if (isset($exp['comm_index'])) {
+                            $stage5CommSpent += $exp['amount'];
+                        }
+                    }
+                    $stage5CommBalance = $stage5CommTotal - $stage5CommSpent;
+                    $stage5CommSpentPercentage = $stage5CommTotal > 0 ? min(100, ($stage5CommSpent / $stage5CommTotal) * 100) : 0;
+                    $stage5CommBalancePercentage = 100 - $stage5CommSpentPercentage;
+                    $stage5CommCircumference = 314.16;
+                    $stage5CommSpentDashoffset = $stage5CommCircumference - ($stage5CommCircumference * ($stage5CommSpentPercentage / 100));
                 @endphp
 
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-                    <h4 style="margin: 0 0 1rem 0; font-size: 1rem; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Materials Spend Graph</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: end;">
-                        @foreach($materialsChart as $materialData)
-                            @php
-                                $allocatedPercent = $chartMaxValue > 0 ? ($materialData['allocated'] / $chartMaxValue) * 100 : 0;
-                                $spentPercent = $chartMaxValue > 0 ? ($materialData['spent'] / $chartMaxValue) * 100 : 0;
-                            @endphp
-                            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1rem; border-radius: 10px; display: flex; flex-direction: column; gap: 1rem;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
-                                    <span style="font-weight: 700; color: #ffffff;">{{ $materialData['material'] }}</span>
-                                    <span style="font-size: 0.85rem; color: var(--text-muted);">₹{{ number_format($materialData['spent'], 2) }} / ₹{{ number_format($materialData['allocated'], 2) }}</span>
+
+
+                <!-- Financial Summaries side by side -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <!-- Financial Summary (Allocated Budget) -->
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; flex-wrap: wrap;">
+                        <!-- Circular Diagram -->
+                        <div style="position: relative; width: 100px; height: 100px; flex-shrink: 0;">
+                            <svg width="100" height="100" viewBox="0 0 120 120">
+                                <!-- Background Circle (Balance - Cyan) -->
+                                <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent-cyan)" stroke-width="12" />
+                                <!-- Foreground Circle (Spent - Red/Orange) -->
+                                <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent-red)" stroke-width="12"
+                                        stroke-dasharray="314.16" stroke-dashoffset="{{ $stage5SpentDashoffset }}"
+                                        stroke-linecap="round" transform="rotate(-90 60 60)"
+                                        style="transition: stroke-dashoffset 0.5s ease-in-out;" />
+                            </svg>
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
+                                <span style="font-size: 1.15rem; font-weight: 700;">{{ number_format($stage5SpentPercentage, 0) }}%</span>
+                                <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Spent</span>
+                            </div>
+                        </div>
+                        <!-- Stats Details -->
+                        <div style="flex-grow: 1; min-width: 250px;">
+                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Financial Summary (Allocated Budget)</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.75rem;">
+                                <!-- Total Budget Card -->
+                                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 0.5rem 0.75rem; border-radius: 6px;">
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Total Allocated</div>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">₹{{ number_format($stage5TotalBudget, 2) }}</span>
                                 </div>
-                                <div style="display: flex; align-items: flex-end; gap: 0.75rem; min-height: 180px;">
-                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-                                        <div style="width: 100%; height: 100%; background: rgba(248,113,113,0.15); border-radius: 14px; position: relative; display: flex; align-items: flex-end;">
-                                            <div style="width: 100%; height: {{ $spentPercent }}%; background: rgba(239,68,68,0.95); border-radius: 14px 14px 0 0; transition: height 0.4s ease-in-out;"></div>
-                                        </div>
-                                        <span style="font-size: 0.75rem; color: var(--text-muted);">Spent</span>
+                                <!-- Balance Card -->
+                                <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px;">
+                                    <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.15rem;">
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--accent-cyan); border-radius: 50%;"></span>
+                                        <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Total Balance</span>
                                     </div>
-                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-                                        <div style="width: 100%; height: 100%; background: rgba(16,185,129,0.15); border-radius: 14px; position: relative; display: flex; align-items: flex-end;">
-                                            <div style="width: 100%; height: {{ $allocatedPercent }}%; background: rgba(6,182,212,0.95); border-radius: 14px 14px 0 0; transition: height 0.4s ease-in-out;"></div>
-                                        </div>
-                                        <span style="font-size: 0.75rem; color: var(--text-muted);">Allocated</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($stage5BalanceAmount, 2) }}</span>
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.1rem;">{{ number_format($stage5BalancePercentage, 1) }}% left</div>
+                                </div>
+                                <!-- Expense Card -->
+                                <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px;">
+                                    <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.15rem;">
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--accent-red); border-radius: 50%;"></span>
+                                        <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Total Expenses</span>
                                     </div>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-red);">₹{{ number_format($stage5SpentAmount, 2) }}</span>
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.1rem;">{{ number_format($stage5SpentPercentage, 1) }}% spent</div>
                                 </div>
                             </div>
-                        @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary (Community Contribution) -->
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; flex-wrap: wrap;">
+                        <!-- Circular Diagram -->
+                        <div style="position: relative; width: 100px; height: 100px; flex-shrink: 0;">
+                            <svg width="100" height="100" viewBox="0 0 120 120">
+                                <!-- Background Circle (Balance - Cyan) -->
+                                <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent-cyan)" stroke-width="12" />
+                                <!-- Foreground Circle (Spent - Red/Orange) -->
+                                <circle cx="60" cy="60" r="50" fill="transparent" stroke="var(--accent-red)" stroke-width="12"
+                                        stroke-dasharray="314.16" stroke-dashoffset="{{ $stage5CommSpentDashoffset }}"
+                                        stroke-linecap="round" transform="rotate(-90 60 60)"
+                                        style="transition: stroke-dashoffset 0.5s ease-in-out;" />
+                            </svg>
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
+                                <span style="font-size: 1.15rem; font-weight: 700;">{{ number_format($stage5CommSpentPercentage, 0) }}%</span>
+                                <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Spent</span>
+                            </div>
+                        </div>
+                        <!-- Stats Details -->
+                        <div style="flex-grow: 1; min-width: 250px;">
+                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Financial Summary (Community Contribution)</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.75rem;">
+                                <!-- Total Budget Card -->
+                                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 0.5rem 0.75rem; border-radius: 6px;">
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Total Contribution</div>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">₹{{ number_format($stage5CommTotal, 2) }}</span>
+                                </div>
+                                <!-- Balance Card -->
+                                <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px;">
+                                    <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.15rem;">
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--accent-cyan); border-radius: 50%;"></span>
+                                        <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Total Balance</span>
+                                    </div>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($stage5CommBalance, 2) }}</span>
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.1rem;">{{ number_format($stage5CommBalancePercentage, 1) }}% left</div>
+                                </div>
+                                <!-- Expense Card -->
+                                <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px;">
+                                    <div style="display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.15rem;">
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--accent-red); border-radius: 50%;"></span>
+                                        <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Total Expenses</span>
+                                    </div>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-red);">₹{{ number_format($stage5CommSpent, 2) }}</span>
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.1rem;">{{ number_format($stage5CommSpentPercentage, 1) }}% spent</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
+
                 <!-- Expenses Section -->
-                @if($project->type_of_project === 'Education Center')
+                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Allocated Items & Spent Expenses</h3>
 
@@ -991,7 +1205,7 @@
                                         ₹{{ number_format($itemBalance, 2) }}
                                     </td>
                                     <td style="text-align: center; vertical-align: middle;">
-                                        @if($isProjectManager)
+                                        @if($isProjectManager && $hasApplication)
                                             <button onclick="openAddExpenseModal({{ $materialIdx }}, '{{ addslashes($material['material']) }}')" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; margin: 0;">
                                                 <i class="bx bx-plus"></i> Expense
                                             </button>
@@ -1008,13 +1222,15 @@
                                                 <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; margin-right: 0.5rem; vertical-align: middle;"></span>
                                                 {{ $expense['expense_name'] }}
                                             </td>
-                                            <td></td>
+                                            <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">
+                                                Qty: {{ $expense['quantity'] ?? 1 }}
+                                            </td>
                                             <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">₹{{ number_format($expense['amount'], 2) }}</td>
                                             <td></td>
                                             <td style="text-align: center; vertical-align: middle;">
-                                                @if($isProjectManager)
+                                                @if($isProjectManager && $hasApplication)
                                                     <div style="display: inline-flex; gap: 0.4rem;">
-                                                        <button onclick="openEditExpenseModal({{ $expenseIdx }}, {{ $materialIdx }}, '{{ addslashes($expense['expense_name']) }}', {{ $expense['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.2rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin: 0;" title="Edit Expense">
+                                                        <button onclick="openEditExpenseModal({{ $expenseIdx }}, {{ $materialIdx }}, '{{ addslashes($expense['expense_name']) }}', {{ $expense['quantity'] ?? 1 }}, {{ $expense['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.2rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin: 0;" title="Edit Expense">
                                                             <i class="bx bx-pencil"></i>
                                                         </button>
                                                         <form action="{{ route('projects.delete_expense', [$project->id, $expenseIdx]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this expense?');">
@@ -1033,7 +1249,7 @@
                                     <tr style="background-color: rgba(0, 0, 0, 0.05);">
                                         <td colspan="4" style="padding-left: 2rem; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No expenses recorded for this item.</td>
                                         <td style="text-align: center; vertical-align: middle;">
-                                            @if($isProjectManager)
+                                            @if($isProjectManager && $hasApplication)
                                                 <button onclick="openAddExpenseModal({{ $materialIdx }}, '{{ addslashes($material['material']) }}')" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; margin: 0;">
                                                     <i class="bx bx-plus"></i> Add Expense
                                                 </button>
@@ -1049,7 +1265,104 @@
                 </div>
                 @endif
 
-                @if($project->type_of_project !== 'Education Center')
+                <!-- Community Contribution Expenses Section -->
+                <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
+                    <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Community Contribution Items & Spent Expenses</h3>
+
+                    <table class="stage-table">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th style="text-align: right;">Allocated Contribution</th>
+                                <th style="text-align: right;">Spent</th>
+                                <th style="text-align: right;">Balance</th>
+                                <th style="text-align: center; width: 140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($stage5CommContribs as $commIdx => $comm)
+                                @php
+                                    // Filter expenses for this community contribution item
+                                    $itemCommExpenses = array_filter($expenses, function($exp) use ($commIdx) {
+                                        return isset($exp['comm_index']) && $exp['comm_index'] == $commIdx;
+                                    });
+                                    $itemTotalCommSpent = 0;
+                                    foreach($itemCommExpenses as $exp) {
+                                        $itemTotalCommSpent += $exp['amount'];
+                                    }
+                                    $itemCommBalance = $comm['amount'] - $itemTotalCommSpent;
+                                @endphp
+                                <!-- Comm Header Row -->
+                                <tr style="background-color: rgba(255, 255, 255, 0.01); border-bottom: 1px solid var(--panel-border);">
+                                    <td style="font-weight: 700; color: #ffffff; vertical-align: middle;">
+                                        <i class="bx bx-group" style="color: var(--accent-cyan); margin-right: 0.5rem;"></i>{{ $comm['item'] }}
+                                    </td>
+                                    <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">₹{{ number_format($comm['amount'], 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--accent-red); vertical-align: middle;">₹{{ number_format($itemTotalCommSpent, 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: {{ $itemCommBalance >= 0 ? 'var(--accent-cyan)' : 'var(--accent-red)' }}; vertical-align: middle;">
+                                        ₹{{ number_format($itemCommBalance, 2) }}
+                                    </td>
+                                    <td style="text-align: center; vertical-align: middle;">
+                                        @if($isProjectManager && $hasApplication)
+                                            <button onclick="openAddCommExpenseModal({{ $commIdx }}, '{{ addslashes($comm['item']) }}')" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; margin: 0;">
+                                                <i class="bx bx-plus"></i> Expense
+                                            </button>
+                                        @else
+                                            <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No actions</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <!-- Sub-table / Nested Expenses list -->
+                                @if(!empty($itemCommExpenses))
+                                    @foreach($itemCommExpenses as $expenseIdx => $expense)
+                                        <tr style="background-color: rgba(0, 0, 0, 0.15);">
+                                            <td style="padding-left: 2rem; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; margin-right: 0.5rem; vertical-align: middle;"></span>
+                                                {{ $expense['expense_name'] }}
+                                            </td>
+                                            <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">
+                                                Qty: {{ $expense['quantity'] ?? 1 }}
+                                            </td>
+                                            <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">₹{{ number_format($expense['amount'], 2) }}</td>
+                                            <td></td>
+                                            <td style="text-align: center; vertical-align: middle;">
+                                                @if($isProjectManager && $hasApplication)
+                                                    <div style="display: inline-flex; gap: 0.4rem;">
+                                                        <button onclick="openEditCommExpenseModal({{ $expenseIdx }}, {{ $commIdx }}, '{{ addslashes($expense['expense_name']) }}', {{ $expense['quantity'] ?? 1 }}, {{ $expense['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.2rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin: 0;" title="Edit Expense">
+                                                            <i class="bx bx-pencil"></i>
+                                                        </button>
+                                                        <form action="{{ route('projects.delete_expense', [$project->id, $expenseIdx]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this expense?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn-danger-custom" style="padding: 0.25rem; font-size: 0.75rem; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;" title="Delete Expense">
+                                                                <i class="bx bx-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @else
+                                    <tr style="background-color: rgba(0, 0, 0, 0.05);">
+                                        <td colspan="4" style="padding-left: 2rem; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No expenses recorded for this contribution item.</td>
+                                        <td style="text-align: center; vertical-align: middle;">
+                                            @if($isProjectManager && $hasApplication)
+                                                <button onclick="openAddCommExpenseModal({{ $commIdx }}, '{{ addslashes($comm['item']) }}')" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; margin: 0;">
+                                                    <i class="bx bx-plus"></i> Add Expense
+                                                </button>
+                                            @else
+                                                <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No actions</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
                 <table class="stage-table">
                     <thead>
                         <tr>
@@ -1088,9 +1401,19 @@
             <div style="padding: 1.5rem;">
 
                 @php
+                    $docRecord = $project->files_with_timestamps;
+                    
+                    $compCert = $docRecord ? $docRecord->completion_certificate : null;
+                    if ($compCert === '0') { $compCert = null; }
+                    $compCertTimeDate = $docRecord ? $docRecord->completion_certificate_ticked_at : null;
+                    $compCertTime = $compCertTimeDate ? $compCertTimeDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+
+                    $measBook = $docRecord ? $docRecord->measurement_book : null;
+                    if ($measBook === '0') { $measBook = null; }
+                    $measBookTimeDate = $docRecord ? $docRecord->measurement_book_ticked_at : null;
+                    $measBookTime = $measBookTimeDate ? $measBookTimeDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                    
                     $pFiles = $project->files ?? [];
-                    $compCert = $pFiles['Completion Certificate'] ?? null;
-                    $measBook = $pFiles['Measurement Book'] ?? null;
                     $compPhotos = $pFiles['photos'] ?? [];
                     $compDetails = $pFiles['completion_details'] ?? [];
                 @endphp
@@ -1128,21 +1451,36 @@
 
                     <!-- Completion Certificate row -->
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
-                        <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Completion Certificate</span>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Completion Certificate</span>
+                            @if($compCertTime)
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $compCertTime }}</span>
+                            @endif
+                        </div>
                         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                            @if($isProjectManager && $project->status !== 'Approved')
-                                <button type="button" onclick="toggleChecklistDocument(this, 'Completion Certificate')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
-                                    @if($compCert)
-                                        <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
-                                    @else
-                                        <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
-                                    @endif
-                                </button>
+                            @if(!empty($compCert) && $compCert !== "1")
+                                <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
+                                    <i class="bx bx-show"></i> View Certificate
+                                </a>
+                                @if($isProjectManager && $project->status !== 'Approved')
+                                    <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
+                                        @csrf
+                                        <input type="hidden" name="document_name" value="Completion Certificate">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
+                                            <i class="bx bx-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                @endif
                             @else
-                                @if($compCert)
-                                    <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                        <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
-                                    </span>
+                                @if($isProjectManager && $project->status !== 'Approved')
+                                    <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                        @csrf
+                                        <input type="hidden" name="document_name" value="Completion Certificate">
+                                        <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
+                                        <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                            <i class="bx bx-upload"></i> Upload
+                                        </button>
+                                    </form>
                                 @else
                                     <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
                                         <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
@@ -1154,21 +1492,36 @@
 
                     <!-- Measurement Book row -->
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
-                        <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Measurement Book</span>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Measurement Book</span>
+                            @if($measBookTime)
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $measBookTime }}</span>
+                            @endif
+                        </div>
                         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                            @if($isProjectManager && $project->status !== 'Approved')
-                                <button type="button" onclick="toggleChecklistDocument(this, 'Measurement Book')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
-                                    @if($measBook)
-                                        <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
-                                    @else
-                                        <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
-                                    @endif
-                                </button>
+                            @if(!empty($measBook) && $measBook !== "1")
+                                <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
+                                    <i class="bx bx-show"></i> View Book
+                                </a>
+                                @if($isProjectManager && $project->status !== 'Approved')
+                                    <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
+                                        @csrf
+                                        <input type="hidden" name="document_name" value="Measurement Book">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
+                                            <i class="bx bx-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                @endif
                             @else
-                                @if($measBook)
-                                    <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                        <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
-                                    </span>
+                                @if($isProjectManager && $project->status !== 'Approved')
+                                    <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                        @csrf
+                                        <input type="hidden" name="document_name" value="Measurement Book">
+                                        <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
+                                        <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                            <i class="bx bx-upload"></i> Upload
+                                        </button>
+                                    </form>
                                 @else
                                     <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
                                         <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
@@ -1246,9 +1599,9 @@
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Any Other (₹)</label>
                                     <input type="number" name="any_other" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('any_other', $compDetails['any_other'] ?? 0) }}">
                                 </div>
-                                <div style="grid-column: span 2;">
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Geo Location (Link / Coordinates)</label>
-                                    <input type="text" name="geo_location" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. https://maps.google.com/..." value="{{ old('geo_location', $compDetails['geo_location'] ?? '') }}">
+                                <div>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Deductions (₹)</label>
+                                    <input type="number" name="deductions" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('deductions', $compDetails['deductions'] ?? 0) }}">
                                 </div>
                             </div>
                             <button type="submit" class="btn-custom" style="padding: 0.5rem 1.5rem; cursor: pointer;">Save Details</button>
@@ -1267,14 +1620,8 @@
                             <div class="details-label">Any Other</div><div class="details-colon">:</div>
                             <div class="details-value">₹{{ number_format($compDetails['any_other'] ?? 0, 2) }}</div>
 
-                            <div class="details-label">Geo Location</div><div class="details-colon">:</div>
-                            <div class="details-value">
-                                @if(!empty($compDetails['geo_location']))
-                                    <a href="{{ $compDetails['geo_location'] }}" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">{{ Str::limit($compDetails['geo_location'], 60) }}</a>
-                                @else
-                                    <span style="color: var(--text-muted); font-style: italic;">Not provided</span>
-                                @endif
-                            </div>
+                            <div class="details-label">Deductions</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: var(--accent-red);">₹{{ number_format($compDetails['deductions'] ?? 0, 2) }}</div>
 
                             <div class="details-label">Completion Status</div><div class="details-colon">:</div>
                             <div class="details-value">
@@ -1343,6 +1690,13 @@
                         icon.className = 'bx bx-checkbox';
                         icon.style.color = 'var(--text-muted)';
                     }
+
+                    const cellId = 'ticked-at-' + docName.replace(/ /g, '_');
+                    const cell = document.getElementById(cellId);
+                    if (cell) {
+                        cell.innerText = data.ticked_at ? data.ticked_at : '-';
+                    }
+
                     if (typeof showToast === 'function') {
                         showToast(data.message, 'success');
                     }
@@ -1402,6 +1756,21 @@
                     if (badge) {
                         badge.innerHTML = `<span style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(6,182,212,0.12);border:1px solid var(--accent-cyan);color:var(--accent-cyan);padding:0.4rem 1rem;border-radius:20px;font-size:0.85rem;font-weight:600;"><i class="bx bx-radio-circle-marked" style="font-size:1rem;"></i>${label}</span>`;
                     }
+
+                    const gridStatus = document.getElementById('grid-project-status');
+                    if (gridStatus) {
+                        gridStatus.innerText = label;
+                    }
+
+                    const container = document.getElementById('status-updated-time-container');
+                    const timeSpan = document.getElementById('status-updated-at');
+                    const humanSpan = document.getElementById('status-updated-human');
+                    if (container && timeSpan && humanSpan) {
+                        timeSpan.innerText = data.updated_at;
+                        humanSpan.innerText = data.updated_human;
+                        container.style.display = 'inline-flex';
+                    }
+
                     if (typeof showToast === 'function') showToast(data.message, 'success');
                 } else {
                     if (typeof showToast === 'function') showToast(data.error || 'Failed to update status.', 'danger');
@@ -1526,9 +1895,14 @@
 
         function switchStage(stageNum) {
             let isLocked = false;
-            if (projectType === 'Education Center') {
-                if (stageNum > activeProjectStage && isProjectApproved !== '1') {
-                    isLocked = true;
+            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'].includes(projectType);
+            if (isSixStage) {
+                if (stageNum <= 4) {
+                    isLocked = false;
+                } else {
+                    if (isProjectApproved !== '1') {
+                        isLocked = true;
+                    }
                 }
             } else {
                 if (stageNum !== 1 && isProjectApproved !== '1') {
@@ -1537,7 +1911,7 @@
             }
 
             if (isLocked) {
-                const msg = projectType === 'Education Center' 
+                const msg = isSixStage 
                     ? "Access Locked: This stage is not yet unlocked." 
                     : "Access Locked: This stage is only accessible after COO approval.";
                 if (typeof showToast === 'function') {
@@ -1578,9 +1952,14 @@
             if (savedStage) {
                 const stageNum = Number(savedStage);
                 let isLocked = false;
-                if (projectType === 'Education Center') {
-                    if (stageNum > activeProjectStage && isProjectApproved !== '1') {
-                        isLocked = true;
+                const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'].includes(projectType);
+                if (isSixStage) {
+                    if (stageNum <= 4) {
+                        isLocked = false;
+                    } else {
+                        if (isProjectApproved !== '1') {
+                            isLocked = true;
+                        }
                     }
                 } else {
                     if (stageNum !== 1 && isProjectApproved !== '1') {
@@ -1615,6 +1994,24 @@
             document.getElementById('editMaterialModal').style.display = 'none';
         }
 
+        // Community Contribution Modal Controls
+        function openAddCommContribModal() {
+            document.getElementById('addCommContribModal').style.display = 'flex';
+        }
+        function closeAddCommContribModal() {
+            document.getElementById('addCommContribModal').style.display = 'none';
+        }
+        function openEditCommContribModal(index, item, amount) {
+            const form = document.getElementById('editCommContribForm');
+            form.action = `/admin/projects/{{ $project->id }}/community-contributions/${index}`;
+            document.getElementById('editCommContribName').value = item;
+            document.getElementById('editCommContribAmount').value = amount;
+            document.getElementById('editCommContribModal').style.display = 'flex';
+        }
+        function closeEditCommContribModal() {
+            document.getElementById('editCommContribModal').style.display = 'none';
+        }
+
         // Expense Management Modal Controls
         function openAddExpenseModal(materialIndex, materialName) {
             document.getElementById('addExpenseFormMaterialIndex').value = materialIndex;
@@ -1624,16 +2021,39 @@
         function closeAddExpenseModal() {
             document.getElementById('addExpenseModal').style.display = 'none';
         }
-        function openEditExpenseModal(index, materialIndex, name, amount) {
+        function openEditExpenseModal(index, materialIndex, name, quantity, amount) {
             const form = document.getElementById('editExpenseForm');
             form.action = `/admin/projects/{{ $project->id }}/expenses/${index}`;
             document.getElementById('editExpenseFormMaterialIndex').value = materialIndex;
             document.getElementById('editExpenseName').value = name;
+            document.getElementById('editExpenseQuantity').value = quantity;
             document.getElementById('editExpenseAmount').value = amount;
             document.getElementById('editExpenseModal').style.display = 'flex';
         }
         function closeEditExpenseModal() {
             document.getElementById('editExpenseModal').style.display = 'none';
+        }
+
+        // Community Contribution Expense Management
+        function openAddCommExpenseModal(commIndex, commName) {
+            document.getElementById('addCommExpenseFormIndex').value = commIndex;
+            document.getElementById('addCommExpenseModalName').innerText = commName;
+            document.getElementById('addCommExpenseModal').style.display = 'flex';
+        }
+        function closeAddCommExpenseModal() {
+            document.getElementById('addCommExpenseModal').style.display = 'none';
+        }
+        function openEditCommExpenseModal(index, commIndex, name, quantity, amount) {
+            const form = document.getElementById('editCommExpenseForm');
+            form.action = `/admin/projects/{{ $project->id }}/expenses/${index}`;
+            document.getElementById('editCommExpenseFormIndex').value = commIndex;
+            document.getElementById('editCommExpenseName').value = name;
+            document.getElementById('editCommExpenseQuantity').value = quantity;
+            document.getElementById('editCommExpenseAmount').value = amount;
+            document.getElementById('editCommExpenseModal').style.display = 'flex';
+        }
+        function closeEditCommExpenseModal() {
+            document.getElementById('editCommExpenseModal').style.display = 'none';
         }
     </script>
 
@@ -1694,6 +2114,10 @@
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Expense Description / Item</label>
                     <input type="text" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 50 bags purchased, worker payment">
                 </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Quantity</label>
+                    <input type="number" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 50">
+                </div>
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
                     <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 4000">
@@ -1718,12 +2142,267 @@
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Expense Description / Item</label>
                     <input type="text" id="editExpenseName" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Quantity</label>
+                    <input type="number" id="editExpenseQuantity" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
                     <input type="number" id="editExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                     <button type="button" onclick="closeEditExpenseModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Community Contribution Modal -->
+    <div id="addCommContribModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Community Contribution Item</h3>
+            <form action="{{ route('projects.add_community_contribution', $project->id) }}" method="POST" style="margin: 0;">
+                @csrf
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Item Name / Description</label>
+                    <input type="text" name="item" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. Community Contribution, Other, Local Donations">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 5000">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeAddCommContribModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Community Contribution Modal -->
+    <div id="editCommContribModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Community Contribution Item</h3>
+            <form id="editCommContribForm" method="POST" style="margin: 0;">
+                @csrf
+                @method('PUT')
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Item Name / Description</label>
+                    <input type="text" id="editCommContribName" name="item" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <input type="number" id="editCommContribAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditCommContribModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Contractor Modal -->
+    <div id="addContractorModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add Contractor</h3>
+            <form action="{{ route('projects.add_contractor', $project->id) }}" method="POST" style="margin: 0;">
+                @csrf
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Select Contractor</label>
+                    <select name="contractor_id" id="add_contractor_select" required class="form-select-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" onchange="updateAddContractorDetails()">
+                        <option value="">-- Choose Contractor --</option>
+                        @foreach($allContractors as $c)
+                            <option value="{{ $c->id }}" data-phone="{{ $c->phone }}" data-company="{{ $c->company_name }}" data-address="{{ $c->address }}">{{ $c->name }} ({{ $c->company_name }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Contractor Details Card (Dynamic) -->
+                <div id="add_contractor_details_card" style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--panel-border); padding: 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem;">
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: var(--accent-cyan);">Company:</strong> <span id="add_c_company"></span></div>
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: var(--accent-cyan);">Phone:</strong> <span id="add_c_phone"></span></div>
+                    <div><strong style="color: var(--accent-cyan);">Address:</strong> <span id="add_c_address"></span></div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Type of Contract</label>
+                    <input type="text" name="type_of_contract" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. Turnkey, Labour, Material-based">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Purpose of Contract</label>
+                    <textarea name="purpose_of_contract" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; min-height: 80px;" placeholder="Describe purpose..."></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeAddContractorModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Add Contractor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Contractor Modal -->
+    <div id="editContractorModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Contractor</h3>
+            <form id="editContractorForm" method="POST" style="margin: 0;">
+                @csrf
+                @method('PUT')
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Select Contractor</label>
+                    <select name="contractor_id" id="edit_contractor_select" required class="form-select-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" onchange="updateEditContractorDetails()">
+                        <option value="">-- Choose Contractor --</option>
+                        @foreach($allContractors as $c)
+                            <option value="{{ $c->id }}" data-phone="{{ $c->phone }}" data-company="{{ $c->company_name }}" data-address="{{ $c->address }}">{{ $c->name }} ({{ $c->company_name }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Contractor Details Card (Dynamic) -->
+                <div id="edit_contractor_details_card" style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--panel-border); padding: 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem;">
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: var(--accent-cyan);">Company:</strong> <span id="edit_c_company"></span></div>
+                    <div style="margin-bottom: 0.5rem;"><strong style="color: var(--accent-cyan);">Phone:</strong> <span id="edit_c_phone"></span></div>
+                    <div><strong style="color: var(--accent-cyan);">Address:</strong> <span id="edit_c_address"></span></div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Type of Contract</label>
+                    <input type="text" id="edit_contractor_type" name="type_of_contract" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Purpose of Contract</label>
+                    <textarea id="edit_contractor_purpose" name="purpose_of_contract" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; min-height: 80px;"></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditContractorModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openAddContractorModal() {
+            document.getElementById('addContractorModal').style.display = 'flex';
+        }
+        function closeAddContractorModal() {
+            document.getElementById('addContractorModal').style.display = 'none';
+        }
+        function openEditContractorModal(index, contractor) {
+            const form = document.getElementById('editContractorForm');
+            form.action = `/admin/projects/{{ $project->id }}/contractors/${index}`;
+            
+            const select = document.getElementById('edit_contractor_select');
+            
+            if (contractor.contractor_id) {
+                select.value = contractor.contractor_id;
+            } else {
+                // Try name matching for legacy contractor records
+                let matched = false;
+                for (let i = 0; i < select.options.length; i++) {
+                    const optName = select.options[i].text.split('(')[0].trim().toLowerCase();
+                    const targetName = (contractor.contractor_name || '').trim().toLowerCase();
+                    if (optName === targetName) {
+                        select.selectedIndex = i;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    select.value = '';
+                }
+            }
+            
+            document.getElementById('edit_contractor_type').value = contractor.type_of_contract || '';
+            document.getElementById('edit_contractor_purpose').value = contractor.purpose_of_contract || '';
+            
+            updateEditContractorDetails();
+            
+            document.getElementById('editContractorModal').style.display = 'flex';
+        }
+        function closeEditContractorModal() {
+            document.getElementById('editContractorModal').style.display = 'none';
+        }
+
+        function updateAddContractorDetails() {
+            const select = document.getElementById('add_contractor_select');
+            const card = document.getElementById('add_contractor_details_card');
+            const opt = select.options[select.selectedIndex];
+            if (opt && opt.value) {
+                document.getElementById('add_c_company').innerText = opt.getAttribute('data-company') || 'N/A';
+                document.getElementById('add_c_phone').innerText = opt.getAttribute('data-phone') || 'N/A';
+                document.getElementById('add_c_address').innerText = opt.getAttribute('data-address') || 'N/A';
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+
+        function updateEditContractorDetails() {
+            const select = document.getElementById('edit_contractor_select');
+            const card = document.getElementById('edit_contractor_details_card');
+            const opt = select.options[select.selectedIndex];
+            if (opt && opt.value) {
+                document.getElementById('edit_c_company').innerText = opt.getAttribute('data-company') || 'N/A';
+                document.getElementById('edit_c_phone').innerText = opt.getAttribute('data-phone') || 'N/A';
+                document.getElementById('edit_c_address').innerText = opt.getAttribute('data-address') || 'N/A';
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+    </script>
+
+    <!-- Add Comm Expense Modal -->
+    <div id="addCommExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add Expense for (<span id="addCommExpenseModalName" style="color: var(--accent-cyan);"></span>)</h3>
+            <form action="{{ route('projects.add_expense', $project->id) }}" method="POST" style="margin: 0;">
+                @csrf
+                <input type="hidden" name="comm_index" id="addCommExpenseFormIndex">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Expense Description / Item</label>
+                    <input type="text" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. transport cost, helper fees">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Quantity</label>
+                    <input type="number" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 50">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 1500">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeAddCommExpenseModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Add Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Comm Expense Modal -->
+    <div id="editCommExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Contribution Expense</h3>
+            <form id="editCommExpenseForm" method="POST" style="margin: 0;">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="comm_index" id="editCommExpenseFormIndex">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Expense Description / Item</label>
+                    <input type="text" id="editCommExpenseName" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Quantity</label>
+                    <input type="number" id="editCommExpenseQuantity" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <input type="number" id="editCommExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditCommExpenseModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
                     <button type="submit" class="btn-custom" style="cursor: pointer;">Save Changes</button>
                 </div>
             </form>

@@ -2,7 +2,8 @@
 <nav class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <a href="{{ route('admin.home') }}" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; text-decoration: none;">
-            <img src="{{ asset('images/logo.png') }}" alt="RCFI Logo" class="sidebar-logo">
+            <img src="{{ asset('images/logo.png') }}" alt="RCFI Logo" class="sidebar-logo sidebar-logo-full">
+            <img src="{{ asset('images/logo_collapsed.png') }}" alt="RCFI Logo" class="sidebar-logo-collapsed">
         </a>
     </div>
     <ul class="sidebar-menu">
@@ -45,6 +46,12 @@
             <a href="{{ route('projects.index') }}" class="{{ request()->routeIs('projects.*') ? 'active' : '' }}">
                 <i class="bx bxs-briefcase"></i>
                 <span>Projects</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('contractors.index') }}" class="{{ request()->routeIs('contractors.*') ? 'active' : '' }}">
+                <i class="bx bxs-hard-hat"></i>
+                <span>Contractors</span>
             </a>
         </li>
     </ul>

@@ -163,7 +163,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Approved Applicant Name ABC');
         $response->assertSee('Test Approved Place');
-        $response->assertSee('RCFI' . date('y') . 'HS');
+        $response->assertSee('RCFI/' . date('y') . '-HS');
         // Status column now shows project_phase (not set = 'Not set'), not the old project->status field
         $response->assertSee('Not set');
     }

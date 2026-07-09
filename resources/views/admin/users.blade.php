@@ -10,7 +10,8 @@
             2 => 'COO',
             3 => 'Project Manager',
             4 => 'HOD',
-            5 => 'Others'
+            5 => 'Others',
+            6 => 'Engineer'
         ];
     @endphp
 
@@ -67,6 +68,7 @@
                                         3 => ['bg' => 'rgba(16, 185, 129, 0.2)', 'text' => 'var(--accent-green)'],
                                         4 => ['bg' => 'rgba(245, 158, 11, 0.2)', 'text' => '#f59e0b'],
                                         5 => ['bg' => 'rgba(156, 163, 175, 0.2)', 'text' => 'var(--text-muted)'],
+                                        6 => ['bg' => 'rgba(236, 72, 153, 0.2)', 'text' => '#ec4899'],
                                     ];
                                     $color = $roleColors[$user->role] ?? ['bg' => 'rgba(156, 163, 175, 0.2)', 'text' => 'var(--text-muted)'];
                                     $roleLabel = $rolesMap[$user->role] ?? 'User';
@@ -146,6 +148,7 @@
                         <option value="3" {{ old('role') == '3' ? 'selected' : '' }}>Project Manager</option>
                         <option value="4" {{ old('role') == '4' ? 'selected' : '' }}>HOD</option>
                         <option value="5" {{ old('role') == '5' ? 'selected' : '' }}>Others</option>
+                        <option value="6" {{ old('role') == '6' ? 'selected' : '' }}>Engineer</option>
                         <option value="1" {{ old('role') == '1' ? 'selected' : '' }}>Admin</option>
                     </select>
                 </div>
@@ -210,6 +213,7 @@
                         <option value="3">Project Manager</option>
                         <option value="4">HOD</option>
                         <option value="5">Others</option>
+                        <option value="6">Engineer</option>
                         <option value="1">Admin</option>
                     </select>
                 </div>

@@ -166,7 +166,7 @@
                             <td style="text-align: center; white-space: nowrap;">
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
-                                @if(Auth::user()->role === 2)
+                                @if($appItem->status !== 'Approved' && Auth::user()->role === 2)
                                     @if($appItem->status === 'Pending')
                                         <!-- Approve -->
                                         <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
@@ -183,22 +183,7 @@
                                                 <i class="bx bx-x"></i>
                                             </button>
                                         </form>
-                                    @elseif($appItem->status === 'Approved')
-                                        <!-- Reject (for changing status) -->
-                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
-                                            @csrf
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject Application">
-                                                <i class="bx bx-x"></i>
-                                            </button>
-                                        </form>
-                                    @elseif($appItem->status === 'Rejected')
-                                        <!-- Approve (for changing status) -->
-                                        <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
-                                            @csrf
-                                            <button type="submit" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve Application">
-                                                <i class="bx bx-check"></i>
-                                            </button>
-                                        </form>
+
                                     @endif
                                 @endif
                             </td>
@@ -726,8 +711,8 @@
             const statusActionsContainer = document.getElementById('modal_status_actions');
             if (statusActionsContainer) {
                 let statusHtml = '';
-                const approveUrl = `/admin/applications/category/{{ $categorySlug }}/${appItem.id}/approve`;
-                const rejectUrl = `/admin/applications/category/{{ $categorySlug }}/${appItem.id}/reject`;
+                const approveUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/approve`;
+                const rejectUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/reject`;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                 if (appItem.status === 'Pending') {
@@ -841,33 +826,35 @@
         }
 
         function deleteFromDetails() {
-            if (currentDetailsAppItem && confirm('Are you sure you want to delete this application?')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/admin/applications/' + currentDetailsAppItem.id;
-                
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = csrfToken;
-                form.appendChild(csrfInput);
-                
-                const methodInput = document.createElement('input');
-                methodInput.type = 'hidden';
-                methodInput.name = '_method';
-                methodInput.value = 'DELETE';
-                form.appendChild(methodInput);
+            if (currentDetailsAppItem) {
+                showCustomConfirm('Are you sure you want to delete this application? This action cannot be undone.', function() {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/admin/applications/' + currentDetailsAppItem.id;
 
-                const redirectInput = document.createElement('input');
-                redirectInput.type = 'hidden';
-                redirectInput.name = 'redirect_category';
-                redirectInput.value = '{{ $categorySlug }}';
-                form.appendChild(redirectInput);
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                document.body.appendChild(form);
-                form.submit();
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = csrfToken;
+                    form.appendChild(csrfInput);
+
+                    const methodInput = document.createElement('input');
+                    methodInput.type = 'hidden';
+                    methodInput.name = '_method';
+                    methodInput.value = 'DELETE';
+                    form.appendChild(methodInput);
+
+                    const redirectInput = document.createElement('input');
+                    redirectInput.type = 'hidden';
+                    redirectInput.name = 'redirect_category';
+                    redirectInput.value = '{{ $categorySlug }}';
+                    form.appendChild(redirectInput);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                });
             }
         }
 

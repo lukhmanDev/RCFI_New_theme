@@ -159,7 +159,7 @@
                     $count = $counts[$config['name']] ?? 0;
                     $pendingCount = $pendingCounts[$config['name']] ?? 0;
                 @endphp
-                <a href="{{ route('applications.category', $slug) }}" class="app-card" style="background: {{ $config['bg'] }}; position: relative;">
+                 <a href="{{ route('applications.category', $slug) }}" class="app-card" style="background: {{ $config['bg'] }}; position: relative;">
                     @if($pendingCount > 0)
                         <!-- Red dot and pending count badge on the right side -->
                         <div style="position: absolute; top: 0.75rem; right: 0.75rem; background-color: var(--accent-red); color: #ffffff; padding: 0.2rem 0.45rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; gap: 0.25rem; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.15);">
@@ -173,7 +173,7 @@
                         </div>
                         <div class="app-card-info" style="padding-right: 75px;">
                             <h5>{{ $config['name'] }}</h5>
-                            <h4>{{ $count }}</h4>
+                            <h4>{{ $approvedProjectCounts[$config['name']] ?? 0 }} <span style="font-size: 0.95rem; font-weight: 500; opacity: 0.75;">/ {{ $totalProjectCounts[$config['name']] ?? 0 }}</span></h4>
                         </div>
                     </div>
                     <div class="app-card-bottom">

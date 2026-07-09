@@ -40,7 +40,7 @@
                 <thead>
                     <tr>
                         <th colspan="7" style="text-align: center; border-right: 2px solid #2a3547; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.05em; background-color: rgba(0,0,0,0.15);">APPLICATION DETAILS</th>
-                        <th colspan="5" style="text-align: center; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.05em; background-color: rgba(0,0,0,0.15);">PROJECT DETAILS</th>
+                        <th colspan="4" style="text-align: center; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.05em; background-color: rgba(0,0,0,0.15);">PROJECT DETAILS</th>
                     </tr>
                     <tr>
                         <th>Application ID</th>
@@ -54,8 +54,7 @@
                         <th>Project Manager</th>
                         <th>Donor</th>
                         <th>Status</th>
-                        <th style="text-align: center;">Action</th>
-                    </tr>
+                        </tr>
                 </thead>
                 <tbody>
                     @forelse($applications as $appItem)
@@ -93,7 +92,7 @@
                             }
                             $searchStr = strtolower(implode(' ', array_filter($searchTerms)));
                         @endphp
-                        <tr class="app-row" data-search="{{ $searchStr }}">
+                        <tr class="app-row" data-search="{{ $searchStr }}" data-place="{{ $appItem->place ?? '' }}">
                             <td style="font-weight: 600; color: var(--accent-cyan);">{{ $appId }}</td>
                             <td>{{ $appItem->applicant_name }}</td>
                             <td>{{ $meta['father_name'] ?? '-' }}</td>
@@ -104,7 +103,7 @@
                             <!-- Project ID & Status -->
                             <td>
                                 @if($project)
-                                    <a href="{{ route('projects.show', $project->id) }}" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;">
+                                    <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project) }}" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;">
                                         {{ $project->project_id ?? 'Assigned' }}
                                     </a>
                                 @else
@@ -152,14 +151,6 @@
                                     </span>
                                 @endif
                             </td>
-
-                            <!-- Action -->
-                            <td style="text-align: center; white-space: nowrap;">
-                                <!-- View button -->
-                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="View Details">
-                                    <i class="bx bx-show"></i>
-                                </button>
-                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -199,24 +190,26 @@
     <script>
         let currentDetailsAppItem = null;
 
-        function openDetailsModal(appItem) {
+        function openDetailsModal(appItem, isProjectApproved = false) {
             currentDetailsAppItem = appItem;
             
             // Populate status actions in the modal footer dynamically
             const statusActionsContainer = document.getElementById('modal_status_actions');
             if (statusActionsContainer) {
                 let statusHtml = '';
-                const rejectUrl = `/admin/applications/{{ $categorySlug }}/\${appItem.id}/reject`;
+                const rejectUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/reject`;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+                if (!isProjectApproved) {
                 statusHtml = `
-                    <form action="\${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
-                        <input type="hidden" name="_token" value="\${csrfToken}">
-                        <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                            <i class="bx bx-x"></i> Reject Application
-                        </button>
-                    </form>
-                `;
+                                    <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                            <i class="bx bx-x"></i> Reject Application
+                                        </button>
+                                    </form>
+                                `;
+            }
                 statusActionsContainer.innerHTML = statusHtml;
             }
 

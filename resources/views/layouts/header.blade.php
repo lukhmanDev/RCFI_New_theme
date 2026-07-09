@@ -1,7 +1,8 @@
 <!-- Topbar Header -->
 <header class="topbar">
     <button class="topbar-toggle" onclick="toggleSidebar()"><i class="bx bx-menu"></i></button>
-    <div class="topbar-title">@yield('title')</div>
+    <button class="sidebar-collapse-btn" onclick="toggleSidebarCollapse()"><i class="bx bx-menu-alt-left"></i></button>
+    <div class="topbar-title" style="margin-left: 0.5rem;">@yield('title')</div>
     
     <div class="topbar-profile" onclick="toggleProfileMenu(event)">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6WbkrAqlGF2Xzmb-prbginrkDNrv6zT05ID6KEjTbP2F-gn9w-wg1L3_NiSeXLq3HsqI&usqp=CAU" alt="Profile">

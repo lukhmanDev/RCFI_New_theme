@@ -7,11 +7,13 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\DonorController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ContractorController;
 
 // Redirect root to login page
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
 
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -37,6 +39,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/donors', [DonorController::class, 'store'])->name('donors.store');
     Route::put('/admin/donors/{id}', [DonorController::class, 'update'])->name('donors.update');
     Route::delete('/admin/donors/{id}', [DonorController::class, 'destroy'])->name('donors.destroy');
+
+    // Contractors routes
+    Route::get('/admin/contractors', [ContractorController::class, 'index'])->name('contractors.index');
+    Route::post('/admin/contractors', [ContractorController::class, 'store'])->name('contractors.store');
+    Route::put('/admin/contractors/{id}', [ContractorController::class, 'update'])->name('contractors.update');
+    Route::delete('/admin/contractors/{id}', [ContractorController::class, 'destroy'])->name('contractors.destroy');
 
     // Applications routes
     Route::get('/admin/applications/approved', [ApplicationController::class, 'showApprovedDashboard'])->name('applications.approved.index');
@@ -71,7 +79,14 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/admin/projects/{id}/expenses/{index}', [ProjectController::class, 'updateExpense'])->name('projects.update_expense');
     Route::delete('/admin/projects/{id}/expenses/{index}', [ProjectController::class, 'deleteExpense'])->name('projects.delete_expense');
 
+    Route::post('/admin/projects/{id}/community-contributions', [ProjectController::class, 'addCommunityContribution'])->name('projects.add_community_contribution');
+    Route::put('/admin/projects/{id}/community-contributions/{index}', [ProjectController::class, 'updateCommunityContribution'])->name('projects.update_community_contribution');
+    Route::delete('/admin/projects/{id}/community-contributions/{index}', [ProjectController::class, 'deleteCommunityContribution'])->name('projects.delete_community_contribution');
+
     Route::post('/admin/projects/{id}/upload-photo', [ProjectController::class, 'uploadPhoto'])->name('projects.upload_photo');
     Route::delete('/admin/projects/{id}/delete-photo/{index}', [ProjectController::class, 'deletePhoto'])->name('projects.delete_photo');
     Route::post('/admin/projects/{id}/completion-details', [ProjectController::class, 'saveCompletionDetails'])->name('projects.save_completion_details');
+    Route::post('/admin/projects/{id}/contractors', [ProjectController::class, 'addContractor'])->name('projects.add_contractor');
+    Route::put('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'updateContractor'])->name('projects.update_contractor');
+    Route::delete('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'deleteContractor'])->name('projects.delete_contractor');
 });

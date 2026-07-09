@@ -68,15 +68,17 @@ class ApplicationController extends Controller
     {
         $counts = [];
         $pendingCounts = [];
+        $approvedProjectCounts = [];
+        $totalProjectCounts = [];
         foreach ($this->categories as $slug => $config) {
             $model = $config['model'];
             $counts[$config['name']] = $model::count();
             $pendingCounts[$config['name']] = $model::where('status', 'Pending')->count();
-            $approvedProjectCount = $model::where('status', 'Approved')->count();
-            $totalProjectCount = $model::count();
+            $approvedProjectCounts[$config['name']] = $model::where('status', 'Approved')->count();
+            $totalProjectCounts[$config['name']] = $model::count();
         }
 
-        return view('admin.applications', compact('counts', 'pendingCounts'));
+        return view('admin.applications', compact('counts', 'pendingCounts', 'approvedProjectCounts', 'totalProjectCounts'));
     }
 
     public function showCategory($slug)

@@ -74,7 +74,16 @@
             transition: transform 0.2s ease;
         }
 
-        .sidebar-brand:hover .sidebar-logo {
+        .sidebar-logo-collapsed {
+            display: none;
+            max-height: 45px;
+            max-width: 100%;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar-brand:hover .sidebar-logo,
+        .sidebar-brand:hover .sidebar-logo-collapsed {
             transform: scale(1.03);
         }
 
@@ -669,9 +678,69 @@
         .btn-dots {
             display: none !important;
         }
+
+        /* Sidebar Collapsed State (Desktop only) */
+        @media (min-width: 769px) {
+            body.sidebar-collapsed .sidebar {
+                width: 70px;
+            }
+            body.sidebar-collapsed .main-wrapper {
+                margin-left: 70px;
+                width: calc(100% - 70px);
+            }
+            body.sidebar-collapsed .sidebar-logo-full {
+                display: none !important;
+            }
+            body.sidebar-collapsed .sidebar-logo-collapsed {
+                display: block !important;
+            }
+            body.sidebar-collapsed .sidebar-menu span {
+                display: none !important;
+            }
+            body.sidebar-collapsed .sidebar-menu a {
+                justify-content: center;
+                padding: 0.75rem;
+            }
+            body.sidebar-collapsed .sidebar-menu i {
+                font-size: 1.5rem;
+                margin: 0;
+            }
+        }
+
+        .sidebar-collapse-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.4rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            margin-right: 1rem;
+        }
+        .sidebar-collapse-btn:hover {
+            background-color: var(--panel-border);
+            color: #ffffff;
+        }
+        @media (max-width: 768px) {
+            .sidebar-collapse-btn {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
+    <script>
+        (function() {
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            if (isCollapsed && window.innerWidth > 768) {
+                document.body.classList.add('sidebar-collapsed');
+            }
+        })();
+    </script>
 
     @include('layouts.sidebar')
 
@@ -690,6 +759,11 @@
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        function toggleSidebarCollapse() {
+            const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', isCollapsed ? 'true' : 'false');
         }
 
         function toggleProfileMenu(event) {

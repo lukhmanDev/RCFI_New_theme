@@ -54,7 +54,7 @@ return new class extends Migration
             $table->string('locality_district')->nullable();
             $table->string('locality_location')->nullable();
             $table->string('locality_state')->nullable();
-            $table->integer('locality_village')->nullable();
+            $table->string('locality_village')->nullable();
             $table->string('location')->nullable();
             $table->string('mahallu_name')->nullable();
             $table->string('mobile')->nullable();
@@ -72,7 +72,7 @@ return new class extends Migration
             $table->string('state')->nullable();
             $table->string('status_of_current_building')->nullable();
             $table->string('submitted_before')->nullable();
-            $table->integer('village')->nullable();
+            $table->string('village')->nullable();
             $table->integer('year')->nullable();
 
             $table->timestamps();
@@ -165,7 +165,7 @@ return new class extends Migration
             $table->string('pin')->nullable();
             $table->string('post')->nullable();
             $table->string('state')->nullable();
-            $table->integer('village')->nullable();
+            $table->string('village')->nullable();
             $table->integer('well_depth')->nullable();
             $table->string('well_type')->nullable();
 
@@ -215,7 +215,7 @@ return new class extends Migration
             $table->string('pin')->nullable();
             $table->string('post')->nullable();
             $table->string('state')->nullable();
-            $table->integer('village')->nullable();
+            $table->string('village')->nullable();
             $table->integer('well_depth')->nullable();
             $table->string('well_diameter')->nullable();
             $table->string('well_for_agriculture')->nullable();
@@ -250,7 +250,7 @@ return new class extends Migration
             $table->string('locality_district')->nullable();
             $table->string('locality_location')->nullable();
             $table->string('locality_state')->nullable();
-            $table->integer('locality_village')->nullable();
+            $table->string('locality_village')->nullable();
             $table->string('location')->nullable();
             $table->string('mahallu_name')->nullable();
             $table->string('mobile')->nullable();
@@ -272,7 +272,7 @@ return new class extends Migration
             $table->integer('students_girls')->nullable();
             $table->string('submitted_before')->nullable();
             $table->string('syllabus')->nullable();
-            $table->integer('village')->nullable();
+            $table->string('village')->nullable();
             $table->integer('year')->nullable();
 
             $table->timestamps();
@@ -377,7 +377,7 @@ return new class extends Migration
             $table->string('state')->nullable();
             $table->string('status_of_applicant')->nullable();
             $table->integer('total_family_members')->nullable();
-            $table->integer('village')->nullable();
+            $table->string('village')->nullable();
             $table->string('ward')->nullable();
 
             $table->timestamps();
@@ -406,7 +406,7 @@ return new class extends Migration
             $table->string('legal_approvals_status')->nullable();
             $table->string('locality_location')->nullable();
             $table->string('locality_state')->nullable();
-            $table->integer('locality_village')->nullable();
+            $table->string('locality_village')->nullable();
             $table->string('mahallu_name')->nullable();
             $table->string('mobile')->nullable();
             $table->integer('num_beds')->nullable();
@@ -421,7 +421,7 @@ return new class extends Migration
             $table->integer('rooms')->nullable();
             $table->string('site_has_building')->nullable();
             $table->string('state')->nullable();
-            $table->integer('village')->nullable();
+            $table->string('village')->nullable();
             $table->integer('year')->nullable();
 
             $table->timestamps();
@@ -560,7 +560,7 @@ return new class extends Migration
             $table->string('locality_district')->nullable();
             $table->string('locality_location')->nullable();
             $table->string('locality_state')->nullable();
-            $table->integer('locality_village')->nullable();
+            $table->string('locality_village')->nullable();
             $table->string('mahallu_name')->nullable();
             $table->string('mobile')->nullable();
             $table->integer('num_rooms')->nullable();
@@ -576,7 +576,7 @@ return new class extends Migration
             $table->string('site_has_building')->nullable();
             $table->string('state')->nullable();
             $table->string('status_of_current_building')->nullable();
-            $table->integer('village')->nullable();
+            $table->string('village')->nullable();
             $table->integer('year')->nullable();
 
             $table->timestamps();

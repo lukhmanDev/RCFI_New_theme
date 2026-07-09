@@ -28,6 +28,7 @@
                         <th>Name of Applicant</th>
                         <th class="col-amount" style="text-align: center;">Amount Requested</th>
                         <th class="col-status" style="text-align: center;">Status</th>
+                        <th class="col-proj-status" style="text-align: center;">Project Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
                 </thead>
@@ -86,6 +87,42 @@
                                 <span style="background-color: {{ $style['bg'] }}; color: {{ $style['text'] }}; border: 1px solid {{ $style['border'] }}; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
                                     {{ $appItem->status }}
                                 </span>
+                            </td>
+
+                            <!-- Project Status -->
+                            <td class="col-proj-status" style="text-align: center;">
+                                @php
+                                    $projectModelsMap = [
+                                        'Education Center' => \App\Models\EducationCenterProject::class,
+                                        'Cultural Center' => \App\Models\CulturalCenterProject::class,
+                                        'Hospital or Clinics' => \App\Models\HospitalClinicProject::class,
+                                        'Shops and Others' => \App\Models\ShopOtherProject::class,
+                                        'House' => \App\Models\HouseProject::class,
+                                        'Drinking Water - Group Level' => \App\Models\DrinkingWaterGroupProject::class,
+                                        'Drinking Water - Individual Level' => \App\Models\DrinkingWaterIndividualProject::class,
+                                        'Orphan Care' => \App\Models\OrphanCareProject::class,
+                                        'Differently Abled' => \App\Models\DifferentlyAbledProject::class,
+                                        'Family Aid' => \App\Models\FamilyAidProject::class,
+                                        'General' => \App\Models\GeneralProject::class,
+                                    ];
+                                    $projectClass = $projectModelsMap[$appItem->project_type] ?? null;
+                                    $pRecord = null;
+                                    if ($projectClass && $appItem->status === 'Approved') {
+                                        $pRecord = $projectClass::where('application_id', $appItem->id)->first();
+                                    }
+                                @endphp
+                                @if($pRecord)
+                                    @php
+                                        $phaseLabel = $pRecord->project_phase === 'Other'
+                                            ? ($pRecord->project_phase_custom ?: 'Other')
+                                            : $pRecord->project_phase;
+                                    @endphp
+                                    <span style="background-color: rgba(6,182,212,0.12); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                        {{ $phaseLabel }}
+                                    </span>
+                                @else
+                                    <span style="color: var(--text-muted); font-size: 0.85rem;">—</span>
+                                @endif
                             </td>
 
                             <!-- Action -->

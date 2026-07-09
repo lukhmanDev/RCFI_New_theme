@@ -29,7 +29,8 @@ class Project extends Model
             $prefix = $prefixes[$project->type_of_project] ?? 'APP';
             $year = date('y');
             $idString = str_pad($project->id, 3, '0', STR_PAD_LEFT);
-            $project->project_id = 'RCFI' . $year . $prefix . $idString;
+            $unitPrefix = (strtoupper($project->unit) === 'MARKAZ') ? 'MRKZ/' : 'RCFI/';
+            $project->project_id = $unitPrefix . $year . '-' . $prefix . $idString;
             $project->saveQuietly();
         });
     }
@@ -47,5 +48,10 @@ class Project extends Model
     public function application()
     {
         return $this->belongsTo(Application::class, 'application_id');
+    }
+
+    public function engineer()
+    {
+        return $this->belongsTo(User::class, 'engineer_id');
     }
 }

@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\HasProjectColumns;
+
 use Illuminate\Database\Eloquent\Model;
 
 class EducationCenterProject extends Model
 {
+    use HasProjectColumns;
     protected $table = 'education_center_projects';
     protected $guarded = [];
-    protected $casts = ['files' => 'array', 'materials' => 'array', 'expenses' => 'array'];
+    protected $casts = ['community_contributions' => 'array', 'completion_details' => 'array'];
 
     protected static function boot()
     {
@@ -17,7 +20,8 @@ class EducationCenterProject extends Model
         static::created(function ($project) {
             $year = date('y');
             $idString = str_pad($project->id, 3, '0', STR_PAD_LEFT);
-            $project->project_id = 'RCFI' . $year . 'EC' . $idString;
+            $unitPrefix = (strtoupper($project->unit) === 'MARKAZ') ? 'MRKZ/' : 'RCFI/';
+            $project->project_id = $unitPrefix . $year . '-EC' . $idString;
             $project->saveQuietly();
         });
     }
@@ -30,5 +34,10 @@ class EducationCenterProject extends Model
     public function projectManager()
     {
         return $this->belongsTo(User::class, 'project_manager_id');
+    }
+
+    public function engineer()
+    {
+        return $this->belongsTo(User::class, 'engineer_id');
     }
 }
