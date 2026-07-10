@@ -89,4 +89,5 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/projects/{id}/contractors', [ProjectController::class, 'addContractor'])->name('projects.add_contractor');
     Route::put('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'updateContractor'])->name('projects.update_contractor');
     Route::delete('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'deleteContractor'])->name('projects.delete_contractor');
+    
 });

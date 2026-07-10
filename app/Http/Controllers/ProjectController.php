@@ -280,7 +280,7 @@ class ProjectController extends Controller
         if ($config) {
             $model = $config['model'];
             if (in_array($data['type_of_project'], ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'])) {
-                $data['stage'] = 1;
+                $data['stage'] = 4; // Start at Stage 4 — Stages 1-3 are informational only
             } else {
                 $data['stage'] = 6;
             }
@@ -302,7 +302,7 @@ class ProjectController extends Controller
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4])) {
+        if (!in_array($user->role, [1, 2, 4]) && strtolower($user->designation ?? '') !== 'coo' && strtolower($user->designation ?? '') !== 'hod') {
             return redirect()->back()->with('error', 'You are not authorized to edit projects.');
         }
 
@@ -351,7 +351,7 @@ class ProjectController extends Controller
     public function destroy(Request $request, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4])) {
+        if (!in_array($user->role, [1, 2, 4]) && strtolower($user->designation ?? '') !== 'coo' && strtolower($user->designation ?? '') !== 'hod') {
             return redirect()->back()->with('error', 'You are not authorized to delete projects.');
         }
 
@@ -462,22 +462,23 @@ class ProjectController extends Controller
         }
 
         $isCoo = ($user->role === 2 || strtolower($user->designation) === 'coo');
+        $isHod = ($user->role === 4 || strtolower($user->designation) === 'hod');
         $isPm = ($user->role === 3 || strtolower($user->designation) === 'project manager');
         $isEngineer = ($user->role === 6 || strtolower($user->designation) === 'engineer');
 
         if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'])) {
             if ($project->type_of_project === 'Education Center') {
-                if (!$isCoo && !$isPm) {
-                    return redirect()->back()->with('error', 'Only Project Manager and COO are authorized to assign applications.');
+                if (!$isCoo && !$isHod && !$isPm) {
+                    return redirect()->back()->with('error', 'Only Project Manager, COO and HOD are authorized to assign applications.');
                 }
             } else {
-                if (!$isCoo && !$isPm && !$isEngineer) {
-                    return redirect()->back()->with('error', 'Only Project Manager, COO and Engineer are authorized to assign applications.');
+                if (!$isCoo && !$isHod && !$isPm && !$isEngineer) {
+                    return redirect()->back()->with('error', 'Only Project Manager, COO, HOD and Engineer are authorized to assign applications.');
                 }
             }
         } else {
-            if (!$isCoo) {
-                return redirect()->back()->with('error', 'Only COO is authorized to assign applications.');
+            if (!$isCoo && !$isHod) {
+                return redirect()->back()->with('error', 'Only COO or HOD is authorized to assign applications.');
             }
         }
 
@@ -580,32 +581,13 @@ class ProjectController extends Controller
         if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'])) {
             $currentStage = $project->stage;
 
-            if ($currentStage == 1) {
-                $project->stage = 2;
-                $project->save();
-                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 1 verified successfully! Project promoted to Stage 2.');
-            }
-
-            if ($currentStage == 2) {
-                if (empty($project->application_id)) {
-                    return redirect()->back()->with('error', 'Please connect an application first before approving Stage 2.');
-                }
-                $project->stage = 3;
-                $project->save();
-                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 2 approved successfully! Project promoted to Stage 3.');
-            }
-
-            if ($currentStage == 3) {
-                $project->stage = 4;
-                $project->save();
-                return redirect()->route('projects.show', $project->id)->with('success', 'Stage 3 approved successfully! Project promoted to Stage 4.');
-            }
 
             if ($currentStage == 4) {
-                if ($project->type_of_project === 'Education Center') {
-                    if ($user->role !== 2 && strtolower($user->designation) !== 'coo') {
-                        return redirect()->back()->with('error', 'Only COO is authorized to approve Stage 4.');
-                    }
+                $isCoo = ($user->role === 2 || strtolower($user->designation ?? '') === 'coo');
+                $isHod = ($user->role === 4 || strtolower($user->designation ?? '') === 'hod');
+
+                if (!$isCoo && !$isHod) {
+                    return redirect()->back()->with('error', 'Only COO or HOD is authorized to approve Stage 4.');
                 }
                 $project->stage = 5;
                 $project->save();
@@ -831,11 +813,11 @@ class ProjectController extends Controller
     public function updatePhase(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user->role !== 3 && $user->role !== 1 && $user->role !== 2 && strtolower($user->designation) !== 'project manager' && strtolower($user->designation) !== 'coo') {
+        if ($user->role !== 3 && $user->role !== 1 && $user->role !== 2 && $user->role !== 4 && strtolower($user->designation) !== 'project manager' && strtolower($user->designation) !== 'coo' && strtolower($user->designation) !== 'hod') {
             if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'error' => 'Only Project Manager and COO are authorized to update project status.'], 403);
+                return response()->json(['success' => false, 'error' => 'Only Project Manager, COO and HOD are authorized to update project status.'], 403);
             }
-            return redirect()->back()->with('error', 'Only Project Manager and COO are authorized to update project status.');
+            return redirect()->back()->with('error', 'Only Project Manager, COO and HOD are authorized to update project status.');
         }
 
         $request->validate([

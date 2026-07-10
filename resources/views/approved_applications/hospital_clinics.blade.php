@@ -22,9 +22,6 @@
     <div class="panel" style="width: 100%;">
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h2 class="panel-title">Approved Records</h2>
-            <button onclick="downloadExcel()" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); display: inline-flex; align-items: center; gap: 0.5rem;">
-                <i class="bx bx-download"></i> Download Excel
-            </button>
         </div>
         
         <!-- Search Toolbar -->

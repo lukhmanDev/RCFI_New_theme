@@ -218,11 +218,13 @@
                     </select>
                 </div>
 
+                @if(Auth::user()->role !== 1)
                 <!-- Password (Optional) -->
                 <div style="margin-bottom: 2rem;">
                     <label class="form-label" for="edit_password">Password (Leave blank to keep current)</label>
                     <input type="password" class="form-control-dark" id="edit_password" name="password" placeholder="Enter new password">
                 </div>
+                @endif
 
                 <!-- Submit Button -->
                 <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
@@ -253,7 +255,10 @@
             document.getElementById('edit_mobile').value = user.mobile || '';
             document.getElementById('edit_designation').value = user.designation || '';
             document.getElementById('edit_role').value = user.role;
-            document.getElementById('edit_password').value = '';
+            const passwordField = document.getElementById('edit_password');
+            if (passwordField) {
+                passwordField.value = '';
+            }
 
             document.getElementById('editUserModal').style.display = 'flex';
         }

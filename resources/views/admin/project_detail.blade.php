@@ -169,13 +169,17 @@
                 $isCompleted = $project->stage > $i;
                 $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
                 
-                // Lock other stages if the project is not Approved by COO
-                // For 6-stage projects, stages 1-4 are never locked, stages 5-6 require COO approval
+                // For 6-stage construction projects:
+                //   Stages 1-4: always accessible
+                //   Stage 5: unlocks when project reaches stage 5 (after Stage 4 HOD/COO approval)
+                //   Stage 6: unlocks when project reaches stage 6 (or is fully Approved)
                 if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'])) {
                     if ($i <= 4) {
                         $isLocked = false;
-                    } else {
-                        $isLocked = ($project->status !== 'Approved');
+                    } elseif ($i == 5) {
+                        $isLocked = ($project->stage < 5 && $project->status !== 'Approved');
+                    } else { // stage 6
+                        $isLocked = ($project->stage < 6 && $project->status !== 'Approved');
                     }
                 } else {
                     $isLocked = ($project->status !== 'Approved' && $i > 1);
@@ -196,8 +200,9 @@
     @php
         $authUser = auth()->user();
         $isCoo = ($authUser && ($authUser->role == 2 || strtolower($authUser->designation ?? '') === 'coo'));
+        $isHod = ($authUser && ($authUser->role == 4 || strtolower($authUser->designation ?? '') === 'hod'));
         $isProjectManager = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || $authUser->role == 6 || strtolower($authUser->designation ?? '') === 'project manager' || strtolower($authUser->designation ?? '') === 'engineer'));
-        $canEditStatus = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || $authUser->role == 2 || strtolower($authUser->designation ?? '') === 'project manager' || strtolower($authUser->designation ?? '') === 'coo'));
+        $canEditStatus = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || $authUser->role == 2 || $authUser->role == 4 || strtolower($authUser->designation ?? '') === 'project manager' || strtolower($authUser->designation ?? '') === 'coo' || strtolower($authUser->designation ?? '') === 'hod'));
         $hasApplication = !empty($project->application_id);
     @endphp
 
@@ -215,30 +220,19 @@
 
     <!-- Project Detail Panel -->
     <div class="panel" style="width: 100%; padding: 0; overflow: hidden; border-radius: 8px;">
-        
+
+
+       
+
         <!-- ================= STAGE 1 PANEL ================= -->
         <div class="stage-content-panel" id="stage-content-1">
             <div class="detail-header-panel">
                 <h2>PROJECT DETAIL</h2>
             </div>
             <div style="padding: 1.5rem;">
+                {{-- Stage 1: No approval required for construction or non-construction projects --}}
                 @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
-                    @if($project->status !== 'Approved')
-                        <div style="margin-bottom: 1.5rem;">
-                            @if($isCoo)
-                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="btn-custom" style="background: #eb3b5a; cursor: pointer; font-weight: 700; padding: 0.75rem 1.5rem;">
-                                        Approve Project
-                                    </button>
-                                </form>
-                            @else
-                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                    <i class="bx bx-time-five"></i> Pending COO Approval
-                                </div>
-                            @endif
-                        </div>
-                    @else
+                    @if($project->status === 'Approved')
                         <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
                             <i class="bx bx-check-circle"></i> Project Approved & Active
                         </div>
@@ -278,6 +272,9 @@
                     ];
                     $currentPhase  = $project->project_phase ?? '';
                     $currentCustom = $project->project_phase_custom ?? '';
+
+                    
+
                 @endphp
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1rem; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
@@ -445,25 +442,10 @@
                     $appId = $application ? ('APLRCFI' . $appYear . $prefix . str_pad($application->id, 5, '0', STR_PAD_LEFT)) : 'N/A';
                 @endphp
 
-                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
-                    <div class="stage-success-banner">
-                        Applicant ID {{ $appId }} has been Approved
-                    </div>
-
-                    @if($project->stage === 2)
-                        <div style="margin-bottom: 1.5rem;">
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                    Approve & Promote to Stage 3
-                                </button>
-                            </form>
-                        </div>
-                    @endif
-                @endif
+                {{-- Stage 2: No approval required for construction or non-construction projects --}}
 
                 <!-- Connect Application Form inside Stage 2 for 6-stage projects (Show First) -->
-                @if(($isProjectManager || $isCoo) && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']) && $project->status !== 'Approved')
+                @if(($isProjectManager || $isCoo || $isHod) && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']) && $project->status !== 'Approved')
                 <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @if(!empty($project->application_id))
@@ -752,10 +734,10 @@
                     $grandTotal = $totalAmount + $commTotal;
                 @endphp
 
-                @if($project->stage === 4)
+                @if($project->stage <= 4 && $project->status !== 'Approved')
                     <div style="margin-bottom: 1.5rem;">
                         @php
-                            $canApproveStage4 = $isCoo || ($project->type_of_project !== 'Education Center' && ($isProjectManager || $isCoo));
+                            $canApproveStage4 = $isCoo || $isHod;
                         @endphp
                         @if($canApproveStage4)
                             <form action="{{ route('projects.approve', $project->id) }}" method="POST">
@@ -766,7 +748,7 @@
                             </form>
                         @else
                             <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                <i class="bx bx-time-five"></i> Pending COO Approval
+                                <i class="bx bx-time-five"></i> Pending COO/HOD Approval
                             </div>
                         @endif
                     </div>
@@ -1899,10 +1881,12 @@
             if (isSixStage) {
                 if (stageNum <= 4) {
                     isLocked = false;
+                } else if (stageNum === 5) {
+                    // Stage 5 unlocks when project stage >= 5 (Stage 4 was approved by HOD/COO)
+                    isLocked = (activeProjectStage < 5 && isProjectApproved !== '1');
                 } else {
-                    if (isProjectApproved !== '1') {
-                        isLocked = true;
-                    }
+                    // Stage 6 unlocks when project stage >= 6 or project is fully approved
+                    isLocked = (activeProjectStage < 6 && isProjectApproved !== '1');
                 }
             } else {
                 if (stageNum !== 1 && isProjectApproved !== '1') {
@@ -1956,10 +1940,10 @@
                 if (isSixStage) {
                     if (stageNum <= 4) {
                         isLocked = false;
+                    } else if (stageNum === 5) {
+                        isLocked = (activeProjectStage < 5 && isProjectApproved !== '1');
                     } else {
-                        if (isProjectApproved !== '1') {
-                            isLocked = true;
-                        }
+                        isLocked = (activeProjectStage < 6 && isProjectApproved !== '1');
                     }
                 } else {
                     if (stageNum !== 1 && isProjectApproved !== '1') {
