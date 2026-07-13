@@ -165,24 +165,23 @@
     <div class="stages-tabs">
         @for($i = 1; $i <= 6; $i++)
             @php
-                $isActive = $project->stage === $i;
+                $isActive = $project->stage == $i;
                 $isCompleted = $project->stage > $i;
                 $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
                 
-                // For 6-stage construction projects:
-                //   Stages 1-4: always accessible
-                //   Stage 5: unlocks when project reaches stage 5 (after Stage 4 HOD/COO approval)
-                //   Stage 6: unlocks when project reaches stage 6 (or is fully Approved)
-                if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'])) {
-                    if ($i <= 4) {
+                //   Stage 1 & Stage 2: always accessible
+                //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
+                //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
+                if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
+                    if ($i <= 2) {
                         $isLocked = false;
-                    } elseif ($i == 5) {
-                        $isLocked = ($project->stage < 5 && $project->status !== 'Approved');
-                    } else { // stage 6
-                        $isLocked = ($project->stage < 6 && $project->status !== 'Approved');
+                    } elseif ($i == 3 || $i == 4) {
+                        $isLocked = empty($project->application_id);
+                    } else { // stage 5 or 6
+                        $isLocked = ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
                     }
                 } else {
-                    $isLocked = ($project->status !== 'Approved' && $i > 1);
+                    $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
                 }
                 if ($isLocked) {
                     $class .= ' locked';
@@ -199,10 +198,19 @@
 
     @php
         $authUser = auth()->user();
-        $isCoo = ($authUser && ($authUser->role == 2 || strtolower($authUser->designation ?? '') === 'coo'));
-        $isHod = ($authUser && ($authUser->role == 4 || strtolower($authUser->designation ?? '') === 'hod'));
-        $isProjectManager = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || $authUser->role == 6 || strtolower($authUser->designation ?? '') === 'project manager' || strtolower($authUser->designation ?? '') === 'engineer'));
-        $canEditStatus = ($authUser && ($authUser->role == 3 || $authUser->role == 1 || $authUser->role == 2 || $authUser->role == 4 || strtolower($authUser->designation ?? '') === 'project manager' || strtolower($authUser->designation ?? '') === 'coo' || strtolower($authUser->designation ?? '') === 'hod'));
+        $isSuperAdmin = ($authUser && $authUser->role == 1);
+        $designationLower = strtolower($authUser->designation ?? '');
+        $isCoo = ($authUser && ($authUser->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
+        $isHod = ($authUser && ($authUser->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+        $isPmOnly = ($authUser && ($authUser->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
+        $isEngineerOnly = ($authUser && ($authUser->role == 6 || strtolower($authUser->designation ?? '') === 'engineer'));
+        
+        $isProjectManager = ($authUser && (in_array($authUser->role, [1, 2, 3, 4, 6]) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod'])));
+        
+        $isLockedForEditing = ($project->status === 'Completed');
+        $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
+        $isPmAllowedToAssign = $isPmOnly && ($project->stage < 6);
+        $canAssignApplication = ($isPmAllowedToAssign || $isHod || $isCoo || $isSuperAdmin) && !$isLockedForEditing;
         $hasApplication = !empty($project->application_id);
     @endphp
 
@@ -231,7 +239,7 @@
             </div>
             <div style="padding: 1.5rem;">
                 {{-- Stage 1: No approval required for construction or non-construction projects --}}
-                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
+                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
                     @if($project->status === 'Approved')
                         <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
                             <i class="bx bx-check-circle"></i> Project Approved & Active
@@ -241,13 +249,16 @@
 
                 <div class="details-grid">
                     <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
+                    <div class="details-label">Project Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->project_name ?? 'N/A' }}</div>
+                    <div class="details-label">Sponsor</div><div class="details-colon">:</div><div class="details-value">{{ $project->sponsor ?? 'N/A' }}</div>
+                    <div class="details-label">Project Spec</div><div class="details-colon">:</div><div class="details-value" style="white-space: pre-wrap;">{{ $project->project_spec ?? 'N/A' }}</div>
                     <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value">{{ $project->agency_project_no ?? 'N/A' }}</div>
                     <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
                     <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
                     <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
                     <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
                     <div class="details-label">Remarks</div><div class="details-colon">:</div><div class="details-value" style="font-weight: normal; color: var(--text-muted);">{{ $project->remarks ?? 'N/A' }}</div>
-                    <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ $project->project_phase === 'Other' ? ($project->project_phase_custom ?: 'Other') : $project->project_phase }}</div>
+                    <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ $project->status === 'Completed' ? 'Completed' : ($project->project_phase === 'Other' ? ($project->project_phase_custom ?: 'Other') : $project->project_phase) }}</div>
                 </div>
 
                 {{-- ===== PROJECT PHASE / STATUS SELECTOR ===== --}}
@@ -343,7 +354,7 @@
                 </div>
 
                 <!-- Connect Application Form -->
-                @if($isCoo && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
+                @if($canAssignApplication && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @if(!empty($project->application_id))
@@ -445,10 +456,15 @@
                 {{-- Stage 2: No approval required for construction or non-construction projects --}}
 
                 <!-- Connect Application Form inside Stage 2 for 6-stage projects (Show First) -->
-                @if(($isProjectManager || $isCoo || $isHod) && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']) && $project->status !== 'Approved')
+                @if($canAssignApplication && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']) && $project->status !== 'Completed')
                 <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
-                    @if(!empty($project->application_id))
+                    @php
+                        // PM can change if stage < 6. HOD, COO, and Super Admin can change anytime.
+                        $userCanChange = ($isCoo || $isHod || $isSuperAdmin) || ($isPmOnly && $project->stage < 6);
+                    @endphp
+
+                    @if(!empty($project->application_id) && !$userCanChange)
                         <div style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
                             @php
                                 $app = $application;
@@ -470,13 +486,13 @@
                                 $formattedAppId = $app ? 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT) : '—';
                                 $applicantName = $app ? $app->applicant_name : '—';
                             @endphp
-                            <div onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked and cannot be changed.', 'warning'); } else { alert('Assigned application is locked and cannot be changed.'); }" style="cursor: pointer; flex-grow: 1;">
+                            <div onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked after Stage 4 approval.', 'warning'); } else { alert('Assigned application is locked after Stage 4 approval.'); }" style="cursor: pointer; flex-grow: 1;">
                                 <select name="application_id" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.9rem; pointer-events: none; opacity: 0.75;" required>
                                     <option value="{{ $project->application_id }}" selected>{{ $formattedAppId }} - {{ $applicantName }}</option>
                                 </select>
                             </div>
-                            <button type="button" onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked and cannot be changed.', 'warning'); } else { alert('Assigned application is locked and cannot be changed.'); }" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer; opacity: 0.6;">
-                                Assign
+                            <button type="button" onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked after Stage 4 approval.', 'warning'); } else { alert('Assigned application is locked after Stage 4 approval.'); }" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer; opacity: 0.6;">
+                                Change
                             </button>
                         </div>
                     @else
@@ -510,7 +526,7 @@
                                 @endforeach
                             </select>
                             <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer;">
-                                Assign
+                                {{ !empty($project->application_id) ? 'Change' : 'Assign' }}
                             </button>
                         </form>
                     @endif
@@ -618,6 +634,24 @@
                 @if(empty($project->application_id))
                     <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
                         <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Checklist ticking is disabled. Please assign/connect an application in Stage 2 first.
+                    </div>
+                @endif
+
+                @if($project->stage == 3 && $project->status === 'Rejected')
+                    <div style="margin-bottom: 1.5rem;">
+                        @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
+                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="action" value="submit_corrections">
+                                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer;">
+                                    Submit Corrections & Proceed to Stage 4
+                                </button>
+                            </form>
+                        @else
+                            <div style="background-color: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ff8a8a; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                <i class="bx bx-error-circle"></i> Rejected. Pending corrections from Project Manager/Engineer.
+                            </div>
+                        @endif
                     </div>
                 @endif
 
@@ -734,23 +768,69 @@
                     $grandTotal = $totalAmount + $commTotal;
                 @endphp
 
-                @if($project->stage <= 4 && $project->status !== 'Approved')
-                    <div style="margin-bottom: 1.5rem;">
-                        @php
-                            $canApproveStage4 = $isCoo || $isHod;
-                        @endphp
-                        @if($canApproveStage4)
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn-custom" style="background: #eb3b5a;">
-                                    Approve & Promote to Stage 5
-                                </button>
-                            </form>
-                        @else
-                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                <i class="bx bx-time-five"></i> Pending COO/HOD Approval
+                @if($project->stage <= 4 && $project->status !== 'Approved' && $project->status !== 'Completed')
+                    <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
+
+                        {{-- COO / HOD: Always see Approve & Reject at Stage 4 --}}
+                        @if($isCoo || $isHod || $isSuperAdmin)
+                            <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; width: 100%; max-width: 700px; background: rgba(255,255,255,0.02); padding: 1.25rem; border: 1px solid var(--panel-border); border-radius: 8px;">
+                                <h4 style="color: #ffffff; font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; width: 100%; text-transform: uppercase;">
+                                    <i class="bx bx-shield-check" style="color: #10b981; margin-right: 0.4rem;"></i>
+                                    Review &amp; Approval Actions
+                                    @if($project->status === 'Pending Approval')
+                                        <span style="font-size: 0.75rem; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 0.2rem 0.6rem; border-radius: 20px; margin-left: 0.5rem; vertical-align: middle;">Submitted by PM</span>
+                                    @elseif($project->status === 'Pending')
+                                        <span style="font-size: 0.75rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; padding: 0.2rem 0.6rem; border-radius: 20px; margin-left: 0.5rem; vertical-align: middle;">Awaiting PM Submission</span>
+                                    @elseif($project->status === 'Rejected')
+                                        <span style="font-size: 0.75rem; background: rgba(235,59,90,0.15); border: 1px solid rgba(235,59,90,0.3); color: #eb3b5a; padding: 0.2rem 0.6rem; border-radius: 20px; margin-left: 0.5rem; vertical-align: middle;">Previously Rejected</span>
+                                    @endif
+                                </h4>
+
+                                <!-- Approve Form -->
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0;">
+                                    @csrf
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); border-color: #27ae60; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.55rem 1.5rem;">
+                                        <i class="bx bx-check-circle"></i> Approve Project
+                                    </button>
+                                </form>
+
+                                <!-- Reject Form -->
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; flex-grow: 1; align-items: center; margin: 0;">
+                                    @csrf
+                                    <input type="hidden" name="action" value="reject">
+                                    <input type="text" name="remarks" placeholder="Provide rejection reason (optional)…" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem; border-radius: 6px; flex-grow: 1; font-size: 0.85rem; outline: none;">
+                                    <button type="submit" class="btn-danger-custom" style="padding: 0.55rem 1.5rem; background: #eb3b5a; border-color: #eb3b5a; color: #ffffff; font-weight: 700; cursor: pointer;">
+                                        <i class="bx bx-x-circle"></i> Reject
+                                    </button>
+                                </form>
                             </div>
                         @endif
+
+                        {{-- PM: Submit button (if not yet submitted) --}}
+                        @if($isPmOnly || $isSuperAdmin)
+                            @if($project->status === 'Pending' || $project->status === 'Rejected')
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="action" value="submit">
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer;">
+                                        <i class="bx bx-send"></i> Submit for HOD/COO Approval
+                                    </button>
+                                </form>
+                            @elseif($project->status === 'Pending Approval')
+                                <div style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                    <i class="bx bx-check-circle"></i> Submitted — awaiting HOD/COO Approval.
+                                </div>
+                            @endif
+                        @endif
+
+                        {{-- Other roles: info message --}}
+                        @if(!$isCoo && !$isHod && !$isSuperAdmin && !$isPmOnly)
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                <i class="bx bx-time-five"></i> Pending HOD/COO Approval.
+                            </div>
+                        @endif
+
                     </div>
                 @endif
 
@@ -984,6 +1064,8 @@
                     </div>
                 @endif
 
+
+
                 @php
                     $stage5Materials = $project->materials;
                     if (empty($stage5Materials)) {
@@ -1149,7 +1231,7 @@
 
 
                 <!-- Expenses Section -->
-                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
+                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
                     <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Allocated Items & Spent Expenses</h3>
 
@@ -1344,7 +1426,7 @@
                     </table>
                 </div>
 
-                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House']))
+                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
                 <table class="stage-table">
                     <thead>
                         <tr>
@@ -1394,29 +1476,58 @@
                     if ($measBook === '0') { $measBook = null; }
                     $measBookTimeDate = $docRecord ? $docRecord->measurement_book_ticked_at : null;
                     $measBookTime = $measBookTimeDate ? $measBookTimeDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+
+                    $locationMapLink = $docRecord ? $docRecord->location_map_link : null;
                     
                     $pFiles = $project->files ?? [];
-                    $compPhotos = $pFiles['photos'] ?? [];
+                    $beforePhotos = $pFiles['photos_before'] ?? [];
+                    $inbetweenPhotos = $pFiles['photos_inbetween'] ?? [];
+                    $afterPhotos = $pFiles['photos_after'] ?? ($pFiles['photos'] ?? []);
+                    $inaugurationPhotos = $pFiles['photos_inauguration'] ?? [];
                     $compDetails = $pFiles['completion_details'] ?? [];
                 @endphp
 
-                @if($project->status === 'Approved')
-                    <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem 1.5rem; border-radius: 8px; font-weight: 600;">
-                        ✓ Project successfully approved
-                    </div>
-                @else
-                    <div class="stage-success-banner" style="margin-bottom: 1.5rem;">
-                        Final Completion & Handover Ceremony (Pending Approval)
-                    </div>
-                @endif
+                @if($project->status === 'Completed')
+                    <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; text-transform: uppercase;">✓ Project Completed & Finalized</h4>
+                        @php
+                            $cooStatus = $project->projectStatus;
+                            $cooApprovedAt = $cooStatus ? $cooStatus->coo_approved_at : null;
+                            $cooApprover = $cooStatus && $cooStatus->approver ? $cooStatus->approver->name : 'COO';
+                            $cooRemarks = $cooStatus ? $cooStatus->coo_remarks : null;
+                            $cooApprovedAtStr = $cooApprovedAt ? \Carbon\Carbon::parse($cooApprovedAt)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : 'N/A';
+                        @endphp
+                        <div style="font-size: 0.9rem; color: var(--text-main);">
+                            <p style="margin: 0.25rem 0;"><strong>Approved By:</strong> {{ $cooApprover }}</p>
+                            <p style="margin: 0.25rem 0;"><strong>Approved At:</strong> {{ $cooApprovedAtStr }}</p>
+                            <p style="margin: 0.25rem 0;"><strong>COO Remarks:</strong> {{ $cooRemarks ?: 'No remarks provided.' }}</p>
+                        </div>
 
-                @if($project->stage === 6 && $project->status !== 'Approved')
-                    <div style="margin-bottom: 2rem;">
-                        @if($isCoo)
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0;">
+                        @if($isSuperAdmin)
+                            <div style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="action" value="reopen">
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #eb3b5a, #d81b60); border: none; color: white; cursor: pointer; font-weight: 700; padding: 0.5rem 1.5rem;">
+                                        Reopen Project
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+                    </div>
+                @elseif($project->stage == 6)
+                    <div style="margin-bottom: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
+                        <h4 style="color: #ffffff; font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">COO Final Approval</h4>
+                        @if($isCoo || $isSuperAdmin)
+                            <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
                                 @csrf
+                                <input type="hidden" name="action" value="finalize_approval">
+                                <div style="width: 100%; max-width: 500px;">
+                                    <label for="remarks" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Approval Remarks:</label>
+                                    <textarea name="remarks" id="remarks" rows="3" placeholder="Enter final approval remarks…" style="width: 100%; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical;" required></textarea>
+                                </div>
                                 <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); border-color: #27ae60; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.6rem 1.8rem;">
-                                    ✓ Finalize Project Approval
+                                    ✓ Finalize Project Approval & Complete
                                 </button>
                             </form>
                         @else
@@ -1427,144 +1538,240 @@
                     </div>
                 @endif
 
-                <!-- Completion Documents -->
+                <!-- Completion Documents (Stage 6 Upload/Reference) -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
                     <h3 style="color: #ffffff; font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Completion Documents</h3>
 
-                    <!-- Completion Certificate row -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
-                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                            <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Completion Certificate</span>
-                            @if($compCertTime)
-                                <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $compCertTime }}</span>
-                            @endif
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                            @if(!empty($compCert) && $compCert !== "1")
-                                <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                    <i class="bx bx-show"></i> View Certificate
-                                </a>
-                                @if($isProjectManager && $project->status !== 'Approved')
-                                    <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                        @csrf
-                                        <input type="hidden" name="document_name" value="Completion Certificate">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
-                                            <i class="bx bx-trash"></i> Delete
-                                        </button>
-                                    </form>
-                                @endif
-                            @else
-                                @if($isProjectManager && $project->status !== 'Approved')
-                                    <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                        @csrf
-                                        <input type="hidden" name="document_name" value="Completion Certificate">
-                                        <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                        <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                            <i class="bx bx-upload"></i> Upload
-                                        </button>
-                                    </form>
+                    @if($project->status === 'Completed')
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <span style="font-weight: 600;">Completion Certificate:</span>
+                                @if(!empty($compCert))
+                                    <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); text-decoration: none;">View Certificate</a>
                                 @else
-                                    <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                        <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
-                                    </span>
+                                    <span style="color: var(--accent-red); font-weight: 600;">Pending</span>
                                 @endif
-                            @endif
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <span style="font-weight: 600;">Measurement Book:</span>
+                                @if(!empty($measBook))
+                                    <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); text-decoration: none;">View Book</a>
+                                @else
+                                    <span style="color: var(--accent-red); font-weight: 600;">Pending</span>
+                                @endif
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-weight: 600;">Location Map Link:</span>
+                                @if(!empty($locationMapLink))
+                                    <a href="{{ $locationMapLink }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); text-decoration: none;">
+                                        <i class="bx bx-map-alt"></i> Open Map
+                                    </a>
+                                @else
+                                    <span style="color: var(--text-muted); font-style: italic;">Not added</span>
+                                @endif
+                            </div>
                         </div>
-                    </div>
+                    @else
+                        <!-- Completion Certificate row -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Completion Certificate</span>
+                                @if($compCertTime)
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $compCertTime }}</span>
+                                @endif
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                @if(!empty($compCert) && $compCert !== "1")
+                                    <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
+                                        <i class="bx bx-show"></i> View Certificate
+                                    </a>
+                                    @if($isProjectManager && !$isLockedForEditing)
+                                        <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
+                                            @csrf
+                                            <input type="hidden" name="document_name" value="Completion Certificate">
+                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
+                                                <i class="bx bx-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    @endif
+                                @else
+                                    @if($isProjectManager && !$isLockedForEditing)
+                                        <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                            @csrf
+                                            <input type="hidden" name="document_name" value="Completion Certificate">
+                                            <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
+                                            <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                                <i class="bx bx-upload"></i> Upload
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending Upload
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                        </div>
 
-                    <!-- Measurement Book row -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
-                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                            <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Measurement Book</span>
-                            @if($measBookTime)
-                                <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $measBookTime }}</span>
-                            @endif
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                            @if(!empty($measBook) && $measBook !== "1")
-                                <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                    <i class="bx bx-show"></i> View Book
-                                </a>
-                                @if($isProjectManager && $project->status !== 'Approved')
-                                    <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                        @csrf
-                                        <input type="hidden" name="document_name" value="Measurement Book">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
-                                            <i class="bx bx-trash"></i> Delete
-                                        </button>
-                                    </form>
+                        <!-- Measurement Book row -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Measurement Book</span>
+                                @if($measBookTime)
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $measBookTime }}</span>
                                 @endif
-                            @else
-                                @if($isProjectManager && $project->status !== 'Approved')
-                                    <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                        @csrf
-                                        <input type="hidden" name="document_name" value="Measurement Book">
-                                        <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                        <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                            <i class="bx bx-upload"></i> Upload
-                                        </button>
-                                    </form>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                @if(!empty($measBook) && $measBook !== "1")
+                                    <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
+                                        <i class="bx bx-show"></i> View Book
+                                    </a>
+                                    @if($isProjectManager && !$isLockedForEditing)
+                                        <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
+                                            @csrf
+                                            <input type="hidden" name="document_name" value="Measurement Book">
+                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
+                                                <i class="bx bx-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    @endif
                                 @else
-                                    <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                        <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
-                                    </span>
+                                    @if($isProjectManager && !$isLockedForEditing)
+                                        <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                            @csrf
+                                            <input type="hidden" name="document_name" value="Measurement Book">
+                                            <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
+                                            <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                                <i class="bx bx-upload"></i> Upload
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending Upload
+                                        </span>
+                                    @endif
                                 @endif
-                            @endif
+                            </div>
                         </div>
-                    </div>
+
+                        <!-- Location Map Link row -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--panel-border);">
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Location Map Link</span>
+                                @if(!empty($locationMapLink))
+                                    <span style="font-size: 0.75rem; color: var(--text-muted); overflow-wrap: anywhere; word-break: break-all; max-width: 400px; display: inline-block;">Current: <a href="{{ $locationMapLink }}" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">{{ $locationMapLink }}</a></span>
+                                @else
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Not added yet</span>
+                                @endif
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                @if(!empty($locationMapLink))
+                                    <a href="{{ $locationMapLink }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
+                                        <i class="bx bx-map-alt"></i> Open Map
+                                    </a>
+                                    @if($isProjectManager && !$isLockedForEditing)
+                                        <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
+                                            @csrf
+                                            <input type="hidden" name="location_map_link" value="">
+                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete Link">
+                                                <i class="bx bx-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endif
+                                
+                                @if($isProjectManager && !$isLockedForEditing)
+                                    <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                        @csrf
+                                        <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
+                                        <button type="submit" class="btn-custom" style="padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                            <i class="bx bx-save"></i> Save Link
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Photo Gallery -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
-                        <h3 style="color: #ffffff; font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Completion Photos</h3>
-                        @if($isProjectManager && $project->status !== 'Approved')
-                            <form action="{{ route('projects.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                @csrf
-                                <input type="file" name="photo" accept="image/*" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                    <i class="bx bx-upload"></i> Upload Photo
-                                </button>
-                            </form>
-                        @endif
+                    <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
+                        <h3 style="color: #ffffff; font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Project Photos</h3>
                     </div>
 
-                    @if(empty($compPhotos))
-                        <div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2.5rem; border: 1px dashed var(--panel-border); border-radius: 6px;">
-                            <i class="bx bx-image-add" style="font-size: 2rem; display: block; margin-bottom: 0.5rem; opacity: 0.4;"></i>
-                            No completion photos uploaded yet.
-                        </div>
-                    @else
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem;">
-                            @foreach($compPhotos as $idx => $photoPath)
-                                <div style="position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
-                                    <a href="{{ asset($photoPath) }}" target="_blank">
-                                        <img src="{{ asset($photoPath) }}" style="width: 100%; height: 200px; object-fit: cover; display: block;" alt="Completion photo {{ $idx + 1 }}">
-                                    </a>
-                                    @if($isProjectManager && $project->status !== 'Approved')
-                                        <form action="{{ route('projects.delete_photo', [$project->id, $idx]) }}" method="POST" style="position: absolute; top: 0.5rem; right: 0.5rem; margin: 0;" onsubmit="return confirm('Delete this photo?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" style="width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(231,76,60,0.85); border: none; color: #fff; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.5);" title="Delete Photo">
-                                                <i class="bx bx-trash" style="font-size: 1rem;"></i>
-                                            </button>
-                                        </form>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
+                        @php
+                            $columns = [
+                                'before' => ['title' => 'Before', 'photos' => $beforePhotos],
+                                'inbetween' => ['title' => 'In between', 'photos' => $inbetweenPhotos],
+                                'after' => ['title' => 'After Completion', 'photos' => $afterPhotos],
+                                'inauguration' => ['title' => 'Inauguration', 'photos' => $inaugurationPhotos],
+                            ];
+                        @endphp
+
+                        @foreach($columns as $key => $colData)
+                            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column;">
+                                <h4 style="color: #ffffff; font-size: 0.95rem; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                    <span>{{ $colData['title'] }}</span>
+                                    <span style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted);">{{ count($colData['photos']) }}</span>
+                                </h4>
+
+                                @if($isProjectManager && $project->status !== 'Completed')
+                                    <form action="{{ route('projects.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                                        @csrf
+                                        <input type="hidden" name="category" value="{{ $key }}">
+                                        <input type="file" name="photo" accept="image/*" required style="font-size: 0.75rem; color: var(--text-muted); width: 100%;">
+                                        <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; width: 100%;">
+                                            <i class="bx bx-upload"></i> Upload Photo
+                                        </button>
+                                    </form>
+                                @endif
+
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem; flex-grow: 1; max-height: 400px; overflow-y: auto; padding-right: 0.25rem;">
+                                    @if(empty($colData['photos']))
+                                        <div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 1.5rem; border: 1px dashed rgba(255,255,255,0.05); border-radius: 6px; font-size: 0.8rem;">
+                                            No {{ strtolower($colData['title']) }} photos yet.
+                                        </div>
+                                    @else
+                                        @foreach($colData['photos'] as $idx => $photoPath)
+                                            <div style="position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s ease;">
+                                                <a href="{{ asset($photoPath) }}" target="_blank" style="display: block; line-height: 0;">
+                                                    <img src="{{ asset($photoPath) }}" style="width: 100%; height: 120px; object-fit: cover; display: block;" alt="{{ $colData['title'] }} photo {{ $idx + 1 }}">
+                                                </a>
+                                                @if($isProjectManager && $project->status !== 'Completed')
+                                                    <form action="{{ route('projects.delete_photo', [$project->id, $idx]) }}?category={{ $key }}" method="POST" style="position: absolute; top: 0.3rem; right: 0.3rem; margin: 0;" onsubmit="return confirm('Delete this photo?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(231,76,60,0.9); border: none; color: #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.5);" title="Delete Photo">
+                                                            <i class="bx bx-trash" style="font-size: 0.8rem;"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                                <div style="padding: 0.3rem 0.5rem; font-size: 0.72rem; color: var(--text-muted);">
+                                                    Photo {{ $idx + 1 }}
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     @endif
-                                    <div style="padding: 0.4rem 0.75rem; font-size: 0.78rem; color: var(--text-muted);">Photo {{ $idx + 1 }}</div>
                                 </div>
-                            @endforeach
-                        </div>
-                    @endif
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
 
                 <!-- Financial & Completion Details -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
                     <h3 style="color: #ffffff; font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Financial & Handover Details</h3>
 
-                    @if($isProjectManager && $project->status !== 'Approved')
+                    @if($isProjectManager && $project->status !== 'Completed')
                         <form action="{{ route('projects.save_completion_details', $project->id) }}" method="POST" style="margin: 0;">
                             @csrf
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                                <div>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Total Project Cost (₹)</label>
+                                    <input type="number" name="total_project_cost" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('total_project_cost', $compDetails['total_project_cost'] ?? $project->available_budget) }}">
+                                </div>
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Total Amount (₹)</label>
                                     <input type="number" name="total_amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('total_amount', $compDetails['total_amount'] ?? $project->available_budget) }}">
@@ -1590,6 +1797,9 @@
                         </form>
                     @else
                         <div class="details-grid">
+                            <div class="details-label">Total Project Cost</div><div class="details-colon">:</div>
+                            <div class="details-value">₹{{ number_format($compDetails['total_project_cost'] ?? $project->available_budget, 2) }}</div>
+
                             <div class="details-label">Total Amount</div><div class="details-colon">:</div>
                             <div class="details-value">₹{{ number_format($compDetails['total_amount'] ?? $project->available_budget, 2) }}</div>
 
@@ -1650,6 +1860,19 @@
         const allApplicationsData = @json($allApplications);
 
         async function toggleChecklistDocument(button, docName) {
+            const icon = button.querySelector('i');
+            const isTicked = icon && icon.className.includes('bxs-checkbox-checked');
+
+            if (isTicked) {
+                showCustomConfirm('Are you sure you want to untick ' + docName + '?', function() {
+                    performToggleChecklistDocument(button, docName);
+                });
+            } else {
+                performToggleChecklistDocument(button, docName);
+            }
+        }
+
+        async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
             try {
                 const response = await fetch("{{ route('projects.toggle_file', $project->id) }}", {
@@ -1871,22 +2094,23 @@
         }
 
         // Track the current actual project stage from the database
+        const activeProjectId = {{ $project->id }};
         const activeProjectStage = {{ $project->stage }};
-        const isProjectApproved = "{{ $project->status === 'Approved' ? '1' : '0' }}";
+        const isProjectApproved = "{{ ($project->status === 'Approved' || $project->status === 'Completed') ? '1' : '0' }}";
+        const hasApplication = "{{ empty($project->application_id) ? '0' : '1' }}";
         const projectType = "{{ $project->type_of_project }}";
 
         function switchStage(stageNum) {
             let isLocked = false;
-            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'].includes(projectType);
+            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
             if (isSixStage) {
-                if (stageNum <= 4) {
+                if (stageNum <= 2) {
                     isLocked = false;
-                } else if (stageNum === 5) {
-                    // Stage 5 unlocks when project stage >= 5 (Stage 4 was approved by HOD/COO)
-                    isLocked = (activeProjectStage < 5 && isProjectApproved !== '1');
+                } else if (stageNum === 3 || stageNum === 4) {
+                    isLocked = (hasApplication !== '1');
                 } else {
-                    // Stage 6 unlocks when project stage >= 6 or project is fully approved
-                    isLocked = (activeProjectStage < 6 && isProjectApproved !== '1');
+                    // Stage 5 or 6 unlocks when project stage >= 5 or approved
+                    isLocked = (activeProjectStage < 5 && isProjectApproved !== '1');
                 }
             } else {
                 if (stageNum !== 1 && isProjectApproved !== '1') {
@@ -1936,14 +2160,14 @@
             if (savedStage) {
                 const stageNum = Number(savedStage);
                 let isLocked = false;
-                const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House'].includes(projectType);
+                const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
                 if (isSixStage) {
-                    if (stageNum <= 4) {
+                    if (stageNum <= 2) {
                         isLocked = false;
-                    } else if (stageNum === 5) {
-                        isLocked = (activeProjectStage < 5 && isProjectApproved !== '1');
+                    } else if (stageNum === 3 || stageNum === 4) {
+                        isLocked = (hasApplication !== '1');
                     } else {
-                        isLocked = (activeProjectStage < 6 && isProjectApproved !== '1');
+                        isLocked = (activeProjectStage < 5 && isProjectApproved !== '1');
                     }
                 } else {
                     if (stageNum !== 1 && isProjectApproved !== '1') {

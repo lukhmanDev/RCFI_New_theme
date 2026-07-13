@@ -247,10 +247,11 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'status' => 'Pending',
             'stage' => 4,
             'available_budget' => 500000,
+            'project_manager_id' => $staff->id,
         ]);
 
         $response = $this->actingAs($staff)->post("/admin/projects/{$project->id}/approve");
-        $response->assertSessionHas('error', 'Only COO is authorized to approve Stage 4.');
+        $response->assertSessionHas('error', 'Only COO or HOD is authorized to approve Stage 4.');
         $this->assertEquals(4, $project->fresh()->stage);
     }
 
@@ -265,12 +266,20 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'designation' => 'Project Manager',
         ]);
 
+        $app = \App\Models\HouseApplication::create([
+            'category' => 'House',
+            'applicant_name' => 'Approved Toggle Applicant',
+            'status' => 'Approved',
+        ]);
+
         $project = \App\Models\HouseProject::create([
             'project_id' => 'PRJ-HS-1111',
             'type_of_project' => 'House',
             'status' => 'Pending',
             'stage' => 3,
             'available_budget' => 200000,
+            'application_id' => $app->id,
+            'project_manager_id' => $pm->id,
         ]);
 
         // Attempt to toggle "Land document" -> Should succeed

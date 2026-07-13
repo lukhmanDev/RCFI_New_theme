@@ -111,6 +111,9 @@
             max-width: 600px;
             border-radius: 12px;
             overflow: hidden;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
             animation: slideUp 0.3s ease-out;
         }
@@ -150,6 +153,8 @@
 
         .modal-body-custom {
             padding: 1.5rem;
+        overflow-y: auto;
+        max-height: calc(90vh - 80px);
         }
 
         .form-group-custom {
@@ -203,7 +208,29 @@
         @media (max-width: 700px) {
             .col-agency { display: none !important; }
         }
-    </style>
+    
+    /* Styled scrollbar for modal body */
+    .modal-body-custom::-webkit-scrollbar {
+        width: 6px;
+    }
+    .modal-body-custom::-webkit-scrollbar-track {
+        background: var(--bg-color);
+        border-radius: 3px;
+    }
+    .modal-body-custom::-webkit-scrollbar-thumb {
+        background: #10b981;
+        border-radius: 3px;
+    }
+    .modal-body-custom::-webkit-scrollbar-thumb:hover {
+        background: #059669;
+    }
+
+    /* Restrict textarea resize to vertical only */
+    .form-group-custom textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+</style>
 
     <!-- Header Panel -->
     <div class="group-header-panel">
@@ -252,6 +279,9 @@
                     <tr>
                         <th style="width: 60px; text-align: center;">S.No</th>
                         <th>Project ID</th>
+                        <th>Project Name</th>
+                        <th>Sponsor</th>
+                        <th>Project Spec</th>
                         <th class="col-agency">Agency Project No</th>
                         <th class="col-donor">Donor Name</th>
                         <th class="col-manager">Project Manager</th>
@@ -268,6 +298,9 @@
                             <td style="font-weight: 600; color: var(--accent-cyan);">
                                 {{ $project->project_id }}
                             </td>
+                            <td>{{ $project->project_name ?? 'N/A' }}</td>
+                            <td>{{ $project->sponsor ?? 'N/A' }}</td>
+                            <td>{{ $project->project_spec ?? 'N/A' }}</td>
                             <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
                             <td class="col-donor">{{ $project->donor ? $project->donor->name : 'N/A' }}</td>
                             <td class="col-manager">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</td>
@@ -282,7 +315,7 @@
                             </td>
                             <td style="text-align: center; white-space: nowrap;">
                                 <!-- Details Button -->
-                                <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nAgency No: {{ $project->agency_project_no }}\nDonor: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
+                                <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nName: {{ $project->project_name ?? 'N/A' }}\nSponsor: {{ $project->sponsor ?? 'N/A' }}\nSpec: {{ $project->project_spec ?? 'N/A' }}\nAgency No: {{ $project->agency_project_no }}\nDonor: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
                                     <i class="bx bx-dots-horizontal-rounded"></i>
                                 </button>
 
@@ -332,6 +365,21 @@
                 <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
                 
                 <div class="modal-body-custom">
+                    <div class="form-group-custom">
+                        <label for="project_name">Project Name</label>
+                        <input type="text" name="project_name" id="project_name" required placeholder="Enter project name">
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label for="sponsor">Sponsor</label>
+                        <input type="text" name="sponsor" id="sponsor" required placeholder="Enter sponsor name">
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label for="project_spec">Project Spec</label>
+                        <textarea name="project_spec" id="project_spec" rows="3" placeholder="Enter project specifications"></textarea>
+                    </div>
+
                     <!-- Agency Project No -->
                     <div class="form-group-custom">
                         <label for="agency_project_no">Agency Project No.</label>
@@ -401,6 +449,21 @@
                 <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
                 
                 <div class="modal-body-custom">
+                    <div class="form-group-custom">
+                        <label for="edit_project_name">Project Name</label>
+                        <input type="text" name="project_name" id="edit_project_name" required placeholder="Enter project name">
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label for="edit_sponsor">Sponsor</label>
+                        <input type="text" name="sponsor" id="edit_sponsor" required placeholder="Enter sponsor name">
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label for="edit_project_spec">Project Spec</label>
+                        <textarea name="project_spec" id="edit_project_spec" rows="3" placeholder="Enter project specifications"></textarea>
+                    </div>
+
                     <!-- Agency Project No -->
                     <div class="form-group-custom">
                         <label for="edit_agency_project_no">Agency Project No.</label>
@@ -472,6 +535,9 @@
             const form = document.getElementById('editProjectForm');
             form.action = `/admin/projects/${project.id}`;
 
+            document.getElementById('edit_project_name').value = project.project_name || '';
+            document.getElementById('edit_sponsor').value = project.sponsor || '';
+            document.getElementById('edit_project_spec').value = project.project_spec || '';
             document.getElementById('edit_agency_project_no').value = project.agency_project_no || '';
             document.getElementById('edit_donor_id').value = project.donor_id || '';
             document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';

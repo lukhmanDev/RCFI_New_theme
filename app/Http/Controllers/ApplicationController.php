@@ -110,8 +110,10 @@ class ApplicationController extends Controller
         if (array_key_exists($slug, $projectModels)) {
             $projectModel = $projectModels[$slug];
             $appIds = $applications->pluck('id')->toArray();
-            $projects = $projectModel::whereIn('application_id', $appIds)
-                ->with(['donor', 'projectManager'])
+            $user = auth()->user();
+            $query = $projectModel::whereIn('application_id', $appIds)
+                ->with(['donor', 'projectManager']);
+            $projects = $this->scopeProjectsForUser($query, $user)
                 ->get()
                 ->keyBy('application_id');
             $projectsMap = $projects->toArray();
@@ -385,7 +387,7 @@ class ApplicationController extends Controller
     public function approveApplication($category, $id)
     {
         $user = auth()->user();
-        if ($user->role !== 2) {
+        if ($user->role != 2) {
             return redirect()->back()->with('error', 'You are not authorized to approve applications.');
         }
 
@@ -405,7 +407,7 @@ class ApplicationController extends Controller
     public function rejectApplication($category, $id)
     {
         $user = auth()->user();
-        if ($user->role !== 2) {
+        if ($user->role != 2) {
             return redirect()->back()->with('error', 'You are not authorized to reject applications.');
         }
 
@@ -485,8 +487,10 @@ class ApplicationController extends Controller
         $projectModel = $projectModels[$category] ?? null;
         if ($projectModel) {
             $appIds = $applications->pluck('id')->toArray();
-            $projectsMap = $projectModel::with(['donor', 'projectManager'])
-                ->whereIn('application_id', $appIds)
+            $user = auth()->user();
+            $query = $projectModel::with(['donor', 'projectManager'])
+                ->whereIn('application_id', $appIds);
+            $projectsMap = $this->scopeProjectsForUser($query, $user)
                 ->get()
                 ->keyBy('application_id');
         }
@@ -494,5 +498,40 @@ class ApplicationController extends Controller
         $viewName = str_replace('applications.', 'approved_applications.', $config['view']);
 
         return view($viewName, compact('applications', 'categoryName', 'categorySlug', 'projectsMap'));
+    }
+
+    private function scopeProjectsForUser($query, $user)
+    {
+        if (!$user) {
+            return $query;
+        }
+
+        $designationLower = strtolower($user->designation ?? '');
+        $isPm = ($user->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
+        $isEngineer = ($user->role == 6 || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
+        $isSuperAdmin = ($user->role == 1);
+        $isCoo = ($user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
+        $isHod = ($user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
+
+        if ($isSuperAdmin || $isCoo || $isHod) {
+            return $query;
+        }
+
+        if ($isPm && $isEngineer) {
+            return $query->where(function ($q) use ($user) {
+                $q->where('project_manager_id', $user->id)
+                  ->orWhere('engineer_id', $user->id);
+            });
+        }
+
+        if ($isPm) {
+            return $query->where('project_manager_id', $user->id);
+        }
+
+        if ($isEngineer) {
+            return $query->where('engineer_id', $user->id);
+        }
+
+        return $query;
     }
 }

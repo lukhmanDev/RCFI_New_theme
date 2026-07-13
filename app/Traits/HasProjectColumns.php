@@ -74,6 +74,18 @@ trait HasProjectColumns
         $photosFile = $this->projectFiles()->where('name', 'photos')->first();
         $files['photos'] = $photosFile ? json_decode($photosFile->path, true) : [];
 
+        $beforePhotosFile = $this->projectFiles()->where('name', 'photos_before')->first();
+        $files['photos_before'] = $beforePhotosFile ? json_decode($beforePhotosFile->path, true) : [];
+
+        $inbetweenPhotosFile = $this->projectFiles()->where('name', 'photos_inbetween')->first();
+        $files['photos_inbetween'] = $inbetweenPhotosFile ? json_decode($inbetweenPhotosFile->path, true) : [];
+
+        $afterPhotosFile = $this->projectFiles()->where('name', 'photos_after')->first();
+        $files['photos_after'] = $afterPhotosFile ? json_decode($afterPhotosFile->path, true) : [];
+
+        $inaugurationPhotosFile = $this->projectFiles()->where('name', 'photos_inauguration')->first();
+        $files['photos_inauguration'] = $inaugurationPhotosFile ? json_decode($inaugurationPhotosFile->path, true) : [];
+
         // 4. Fetch community contributions and completion details from columns
         $files['community_contributions'] = is_string($this->community_contributions) 
             ? json_decode($this->community_contributions, true) 
@@ -221,6 +233,38 @@ trait HasProjectColumns
                     ]);
                 }
 
+                if (isset($value['photos_before'])) {
+                    $model->projectFiles()->where('name', 'photos_before')->delete();
+                    $model->projectFiles()->create([
+                        'name' => 'photos_before',
+                        'path' => json_encode($value['photos_before']),
+                    ]);
+                }
+
+                if (isset($value['photos_inbetween'])) {
+                    $model->projectFiles()->where('name', 'photos_inbetween')->delete();
+                    $model->projectFiles()->create([
+                        'name' => 'photos_inbetween',
+                        'path' => json_encode($value['photos_inbetween']),
+                    ]);
+                }
+
+                if (isset($value['photos_after'])) {
+                    $model->projectFiles()->where('name', 'photos_after')->delete();
+                    $model->projectFiles()->create([
+                        'name' => 'photos_after',
+                        'path' => json_encode($value['photos_after']),
+                    ]);
+                }
+
+                if (isset($value['photos_inauguration'])) {
+                    $model->projectFiles()->where('name', 'photos_inauguration')->delete();
+                    $model->projectFiles()->create([
+                        'name' => 'photos_inauguration',
+                        'path' => json_encode($value['photos_inauguration']),
+                    ]);
+                }
+
                 // Sync contractors
                 if (isset($value['contractors'])) {
                     $model->projectContractors()->delete();
@@ -295,6 +339,12 @@ trait HasProjectColumns
                     ]);
                 }
                 unset($model->tempExpensesToSave);
+            }
+
+            try {
+                event(new \App\Events\ProjectUpdated($model->id, $model->type_of_project, auth()->id()));
+            } catch (\Exception $e) {
+                // Avoid blocking DB save if broadcast driver is not configured or offline
             }
         });
     }

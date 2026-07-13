@@ -45,6 +45,7 @@ class ProjectDocument extends Model
         'completion_certificate_ticked_at',
         'measurement_book',
         'measurement_book_ticked_at',
+        'location_map_link',
     ];
 
     protected $casts = [

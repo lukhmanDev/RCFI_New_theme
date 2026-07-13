@@ -13,7 +13,7 @@
                 <span>Dashboard</span>
             </a>
         </li>
-        @if(Auth::user()->role === 1)
+        @if(Auth::user()->role == 1)
         <li>
             <a href="{{ route('users') }}" class="{{ Route::currentRouteName() === 'users' ? 'active' : '' }}">
                 <i class="bx bxs-user-account"></i>

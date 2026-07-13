@@ -11,7 +11,8 @@ class DifferentlyAbledProject extends Model
     use HasProjectColumns;
     protected $table = 'differently_abled_projects';
     protected $guarded = [];
-    protected $casts = ['community_contributions' => 'array', 'completion_details' => 'array'];
+    protected $casts = [
+        'stage' => 'integer','community_contributions' => 'array', 'completion_details' => 'array'];
 
     protected static function boot()
     {

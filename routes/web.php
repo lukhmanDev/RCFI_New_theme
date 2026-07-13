@@ -71,6 +71,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/projects/{id}/upload-file', [ProjectController::class, 'uploadFile'])->name('projects.upload_file');
     Route::post('/admin/projects/{id}/toggle-file', [ProjectController::class, 'toggleFile'])->name('projects.toggle_file');
     Route::post('/admin/projects/{id}/update-phase', [ProjectController::class, 'updatePhase'])->name('projects.update_phase');
+    Route::post('/admin/projects/{id}/update-map-link', [ProjectController::class, 'updateMapLink'])->name('projects.update_map_link');
     Route::post('/admin/projects/{id}/materials', [ProjectController::class, 'addMaterial'])->name('projects.add_material');
     Route::put('/admin/projects/{id}/materials/{index}', [ProjectController::class, 'updateMaterial'])->name('projects.update_material');
     Route::delete('/admin/projects/{id}/materials/{index}', [ProjectController::class, 'deleteMaterial'])->name('projects.delete_material');

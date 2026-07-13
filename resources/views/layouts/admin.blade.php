@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 
     <!-- Premium CSS Layout and Design System -->
     <style>
@@ -513,6 +514,28 @@
             70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+        .confirm-panel.confirm-warning {
+            border: 1px solid rgba(245, 158, 11, 0.3) !important;
+        }
+        .confirm-icon-box.confirm-warning {
+            background-color: rgba(245, 158, 11, 0.12) !important;
+            color: #f59e0b !important;
+            border: 1px solid rgba(245, 158, 11, 0.25) !important;
+            animation: pulse-yellow 2s infinite !important;
+        }
+        .confirm-btn-ok.confirm-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25) !important;
+        }
+        .confirm-btn-ok.confirm-warning:hover {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4) !important;
+        }
         .confirm-btn-cancel {
             flex: 1; 
             background: transparent; 
@@ -733,6 +756,7 @@
     </style>
 </head>
 <body>
+    <div id="pjax-loader-bar" style="position: fixed; top: 0; left: 0; height: 3px; width: 0%; background: linear-gradient(135deg, #08A472, #2ecc71); z-index: 9999; transition: width 0.2s ease, opacity 0.4s ease; opacity: 0; pointer-events: none;"></div>
     <script>
         (function() {
             const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
@@ -820,6 +844,35 @@
             activeConfirmCallback = callback;
             
             const modal = document.getElementById('customConfirmModal');
+            const panel = modal.querySelector('.confirm-panel');
+            const iconBox = modal.querySelector('.confirm-icon-box');
+            const icon = iconBox ? iconBox.querySelector('i') : null;
+            const okBtn = document.getElementById('customConfirmOk');
+            
+            const isUntick = message.toLowerCase().includes('untick');
+            
+            if (isUntick) {
+                if (panel) panel.classList.add('confirm-warning');
+                if (iconBox) iconBox.classList.add('confirm-warning');
+                if (okBtn) {
+                    okBtn.classList.add('confirm-warning');
+                    okBtn.innerText = 'Untick';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-info-circle';
+                }
+            } else {
+                if (panel) panel.classList.remove('confirm-warning');
+                if (iconBox) iconBox.classList.remove('confirm-warning');
+                if (okBtn) {
+                    okBtn.classList.remove('confirm-warning');
+                    okBtn.innerText = 'Delete';
+                }
+                if (icon) {
+                    icon.className = 'bx bxs-trash-alt';
+                }
+            }
+            
             modal.style.display = 'flex';
             // Force reflow
             modal.offsetHeight;
@@ -899,7 +952,247 @@
             }, 4000);
         }
 
-        // Global Override for window.confirm to use our Modern Custom Confirm Modal
+        // Global PJAX Loader Bar functions
+        function showLoader() {
+            const bar = document.getElementById('pjax-loader-bar');
+            if (!bar) return;
+            bar.style.opacity = '1';
+            bar.style.width = '0%';
+            setTimeout(() => { bar.style.width = '50%'; }, 10);
+            setTimeout(() => { bar.style.width = '85%'; }, 300);
+        }
+        
+        function hideLoader() {
+            const bar = document.getElementById('pjax-loader-bar');
+            if (!bar) return;
+            bar.style.width = '100%';
+            setTimeout(() => {
+                bar.style.opacity = '0';
+                setTimeout(() => { bar.style.width = '0%'; }, 400);
+            }, 150);
+        }
+
+        // Swap loaded HTML content into container and execute scripts
+        function swapContent(html, url) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const newContent = doc.querySelector('.content-container');
+            const currentContent = document.querySelector('.content-container');
+            
+            if (newContent && currentContent) {
+                currentContent.innerHTML = newContent.innerHTML;
+            }
+            
+            if (doc.title) {
+                document.title = doc.title;
+            }
+
+            updateActiveSidebar(url || window.location.href);
+
+            if (newContent) {
+                const scripts = newContent.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = oldScript.textContent;
+                    for (let attr of oldScript.attributes) {
+                        newScript.setAttribute(attr.name, attr.value);
+                    }
+                    document.body.appendChild(newScript);
+                    newScript.remove();
+                });
+            }
+            
+            window.scrollTo(0, 0);
+        }
+
+        function updateActiveSidebar(urlStr) {
+            try {
+                const url = new URL(urlStr);
+                const path = url.pathname;
+                
+                const sidebarLinks = document.querySelectorAll('.sidebar-menu a');
+                sidebarLinks.forEach(link => {
+                    const linkUrl = new URL(link.href, window.location.origin);
+                    if (linkUrl.pathname === path) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            } catch(e) {}
+        }
+
+        // Local PJAX cache map and prefetch timeout tracker
+        const pjaxCache = new Map();
+        let hoverTimeout = null;
+
+        function prefetchLink(url) {
+            if (pjaxCache.has(url)) return;
+            
+            const promise = fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(res => {
+                if (res.ok) {
+                    return res.text().then(html => ({ html, url: res.url || url }));
+                }
+                throw new Error('Prefetch response not OK');
+            }).catch(err => {
+                pjaxCache.delete(url);
+            });
+            
+            pjaxCache.set(url, promise);
+        }
+
+        function handleLinkHover(event) {
+            const link = event.target.closest('a');
+            if (!link) return;
+            
+            const href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:') || 
+                link.getAttribute('target') === '_blank' || 
+                link.getAttribute('download') !== null || 
+                link.getAttribute('data-no-pjax') !== null) {
+                return;
+            }
+            
+            try {
+                const url = new URL(link.href);
+                if (url.origin === window.location.origin) {
+                    clearTimeout(hoverTimeout);
+                    hoverTimeout = setTimeout(() => {
+                        prefetchLink(link.href);
+                    }, 65); // 65ms hover debounce to avoid prefetching on generic pointer sweeps
+                }
+            } catch (e) {}
+        }
+
+        function handleLinkMouseout() {
+            clearTimeout(hoverTimeout);
+        }
+
+        // Load page via AJAX (utilizing cache if prefetch completed)
+        async function loadPage(url, push = true) {
+            showLoader();
+            try {
+                let data = null;
+                if (pjaxCache.has(url)) {
+                    data = await pjaxCache.get(url);
+                    pjaxCache.delete(url); // Clear cache after consuming
+                }
+                
+                if (!data) {
+                    const response = await fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Network response not OK');
+                    }
+                    
+                    const html = await response.text();
+                    data = { html, url: response.url || url };
+                }
+                
+                swapContent(data.html, data.url);
+                
+                if (push) {
+                    window.history.pushState({ url: data.url }, '', data.url);
+                }
+            } catch (error) {
+                console.error('PJAX navigation error, loading standard page:', error);
+                window.location.href = url;
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // Silent refresh of current page
+        async function reloadCurrentPageContent() {
+            try {
+                const response = await fetch(window.location.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.ok) {
+                    const html = await response.text();
+                    swapContent(html, window.location.href);
+                }
+            } catch(e) {
+                console.error('Silent refresh failed:', e);
+            }
+        }
+
+        // Intercept local form submissions
+        async function handleFormSubmit(event) {
+            const form = event.target;
+            if (form.getAttribute('data-no-pjax') !== null) {
+                return;
+            }
+            
+            event.preventDefault();
+            showLoader();
+            
+            const action = form.action || window.location.href;
+            const method = (form.method || 'POST').toUpperCase();
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch(action, {
+                    method: method === 'GET' ? 'GET' : 'POST',
+                    body: method === 'GET' ? null : formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                
+                const finalUrl = response.url || action;
+                const html = await response.text();
+                
+                swapContent(html, finalUrl);
+                
+                window.history.pushState({ url: finalUrl }, '', finalUrl);
+            } catch (error) {
+                console.error('Form submit PJAX error, calling fallback:', error);
+                const orig = HTMLFormElement.prototype.submit;
+                HTMLFormElement.prototype.submit = originalSubmit;
+                form.submit();
+                HTMLFormElement.prototype.submit = orig;
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // Intercept local link clicks
+        function handleLinkClick(event) {
+            const link = event.target.closest('a');
+            if (!link) return;
+            
+            const href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:') || 
+                link.getAttribute('target') === '_blank' || 
+                link.getAttribute('download') !== null || 
+                link.getAttribute('data-no-pjax') !== null) {
+                return;
+            }
+            
+            try {
+                const url = new URL(link.href);
+                if (url.origin === window.location.origin) {
+                    event.preventDefault();
+                    loadPage(link.href);
+                }
+            } catch (e) {}
+        }
+
+        // Override default programmatic form.submit() to dispatch submit event
+        const originalSubmit = HTMLFormElement.prototype.submit;
+        HTMLFormElement.prototype.submit = function() {
+            const event = new Event('submit', { cancelable: true, bubbles: true });
+            this.dispatchEvent(event);
+            if (!event.defaultPrevented) {
+                originalSubmit.call(this);
+            }
+        };
+
+        // Custom Confirm override integrating with PJAX
         window.confirm = function(message) {
             const activeEl = document.activeElement;
             if (activeEl && activeEl.dataset.confirmed) {
@@ -912,11 +1205,15 @@
             
             if (activeForm) {
                 showCustomConfirm(message, function() {
-                    activeForm.submit();
+                    const event = new Event('submit', { cancelable: true, bubbles: true });
+                    activeForm.dispatchEvent(event);
+                    if (!event.defaultPrevented) {
+                        originalSubmit.call(activeForm);
+                    }
                 });
             } else if (activeLink && activeLink.href) {
                 showCustomConfirm(message, function() {
-                    window.location.href = activeLink.href;
+                    loadPage(activeLink.href);
                 });
             } else if (activeEl) {
                 showCustomConfirm(message, function() {
@@ -927,6 +1224,57 @@
             
             return false;
         };
+
+        // PJAX event delegation listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.addEventListener('click', handleLinkClick);
+            document.body.addEventListener('mouseover', handleLinkHover);
+            document.body.addEventListener('mouseout', handleLinkMouseout);
+            document.body.addEventListener('submit', function(e) {
+                if (e.target && e.target.tagName === 'FORM') {
+                    handleFormSubmit(e);
+                }
+            });
+            
+            window.addEventListener('popstate', function(event) {
+                if (event.state && event.state.url) {
+                    loadPage(event.state.url, false);
+                } else {
+                    loadPage(window.location.href, false);
+                }
+            });
+            
+            window.history.replaceState({ url: window.location.href }, '', window.location.href);
+        });
+
+        // Laravel Reverb WebSockets Real-time connection client
+        (function() {
+            const appKey = "{{ env('REVERB_APP_KEY', 'a8xsms5lc52lrzjloqxv') }}";
+            const host = "{{ env('REVERB_HOST', 'localhost') }}";
+            const port = {{ env('REVERB_PORT', 8080) }};
+            const scheme = "{{ env('REVERB_SCHEME', 'http') }}";
+            const currentUserId = {{ auth()->id() ?? 'null' }};
+            
+            if (appKey && host) {
+                const pusher = new Pusher(appKey, {
+                    wsHost: host,
+                    wsPort: port,
+                    wssPort: port,
+                    forceTLS: scheme === 'https',
+                    enabledTransports: ["ws", "wss"],
+                    cluster: "mt1"
+                });
+
+                const channel = pusher.subscribe('projects');
+                channel.bind('project.updated', function(data) {
+                    console.log('Realtime project.updated received:', data);
+                    if (typeof activeProjectId !== 'undefined' && data.projectId == activeProjectId && data.userId != currentUserId) {
+                        console.log('Triggering background reload for project ID:', data.projectId);
+                        reloadCurrentPageContent();
+                    }
+                });
+            }
+        })();
     </script>
 
     <!-- Modern Premium Custom Confirm Modal HTML -->

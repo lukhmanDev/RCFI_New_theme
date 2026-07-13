@@ -16,7 +16,7 @@ class DonorController extends Controller
 
     public function store(Request $request)
     {
-        if (auth()->user()->role !== 1) {
+        if (auth()->user()->role != 1) {
             abort(403, 'Unauthorized action. Only Super Admin can add partners.');
         }
 
@@ -48,7 +48,7 @@ class DonorController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (auth()->user()->role !== 1) {
+        if (auth()->user()->role != 1) {
             abort(403, 'Unauthorized action. Only Super Admin can edit partners.');
         }
 
@@ -87,7 +87,7 @@ class DonorController extends Controller
 
     public function destroy($id)
     {
-        if (auth()->user()->role !== 1) {
+        if (auth()->user()->role != 1) {
             abort(403, 'Unauthorized action. Only Super Admin can delete partners.');
         }
 

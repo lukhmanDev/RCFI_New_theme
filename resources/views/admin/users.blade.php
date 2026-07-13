@@ -218,7 +218,7 @@
                     </select>
                 </div>
 
-                @if(Auth::user()->role !== 1)
+                @if(Auth::user()->role != 1)
                 <!-- Password (Optional) -->
                 <div style="margin-bottom: 2rem;">
                     <label class="form-label" for="edit_password">Password (Leave blank to keep current)</label>

@@ -25,7 +25,7 @@
     <div class="panel" style="width: 100%;">
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h2 class="panel-title">Partners & Donors</h2>
-            @if(Auth::user()->role === 1)
+            @if(Auth::user()->role == 1)
             <button onclick="openModal()" class="btn-custom">
                 <i class="bx bx-plus-circle"></i> Add Partner
             </button>
@@ -43,7 +43,7 @@
                         <th>Contact Details</th>
                         <th style="text-align: center;">Initiated At</th>
                         <th style="text-align: center;">Website</th>
-                        @if(Auth::user()->role === 1)
+                        @if(Auth::user()->role == 1)
                         <th style="text-align: center;">Action</th>
                         @endif
                     </tr>
@@ -105,7 +105,7 @@
                             </td>
 
                             <!-- Action buttons -->
-                            @if(Auth::user()->role === 1)
+                            @if(Auth::user()->role == 1)
                             <td style="text-align: center; white-space: nowrap;">
                                 <button onclick="openEditModal({{ json_encode($donor) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
                                 
@@ -115,7 +115,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ Auth::user()->role === 1 ? 8 : 7 }}" style="text-align: center; padding: 2rem;">No registered partners/donors found.</td>
+                            <td colspan="{{ Auth::user()->role == 1 ? 8 : 7 }}" style="text-align: center; padding: 2rem;">No registered partners/donors found.</td>
                         </tr>
                     @endforelse
                 </tbody>
