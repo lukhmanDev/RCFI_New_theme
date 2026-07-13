@@ -839,7 +839,7 @@
         // Modern Custom Confirm Modal logic
         let activeConfirmCallback = null;
 
-        function showCustomConfirm(message, callback) {
+        function showCustomConfirm(message, callback, isRejection = false) {
             document.getElementById('customConfirmMessage').innerText = message;
             activeConfirmCallback = callback;
             
@@ -848,10 +848,27 @@
             const iconBox = modal.querySelector('.confirm-icon-box');
             const icon = iconBox ? iconBox.querySelector('i') : null;
             const okBtn = document.getElementById('customConfirmOk');
+            const remarksContainer = document.getElementById('confirmRemarksContainer');
+            const remarksInput = document.getElementById('confirmRemarksInput');
             
             const isUntick = message.toLowerCase().includes('untick');
             
-            if (isUntick) {
+            if (remarksContainer) {
+                remarksContainer.style.display = isRejection ? 'block' : 'none';
+                if (remarksInput) remarksInput.value = '';
+            }
+
+            if (isRejection) {
+                if (panel) panel.classList.add('confirm-warning');
+                if (iconBox) iconBox.classList.add('confirm-warning');
+                if (okBtn) {
+                    okBtn.classList.add('confirm-warning');
+                    okBtn.innerText = 'Reject';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-x-circle';
+                }
+            } else if (isUntick) {
                 if (panel) panel.classList.add('confirm-warning');
                 if (iconBox) iconBox.classList.add('confirm-warning');
                 if (okBtn) {
@@ -881,11 +898,14 @@
 
         function closeCustomConfirm(confirmed) {
             const modal = document.getElementById('customConfirmModal');
+            const remarksInput = document.getElementById('confirmRemarksInput');
+            const remarks = remarksInput ? remarksInput.value : '';
+            
             modal.classList.remove('show');
             setTimeout(() => {
                 modal.style.display = 'none';
                 if (confirmed && activeConfirmCallback) {
-                    activeConfirmCallback();
+                    activeConfirmCallback(remarks);
                 }
                 activeConfirmCallback = null;
             }, 200);
@@ -1203,14 +1223,26 @@
             const activeForm = activeEl ? activeEl.closest('form') : null;
             const activeLink = activeEl ? activeEl.closest('a') : null;
             
+            const isRejection = activeForm && activeForm.action && activeForm.action.includes('/reject');
+
             if (activeForm) {
-                showCustomConfirm(message, function() {
+                showCustomConfirm(message, function(remarks) {
+                    if (isRejection) {
+                        let remarksInput = activeForm.querySelector('input[name="remarks"]');
+                        if (!remarksInput) {
+                            remarksInput = document.createElement('input');
+                            remarksInput.type = 'hidden';
+                            remarksInput.name = 'remarks';
+                            activeForm.appendChild(remarksInput);
+                        }
+                        remarksInput.value = remarks || '';
+                    }
                     const event = new Event('submit', { cancelable: true, bubbles: true });
                     activeForm.dispatchEvent(event);
                     if (!event.defaultPrevented) {
                         originalSubmit.call(activeForm);
                     }
-                });
+                }, isRejection);
             } else if (activeLink && activeLink.href) {
                 showCustomConfirm(message, function() {
                     loadPage(activeLink.href);
@@ -1284,7 +1316,11 @@
                 <i class="bx bxs-trash-alt"></i>
             </div>
             <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">Confirm Action</h3>
-            <p id="customConfirmMessage" style="color: #9ca3af; font-size: 0.95rem; line-height: 1.5; margin-bottom: 2rem;">Are you sure you want to proceed?</p>
+            <p id="customConfirmMessage" style="color: #9ca3af; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">Are you sure you want to proceed?</p>
+            <div id="confirmRemarksContainer" style="display: none; width: 100%; margin-bottom: 1.5rem; text-align: left; box-sizing: border-box;">
+                <label style="display: block; color: #9ca3af; font-size: 0.85rem; margin-bottom: 0.4rem; font-weight: 500;">Rejection Reason</label>
+                <textarea id="confirmRemarksInput" placeholder="Provide rejection reason (optional)…" style="width: 100%; height: 70px; background-color: #1f2937; border: 1px solid #374151; color: #ffffff; padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
+            </div>
             <div style="display: flex; gap: 1rem; justify-content: center;">
                 <button id="customConfirmCancel" class="confirm-btn-cancel">Cancel</button>
                 <button id="customConfirmOk" class="confirm-btn-ok">Delete</button>

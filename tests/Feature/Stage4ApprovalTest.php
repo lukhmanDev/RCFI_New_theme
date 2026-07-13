@@ -294,11 +294,11 @@ class Stage4ApprovalTest extends TestCase
             'status' => 'Approved',
         ]);
 
-        // Attempting to change application when stage is 6 -> fails for PM
+        // Attempting to change application when stage is 6 -> fails for everyone
         $response = $this->actingAs($pm)->post('/admin/projects/' . $project->id . '/assign-application?type=Education%20Center', [
             'application_id' => $app->id,
         ]);
-        $response->assertSessionHas('error', 'Project Manager cannot change the assigned application after Stage 4 approval.');
+        $response->assertSessionHas('error', 'The assigned application cannot be changed after Stage 4 is approved.');
     }
 
     public function test_only_coo_and_hod_can_update_project_status(): void

@@ -98,9 +98,13 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $response->assertSessionHas('error', 'You are not authorized to reject applications.');
         $this->assertEquals('Pending', $application->fresh()->status);
 
-        // COO attempts to reject -> Should succeed
-        $response = $this->actingAs($coo)->post("/admin/applications/house/{$application->id}/reject");
-        $this->assertEquals('Rejected', $application->fresh()->status);
+        // COO attempts to reject -> Should succeed with rejection reason
+        $response = $this->actingAs($coo)->post("/admin/applications/house/{$application->id}/reject", [
+            'remarks' => 'Incomplete documents provided.'
+        ]);
+        $freshApp = $application->fresh();
+        $this->assertEquals('Rejected', $freshApp->status);
+        $this->assertStringContainsString('Rejection Reason: Incomplete documents provided.', $freshApp->details);
     }
 
     public function test_applications_dashboard_shows_pending_counts(): void

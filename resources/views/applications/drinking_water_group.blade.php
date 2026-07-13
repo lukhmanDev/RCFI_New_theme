@@ -459,8 +459,8 @@
                     </div>
 
                     <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="details">Additional Notes *</label>
-                        <textarea class="form-control-dark" id="details" name="details" style="height: 60px; resize: vertical;" required>{{ old('details') }}</textarea>
+                        <label class="form-label" for="details">Additional Notes</label>
+                        <textarea class="form-control-dark" id="details" name="details" style="height: 60px; resize: vertical;">{{ old('details') }}</textarea>
                     </div>
 
                     <input type="hidden" name="status" value="Pending">
@@ -706,8 +706,8 @@
                     <input type="hidden" name="status" id="edit_status">
 
                     <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="edit_details">Additional Notes *</label>
-                        <textarea class="form-control-dark" id="edit_details" name="details" style="height: 60px; resize: vertical;" required></textarea>
+                        <label class="form-label" for="edit_details">Additional Notes</label>
+                        <textarea class="form-control-dark" id="edit_details" name="details" style="height: 60px; resize: vertical;"></textarea>
                     </div>
                 </div>
 

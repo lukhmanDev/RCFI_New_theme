@@ -509,8 +509,8 @@ class ProjectController extends Controller
             if (!$isCoo && !$isHod && !$isPm && !$isSuperAdmin) {
                 return redirect()->back()->with('error', 'Only Project Manager, HOD, and COO are authorized to assign or connect applications.');
             }
-            if ($project->stage >= 6 && $isPm && !$isSuperAdmin && !$isCoo && !$isHod) {
-                return redirect()->back()->with('error', 'Project Manager cannot change the assigned application after Stage 4 approval.');
+            if ($project->stage >= 6) {
+                return redirect()->back()->with('error', 'The assigned application cannot be changed after Stage 4 is approved.');
             }
         } else {
             if (!$isCoo && !$isHod && !$isSuperAdmin) {

@@ -210,7 +210,11 @@
         $isLockedForEditing = ($project->status === 'Completed');
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
         $isPmAllowedToAssign = $isPmOnly && ($project->stage < 6);
+        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
         $canAssignApplication = ($isPmAllowedToAssign || $isHod || $isCoo || $isSuperAdmin) && !$isLockedForEditing;
+        if ($isSixStage && $project->stage >= 6) {
+            $canAssignApplication = false;
+        }
         $hasApplication = !empty($project->application_id);
     @endphp
 

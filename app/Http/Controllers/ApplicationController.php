@@ -404,7 +404,7 @@ class ApplicationController extends Controller
         return redirect()->back()->with('success', 'Application approved successfully.');
     }
 
-    public function rejectApplication($category, $id)
+    public function rejectApplication(Request $request, $category, $id)
     {
         $user = auth()->user();
         if ($user->role != 2) {
@@ -419,6 +419,12 @@ class ApplicationController extends Controller
         $model = $config['model'];
         $app = $model::findOrFail($id);
         $app->status = 'Rejected';
+
+        $remarks = $request->input('remarks');
+        if ($remarks) {
+            $app->details = ($app->details ? $app->details . "\n" : "") . "Rejection Reason: " . $remarks;
+        }
+
         $app->save();
 
         // Delete project if it exists
