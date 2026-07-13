@@ -7,6 +7,8 @@ use App\Models\ProjectContractor;
 use App\Models\ProjectExpense;
 use App\Models\ProjectDocument;
 use App\Models\ProjectStatus;
+use App\Models\ProjectCommunityContribution;
+use App\Models\ProjectCompletionDetail;
 use Illuminate\Support\Facades\DB;
 
 trait HasProjectColumns
@@ -39,6 +41,16 @@ trait HasProjectColumns
     public function projectExpenses()
     {
         return $this->morphMany(ProjectExpense::class, 'project');
+    }
+
+    public function projectCommunityContributions()
+    {
+        return $this->morphMany(ProjectCommunityContribution::class, 'project');
+    }
+
+    public function projectCompletionDetail()
+    {
+        return $this->morphOne(ProjectCompletionDetail::class, 'project');
     }
 
     // Accessor for $project->files
@@ -86,14 +98,81 @@ trait HasProjectColumns
         $inaugurationPhotosFile = $this->projectFiles()->where('name', 'photos_inauguration')->first();
         $files['photos_inauguration'] = $inaugurationPhotosFile ? json_decode($inaugurationPhotosFile->path, true) : [];
 
-        // 4. Fetch community contributions and completion details from columns
-        $files['community_contributions'] = is_string($this->community_contributions) 
-            ? json_decode($this->community_contributions, true) 
-            : $this->community_contributions;
+        // 4. Fetch community contributions with self-healing legacy auto-migration
+        $contribs = [];
+        try {
+            $hasNewContribs = $this->projectCommunityContributions()->exists();
+            if ($hasNewContribs) {
+                $contribs = $this->projectCommunityContributions()->get()->map(function($c) {
+                    return [
+                        'item' => $c->item,
+                        'amount' => (float)$c->amount
+                    ];
+                })->toArray();
+            } else {
+                $legacy = is_string($this->community_contributions) 
+                    ? json_decode($this->community_contributions, true) 
+                    : $this->community_contributions;
+                if (!empty($legacy) && is_array($legacy)) {
+                    $contribs = $legacy;
+                    foreach ($legacy as $l) {
+                        $this->projectCommunityContributions()->create([
+                            'item' => $l['item'] ?? '',
+                            'amount' => (float)($l['amount'] ?? 0)
+                        ]);
+                    }
+                    DB::table($this->getTable())->where('id', $this->id)->update(['community_contributions' => null]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback to legacy in case migrations haven't run or fail in test environment
+            $contribs = is_string($this->community_contributions) 
+                ? json_decode($this->community_contributions, true) 
+                : $this->community_contributions;
+        }
+        $files['community_contributions'] = $contribs ?: [];
 
-        $files['completion_details'] = is_string($this->completion_details) 
-            ? json_decode($this->completion_details, true) 
-            : $this->completion_details;
+        // 5. Fetch completion details with self-healing legacy auto-migration
+        $details = [];
+        try {
+            $newDetail = $this->projectCompletionDetail;
+            if ($newDetail) {
+                $details = [
+                    'total_project_cost' => (float)$newDetail->total_project_cost,
+                    'total_amount' => (float)$newDetail->total_amount,
+                    'amount_paid_by_donor' => (float)$newDetail->amount_paid_by_donor,
+                    'community_contribution' => (float)$newDetail->community_contribution,
+                    'any_other' => (float)$newDetail->any_other,
+                    'deductions' => (float)$newDetail->deductions,
+                    'handover_date' => $newDetail->handover_date,
+                    'handover_remarks' => $newDetail->handover_remarks
+                ];
+            } else {
+                $legacy = is_string($this->completion_details) 
+                    ? json_decode($this->completion_details, true) 
+                    : $this->completion_details;
+                if (!empty($legacy) && is_array($legacy)) {
+                    $details = $legacy;
+                    $this->projectCompletionDetail()->create([
+                        'total_project_cost' => $legacy['total_project_cost'] ?? null,
+                        'total_amount' => $legacy['total_amount'] ?? null,
+                        'amount_paid_by_donor' => $legacy['amount_paid_by_donor'] ?? null,
+                        'community_contribution' => $legacy['community_contribution'] ?? null,
+                        'any_other' => $legacy['any_other'] ?? null,
+                        'deductions' => $legacy['deductions'] ?? null,
+                        'handover_date' => $legacy['handover_date'] ?? null,
+                        'handover_remarks' => $legacy['handover_remarks'] ?? null
+                    ]);
+                    DB::table($this->getTable())->where('id', $this->id)->update(['completion_details' => null]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback to legacy
+            $details = is_string($this->completion_details) 
+                ? json_decode($this->completion_details, true) 
+                : $this->completion_details;
+        }
+        $files['completion_details'] = $details ?: [];
 
         return $files;
     }
@@ -297,17 +376,32 @@ trait HasProjectColumns
                     }
                 }
 
-                // Sync community_contributions and completion_details directly on the project row
-                $updateData = [];
+                // Sync community_contributions and completion_details via polymorphic relations
                 if (array_key_exists('community_contributions', $value)) {
-                    $updateData['community_contributions'] = json_encode($value['community_contributions']);
+                    $model->projectCommunityContributions()->delete();
+                    if (is_array($value['community_contributions'])) {
+                        foreach ($value['community_contributions'] as $c) {
+                            $model->projectCommunityContributions()->create([
+                                'item' => $c['item'] ?? '',
+                                'amount' => (float)($c['amount'] ?? 0.00)
+                            ]);
+                        }
+                    }
                 }
                 if (array_key_exists('completion_details', $value)) {
-                    $updateData['completion_details'] = json_encode($value['completion_details']);
-                }
-
-                if (!empty($updateData)) {
-                    DB::table($model->getTable())->where('id', $model->id)->update($updateData);
+                    $comp = $value['completion_details'];
+                    if (is_array($comp)) {
+                        $model->projectCompletionDetail()->updateOrCreate([], [
+                            'total_project_cost' => $comp['total_project_cost'] ?? null,
+                            'total_amount' => $comp['total_amount'] ?? null,
+                            'amount_paid_by_donor' => $comp['amount_paid_by_donor'] ?? null,
+                            'community_contribution' => $comp['community_contribution'] ?? null,
+                            'any_other' => $comp['any_other'] ?? null,
+                            'deductions' => $comp['deductions'] ?? null,
+                            'handover_date' => $comp['handover_date'] ?? null,
+                            'handover_remarks' => $comp['handover_remarks'] ?? null
+                        ]);
+                    }
                 }
 
                 unset($model->tempFilesToSave);
