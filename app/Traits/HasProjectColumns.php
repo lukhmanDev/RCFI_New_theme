@@ -235,6 +235,8 @@ trait HasProjectColumns
             ->get()
             ->map(function($e) {
                 return [
+                    'material_index' => $e->material_index !== null ? (int)$e->material_index : null,
+                    'comm_index' => $e->comm_index !== null ? (int)$e->comm_index : null,
                     'expense_name' => $e->expense_name,
                     'quantity' => $e->quantity,
                     'amount' => (float)$e->amount,
@@ -426,6 +428,8 @@ trait HasProjectColumns
                 $model->projectExpenses()->where('type', 'spent')->delete();
                 foreach ($model->tempExpensesToSave as $e) {
                     $model->projectExpenses()->create([
+                        'material_index' => $e['material_index'] ?? null,
+                        'comm_index' => $e['comm_index'] ?? null,
                         'expense_name' => $e['expense_name'] ?? '',
                         'quantity' => $e['quantity'] ?? 1,
                         'amount' => $e['amount'] ?? 0,

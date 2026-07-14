@@ -487,7 +487,30 @@ class ProjectController extends Controller
         }
 
         $allContractors = Contractor::orderBy('name')->get();
-        return view('admin.project_detail', compact('project', 'application', 'allApplications', 'allContractors'));
+
+        $views = [
+            'Education Center' => 'education_center',
+            'Cultural Center' => 'cultural_center',
+            'Hospital or Clinics' => 'hospital_clinics',
+            'Shops and Others' => 'shops_others',
+            'House' => 'house',
+            'Drinking Water - Group Level' => 'drinking_water_group',
+            'Drinking Water - Individual Level' => 'drinking_water_individual',
+            'Orphan Care' => 'orphan_care',
+            'Differently Abled' => 'differently_abled',
+            'Family Aid' => 'family_aid',
+            'General' => 'general'
+        ];
+
+        $viewName = 'admin.project_detail';
+        if (isset($views[$project->type_of_project])) {
+            $candidate = 'admin.project_detail.' . $views[$project->type_of_project];
+            if (view()->exists($candidate)) {
+                $viewName = $candidate;
+            }
+        }
+
+        return view($viewName, compact('project', 'application', 'allApplications', 'allContractors'));
     }
 
     public function assignApplication(Request $request, $id)
@@ -505,12 +528,21 @@ class ProjectController extends Controller
         $isPm = ($user->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
         $isSuperAdmin = ($user->role == 1);
 
-        if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
-            if (!$isCoo && !$isHod && !$isPm && !$isSuperAdmin) {
-                return redirect()->back()->with('error', 'Only Project Manager, HOD, and COO are authorized to assign or connect applications.');
-            }
-            if ($project->stage >= 6) {
-                return redirect()->back()->with('error', 'The assigned application cannot be changed after Stage 4 is approved.');
+        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
+        
+        $isStage4Approved = false;
+        if ($isSixStage) {
+            $isStage4Approved = ($project->stage >= 5 || in_array($project->status, ['Approved', 'Completed']));
+        }
+
+        if ($isStage4Approved) {
+            return redirect()->back()->with('error', 'Once Stage 4 is approved, the assigned application cannot be changed.');
+        }
+
+        if ($isSixStage) {
+            $isEngineer = ($user->role == 6 || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
+            if (!$isCoo && !$isHod && !$isPm && !$isEngineer && !$isSuperAdmin) {
+                return redirect()->back()->with('error', 'Only Project Manager, Engineer, HOD, and COO are authorized to assign or connect applications.');
             }
         } else {
             if (!$isCoo && !$isHod && !$isSuperAdmin) {
@@ -666,8 +698,8 @@ class ProjectController extends Controller
 
             if ($currentStage <= 4) {
                 if ($action === 'submit') {
-                    if (!$isPm && !$isSuperAdmin) {
-                        return redirect()->back()->with('error', 'Only Project Manager is authorized to submit projects for approval.');
+                    if (!$isPm && !$isEngineer && !$isSuperAdmin) {
+                        return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to submit projects for approval.');
                     }
                     $project->status = 'Pending Approval';
                     $project->save();
@@ -678,10 +710,10 @@ class ProjectController extends Controller
                     if (!$isCoo && !$isHod && !$isSuperAdmin) {
                         return redirect()->back()->with('error', 'Only COO or HOD is authorized to approve Stage 4.');
                     }
-                    $project->stage = 6;
+                    $project->stage = 5;
                     $project->status = 'Approved';
                     $project->save();
-                    return redirect()->route('projects.show', $project->id)->with('success', 'Stage 4 approved successfully! Project promoted to Stage 6.');
+                    return redirect()->route('projects.show', $project->id)->with('success', 'Stage 4 approved successfully! Project promoted to Stage 5.');
                 }
 
                 if ($action === 'reject') {
@@ -701,6 +733,18 @@ class ProjectController extends Controller
                 }
 
                 return redirect()->back()->with('error', 'Invalid action for Stage 4.');
+            }
+
+            if ($currentStage == 5) {
+                if ($action === 'promote_to_stage6') {
+                    if (!$isPm && !$isEngineer && !$isSuperAdmin) {
+                        return redirect()->back()->with('error', 'Only Project Manager or Engineer is authorized to promote project to Stage 6.');
+                    }
+                    $project->stage = 6;
+                    $project->save();
+                    return redirect()->route('projects.show', $project->id)->with('success', 'Project promoted to Stage 6 (Completion Stage) successfully!');
+                }
+                return redirect()->back()->with('error', 'Invalid action for Stage 5.');
             }
 
 
@@ -728,6 +772,7 @@ class ProjectController extends Controller
                         'status_custom' => null,
                     ]);
                 }
+                $statusRecord->status = 'Completed';
                 $statusRecord->coo_approved_at = now();
                 $statusRecord->coo_approver_id = auth()->id();
                 $statusRecord->coo_remarks = $request->input('remarks');
@@ -818,7 +863,9 @@ class ProjectController extends Controller
         if (!$this->isPmOrEngineer($user)) {
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to add files.');
         }
-
+        if ($project->status === 'Completed') {
+            return redirect()->back()->with('error', 'Project is finalized and locked.');
+        }
         $request->validate([
             'document_name' => 'required|string',
             'file' => 'required|file|max:10240' // 10MB max
@@ -874,6 +921,13 @@ class ProjectController extends Controller
                 return response()->json(['success' => false, 'error' => 'Please connect an application first.'], 400);
             }
             return redirect()->back()->with('error', 'Please connect an application first.');
+        }
+
+        if ($project->status === 'Completed') {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'Project is finalized and locked.'], 403);
+            }
+            return redirect()->back()->with('error', 'Project is finalized and locked.');
         }
 
         $request->validate([
@@ -1411,7 +1465,7 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to add photos.');
         }
 
-        $project = $this->getProjectInstance($request, $id, true);
+        $project = $this->getProjectInstance($request, $id, false);
         if (!$project) {
             abort(404);
         }
@@ -1454,7 +1508,7 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage photos.');
         }
 
-        $project = $this->getProjectInstance($request, $id, true);
+        $project = $this->getProjectInstance($request, $id, false);
         if (!$project) {
             abort(404);
         }

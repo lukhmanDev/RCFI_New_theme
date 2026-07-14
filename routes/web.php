@@ -18,7 +18,7 @@ Route::get('/', function () {
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/doAdminLogin', [AuthController::class, 'doLogin'])->name('do.admin_login');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Password Reset routes
 Route::get('/forgot-password', [AuthController::class, 'showLinkRequestForm'])->name('password.request');
@@ -90,5 +90,25 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/projects/{id}/contractors', [ProjectController::class, 'addContractor'])->name('projects.add_contractor');
     Route::put('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'updateContractor'])->name('projects.update_contractor');
     Route::delete('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'deleteContractor'])->name('projects.delete_contractor');
+
+    // Fallback GET routes for action endpoints to prevent 405 Method Not Allowed errors on refreshes/navigation anomalies
+    Route::get('/admin/projects/{id}/community-contributions', function($id) {
+        return redirect()->route('projects.show', $id);
+    });
+    Route::get('/admin/projects/{id}/materials', function($id) {
+        return redirect()->route('projects.show', $id);
+    });
+    Route::get('/admin/projects/{id}/expenses', function($id) {
+        return redirect()->route('projects.show', $id);
+    });
+    Route::get('/admin/projects/{id}/contractors', function($id) {
+        return redirect()->route('projects.show', $id);
+    });
+    Route::get('/admin/projects/{id}/approve', function($id) {
+        return redirect()->route('projects.show', $id);
+    });
+    Route::get('/admin/projects/{id}/assign-application', function($id) {
+        return redirect()->route('projects.show', $id);
+    });
     
 });

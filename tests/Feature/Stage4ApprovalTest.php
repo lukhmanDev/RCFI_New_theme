@@ -53,7 +53,7 @@ class Stage4ApprovalTest extends TestCase
             'action' => 'approve',
         ]);
 
-        $this->assertSame(6, $project->fresh()->stage);
+        $this->assertSame(5, $project->fresh()->stage);
         $this->assertSame('Approved', $project->fresh()->status);
     }
 
@@ -76,7 +76,7 @@ class Stage4ApprovalTest extends TestCase
             'action' => 'approve',
         ]);
 
-        $this->assertSame(6, $project->fresh()->stage);
+        $this->assertSame(5, $project->fresh()->stage);
         $this->assertSame('Approved', $project->fresh()->status);
     }
 
@@ -298,7 +298,7 @@ class Stage4ApprovalTest extends TestCase
         $response = $this->actingAs($pm)->post('/admin/projects/' . $project->id . '/assign-application?type=Education%20Center', [
             'application_id' => $app->id,
         ]);
-        $response->assertSessionHas('error', 'The assigned application cannot be changed after Stage 4 is approved.');
+        $response->assertSessionHas('error', 'Once Stage 4 is approved, the assigned application cannot be changed.');
     }
 
     public function test_only_coo_and_hod_can_update_project_status(): void
@@ -522,5 +522,128 @@ class Stage4ApprovalTest extends TestCase
 
         $response->assertRedirect();
         $this->assertNull($project->fresh()->projectDocument->location_map_link);
+    }
+
+    public function test_pm_can_promote_stage_5_to_stage_6(): void
+    {
+        $pm = User::factory()->create([
+            'role' => 3,
+            'designation' => 'Project Manager',
+            'email' => 'pm_promote@example.com',
+        ]);
+
+        $project = EducationCenterProject::create([
+            'type_of_project' => 'Education Center',
+            'stage' => 5,
+            'status' => 'Approved',
+            'project_manager_id' => $pm->id,
+        ]);
+
+        $response = $this->actingAs($pm)->post('/admin/projects/' . $project->id . '/approve?type=Education%20Center', [
+            'action' => 'promote_to_stage6',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertSame(6, $project->fresh()->stage);
+    }
+
+    public function test_engineer_can_promote_stage_5_to_stage_6(): void
+    {
+        $eng = User::factory()->create([
+            'role' => 6,
+            'designation' => 'Engineer',
+            'email' => 'eng_promote@example.com',
+        ]);
+
+        $project = EducationCenterProject::create([
+            'type_of_project' => 'Education Center',
+            'stage' => 5,
+            'status' => 'Approved',
+            'engineer_id' => $eng->id,
+        ]);
+
+        $response = $this->actingAs($eng)->post('/admin/projects/' . $project->id . '/approve?type=Education%20Center', [
+            'action' => 'promote_to_stage6',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertSame(6, $project->fresh()->stage);
+    }
+
+    public function test_unauthorized_user_cannot_promote_stage_5_to_stage_6(): void
+    {
+        $user = User::factory()->create([
+            'role' => 5,
+            'designation' => 'Donor',
+            'email' => 'donor_promote@example.com',
+        ]);
+
+        $project = EducationCenterProject::create([
+            'type_of_project' => 'Education Center',
+            'stage' => 5,
+            'status' => 'Approved',
+        ]);
+
+        $response = $this->actingAs($user)->post('/admin/projects/' . $project->id . '/approve?type=Education%20Center', [
+            'action' => 'promote_to_stage6',
+        ]);
+
+        $response->assertSessionHas('error', 'Only Project Manager or Engineer is authorized to promote project to Stage 6.');
+        $this->assertSame(5, $project->fresh()->stage);
+    }
+
+    public function test_engineer_can_submit_for_approval_at_stage_4(): void
+    {
+        $eng = User::factory()->create([
+            'role' => 6,
+            'designation' => 'Engineer',
+            'email' => 'eng_submit@example.com',
+        ]);
+
+        $project = EducationCenterProject::create([
+            'type_of_project' => 'Education Center',
+            'stage' => 4,
+            'status' => 'Pending',
+            'engineer_id' => $eng->id,
+        ]);
+
+        $response = $this->actingAs($eng)->post('/admin/projects/' . $project->id . '/approve?type=Education%20Center', [
+            'action' => 'submit',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertSame('Pending Approval', $project->fresh()->status);
+    }
+
+    public function test_photos_remain_editable_on_completed_project(): void
+    {
+        $pm = User::factory()->create([
+            'role' => 3,
+            'designation' => 'Project Manager',
+            'email' => 'pm_photos_comp@example.com',
+        ]);
+
+        $project = EducationCenterProject::create([
+            'type_of_project' => 'Education Center',
+            'stage' => 6,
+            'status' => 'Completed',
+            'project_manager_id' => $pm->id,
+        ]);
+
+        // Upload photo
+        $file = \Illuminate\Http\UploadedFile::fake()->image('before_construction.jpg');
+        $response = $this->actingAs($pm)->post('/admin/projects/' . $project->id . '/upload-photo?type=Education%20Center', [
+            'photo' => $file,
+            'category' => 'before',
+        ]);
+
+        $response->assertRedirect();
+        $project = $project->fresh();
+        $this->assertCount(1, $project->files['photos_before']);
+
+        // Delete photo
+        $response = $this->actingAs($pm)->delete('/admin/projects/' . $project->id . '/delete-photo/0?type=Education%20Center&category=before');
+        $response->assertRedirect();
+        $this->assertCount(0, $project->fresh()->files['photos_before']);
     }
 }

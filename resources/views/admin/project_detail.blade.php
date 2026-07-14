@@ -178,7 +178,7 @@
                     } elseif ($i == 3 || $i == 4) {
                         $isLocked = empty($project->application_id);
                     } else { // stage 5 or 6
-                        $isLocked = ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
+                        $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
                     }
                 } else {
                     $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
@@ -209,11 +209,16 @@
         
         $isLockedForEditing = ($project->status === 'Completed');
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
-        $isPmAllowedToAssign = $isPmOnly && ($project->stage < 6);
         $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
-        $canAssignApplication = ($isPmAllowedToAssign || $isHod || $isCoo || $isSuperAdmin) && !$isLockedForEditing;
-        if ($isSixStage && $project->stage >= 6) {
-            $canAssignApplication = false;
+        $isStage4Approved = false;
+        if ($isSixStage) {
+            $isStage4Approved = ($project->stage >= 5 || in_array($project->status, ['Approved', 'Completed']));
+        }
+        
+        if ($isSixStage) {
+            $canAssignApplication = ($isPmOnly || $isEngineerOnly || $isHod || $isCoo || $isSuperAdmin) && !$isStage4Approved;
+        } else {
+            $canAssignApplication = ($isHod || $isCoo || $isSuperAdmin) && !$isLockedForEditing;
         }
         $hasApplication = !empty($project->application_id);
     @endphp
@@ -1458,6 +1463,34 @@
                     </tbody>
                 </table>
                 @endif
+
+                @if($project->stage == 5 && $project->status !== 'Completed')
+                    <div style="margin-top: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
+                        <h4 style="color: #ffffff; font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">Promote to Stage 6</h4>
+                        @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                                Once all expenses have been logged and the evaluation is complete, you can promote this project to Stage 6 (Completion Stage).
+                            </p>
+                            <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0;">
+                                @csrf
+                                <input type="hidden" name="action" value="promote_to_stage6">
+                                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer;">
+                                    <i class="bx bx-right-arrow-alt"></i> Complete Stage 5 & Move to Stage 6
+                                </button>
+                            </form>
+                        @else
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                <i class="bx bx-time-five"></i> Awaiting Project Manager or Engineer to complete Stage 5 and promote to Stage 6.
+                            </div>
+                        @endif
+                    </div>
+                @elseif($project->stage >= 6)
+                    <div style="margin-top: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
+                        <div style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                            <i class="bx bx-check-circle"></i> Stage 5 Completed — project promoted to Stage 6.
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -1721,7 +1754,7 @@
                                     <span style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted);">{{ count($colData['photos']) }}</span>
                                 </h4>
 
-                                @if($isProjectManager && $project->status !== 'Completed')
+                                @if($isProjectManager)
                                     <form action="{{ route('projects.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
                                         @csrf
                                         <input type="hidden" name="category" value="{{ $key }}">
@@ -1743,7 +1776,7 @@
                                                 <a href="{{ asset($photoPath) }}" target="_blank" style="display: block; line-height: 0;">
                                                     <img src="{{ asset($photoPath) }}" style="width: 100%; height: 120px; object-fit: cover; display: block;" alt="{{ $colData['title'] }} photo {{ $idx + 1 }}">
                                                 </a>
-                                                @if($isProjectManager && $project->status !== 'Completed')
+                                                @if($isProjectManager)
                                                     <form action="{{ route('projects.delete_photo', [$project->id, $idx]) }}?category={{ $key }}" method="POST" style="position: absolute; top: 0.3rem; right: 0.3rem; margin: 0;" onsubmit="return confirm('Delete this photo?');">
                                                         @csrf
                                                         @method('DELETE')
@@ -1823,6 +1856,8 @@
                             <div class="details-value">
                                 @if($project->status === 'Approved')
                                     <span style="background-color: rgba(16,185,129,0.2); color: var(--accent-green); padding: 0.3rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(16,185,129,0.3);">APPROVED & HANDED OVER</span>
+                                @elseif($project->status === 'Completed')
+                                    <span style="background-color: rgba(16,185,129,0.2); color: var(--accent-green); padding: 0.3rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(16,185,129,0.3);">COMPLETED</span>
                                 @else
                                     <span style="background-color: rgba(245,158,11,0.2); color: #f59e0b; padding: 0.3rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(245,158,11,0.3);">PENDING FINAL SIGN-OFF</span>
                                 @endif
@@ -1861,7 +1896,7 @@
 
     <!-- Switch Stage Script -->
     <script>
-        const allApplicationsData = @json($allApplications);
+        var allApplicationsData = @json($allApplications);
 
         async function toggleChecklistDocument(button, docName) {
             const icon = button.querySelector('i');
@@ -2098,11 +2133,11 @@
         }
 
         // Track the current actual project stage from the database
-        const activeProjectId = {{ $project->id }};
-        const activeProjectStage = {{ $project->stage }};
-        const isProjectApproved = "{{ ($project->status === 'Approved' || $project->status === 'Completed') ? '1' : '0' }}";
-        const hasApplication = "{{ empty($project->application_id) ? '0' : '1' }}";
-        const projectType = "{{ $project->type_of_project }}";
+        var activeProjectId = {{ $project->id }};
+        var activeProjectStage = {{ $project->stage }};
+        var isProjectApproved = "{{ ($project->status === 'Approved' || $project->status === 'Completed') ? '1' : '0' }}";
+        var hasApplication = "{{ empty($project->application_id) ? '0' : '1' }}";
+        var projectType = "{{ $project->type_of_project }}";
 
         function switchStage(stageNum) {
             let isLocked = false;
@@ -2197,7 +2232,7 @@
         }
         function openEditMaterialModal(index, name, amount) {
             const form = document.getElementById('editMaterialForm');
-            form.action = `/admin/projects/{{ $project->id }}/materials/${index}`;
+            form.setAttribute('action', `/admin/projects/{{ $project->id }}/materials/${index}`);
             document.getElementById('editMaterialName').value = name;
             document.getElementById('editMaterialAmount').value = amount;
             document.getElementById('editMaterialModal').style.display = 'flex';
@@ -2215,7 +2250,7 @@
         }
         function openEditCommContribModal(index, item, amount) {
             const form = document.getElementById('editCommContribForm');
-            form.action = `/admin/projects/{{ $project->id }}/community-contributions/${index}`;
+            form.setAttribute('action', `/admin/projects/{{ $project->id }}/community-contributions/${index}`);
             document.getElementById('editCommContribName').value = item;
             document.getElementById('editCommContribAmount').value = amount;
             document.getElementById('editCommContribModal').style.display = 'flex';
@@ -2235,7 +2270,7 @@
         }
         function openEditExpenseModal(index, materialIndex, name, quantity, amount) {
             const form = document.getElementById('editExpenseForm');
-            form.action = `/admin/projects/{{ $project->id }}/expenses/${index}`;
+            form.setAttribute('action', `/admin/projects/{{ $project->id }}/expenses/${index}`);
             document.getElementById('editExpenseFormMaterialIndex').value = materialIndex;
             document.getElementById('editExpenseName').value = name;
             document.getElementById('editExpenseQuantity').value = quantity;
@@ -2257,7 +2292,7 @@
         }
         function openEditCommExpenseModal(index, commIndex, name, quantity, amount) {
             const form = document.getElementById('editCommExpenseForm');
-            form.action = `/admin/projects/{{ $project->id }}/expenses/${index}`;
+            form.setAttribute('action', `/admin/projects/{{ $project->id }}/expenses/${index}`);
             document.getElementById('editCommExpenseFormIndex').value = commIndex;
             document.getElementById('editCommExpenseName').value = name;
             document.getElementById('editCommExpenseQuantity').value = quantity;
@@ -2503,7 +2538,7 @@
         }
         function openEditContractorModal(index, contractor) {
             const form = document.getElementById('editContractorForm');
-            form.action = `/admin/projects/{{ $project->id }}/contractors/${index}`;
+            form.setAttribute('action', `/admin/projects/{{ $project->id }}/contractors/${index}`);
             
             const select = document.getElementById('edit_contractor_select');
             

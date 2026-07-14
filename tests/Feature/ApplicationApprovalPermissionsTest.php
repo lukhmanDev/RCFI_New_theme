@@ -302,4 +302,45 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertArrayNotHasKey('Land document', $project->fresh()->files ?? []);
     }
+
+    public function test_only_pending_applications_can_be_deleted(): void
+    {
+        $coo = User::create([
+            'name' => 'COO Test App Delete',
+            'email' => 'coo_test_delete@rcfi.org',
+            'mobile' => '9888888812',
+            'role' => 2,
+            'password' => bcrypt('password'),
+            'designation' => 'COO',
+        ]);
+
+        // 1. Create a pending application
+        $pendingApp = HouseApplication::create([
+            'category' => 'House',
+            'applicant_name' => 'Pending Applicant Delete',
+            'status' => 'Pending',
+        ]);
+
+        // 2. Create an approved application
+        $approvedApp = HouseApplication::create([
+            'category' => 'House',
+            'applicant_name' => 'Approved Applicant Delete',
+            'status' => 'Approved',
+        ]);
+
+        // 3. Try to delete the approved application -> should fail
+        $response = $this->actingAs($coo)->delete("/admin/applications/{$approvedApp->id}", [
+            'redirect_category' => 'house'
+        ]);
+        $response->assertSessionHas('error', 'Only pending applications can be deleted.');
+        $this->assertNotNull(HouseApplication::find($approvedApp->id));
+
+        // 4. Try to delete the pending application -> should succeed
+        $response = $this->actingAs($coo)->delete("/admin/applications/{$pendingApp->id}", [
+            'redirect_category' => 'house'
+        ]);
+        $response->assertRedirect('/admin/applications/category/house');
+        $response->assertSessionHas('success');
+        $this->assertNull(HouseApplication::find($pendingApp->id));
+    }
 }

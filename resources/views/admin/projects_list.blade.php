@@ -281,12 +281,10 @@
                         <th>Project ID</th>
                         <th>Project Name</th>
                         <th>Sponsor</th>
-                        <th>Project Spec</th>
                         <th class="col-agency">Agency Project No</th>
                         <th class="col-donor">Donor Name</th>
                         <th class="col-manager">Project Manager</th>
                         <th class="col-budget" style="text-align: right;">Available Budget</th>
-                        <th class="col-type" style="text-align: center;">Type of Project</th>
                         <th class="col-remarks">Remarks</th>
                         <th style="text-align: center; width: 180px;">Action</th>
                     </tr>
@@ -300,16 +298,10 @@
                             </td>
                             <td>{{ $project->project_name ?? 'N/A' }}</td>
                             <td>{{ $project->sponsor ?? 'N/A' }}</td>
-                            <td>{{ $project->project_spec ?? 'N/A' }}</td>
                             <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
                             <td class="col-donor">{{ $project->donor ? $project->donor->name : 'N/A' }}</td>
                             <td class="col-manager">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</td>
                             <td class="col-budget" style="text-align: right;">₹{{ number_format($project->available_budget, 2) }}</td>
-                            <td class="col-type" style="text-align: center;">
-                                <span style="background-color: rgba(16, 185, 129, 0.15); color: var(--accent-green); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
-                                    {{ $project->type_of_project }}
-                                </span>
-                            </td>
                             <td class="col-remarks" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                 {{ $project->remarks ?? 'N/A' }}
                             </td>
@@ -408,6 +400,17 @@
                         </select>
                     </div>
 
+                    <!-- Engineer -->
+                    <div class="form-group-custom">
+                        <label for="engineer_id">Engineer</label>
+                        <select name="engineer_id" id="engineer_id">
+                            <option value="">Select an engineer</option>
+                            @foreach($engineers as $engineer)
+                                <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <!-- Available Budget -->
                     <div class="form-group-custom">
                         <label for="available_budget">Available Budget</label>
@@ -492,6 +495,17 @@
                         </select>
                     </div>
 
+                    <!-- Engineer -->
+                    <div class="form-group-custom">
+                        <label for="edit_engineer_id">Engineer</label>
+                        <select name="engineer_id" id="edit_engineer_id">
+                            <option value="">Select an engineer</option>
+                            @foreach($engineers as $engineer)
+                                <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <!-- Available Budget -->
                     <div class="form-group-custom">
                         <label for="edit_available_budget">Available Budget</label>
@@ -533,7 +547,7 @@
 
         function openEditModal(project) {
             const form = document.getElementById('editProjectForm');
-            form.action = `/admin/projects/${project.id}`;
+            form.setAttribute('action', `/admin/projects/${project.id}`);
 
             document.getElementById('edit_project_name').value = project.project_name || '';
             document.getElementById('edit_sponsor').value = project.sponsor || '';
@@ -541,6 +555,7 @@
             document.getElementById('edit_agency_project_no').value = project.agency_project_no || '';
             document.getElementById('edit_donor_id').value = project.donor_id || '';
             document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';
+            document.getElementById('edit_engineer_id').value = project.engineer_id || '';
             document.getElementById('edit_available_budget').value = project.available_budget || '';
             document.getElementById('edit_remarks').value = project.remarks || '';
 

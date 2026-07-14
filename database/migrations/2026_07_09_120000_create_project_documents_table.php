@@ -19,10 +19,15 @@ return new class extends Migration
             $table->unsignedBigInteger('project_id');
             $table->string('project_type');
             
-            // Generate columns for checklists and uploads
+            // Generate columns for checklists and uploads (avoiding duplicates)
+            $createdColumns = [];
             foreach (ProjectDocument::$docColumnMap as $docName => $column) {
+                if (in_array($column, $createdColumns)) {
+                    continue;
+                }
                 $table->string($column)->default('0');
                 $table->timestamp($column . '_ticked_at')->nullable();
+                $createdColumns[] = $column;
             }
 
             $table->timestamps();

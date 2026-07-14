@@ -259,6 +259,9 @@ class ApplicationController extends Controller
         if ($config) {
             $model = $config['model'];
             $application = $model::findOrFail($id);
+            if (strtolower($application->status ?? 'pending') !== 'pending') {
+                return redirect()->back()->with('error', 'Only pending applications can be deleted.');
+            }
             $application->delete();
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application record deleted successfully.');
         }

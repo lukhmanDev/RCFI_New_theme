@@ -71,14 +71,20 @@ class ProjectDocument extends Model
 
     public static $docColumnMap = [
         'Land document' => 'land_document',
+        'Copy of the land document ( well site)' => 'land_document',
         'Possession certificate' => 'possession_certificate',
+        'Agreement with beneficiary' => 'possession_certificate',
+        'Copy of the land document ( water tank site)' => 'possession_certificate',
         'Recommendation letter' => 'recommendation_letter',
         'Committee minutes' => 'committee_minutes',
         'Permit copy' => 'permit_copy',
+        'No objection certificate of both land owners for implementing community drinking water project in their land' => 'permit_copy',
         'Plan' => 'plan',
         'Tender schedule sheet' => 'tender_schedule_sheet',
         'Site study' => 'site_study',
+        'Site study report' => 'site_study',
         'Quotations' => 'quotations',
+        '3 Quotations of the well, tank, pump house and house connection works' => 'quotations',
         'Quotations approval form' => 'quotations_approval_form',
         'Work order letter' => 'work_order_letter',
         'Meeting minutes copy' => 'meeting_minutes_copy',
@@ -87,6 +93,7 @@ class ProjectDocument extends Model
         'Project summary form' => 'project_summary_form',
         'Completion Certificate' => 'completion_certificate',
         'Measurement Book' => 'measurement_book',
+        'Consumption sheet for payment' => 'measurement_book',
     ];
 
     public function project()

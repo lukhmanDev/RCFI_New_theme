@@ -104,11 +104,12 @@
                             <td>{{ $project && $project->projectManager ? $project->projectManager->name : '—' }}</td>
                             <td>{{ $project && $project->donor ? $project->donor->name : '—' }}</td>
                             <td style=" vertical-align: middle;">
-                                @if($project && !empty($project->project_phase))
+                                @if($project && ($project->status === 'Completed' || !empty($project->project_phase)))
                                     @php
-                                        $phaseLabel = $project->project_phase === 'Other'
+                                        $phaseVal = $project->status === 'Completed' ? 'Completed' : $project->project_phase;
+                                        $phaseLabel = $phaseVal === 'Other'
                                             ? ($project->project_phase_custom ?: 'Other')
-                                            : $project->project_phase;
+                                            : $phaseVal;
                                         $phaseColors = [
                                             'Project Assigned'                      => ['bg' => 'rgba(99,102,241,0.18)',  'text' => '#a5b4fc'],
                                             'Site identified'                       => ['bg' => 'rgba(59,130,246,0.18)',  'text' => '#60a5fa'],
@@ -126,7 +127,7 @@
                                             'Inaugurated'                           => ['bg' => 'rgba(52,211,153,0.25)', 'text' => '#34d399'],
                                             'Finance settled and Project phase off' => ['bg' => 'rgba(156,163,175,0.2)', 'text' => '#d1d5db'],
                                         ];
-                                        $pColor = $phaseColors[$project->project_phase] ?? ['bg' => 'rgba(6,182,212,0.15)', 'text' => 'var(--accent-cyan)'];
+                                        $pColor = $phaseColors[$phaseVal] ?? ['bg' => 'rgba(6,182,212,0.15)', 'text' => 'var(--accent-cyan)'];
                                     @endphp
                                     <span title="{{ $phaseLabel }}" style="display:inline-flex;align-items:center;gap:0.3rem;background-color:{{ $pColor['bg'] }};color:{{ $pColor['text'] }};padding:0.25rem 0.75rem;border-radius:20px;font-size:0.72rem;font-weight:700;white-space:nowrap;margin:0 auto;">
                                         <i class="bx bx-radio-circle-marked" style="font-size:0.9rem;flex-shrink:0;"></i>

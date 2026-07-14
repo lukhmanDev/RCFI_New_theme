@@ -9,6 +9,8 @@ class ProjectExpense extends Model
     protected $fillable = [
         'project_id',
         'project_type',
+        'material_index',
+        'comm_index',
         'expense_name',
         'quantity',
         'amount',

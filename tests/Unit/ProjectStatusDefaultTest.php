@@ -35,7 +35,7 @@ class ProjectStatusDefaultTest extends TestCase
             $table->unsignedBigInteger('project_id');
             $table->string('project_type');
 
-            foreach (ProjectDocument::$docColumnMap as $column) {
+            foreach (array_unique(ProjectDocument::$docColumnMap) as $column) {
                 $table->string($column)->nullable();
                 $table->timestamp($column . '_ticked_at')->nullable();
             }

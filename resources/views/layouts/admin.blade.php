@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_collapsed.png') }}">
     <title>@yield('title', 'Dashboard') | Admin Panel</title>
     
     <!-- Premium Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 
@@ -36,6 +37,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
+            font-weight: 300;
             background-color: var(--bg-color);
             color: var(--text-main);
             overflow-x: hidden;
@@ -106,7 +108,7 @@
             color: var(--text-muted);
             text-decoration: none;
             border-radius: 8px;
-            font-weight: 500;
+            font-weight: 300;
             font-size: 0.95rem;
             transition: all 0.2s ease;
         }
@@ -163,7 +165,7 @@
 
         .topbar-title {
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .topbar-profile {
@@ -188,7 +190,7 @@
 
         .profile-name {
             font-size: 0.85rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-main);
         }
 
@@ -325,7 +327,7 @@
 
         .panel-title {
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             color: #ffffff;
         }
 
@@ -367,7 +369,7 @@
             display: block;
             margin-bottom: 0.5rem;
             font-size: 0.85rem;
-            font-weight: 500;
+            font-weight: 700;
             color: var(--text-muted);
         }
 
@@ -384,7 +386,7 @@
             padding: 1rem;
             border-bottom: 2px solid var(--panel-border);
             color: var(--text-main);
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .table-custom td {
@@ -410,7 +412,7 @@
             border-radius: 6px;
             padding: 0.65rem 1.25rem;
             font-size: 0.9rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             text-decoration: none;
             transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
@@ -543,7 +545,7 @@
             color: #9ca3af; 
             padding: 0.75rem 1.5rem; 
             border-radius: 8px; 
-            font-weight: 600; 
+            font-weight: 700; 
             cursor: pointer; 
             transition: all 0.2s ease; 
             font-size: 0.9rem;
@@ -560,7 +562,7 @@
             color: #ffffff; 
             padding: 0.75rem 1.5rem; 
             border-radius: 8px; 
-            font-weight: 600; 
+            font-weight: 700; 
             cursor: pointer; 
             transition: all 0.2s ease; 
             font-size: 0.9rem; 
@@ -636,7 +638,7 @@
             padding: 1rem 1.5rem !important;
             border-radius: 10px !important;
             font-size: 0.9rem !important;
-            font-weight: 500 !important;
+            font-weight: 700 !important;
             display: flex !important;
             align-items: center !important;
             gap: 0.75rem !important;
@@ -781,6 +783,18 @@
 
     <!-- Toggle Script -->
     <script>
+        // DOMContentLoaded interceptor to support deferred script loading via PJAX page transitions
+        (function() {
+            const originalAddEventListener = document.addEventListener;
+            document.addEventListener = function(type, listener, options) {
+                if (type === 'DOMContentLoaded' && (document.readyState === 'complete' || document.readyState === 'interactive')) {
+                    setTimeout(listener, 0);
+                } else {
+                    originalAddEventListener.call(document, type, listener, options);
+                }
+            };
+        })();
+
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
         }
@@ -1103,7 +1117,10 @@
                 
                 if (!data) {
                     const response = await fetch(url, {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html'
+                        }
                     });
                     
                     if (!response.ok) {
@@ -1131,7 +1148,10 @@
         async function reloadCurrentPageContent() {
             try {
                 const response = await fetch(window.location.href, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'text/html'
+                    }
                 });
                 if (response.ok) {
                     const html = await response.text();
@@ -1152,15 +1172,18 @@
             event.preventDefault();
             showLoader();
             
-            const action = form.action || window.location.href;
-            const method = (form.method || 'POST').toUpperCase();
+            const action = form.getAttribute('action') || window.location.href;
+            const method = (form.getAttribute('method') || 'POST').toUpperCase();
             const formData = new FormData(form);
             
             try {
                 const response = await fetch(action, {
                     method: method === 'GET' ? 'GET' : 'POST',
                     body: method === 'GET' ? null : formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'text/html'
+                    }
                 });
                 
                 const finalUrl = response.url || action;
@@ -1168,7 +1191,9 @@
                 
                 swapContent(html, finalUrl);
                 
-                window.history.pushState({ url: finalUrl }, '', finalUrl);
+                if (method === 'GET' || response.redirected || finalUrl !== action) {
+                    window.history.pushState({ url: finalUrl }, '', finalUrl);
+                }
             } catch (error) {
                 console.error('Form submit PJAX error, calling fallback:', error);
                 const orig = HTMLFormElement.prototype.submit;
@@ -1213,17 +1238,25 @@
         };
 
         // Custom Confirm override integrating with PJAX
+        let isProgrammaticConfirm = false;
         window.confirm = function(message) {
-            const activeEl = document.activeElement;
-            if (activeEl && activeEl.dataset.confirmed) {
-                delete activeEl.dataset.confirmed;
+            if (isProgrammaticConfirm) {
+                return true;
+            }
+
+            const clickedEl = window.event ? window.event.target : document.activeElement;
+            const activeEl = clickedEl ? (clickedEl.closest('button') || clickedEl.closest('a') || clickedEl.closest('input') || clickedEl) : null;
+            const activeForm = clickedEl ? clickedEl.closest('form') : null;
+            const activeLink = clickedEl ? clickedEl.closest('a') : null;
+
+            if ((activeEl && activeEl.dataset.confirmed) || (activeForm && activeForm.dataset.confirmed)) {
+                if (activeEl) delete activeEl.dataset.confirmed;
+                if (activeForm) delete activeForm.dataset.confirmed;
                 return true;
             }
             
-            const activeForm = activeEl ? activeEl.closest('form') : null;
-            const activeLink = activeEl ? activeEl.closest('a') : null;
-            
-            const isRejection = activeForm && activeForm.action && activeForm.action.includes('/reject');
+            const formAction = activeForm ? (activeForm.getAttribute('action') || '') : '';
+            const isRejection = (activeForm && formAction.includes('/reject')) || message.toLowerCase().includes('reject');
 
             if (activeForm) {
                 showCustomConfirm(message, function(remarks) {
@@ -1237,20 +1270,28 @@
                         }
                         remarksInput.value = remarks || '';
                     }
+                    isProgrammaticConfirm = true;
+                    activeForm.dataset.confirmed = 'true';
+                    if (activeEl) activeEl.dataset.confirmed = 'true';
                     const event = new Event('submit', { cancelable: true, bubbles: true });
                     activeForm.dispatchEvent(event);
                     if (!event.defaultPrevented) {
                         originalSubmit.call(activeForm);
                     }
+                    isProgrammaticConfirm = false;
                 }, isRejection);
             } else if (activeLink && activeLink.href) {
                 showCustomConfirm(message, function() {
+                    activeLink.dataset.confirmed = 'true';
+                    if (activeEl) activeEl.dataset.confirmed = 'true';
                     loadPage(activeLink.href);
                 });
             } else if (activeEl) {
                 showCustomConfirm(message, function() {
+                    isProgrammaticConfirm = true;
                     activeEl.dataset.confirmed = 'true';
                     activeEl.click();
+                    isProgrammaticConfirm = false;
                 });
             }
             

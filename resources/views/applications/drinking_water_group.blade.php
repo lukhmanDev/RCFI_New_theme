@@ -298,7 +298,7 @@
                             <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="location">Location *</label>
+                            <label class="form-label" for="location">Place *</label>
                             <input type="text" class="form-control-dark" id="location" name="meta[location]" value="{{ old('meta.location') }}" required>
                         </div>
                     </div>
@@ -543,7 +543,7 @@
                             <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_location">Location *</label>
+                            <label class="form-label" for="edit_location">Place *</label>
                             <input type="text" class="form-control-dark" id="edit_location" name="meta[location]" required>
                         </div>
                     </div>
@@ -849,7 +849,7 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father's Father:</td><td>${formatVal(meta.fathers_father)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Location / Address:</td><td>${formatVal(meta.location)} / ${formatVal(meta.address)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place / Address:</td><td>${formatVal(meta.location)} / ${formatVal(meta.address)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village / PO / Panch:</td><td>${formatVal(meta.village)} / ${formatVal(meta.post)} / ${formatVal(meta.panchayath)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Dist / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Details:</td><td>Mob 1: ${formatVal(meta.contact_number_1)} ${meta.contact_number_2 ? '/ Mob 2: ' + meta.contact_number_2 : ''}</td></tr>
