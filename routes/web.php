@@ -8,6 +8,7 @@ use App\Http\Controllers\DonorController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ContractorController;
+use App\Http\Controllers\ProfileController;
 
 // Redirect root to login page
 Route::get('/', function () {
@@ -27,12 +28,14 @@ Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])-
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
 // Protected admin panel routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.home');
     Route::get('/admin/users', [UserController::class, 'index'])->name('users');
     Route::post('/doAddUser', [UserController::class, 'store'])->name('do.add_user');
     Route::put('/admin/users/{id}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/admin/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::get('/admin/users/{id}/details', [UserController::class, 'getDetails'])->name('users.details');
+    Route::post('/admin/users/{id}/toggle-suspend', [UserController::class, 'toggleSuspend'])->name('users.toggle_suspend');
 
     // Donors / Partners routes
     Route::get('/admin/donors', [DonorController::class, 'index'])->name('donors.index');
@@ -53,6 +56,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/applications/category/{category}', [ApplicationController::class, 'showCategory'])->name('applications.category');
     Route::get('/admin/applications/export/{category}', [ApplicationController::class, 'export'])->name('applications.export');
     Route::post('/admin/applications', [ApplicationController::class, 'store'])->name('applications.store');
+    Route::get('/admin/applications/{id}', [ApplicationController::class, 'show'])->name('applications.show');
     Route::put('/admin/applications/{id}', [ApplicationController::class, 'update'])->name('applications.update');
     Route::delete('/admin/applications/{id}', [ApplicationController::class, 'destroy'])->name('applications.destroy');
     Route::post('/admin/applications/{category}/{id}/approve', [ApplicationController::class, 'approveApplication'])->name('applications.approve');
@@ -111,4 +115,20 @@ Route::middleware(['auth'])->group(function () {
         return redirect()->route('projects.show', $id);
     });
     
+    // Profile routes
+    Route::get('/admin/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('/admin/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/admin/profile/send-code', [ProfileController::class, 'sendVerificationCode'])->name('profile.send_code');
+    Route::post('/admin/profile/verify', [ProfileController::class, 'verifyEmail'])->name('profile.verify');
+    Route::post('/admin/profile/credentials', [ProfileController::class, 'updateCredentials'])->name('profile.update_credentials');
+    // Notifications routes
+    Route::post('/admin/notifications/mark-all-read', function() {
+        \App\Models\Notification::where('is_read', false)->update(['is_read' => true]);
+        return response()->json(['success' => true]);
+    })->name('notifications.mark_all_read');
+
+    Route::post('/admin/notifications/{id}/mark-read', function($id) {
+        \App\Models\Notification::where('id', $id)->update(['is_read' => true]);
+        return response()->json(['success' => true]);
+    })->name('notifications.mark_read');
 });

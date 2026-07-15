@@ -232,14 +232,9 @@
     }
 </style>
 
-    <!-- Header Panel -->
-    <div class="group-header-panel">
-        {{ $categoryName }} PROJECT LIST
-    </div>
-
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -254,25 +249,27 @@
         </div>
     @endif
 
-    <!-- Controls Row -->
-    <div class="controls-row">
-        <div style="display: flex; gap: 0.75rem;">
-            <a href="{{ route('projects.export', $categorySlug) }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
-                <i class="bx bx-download"></i> Download Excel
-            </a>
-            <button onclick="openModal()" class="btn-custom">
-                <i class="bx bx-plus-circle"></i> Add Project
-            </button>
-        </div>
-
-        <div class="search-container">
-            <span>Search:</span>
-            <input type="text" id="tableSearch" onkeyup="filterTable()" class="form-control-dark" style="width: 200px; padding: 0.4rem 0.8rem; font-size: 0.85rem;" placeholder="Search projects...">
-        </div>
-    </div>
-
     <!-- Table Panel -->
     <div class="panel" style="width: 100%;">
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 class="panel-title" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-main);">{{ $categoryName }} Projects List</h2>
+            <div style="display: flex; gap: 0.75rem;">
+                <a href="{{ route('projects.export', $categorySlug) }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
+                    <i class="bx bx-download"></i> Download Excel
+                </a>
+                <button onclick="openModal()" class="btn-custom">
+                    <i class="bx bx-plus-circle"></i> Add Project
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Toolbar -->
+        <div style="margin-bottom: 1.25rem; display: flex; justify-content: flex-end;">
+            <div style="position: relative; width: 100%; max-width: 320px;">
+                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"><i class="bx bx-search"></i></span>
+                <input type="text" id="tableSearch" placeholder="Search projects..." style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.25rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.875rem; outline: none; transition: border-color 0.2s;" onkeyup="filterTable()">
+            </div>
+        </div>
         <div style="overflow-x: auto;">
             <table class="table-custom" id="projectsTable">
                 <thead>

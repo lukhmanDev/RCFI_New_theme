@@ -10,13 +10,13 @@
             width: 100%;
         }
         .group-header {
-            font-size: 1.1rem;
+            font-size: 0.8rem;
             font-weight: 700;
-            color: #38bdf8; /* Sleek blue heading */
+            color: #4f46e5;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 1.25rem;
-            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+            border-bottom: 1px solid #e2e8f0;
             padding-bottom: 0.5rem;
         }
         .projects-grid {
@@ -25,69 +25,65 @@
             gap: 1.5rem;
         }
         .project-card {
-            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.25s ease;
             cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-            color: #ffffff;
-            min-height: 160px;
+            box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.01);
+            color: var(--text-main);
+            min-height: 145px;
             text-decoration: none;
-            background: linear-gradient(135deg, #10b981, #059669); /* Elegant emerald green matching mockup */
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
         }
         .project-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.5);
-            filter: brightness(1.1);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.08);
+            border-color: #cbd5e1;
         }
         .project-card-top {
             display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        .project-card-icon-container {
-            width: 48px;
-            height: 48px;
-            background-color: rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
         }
         .project-card-info h5 {
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
+            font-size: 0.76rem;
+            letter-spacing: 0.02em;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.9);
-            margin: 0 0 0.25rem 0;
+            color: #64748b;
+            margin: 0;
             font-weight: 700;
         }
         .project-card-info h4 {
-            font-size: 1.75rem;
+            font-size: 1.55rem;
             font-weight: 700;
-            margin: 0;
+            color: #1e293b;
+            margin: 0.25rem 0 0;
         }
         .project-card-bottom {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            padding-top: 0.75rem;
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.85);
-            font-weight: 500;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 0.85rem;
+            font-size: 0.84rem;
+            color: #4f46e5;
+            font-weight: 600;
+            transition: color 0.15s ease;
+        }
+        .project-card:hover .project-card-bottom {
+            color: #312e81;
         }
     </style>
 
     <div style="margin-bottom: 2rem;">
-        <h2 class="panel-title" style="font-size: 1.5rem; color: #ffffff;">Projects Dashboard</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Select a category card to manage registered projects for each application.</p>
+        <h1 style="color: #1e293b; font-size: 1.75rem; font-weight: 700; margin: 0;">Projects Dashboard</h1>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">Select a category card to manage registered projects for each application.</p>
     </div>
 
     <!-- Groups loop matching the category setup -->
@@ -99,11 +95,8 @@
                     @php
                         $count = $counts[$config['name']] ?? 0;
                     @endphp
-                    <a href="{{ route('projects.category', $slug) }}" class="project-card" style="background: {{ $config['bg'] }};">
+                    <a href="{{ route('projects.category', $slug) }}" class="project-card">
                         <div class="project-card-top">
-                            <div class="project-card-icon-container">
-                                <i class="{{ $config['icon'] }}"></i>
-                            </div>
                             <div class="project-card-info">
                                 <h5>{{ $config['name'] }}</h5>
                                 <h4>{{ $count }}</h4>
@@ -111,7 +104,6 @@
                         </div>
                         <div class="project-card-bottom">
                             <span>View Projects</span>
-                            <i class="bx bx-right-arrow-alt" style="font-size: 1.25rem;"></i>
                         </div>
                     </a>
                 @endforeach

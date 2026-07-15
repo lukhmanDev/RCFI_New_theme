@@ -17,14 +17,14 @@
     <!-- Premium CSS Layout and Design System -->
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --panel-bg: #111827;
-            --panel-border: #1f2937;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
+            --bg-color: #f5f7fb;
+            --panel-bg: #ffffff;
+            --panel-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
             --accent-purple: #6366f1;
-            --accent-cyan: #06b6d4;
-            --accent-green: #08A472;
+            --accent-cyan: #0ea5e9;
+            --accent-green: #10b981;
             --accent-red: #ef4444;
             --sidebar-width: 260px;
         }
@@ -37,7 +37,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            font-weight: 300;
+            font-weight: 400;
             background-color: var(--bg-color);
             color: var(--text-main);
             overflow-x: hidden;
@@ -108,19 +108,25 @@
             color: var(--text-muted);
             text-decoration: none;
             border-radius: 8px;
-            font-weight: 300;
+            font-weight: 500;
             font-size: 0.95rem;
             transition: all 0.2s ease;
         }
 
-        .sidebar-menu a:hover, 
+        .sidebar-menu a:hover {
+            color: var(--text-main);
+            background-color: #f1f5f9;
+        }
+
         .sidebar-menu a.active {
-            color: #ffffff;
-            background-color: #1f2937;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, var(--accent-purple), #4f46e5);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
         }
 
         .sidebar-menu a.active i {
-            color: var(--accent-green);
+            color: #ffffff !important;
         }
 
         .sidebar-menu i {
@@ -181,6 +187,8 @@
             height: 36px;
             border-radius: 50%;
             border: 2px solid var(--accent-purple);
+            object-fit: cover;
+            flex-shrink: 0;
         }
 
         .profile-info {
@@ -207,7 +215,7 @@
             background-color: var(--panel-bg);
             border: 1px solid var(--panel-border);
             border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
             width: 150px;
             display: none;
             flex-direction: column;
@@ -328,7 +336,7 @@
         .panel-title {
             font-size: 1.1rem;
             font-weight: 700;
-            color: #ffffff;
+            color: var(--text-main);
         }
 
         /* Clean Forms & Inputs styling */
@@ -337,7 +345,7 @@
             border: 1px solid var(--panel-border);
             border-radius: 6px;
             padding: 0.65rem 1rem;
-            color: #ffffff;
+            color: var(--text-main);
             font-size: 0.9rem;
             width: 100%;
             transition: all 0.2s;
@@ -354,7 +362,7 @@
             border: 1px solid var(--panel-border);
             border-radius: 6px;
             padding: 0.65rem 1rem;
-            color: #ffffff;
+            color: var(--text-main);
             font-size: 0.9rem;
             width: 100%;
             transition: all 0.2s;
@@ -396,8 +404,8 @@
         }
 
         .table-custom tr:hover td {
-            color: #ffffff;
-            background-color: rgba(255,255,255,0.02);
+            color: var(--text-main);
+            background-color: #f8fafc;
         }
 
         /* Clean Buttons styling */
@@ -406,7 +414,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            background: linear-gradient(135deg, #0bc28d, var(--accent-green));
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
             color: #ffffff;
             border: none;
             border-radius: 6px;
@@ -470,8 +478,8 @@
             left: 0; 
             width: 100vw; 
             height: 100vh; 
-            background-color: rgba(6, 9, 17, 0.85); 
-            backdrop-filter: blur(10px); 
+            background-color: rgba(15, 23, 42, 0.3); 
+            backdrop-filter: blur(6px); 
             display: none; 
             align-items: center; 
             justify-content: center; 
@@ -484,13 +492,13 @@
             opacity: 1;
         }
         .confirm-panel {
-            background: #111827; 
-            border: 1px solid rgba(239, 68, 68, 0.2); 
+            background: #ffffff; 
+            border: 1px solid var(--panel-border); 
             border-radius: 16px; 
             padding: 2.25rem 2rem; 
             width: 90%; 
             max-width: 440px; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); 
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); 
             transform: scale(0.9); 
             transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); 
             text-align: center;
@@ -642,7 +650,7 @@
             display: flex !important;
             align-items: center !important;
             gap: 0.75rem !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08) !important;
             min-width: 300px !important;
             max-width: 450px !important;
             animation: toast-in-out 4s forwards cubic-bezier(0.68, -0.55, 0.27, 1.55) !important;
@@ -651,17 +659,17 @@
         }
 
         .alert-success {
-            background-color: rgba(17, 24, 39, 0.95) !important;
-            border: 1px solid rgba(16, 185, 129, 0.3) !important;
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            border: 1px solid rgba(16, 185, 129, 0.2) !important;
             color: var(--accent-green) !important;
-            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15), 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08) !important;
         }
 
         .alert-danger {
-            background-color: rgba(17, 24, 39, 0.95) !important;
-            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            border: 1px solid rgba(239, 68, 68, 0.2) !important;
             color: var(--accent-red) !important;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.15), 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08) !important;
         }
 
         .alert-success::before {
@@ -730,6 +738,20 @@
                 font-size: 1.5rem;
                 margin: 0;
             }
+            body.sidebar-collapsed .sidebar-profile {
+                justify-content: center;
+                padding: 1rem 0.5rem;
+            }
+            body.sidebar-collapsed .sidebar-profile .profile-info {
+                display: none !important;
+            }
+            body.sidebar-collapsed .sidebar-profile .profile-dropdown {
+                left: 75px;
+                right: auto;
+                bottom: 10px;
+                width: 150px;
+                box-shadow: 10px 0 25px rgba(0, 0, 0, 0.5);
+            }
         }
 
         .sidebar-collapse-btn {
@@ -754,6 +776,399 @@
             .sidebar-collapse-btn {
                 display: none !important;
             }
+        }
+
+        /* Sidebar Profile Styles */
+        .sidebar-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            cursor: pointer;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--panel-border);
+            background-color: rgba(17, 24, 39, 0.3);
+            margin-top: auto;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-profile img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-purple);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .sidebar-profile .profile-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-profile .profile-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-profile .profile-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-profile .profile-dropdown {
+            position: absolute;
+            bottom: calc(100% + 5px);
+            top: auto;
+            left: 1rem;
+            right: 1rem;
+            width: calc(100% - 2rem);
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            box-shadow: 0 -10px 25px rgba(15, 23, 42, 0.08);
+            display: none;
+            flex-direction: column;
+            z-index: 200;
+        }
+
+        /* Generic Pagination styles */
+        .page-btn:hover:not([disabled]) {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+        .page-btn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            background-color: #f8fafc !important;
+        }
+
+        /* ==========================================
+           Light-Theme Dark Inline Style Overrides
+        ========================================== */
+        
+        /* Headers & dividers */
+        .content-container h3[style*="color: #ffffff"],
+        .content-container h3[style*="color: #fff"],
+        .content-container h3[style*="color:#ffffff"],
+        .content-container h3[style*="color:#fff"] {
+            color: var(--text-main) !important;
+        }
+        
+        .content-container div[style*="background-color: rgba(255,255,255,0.08)"],
+        .content-container div[style*="background-color:rgba(255,255,255,0.08)"] {
+            background-color: #e2e8f0 !important;
+        }
+        
+        /* Table overrides (addresses invisible text columns in old subpage designs) */
+        .table-custom td[style*="color: #ffffff"], 
+        .table-custom td[style*="color: #fff"],
+        .table-custom td[style*="color:#ffffff"],
+        .table-custom td[style*="color:#fff"] {
+            color: var(--text-main) !important;
+        }
+        
+        .table-custom th[style*="color: #ffffff"], 
+        .table-custom th[style*="color: #fff"],
+        .table-custom th[style*="color:#ffffff"],
+        .table-custom th[style*="color:#fff"] {
+            color: var(--text-main) !important;
+        }
+
+        /* Search inputs & overlays inside subpages */
+        #tableSearchInput, #tableSearch {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            color: var(--text-main) !important;
+        }
+        #tableSearchInput::placeholder, #tableSearch::placeholder {
+            color: #94a3b8 !important;
+        }
+
+        /* Modal styling overrides to support light theme */
+        div[id*="Modal"] label, div[id*="modal"] label,
+        div[id*="Modal"] .form-label, div[id*="modal"] .form-label {
+            color: var(--text-muted) !important;
+        }
+        
+        div[id*="Modal"] h2, div[id*="modal"] h2,
+        div[id*="Modal"] h3, div[id*="modal"] h3,
+        div[id*="Modal"] h4, div[id*="modal"] h4 {
+            color: var(--text-main) !important;
+        }
+        
+        div[id*="Modal"] div[style*="color: #ffffff"], 
+        div[id*="Modal"] div[style*="color: #fff"],
+        div[id*="Modal"] div[style*="color:#ffffff"], 
+        div[id*="Modal"] div[style*="color:#fff"],
+        div[id*="modal"] div[style*="color: #ffffff"],
+        div[id*="modal"] div[style*="color: #fff"] {
+            color: var(--text-main) !important;
+        }
+
+        div[id*="Modal"] td[style*="color: #ffffff"],
+        div[id*="Modal"] td[style*="color: #fff"],
+        div[id*="Modal"] td[style*="color:#ffffff"],
+        div[id*="Modal"] td[style*="color:#fff"],
+        div[id*="modal"] td[style*="color: #ffffff"],
+        div[id*="modal"] td[style*="color: #fff"] {
+            color: var(--text-main) !important;
+        }
+
+        div[id*="Modal"] input, div[id*="modal"] input,
+        div[id*="Modal"] select, div[id*="modal"] select,
+        div[id*="Modal"] textarea, div[id*="modal"] textarea {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            color: var(--text-main) !important;
+        }
+
+        /* Modals parent background alignment */
+        div[id*="Modal"] .panel, div[id*="modal"] .panel {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        div[id*="Modal"] .panel-header, div[id*="modal"] .panel-header {
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+
+        /* Globally style Excel export buttons to look like clean secondary outline buttons */
+        .panel-header a[href*="export"], 
+        .panel-header a[href*="download"],
+        .panel-header a[style*="2ecc71"],
+        .panel-header a[style*="27ae60"] {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #475569 !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+        }
+        .panel-header a[href*="export"]:hover,
+        .panel-header a[href*="download"]:hover,
+        .panel-header a[style*="2ecc71"]:hover,
+        .panel-header a[style*="27ae60"]:hover {
+            background: #f8fafc !important;
+            border-color: #94a3b8 !important;
+            color: #1e293b !important;
+        }
+
+        /* Prevent CLS layout flash on projects subpages */
+        .group-header-panel, .controls-row {
+            display: none !important;
+        }
+
+        /* Modern light-theme Modal design overrides */
+        .modal-overlay {
+            background-color: rgba(15, 23, 42, 0.3) !important;
+            backdrop-filter: blur(6px) !important;
+        }
+        .modal-content-custom {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 16px !important;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08) !important;
+        }
+        .modal-header-custom {
+            background: #ffffff !important;
+            color: #1e293b !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            padding: 1.25rem 1.5rem !important;
+        }
+        .modal-header-custom h3 {
+            color: #1e293b !important;
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            margin: 0 !important;
+        }
+        .modal-close-btn {
+            color: #94a3b8 !important;
+            font-size: 1.5rem !important;
+            background: none !important;
+            border: none !important;
+            line-height: 1 !important;
+        }
+        .modal-close-btn:hover {
+            color: #ef4444 !important;
+        }
+        .modal-body-custom {
+            background-color: #ffffff !important;
+            padding: 1.5rem !important;
+        }
+        .form-group-custom label {
+            color: #475569 !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .form-group-custom input, 
+        .form-group-custom select, 
+        .form-group-custom textarea {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            color: #1e293b !important;
+            font-family: inherit !important;
+            border-radius: 8px !important;
+            padding: 0.65rem 1rem !important;
+            font-size: 0.9rem !important;
+            outline: none !important;
+            transition: all 0.15s ease !important;
+        }
+        .form-group-custom input:focus, 
+        .form-group-custom select:focus, 
+        .form-group-custom textarea:focus {
+            border-color: #6366f1 !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+        }
+        .form-group-custom input:disabled,
+        .form-group-custom select:disabled {
+            background-color: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed !important;
+        }
+        .modal-body-custom .btn-custom,
+        .modal-content-custom button[type="submit"] {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+            color: #ffffff !important;
+            border-radius: 8px !important;
+            padding: 0.75rem !important;
+            font-weight: 700 !important;
+            font-size: 0.9rem !important;
+            width: 100% !important;
+            margin-top: 1rem !important;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15) !important;
+            transition: opacity 0.2s ease !important;
+        }
+        .modal-body-custom .btn-custom:hover,
+        .modal-content-custom button[type="submit"]:hover {
+            opacity: 0.95 !important;
+        }
+
+        /* Project Details Page Overrides to prevent invisible white text and align styles with Light Mode */
+        .detail-header-panel {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            color: var(--text-main) !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            box-shadow: none !important;
+        }
+        .detail-header-panel h2 {
+            color: var(--text-main) !important;
+        }
+        .details-value {
+            color: var(--text-main) !important;
+        }
+        .stage-tab {
+            color: var(--text-muted) !important;
+        }
+        .stage-tab.active {
+            color: #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.08) !important;
+            border-bottom-color: #10b981 !important;
+        }
+        .stage-tab.completed {
+            color: #06b6d4 !important;
+        }
+        .warning-box {
+            background-color: rgba(99, 102, 241, 0.05) !important;
+            border: 1px solid rgba(99, 102, 241, 0.15) !important;
+            color: #4f46e5 !important;
+        }
+        .stage-success-banner {
+            background-color: rgba(16, 185, 129, 0.05) !important;
+            border: 1px solid rgba(16, 185, 129, 0.15) !important;
+            color: #065f46 !important;
+        }
+        .stage-table td {
+            color: var(--text-main) !important;
+        }
+        .stage-table tr:hover td {
+            background-color: #f8fafc !important;
+        }
+        .stage-content-panel select,
+        .stage-content-panel input[type="text"],
+        .stage-content-panel input[type="number"],
+        .stage-content-panel input[type="date"],
+        .stage-content-panel textarea {
+            background-color: #f8fafc !important;
+            color: var(--text-main) !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+        .stage-content-panel select:focus,
+        .stage-content-panel input[type="text"]:focus,
+        .stage-content-panel input[type="number"]:focus,
+        .stage-content-panel input[type="date"]:focus,
+        .stage-content-panel textarea:focus {
+            background-color: #ffffff !important;
+            border-color: #6366f1 !important;
+        }
+        .stage-content-panel div[style*="background: rgba(255, 255, 255, 0.01)"],
+        .stage-content-panel div[style*="background:rgba(255,255,255,0.01)"],
+        .stage-content-panel div[style*="background: rgba(255, 255, 255, 0.02)"],
+        .stage-content-panel div[style*="background:rgba(255,255,255,0.02)"] {
+            background: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        /* Generic inline white text colors overridden globally inside content panel */
+        .content [style*="color: #ffffff"],
+        .content [style*="color:#ffffff"],
+        .content [style*="color: #fff"],
+        .content [style*="color:#fff"],
+        .content [style*="color: white"],
+        .content [style*="color:white"],
+        .content [style*="color: #FFFFFF"],
+        .content [style*="color:#FFFFFF"] {
+            color: var(--text-main) !important;
+        }
+        .content select[style*="color: #ffffff"],
+        .content select[style*="color:#ffffff"],
+        .content select[style*="color: #fff"],
+        .content select[style*="color:#fff"] {
+            color: var(--text-main) !important;
+        }
+        .content input[style*="color: #ffffff"],
+        .content input[style*="color:#ffffff"],
+        .content input[style*="color: #fff"],
+        .content input[style*="color:#fff"] {
+            color: var(--text-main) !important;
+        }
+
+        /* Additional Notes box styling adjustments to prevent dark background low contrast text */
+        p[style*="background-color: #121824"],
+        p[style*="background-color:#121824"],
+        p[style*="background-color: #121824;"],
+        p[style*="background-color:#121824;"] {
+            background-color: #f8fafc !important;
+            color: var(--text-main) !important;
+            border-color: #e2e8f0 !important;
+        }
+        .content h5[style*="color: var(--accent-cyan)"],
+        .content h5[style*="color:var(--accent-cyan)"],
+        .content h5[style*="color: var(--accent-cyan);"],
+        .content h5[style*="color:var(--accent-cyan);"] {
+            color: #4f46e5 !important;
+            font-weight: 700 !important;
+        }
+        div[style*="background-color: rgba(255, 255, 255, 0.02)"],
+        div[style*="background-color:rgba(255,255,255,0.02)"],
+        div[style*="background-color: rgba(255, 255, 255, 0.01)"],
+        div[style*="background-color:rgba(255,255,255,0.01)"],
+        div[style*="background: rgba(255, 255, 255, 0.02)"],
+        div[style*="background:rgba(255,255,255,0.02)"] {
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
         }
     </style>
 </head>
@@ -1038,6 +1453,7 @@
             }
             
             window.scrollTo(0, 0);
+            initAllTablePagers();
         }
 
         function updateActiveSidebar(urlStr) {
@@ -1348,6 +1764,382 @@
                 });
             }
         })();
+
+        // ==========================================
+        // Client-Side Generic Table Pagination
+        // ==========================================
+        function formatAllCustomTables() {
+            document.querySelectorAll('table.table-custom').forEach(table => {
+                if (table.closest('.modal')) return;
+
+                // Find header indexes
+                const headers = Array.from(table.querySelectorAll('thead th'));
+                const headerText = headers.map(h => h.textContent.trim().toLowerCase());
+
+                const nameIndex = headerText.findIndex(t => t.includes('name of applicant') || t.includes('applicant name') || t === 'applicant');
+                const appIdIndex = headerText.findIndex(t => t.includes('application id') || t.includes('project id') || t === 'app id' || t === 'project id');
+                const statusIndex = headerText.findIndex(t => t === 'status');
+                const actionIndex = headerText.findIndex(t => t === 'action');
+
+                const rows = Array.from(table.querySelectorAll('tbody tr'));
+                
+                rows.forEach(row => {
+                    // Skip if row already formatted
+                    if (row.dataset.formatted === 'true') return;
+                    row.dataset.formatted = 'true';
+
+                    // 1. Format Name column to show circular initials avatar next to name
+                    if (nameIndex !== -1) {
+                        const cell = row.cells[nameIndex];
+                        if (cell && !cell.querySelector('.avatar-wrapper-js')) {
+                            const nameText = cell.textContent.trim();
+                            if (nameText && nameText !== 'N/A') {
+                                // Extract initials
+                                const words = nameText.split(' ').filter(w => w.length > 0);
+                                let initials = '';
+                                words.forEach(w => {
+                                    initials += w.charAt(0).toUpperCase();
+                                });
+                                initials = initials.substring(0, 2);
+
+                                // Pastel colors map based on name hash
+                                const colors = [
+                                    { bg: '#eff6ff', text: '#3b82f6' },
+                                    { bg: '#ecfdf5', text: '#10b981' },
+                                    { bg: '#fff7ed', text: '#f97316' },
+                                    { bg: '#f5f3ff', text: '#8b5cf6' },
+                                    { bg: '#fdf2f8', text: '#ec4899' },
+                                    { bg: '#f0fdf4', text: '#15803d' }
+                                ];
+                                let hash = 0;
+                                for (let i = 0; i < nameText.length; i++) {
+                                    hash = nameText.charCodeAt(i) + ((hash << 5) - hash);
+                                }
+                                const color = colors[Math.abs(hash) % colors.length];
+
+                                cell.innerHTML = `
+                                    <div class="avatar-wrapper-js" style="display: flex; align-items: center; gap: 0.85rem;">
+                                        <div style="width: 35px; height: 35px; border-radius: 50%; background: ${color.bg}; color: ${color.text}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.82rem; flex-shrink: 0;">
+                                            ${initials}
+                                        </div>
+                                        <div style="font-weight: 700; color: #1e293b;">${nameText}</div>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }
+
+                    // 2. Format Application ID and Project ID columns
+                    if (appIdIndex !== -1) {
+                        const cell = row.cells[appIdIndex];
+                        if (cell) {
+                            cell.style.color = '#4f46e5';
+                            cell.style.fontWeight = '700';
+                            cell.style.fontSize = '0.88rem';
+                        }
+                    }
+
+                    // 3. Format Status column to status dot
+                    if (statusIndex !== -1) {
+                        const cell = row.cells[statusIndex];
+                        if (cell) {
+                            const statusSpan = cell.querySelector('span');
+                            const statusText = (statusSpan ? statusSpan.textContent : cell.textContent).trim();
+                            
+                            let color = '#94a3b8';
+                            if (statusText === 'Approved' || statusText === 'Active') {
+                                color = '#10b981';
+                            } else if (statusText === 'Pending') {
+                                color = '#f59e0b';
+                            } else if (statusText === 'Rejected' || statusText === 'Suspended') {
+                                color = '#ef4444';
+                            }
+
+                            cell.innerHTML = `
+                                <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle; justify-content: center; width: 100%;">
+                                    <span style="width: 8px; height: 8px; background: ${color}; border-radius: 50%; display: inline-block;"></span>
+                                    <span style="color: ${color}; font-weight: 700; font-size: 0.82rem;">${statusText}</span>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    // 4. Format Action buttons to square borders
+                    if (actionIndex !== -1) {
+                        const cell = row.cells[actionIndex];
+                        if (cell) {
+                            const btns = cell.querySelectorAll('button, a.btn-custom, a.btn-danger-custom, .btn-action-icon');
+                            btns.forEach(btn => {
+                                btn.style.background = 'transparent';
+                                btn.style.borderRadius = '8px';
+                                btn.style.width = '32px';
+                                btn.style.height = '32px';
+                                btn.style.display = 'inline-flex';
+                                btn.style.alignItems = 'center';
+                                btn.style.justifyContent = 'center';
+                                btn.style.transition = 'all 0.15s ease';
+                                btn.style.margin = '0 0.2rem';
+                                btn.style.boxShadow = 'none';
+                                btn.style.transform = 'none';
+                                
+                                if (btn.classList.contains('btn-danger-custom') || btn.classList.contains('btn-delete')) {
+                                    btn.style.color = '#ef4444';
+                                    btn.style.border = '1px solid #e2e8f0';
+                                } else {
+                                    btn.style.border = '1px solid #e2e8f0';
+                                    if (btn.classList.contains('btn-dots') || btn.title === 'Details' || btn.title === 'View') {
+                                        btn.style.color = '#475569';
+                                    } else if (btn.classList.contains('btn-edit') || btn.title === 'Edit') {
+                                        btn.style.color = '#3b82f6';
+                                    } else if (btn.classList.contains('btn-view') || btn.title === 'Approve' || btn.title === 'Stage Details') {
+                                        btn.style.color = '#10b981';
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+        }
+
+        function alignProjectsLayout() {
+            const headerPanel = document.querySelector('.group-header-panel');
+            const controlsRow = document.querySelector('.controls-row');
+            const panel = document.querySelector('.panel');
+            
+            if (headerPanel && controlsRow && panel) {
+                // Get the title text
+                const titleText = headerPanel.textContent.trim();
+                
+                // Get buttons from controls row
+                const buttonsWrapper = controlsRow.querySelector('div[style*="display: flex"]');
+                const buttonsHtml = buttonsWrapper ? buttonsWrapper.innerHTML : '';
+                
+                // Get search input value / attributes
+                const originalSearch = controlsRow.querySelector('#tableSearch');
+                
+                // Create panel-header
+                const panelHeader = document.createElement('div');
+                panelHeader.className = 'panel-header';
+                panelHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem;';
+                panelHeader.innerHTML = `
+                    <h2 class="panel-title" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-main); text-transform: capitalize;">${titleText.toLowerCase()}</h2>
+                    <div style="display: flex; gap: 0.75rem;">
+                        ${buttonsHtml}
+                    </div>
+                `;
+                
+                // Create search row
+                const searchRow = document.createElement('div');
+                searchRow.style.cssText = 'margin-bottom: 1.25rem; display: flex; justify-content: flex-end;';
+                searchRow.innerHTML = `
+                    <div style="position: relative; width: 100%; max-width: 320px;">
+                        <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"><i class="bx bx-search"></i></span>
+                        <input type="text" id="tableSearch" placeholder="Search projects..." style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.25rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.875rem; outline: none; transition: border-color 0.2s;" onkeyup="if(typeof filterTable === 'function') filterTable()">
+                    </div>
+                `;
+                
+                // Remove the old elements
+                headerPanel.parentNode.removeChild(headerPanel);
+                controlsRow.parentNode.removeChild(controlsRow);
+                
+                // Insert the new elements at the top of the panel
+                panel.insertBefore(searchRow, panel.firstChild);
+                panel.insertBefore(panelHeader, panel.firstChild);
+                
+                // Restore search listener if there was text
+                if (originalSearch) {
+                    const newSearch = panel.querySelector('#tableSearch');
+                    if (newSearch) {
+                        newSearch.value = originalSearch.value;
+                        newSearch.addEventListener('keyup', () => {
+                            if (typeof filterTable === 'function') filterTable();
+                        });
+                    }
+                }
+            }
+        }
+
+        function initAllTablePagers() {
+            alignProjectsLayout();
+            formatAllCustomTables();
+            document.querySelectorAll('table.table-custom').forEach(table => {
+                // Skip nested tables, modal tables, or tables with no-paginate class
+                if (table.classList.contains('no-paginate') || table.closest('.modal')) return;
+                // Avoid double pagination setup
+                if (table.dataset.paginated === 'true') {
+                    if (table.pagerUpdate) {
+                        table.pagerUpdate();
+                    }
+                    return;
+                }
+                
+                setupTablePagination(table);
+            });
+        }
+
+        function setupTablePagination(table) {
+            const pageSize = parseInt(table.getAttribute('data-page-size')) || 10;
+            let currentPage = 1;
+            table.dataset.paginated = 'true';
+            
+            // Create pagination container
+            const container = document.createElement('div');
+            container.className = 'table-pagination-container';
+            container.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; gap: 1rem; font-size: 0.85rem; color: #64748b; padding-top: 1rem; border-top: 1px solid #e2e8f0;';
+            
+            // Insert container
+            const parent = table.parentNode;
+            if (parent.style.overflowX === 'auto') {
+                parent.parentNode.insertBefore(container, parent.nextSibling);
+            } else {
+                table.parentNode.insertBefore(container, table.nextSibling);
+            }
+            
+            function update() {
+                const tbody = table.querySelector('tbody');
+                if (!tbody) return;
+                
+                const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.classList.contains('empty-row'));
+                if (rows.length === 0) {
+                    container.innerHTML = '<div>Showing 0 to 0 of 0 results</div>';
+                    return;
+                }
+                
+                // Filter visible rows (not hidden by search filters)
+                const visibleRows = rows.filter(row => row.style.display !== 'none' || row.dataset.pageHidden === 'true');
+                
+                const totalRows = visibleRows.length;
+                const totalPages = Math.ceil(totalRows / pageSize) || 1;
+                
+                if (currentPage > totalPages) currentPage = totalPages;
+                if (currentPage < 1) currentPage = 1;
+                
+                const startIndex = (currentPage - 1) * pageSize;
+                const endIndex = Math.min(startIndex + pageSize, totalRows);
+                
+                // Show/hide rows based on active page
+                visibleRows.forEach((row, idx) => {
+                    if (idx >= startIndex && idx < endIndex) {
+                        row.style.display = '';
+                        row.dataset.pageHidden = 'false';
+                    } else {
+                        row.style.display = 'none';
+                        row.dataset.pageHidden = 'true';
+                    }
+                });
+                
+                // Keep filtered-out rows hidden
+                rows.forEach(row => {
+                    if (!visibleRows.includes(row)) {
+                        row.style.display = 'none';
+                        row.dataset.pageHidden = 'false';
+                    }
+                });
+                
+                // Render pagination controls UI
+                renderControls(container, currentPage, totalPages, startIndex + 1, endIndex, totalRows, (page) => {
+                    currentPage = page;
+                    update();
+                });
+            }
+            
+            table.pagerUpdate = update;
+            
+            // Listen for filter input changes to reset pagination
+            const inputs = document.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    rowsReset();
+                    currentPage = 1;
+                    setTimeout(update, 100);
+                });
+                input.addEventListener('change', () => {
+                    rowsReset();
+                    currentPage = 1;
+                    setTimeout(update, 100);
+                });
+            });
+            
+            function rowsReset() {
+                const tbody = table.querySelector('tbody');
+                if (!tbody) return;
+                tbody.querySelectorAll('tr').forEach(row => {
+                    if (row.dataset.pageHidden === 'true') {
+                        row.style.display = '';
+                        row.dataset.pageHidden = 'false';
+                    }
+                });
+            }
+            
+            update();
+        }
+
+        function renderControls(container, currentPage, totalPages, startIdx, endIdx, totalRows, onPageChange) {
+            if (totalRows === 0) {
+                container.innerHTML = '<div>Showing 0 to 0 of 0 results</div>';
+                return;
+            }
+            
+            const info = `<div>Showing ${startIdx} to ${endIdx} of ${totalRows} results</div>`;
+            
+            let buttonsHtml = '<div style="display: flex; gap: 0.25rem; align-items: center;">';
+            
+            // Prev button
+            buttonsHtml += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; color: #475569;"><i class="bx bx-chevron-left"></i></button>`;
+            
+            // Page numbers
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            
+            if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+            
+            if (startPage > 1) {
+                buttonsHtml += `<button class="page-btn" data-page="1" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; color: #475569;">1</button>`;
+                if (startPage > 2) {
+                    buttonsHtml += '<span style="padding: 0 0.25rem; color: #94a3b8;">...</span>';
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const isActive = i === currentPage;
+                const activeStyle = isActive 
+                    ? 'background: #4f46e5; border-color: #4f46e5; color: #ffffff; font-weight: 600;' 
+                    : 'background: #ffffff; border-color: #e2e8f0; color: #475569;';
+                buttonsHtml += `<button class="page-btn" data-page="${i}" style="border: 1px solid; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; ${activeStyle}">${i}</button>`;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    buttonsHtml += '<span style="padding: 0 0.25rem; color: #94a3b8;">...</span>';
+                }
+                buttonsHtml += `<button class="page-btn" data-page="${totalPages}" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; color: #475569;">${totalPages}</button>`;
+            }
+            
+            // Next button
+            buttonsHtml += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; color: #475569;"><i class="bx bx-chevron-right"></i></button>`;
+            
+            buttonsHtml += '</div>';
+            
+            container.innerHTML = info + buttonsHtml;
+            
+            // Bind click events
+            container.querySelectorAll('.page-btn').forEach(btn => {
+                if (btn.hasAttribute('disabled')) return;
+                btn.addEventListener('click', () => {
+                    const page = parseInt(btn.getAttribute('data-page'));
+                    onPageChange(page);
+                });
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initAllTablePagers();
+        });
     </script>
 
     <!-- Modern Premium Custom Confirm Modal HTML -->

@@ -299,7 +299,16 @@ class ProjectController extends Controller
                 $data['stage'] = 6;
             }
             try {
-                $model::create($data);
+                $projItem = $model::create($data);
+                try {
+                    \App\Models\Notification::create([
+                        'title' => 'New Project',
+                        'message' => 'A new project "' . $data['project_name'] . '" has been created under ' . $data['type_of_project'] . '.',
+                        'url' => route('projects.category', $redirectCategory)
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Notification creation failed: ' . $e->getMessage());
+                }
             } catch (QueryException $e) {
                 $userMessage = 'Failed to save the project due to a database error.';
                 if ($e->getCode() === '22003' || str_contains($e->getMessage(), 'Out of range')) {

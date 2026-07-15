@@ -169,7 +169,16 @@ class ApplicationController extends Controller
                 }
             }
 
-            $model::create($data);
+            $appItem = $model::create($data);
+            try {
+                \App\Models\Notification::create([
+                    'title' => 'New Application',
+                    'message' => 'A new application by "' . $data['applicant_name'] . '" has been registered under ' . $data['category'] . '.',
+                    'url' => route('applications.category', $redirectCategory)
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Notification creation failed: ' . $e->getMessage());
+            }
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application registered successfully!');
         }
 
@@ -234,6 +243,17 @@ class ApplicationController extends Controller
         }
 
         abort(400, 'Invalid category');
+    }
+
+    public function show($id)
+    {
+        foreach ($this->categories as $slug => $config) {
+            $model = $config['model'];
+            if ($model::where('id', $id)->exists()) {
+                return redirect()->route('applications.category', $slug);
+            }
+        }
+        return redirect()->route('applications.index');
     }
 
     public function destroy(Request $request, $id)
@@ -404,6 +424,16 @@ class ApplicationController extends Controller
         $app->status = 'Approved';
         $app->save();
 
+        try {
+            \App\Models\Notification::create([
+                'title' => 'Application Approved',
+                'message' => 'Application for "' . $app->applicant_name . '" has been approved.',
+                'url' => route('applications.category', $category)
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Notification creation failed: ' . $e->getMessage());
+        }
+
         return redirect()->back()->with('success', 'Application approved successfully.');
     }
 
@@ -429,6 +459,16 @@ class ApplicationController extends Controller
         }
 
         $app->save();
+
+        try {
+            \App\Models\Notification::create([
+                'title' => 'Application Rejected',
+                'message' => 'Application for "' . $app->applicant_name . '" has been rejected.',
+                'url' => route('applications.category', $category)
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Notification creation failed: ' . $e->getMessage());
+        }
 
         // Delete project if it exists
         $projectModels = [
