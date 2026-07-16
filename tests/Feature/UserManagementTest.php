@@ -151,6 +151,7 @@ class UserManagementTest extends TestCase
         
         $this->assertFalse(\Illuminate\Support\Facades\Auth::check());
     }
+<<<<<<< HEAD
 
     public function test_user_logout_redirects_to_login_page(): void
     {
@@ -161,4 +162,6 @@ class UserManagementTest extends TestCase
         $response->assertRedirect('/login');
         $this->assertFalse(\Illuminate\Support\Facades\Auth::check());
     }
+=======
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
 }

@@ -1788,6 +1788,7 @@
                     if (row.dataset.formatted === 'true') return;
                     row.dataset.formatted = 'true';
 
+<<<<<<< HEAD
                     // 1. Format Name column to show name
                     if (nameIndex !== -1) {
                         const cell = row.cells[nameIndex];
@@ -1796,6 +1797,44 @@
                             if (nameText && nameText !== 'N/A') {
                                 cell.innerHTML = `
                                     <div style="font-weight: 700; color: #1e293b;">${nameText}</div>
+=======
+                    // 1. Format Name column to show circular initials avatar next to name
+                    if (nameIndex !== -1) {
+                        const cell = row.cells[nameIndex];
+                        if (cell && !cell.querySelector('.avatar-wrapper-js')) {
+                            const nameText = cell.textContent.trim();
+                            if (nameText && nameText !== 'N/A') {
+                                // Extract initials
+                                const words = nameText.split(' ').filter(w => w.length > 0);
+                                let initials = '';
+                                words.forEach(w => {
+                                    initials += w.charAt(0).toUpperCase();
+                                });
+                                initials = initials.substring(0, 2);
+
+                                // Pastel colors map based on name hash
+                                const colors = [
+                                    { bg: '#eff6ff', text: '#3b82f6' },
+                                    { bg: '#ecfdf5', text: '#10b981' },
+                                    { bg: '#fff7ed', text: '#f97316' },
+                                    { bg: '#f5f3ff', text: '#8b5cf6' },
+                                    { bg: '#fdf2f8', text: '#ec4899' },
+                                    { bg: '#f0fdf4', text: '#15803d' }
+                                ];
+                                let hash = 0;
+                                for (let i = 0; i < nameText.length; i++) {
+                                    hash = nameText.charCodeAt(i) + ((hash << 5) - hash);
+                                }
+                                const color = colors[Math.abs(hash) % colors.length];
+
+                                cell.innerHTML = `
+                                    <div class="avatar-wrapper-js" style="display: flex; align-items: center; gap: 0.85rem;">
+                                        <div style="width: 35px; height: 35px; border-radius: 50%; background: ${color.bg}; color: ${color.text}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.82rem; flex-shrink: 0;">
+                                            ${initials}
+                                        </div>
+                                        <div style="font-weight: 700; color: #1e293b;">${nameText}</div>
+                                    </div>
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
                                 `;
                             }
                         }

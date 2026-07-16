@@ -123,22 +123,30 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::post('/admin/profile/credentials', [ProfileController::class, 'updateCredentials'])->name('profile.update_credentials');
     // Notifications routes
     Route::post('/admin/notifications/mark-all-read', function() {
+<<<<<<< HEAD
         \App\Models\NotificationRecipient::where('user_id', Auth::id())
             ->where('is_read', false)
             ->update([
                 'is_read' => true,
                 'read_at' => now(),
             ]);
+=======
+        \App\Models\Notification::where('is_read', false)->update(['is_read' => true]);
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
         return response()->json(['success' => true]);
     })->name('notifications.mark_all_read');
 
     Route::post('/admin/notifications/{id}/mark-read', function($id) {
+<<<<<<< HEAD
         \App\Models\NotificationRecipient::where('user_id', Auth::id())
             ->where('id', $id)
             ->update([
                 'is_read' => true,
                 'read_at' => now(),
             ]);
+=======
+        \App\Models\Notification::where('id', $id)->update(['is_read' => true]);
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
         return response()->json(['success' => true]);
     })->name('notifications.mark_read');
 });

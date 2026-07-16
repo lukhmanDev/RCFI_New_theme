@@ -115,6 +115,18 @@
                 <input type="text" id="staffSearchInput" onkeyup="filterStaffs()" placeholder="Search staff by name, email or role..." style="width: 100%; padding: 0.65rem 2.5rem 0.65rem 1rem; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.88rem; outline: none; font-family: inherit; color: #1e293b; background: #f8fafc; transition: border-color 0.15s ease;">
                 <i class="bx bx-search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.15rem;"></i>
             </div>
+<<<<<<< HEAD
+=======
+            
+            <select id="deptFilter" onchange="filterStaffs()" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer; min-width: 165px;">
+                <option value="">All Departments</option>
+                <option value="Operations">Operations</option>
+                <option value="Admin">Admin</option>
+                <option value="Finance">Finance</option>
+                <option value="Projects">Projects</option>
+                <option value="IT">IT</option>
+            </select>
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
 
             <select id="roleFilter" onchange="filterStaffs()" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer; min-width: 145px;">
                 <option value="">All Roles</option>
@@ -148,8 +160,15 @@
                         <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Name</th>
                         <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Email</th>
                         <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Mobile</th>
+<<<<<<< HEAD
                         <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Designation</th>
                         <th style="padding: 1rem 0.75rem; text-align: center; font-weight: 700; color: #1e293b; width: 110px;">Role</th>
+=======
+                        <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Department</th>
+                        <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Designation</th>
+                        <th style="padding: 1rem 0.75rem; text-align: center; font-weight: 700; color: #1e293b; width: 110px;">Role</th>
+                        <th style="padding: 1rem 0.75rem; text-align: center; font-weight: 700; color: #1e293b; width: 110px;">Status</th>
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
                         <th style="padding: 1rem 0.75rem; text-align: center; font-weight: 700; color: #1e293b; width: 170px;">Action</th>
                     </tr>
                 </thead>
@@ -203,6 +222,7 @@
                                 $roleBadgeBg = 'rgba(59, 130, 246, 0.1)';
                                 $roleBadgeColor = '#2563eb';
                                 $roleLabel = 'COO';
+<<<<<<< HEAD
                             } elseif ($user->role == 3) { // Project Manager
                                 $roleBadgeBg = 'rgba(245, 158, 11, 0.1)';
                                 $roleBadgeColor = '#d97706';
@@ -222,21 +242,48 @@
                             }
                         @endphp
                         <tr class="staff-row" data-status="{{ $user->is_suspended ? 'suspended' : 'active' }}" data-dept="{{ $dept }}" data-role="{{ $rolesMap[$user->role] ?? 'Others' }}" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
+=======
+                            } else {
+                                $roleBadgeBg = 'rgba(14, 165, 233, 0.1)';
+                                $roleBadgeColor = '#0284c7';
+                                $roleLabel = 'USER';
+                            }
+                        @endphp
+                        <tr class="staff-row" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
                             <!-- Serial Index -->
                             <td style="padding: 1rem 0.75rem; color: #64748b; font-weight: 600;">
                                 {{ sprintf('%02d', $loop->iteration) }}
                             </td>
+<<<<<<< HEAD
                             <!-- Name and info -->
                             <td style="padding: 1rem 0.75rem;">
                                 <div style="min-width: 0;">
                                     <h4 class="staff-name" style="color: #1e293b; font-size: 0.9rem; font-weight: 700; margin: 0;">{{ $user->name }}</h4>
                                     <p style="color: #94a3b8; font-size: 0.75rem; margin: 0.15rem 0 0; font-weight: 500;">Joined on {{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</p>
+=======
+                            <!-- Name and avatar info -->
+                            <td style="padding: 1rem 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.85rem;">
+                                    <div style="width: 38px; height: 38px; border-radius: 50%; background: {{ $avColor['bg'] }}; color: {{ $avColor['text'] }}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;">
+                                        {{ $initials }}
+                                    </div>
+                                    <div style="min-width: 0;">
+                                        <h4 class="staff-name" style="color: #1e293b; font-size: 0.9rem; font-weight: 700; margin: 0;">{{ $user->name }}</h4>
+                                        <p style="color: #94a3b8; font-size: 0.75rem; margin: 0.15rem 0 0; font-weight: 500;">Joined on {{ $user->created_at ? $user->created_at->format('M d, Y') : 'N/A' }}</p>
+                                    </div>
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
                                 </div>
                             </td>
                             <!-- Email -->
                             <td class="staff-email" style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $user->email }}</td>
                             <!-- Mobile -->
                             <td style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $user->mobile ?? 'N/A' }}</td>
+<<<<<<< HEAD
+=======
+                            <!-- Department -->
+                            <td class="staff-dept" style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $dept }}</td>
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
                             <!-- Designation -->
                             <td class="staff-designation" style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $user->designation ?? 'N/A' }}</td>
                             <!-- Role badge -->
@@ -244,6 +291,52 @@
                                 <span class="staff-role" style="background-color: {{ $roleBadgeBg }}; color: {{ $roleBadgeColor }}; padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;">
                                     {{ $roleLabel }}
                                 </span>
+                            </td>
+<<<<<<< HEAD
+                            <!-- Action button stack -->
+                            <td style="padding: 1rem 0.75rem; text-align: center; white-space: nowrap;">
+                                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                                    <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
+                                        <!-- View Details -->
+                                        <button onclick="openViewModal({{ $user->id }})" style="background: transparent; border: 1px solid #e2e8f0; color: #475569; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease;" title="View Details"><i class="bx bx-show"></i></button>
+
+                                        <!-- Edit -->
+                                        <button onclick="openEditModal({{ json_encode($user) }})" style="background: transparent; border: 1px solid #e2e8f0; color: #3b82f6; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease;" title="Edit"><i class="bx bx-pencil"></i></button>
+                                        
+                                        <!-- Suspend/Toggle -->
+                                        @if($user->id !== Auth::id())
+                                        <form action="{{ route('users.toggle_suspend', $user->id) }}" method="POST" style="display: inline-block; margin: 0;">
+                                            @csrf
+                                            @if($user->is_suspended)
+                                                <button type="submit" style="background: transparent; border: 1px solid #e2e8f0; color: #f59e0b; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease;" title="Unsuspend Account"><i class="bx bx-lock-open"></i></button>
+                                            @else
+                                                <button type="submit" style="background: transparent; border: 1px solid #e2e8f0; color: #e11d48; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease;" title="Suspend Account"><i class="bx bx-block"></i></button>
+                                            @endif
+                                        </form>
+                                        @endif
+
+                                        <!-- Delete -->
+                                        <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this user?');" style="display: inline-block; margin: 0;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" style="background: transparent; border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease;" title="Delete"><i class="bx bx-trash"></i></button>
+                                        </form>
+                                    </div>
+                                @else
+=======
+                            <!-- Status badge -->
+                            <td style="padding: 1rem 0.75rem; text-align: center; white-space: nowrap;">
+                                @if($user->is_suspended)
+                                    <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle;">
+                                        <span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block;"></span>
+                                        <span class="staff-status" style="color: #ef4444; font-weight: 700; font-size: 0.8rem;">Suspended</span>
+                                    </div>
+                                @else
+                                    <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle;">
+                                        <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
+                                        <span class="staff-status" style="color: #10b981; font-weight: 700; font-size: 0.8rem;">Active</span>
+                                    </div>
+                                @endif
                             </td>
                             <!-- Action button stack -->
                             <td style="padding: 1rem 0.75rem; text-align: center; white-space: nowrap;">
@@ -275,6 +368,7 @@
                                         </form>
                                     </div>
                                 @else
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
                                     <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">View Only</span>
                                 @endif
                             </td>
@@ -513,15 +607,25 @@
                 const name = row.querySelector('.staff-name').innerText.toLowerCase();
                 const email = row.querySelector('.staff-email').innerText.toLowerCase();
                 const designation = row.querySelector('.staff-designation').innerText.toLowerCase();
+<<<<<<< HEAD
                 
                 const dept = (row.dataset.dept || '').toLowerCase();
                 const role = (row.dataset.role || '').toLowerCase();
                 const status = (row.dataset.status || '').toLowerCase();
+=======
+                const dept = row.querySelector('.staff-dept').innerText.toLowerCase();
+                const role = row.querySelector('.staff-role').innerText.toLowerCase();
+                const status = row.querySelector('.staff-status').innerText.toLowerCase();
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
 
                 const matchesSearch = name.includes(searchVal) || email.includes(searchVal) || designation.includes(searchVal);
                 const matchesDept = !deptVal || dept === deptVal;
                 const matchesRole = !roleVal || role === roleVal;
+<<<<<<< HEAD
                 const matchesStatus = !statusVal || status === statusVal;
+=======
+                const matchesStatus = !statusVal || status.includes(statusVal);
+>>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
 
                 if (matchesSearch && matchesDept && matchesRole && matchesStatus) {
                     row.style.display = '';
