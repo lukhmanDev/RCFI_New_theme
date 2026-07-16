@@ -12,17 +12,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
-    <!-- Premium CSS Layout -->
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --panel-bg: #111827;
-            --panel-border: #1f2937;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
+            --bg-color: #f5f7fb;
+            --panel-bg: #ffffff;
+            --panel-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
             --accent-purple: #6366f1;
-            --accent-cyan: #06b6d4;
-            --accent-green: #08A472;
+            --accent-cyan: #0ea5e9;
+            --accent-green: #10b981;
             --accent-red: #ef4444;
         }
 
@@ -34,7 +33,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            font-weight: 300;
+            font-weight: 400;
             background-color: var(--bg-color);
             color: var(--text-main);
             min-height: 100vh;
@@ -51,7 +50,7 @@
             width: 100%;
             max-width: 400px;
             padding: 2.5rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
             position: relative;
         }
 
@@ -64,7 +63,7 @@
         .avatar-icon {
             width: 64px;
             height: 64px;
-            background-color: #ffffff;
+            background-color: #f1f5f9;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -75,7 +74,7 @@
 
         .login-title {
             text-align: center;
-            color: #ffffff;
+            color: var(--text-main);
             font-size: 1.25rem;
             font-weight: 600;
             margin-bottom: 0.25rem;
@@ -117,7 +116,7 @@
         .form-control-dark {
             background-color: var(--bg-color);
             border: 1px solid var(--panel-border);
-            color: #ffffff;
+            color: var(--text-main);
             border-radius: 8px;
             padding: 0.75rem 1rem 0.75rem 2.75rem;
             width: 100%;
@@ -132,7 +131,7 @@
         }
 
         .form-control-dark::placeholder {
-            color: #4b5563;
+            color: #94a3b8;
         }
 
         .btn-submit {
@@ -166,9 +165,9 @@
         }
 
         .alert-error {
-            background-color: rgba(239, 68, 68, 0.1);
+            background-color: rgba(239, 68, 68, 0.05);
             border: 1px solid var(--accent-red);
-            color: #ff8080;
+            color: var(--accent-red);
             padding: 0.75rem;
             border-radius: 8px;
             font-size: 0.85rem;
@@ -177,9 +176,9 @@
         }
 
         .alert-success {
-            background-color: rgba(16, 185, 129, 0.1);
+            background-color: rgba(16, 185, 129, 0.05);
             border: 1px solid var(--accent-green);
-            color: #8cf5c6;
+            color: var(--accent-green);
             padding: 0.75rem;
             border-radius: 8px;
             font-size: 0.85rem;
@@ -203,7 +202,7 @@
         }
 
         .back-link:hover {
-            color: #ffffff;
+            color: var(--text-main);
         }
     </style>
 </head>

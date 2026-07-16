@@ -297,7 +297,7 @@
 
                 @endphp
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
-                    <h3 style="color: #ffffff; font-size: 1rem; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                    <h3 style="color: var(--text-main); font-size: 1rem; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
                         
                         Project Status
                     </h3>
@@ -324,7 +324,7 @@
 
                         <div id="status-updated-time-container" style="font-size: 0.85rem; color: var(--text-muted); display: {{ $statusUpdatedAt ? 'inline-flex' : 'none' }}; align-items: center; gap: 0.35rem;">
                             <i class="bx bx-calendar-event" style="font-size: 1rem; color: var(--accent-cyan);"></i>
-                            <span>Last Updated: <strong id="status-updated-at" style="color: #ffffff;">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: var(--accent-cyan);">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
+                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: var(--accent-cyan);">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
                         </div>
                     </div>
 
@@ -332,7 +332,7 @@
                     <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; max-width: 560px;">
                         <div style="flex: 1; min-width: 220px;">
                             <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Select Phase</label>
-                            <select id="project-phase-select" onchange="onPhaseSelectChange()" style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; font-size: 0.9rem; outline: none; cursor: pointer;">
+                            <select id="project-phase-select" onchange="onPhaseSelectChange()" style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; cursor: pointer;">
                                 <option value="">— Select phase —</option>
                                 @foreach($phases as $phase)
                                     <option value="{{ $phase }}" {{ $currentPhase === $phase ? 'selected' : '' }}>{{ $phase }}</option>
@@ -343,7 +343,7 @@
                             <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Describe (Other)</label>
                             <input type="text" id="project-phase-custom" placeholder="Enter custom status…" maxlength="255"
                                    value="{{ $currentCustom }}"
-                                   style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; font-size: 0.9rem; outline: none; box-sizing: border-box;">
+                                   style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box;">
                         </div>
                         <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
                             <i class="bx bx-save"></i> Save Status
@@ -365,7 +365,7 @@
                 <!-- Connect Application Form -->
                 @if($canAssignApplication && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
-                    <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
+                    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @if(!empty($project->application_id))
                         <div style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
                             @php
@@ -467,7 +467,7 @@
                 <!-- Connect Application Form inside Stage 2 for 6-stage projects (Show First) -->
                 @if($canAssignApplication && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']) && $project->status !== 'Completed')
                 <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
-                    <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
+                    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @php
                         // PM can change if stage < 6. HOD, COO, and Super Admin can change anytime.
                         $userCanChange = ($isCoo || $isHod || $isSuperAdmin) || ($isPmOnly && $project->stage < 6);
@@ -564,7 +564,7 @@
                             <div>
                                 <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Committee</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: #ffffff; font-weight: 600;">{!! $formatVal($application->applicant_name) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">{!! $formatVal($application->applicant_name) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>{!! $formatVal($metaData['committee_name'] ?? $metaData['mahallu_name'] ?? $metaData['place'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>{!! $formatVal($metaData['reg_number'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>{!! $formatVal($metaData['year'] ?? null) !!}</td></tr>
@@ -604,7 +604,7 @@
 
                                 <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: #ffffff;">{!! $formatVal($metaData['project_type'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: var(--text-main);">{!! $formatVal($metaData['project_type'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Area (Sq):</td><td>{!! $formatVal($metaData['building_area_sq'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td>{!! $formatVal($metaData['land_area_sq'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td>{!! $formatVal($metaData['num_classrooms'] ?? null) !!}</td></tr>
@@ -612,7 +612,7 @@
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">{{ $application->amount_requested ? '₹' . number_format($application->amount_requested) : 'N/A' }}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td>{!! $formatVal($metaData['legal_approvals_status'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Area / Zone:</td><td>{!! $formatVal($metaData['area'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: #ffffff;">{{ $application->status }}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">{{ $application->status }}</td></tr>
                                 </table>
                             </div>
                         </div>
@@ -626,7 +626,7 @@
                     @else
                         <div style="text-align: center; padding: 3rem; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--panel-border); margin: 2rem 0;">
                             <i class="bx bx-link-external" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                            <h3 style="color: #ffffff; font-size: 1.2rem; margin-bottom: 0.5rem;">No Application Connected</h3>
+                            <h3 style="color: var(--text-main); font-size: 1.2rem; margin-bottom: 0.5rem;">No Application Connected</h3>
                             <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0 auto;">Please connect this project to an application using the form below to view application details.</p>
                         </div>
                     @endif
@@ -707,7 +707,7 @@
                                 }
                             @endphp
                             <tr>
-                                <td style="font-weight: 600; color: #ffffff; vertical-align: middle;">{{ $doc }}</td>
+                                <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $doc }}</td>
                                 <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
                                     {{ $tickedAt ?? '-' }}
                                 </td>
@@ -783,7 +783,7 @@
                         {{-- COO / HOD: Always see Approve & Reject at Stage 4 --}}
                         @if($isCoo || $isHod || $isSuperAdmin)
                             <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; width: 100%; max-width: 700px; background: rgba(255,255,255,0.02); padding: 1.25rem; border: 1px solid var(--panel-border); border-radius: 8px;">
-                                <h4 style="color: #ffffff; font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; width: 100%; text-transform: uppercase;">
+                                <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; width: 100%; text-transform: uppercase;">
                                     <i class="bx bx-shield-check" style="color: #10b981; margin-right: 0.4rem;"></i>
                                     Review &amp; Approval Actions
                                     @if($project->status === 'Pending Approval')
@@ -808,7 +808,7 @@
                                 <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; flex-grow: 1; align-items: center; margin: 0;">
                                     @csrf
                                     <input type="hidden" name="action" value="reject">
-                                    <input type="text" name="remarks" placeholder="Provide rejection reason (optional)…" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem; border-radius: 6px; flex-grow: 1; font-size: 0.85rem; outline: none;">
+                                    <input type="text" name="remarks" placeholder="Provide rejection reason (optional)…" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: var(--text-main); padding: 0.5rem; border-radius: 6px; flex-grow: 1; font-size: 0.85rem; outline: none;">
                                     <button type="submit" class="btn-danger-custom" style="padding: 0.55rem 1.5rem; background: #eb3b5a; border-color: #eb3b5a; color: #ffffff; font-weight: 700; cursor: pointer;">
                                         <i class="bx bx-x-circle"></i> Reject
                                     </button>
@@ -848,7 +848,7 @@
                     <!-- Project Budget Card -->
                     <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid #10b981;">
                         <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Project Budget</div>
-                        <div style="font-size: 1.3rem; font-weight: 700; color: #ffffff;">₹{{ number_format($project->available_budget, 2) }}</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; ">₹{{ number_format($project->available_budget, 2) }}</div>
                     </div>
 
                     <!-- Total Allocated Card -->
@@ -877,7 +877,7 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
                         <span style="color: var(--text-muted);">Search:</span>
-                        <input type="text" placeholder="Search budget..." class="form-control-dark" style="width: 160px; padding: 0.35rem 0.75rem; border-radius: 4px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                        <input type="text" placeholder="Search budget..." class="form-control-dark" style="width: 160px; padding: 0.35rem 0.75rem; border-radius: 4px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                     </div>
                 </div>
 
@@ -895,8 +895,8 @@
                         @foreach($materials as $index => $item)
                             @php $totalAmount += $item['amount']; @endphp
                             <tr>
-                                <td style="font-weight: 600; color: #ffffff; vertical-align: middle;">{{ $item['material'] }}</td>
-                                <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">
+                                <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $item['material'] }}</td>
+                                <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">
                                     <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
                                         <span>₹ {{ number_format($item['amount'], 2) }}</span>
                                         @if($isProjectManager && $hasApplication)
@@ -939,7 +939,7 @@
                 @endphp
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-                    <h3 style="color: #ffffff; font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Community Contribution</h3>
+                    <h3 style="color: var(--text-main); font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Community Contribution</h3>
                     @if($isProjectManager && $hasApplication)
                         <button onclick="openAddCommContribModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                             <i class="bx bx-plus"></i> Add Item
@@ -957,8 +957,8 @@
                     <tbody>
                         @foreach($commContribs as $index => $item)
                             <tr>
-                                <td style="font-weight: 600; color: #ffffff; vertical-align: middle;">{{ $item['item'] }}</td>
-                                <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">
+                                <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $item['item'] }}</td>
+                                <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">
                                     <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
                                         <span>₹ {{ number_format($item['amount'], 2) }}</span>
                                         @if($isProjectManager && $hasApplication)
@@ -995,7 +995,7 @@
 
                 <!-- Contractor Details Section -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-                    <h3 style="color: #ffffff; font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Contractor Details</h3>
+                    <h3 style="color: var(--text-main); font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Contractor Details</h3>
                     @if($isProjectManager && $hasApplication)
                         <button onclick="openAddContractorModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                             <i class="bx bx-plus"></i> Add Contractor
@@ -1024,29 +1024,29 @@
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; padding-right: 4rem;">
                                     <div>
                                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Contractor Name</span>
-                                        <span style="color: #ffffff; font-weight: 600; font-size: 0.95rem;">{{ $contractor['contractor_name'] }}</span>
+                                        <span style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">{{ $contractor['contractor_name'] }}</span>
                                     </div>
                                     <div>
                                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Phone Number</span>
-                                        <span style="color: #ffffff; font-weight: 600; font-size: 0.95rem;">{{ $contractor['phone'] }}</span>
+                                        <span style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">{{ $contractor['phone'] }}</span>
                                     </div>
                                     <div>
                                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Company Name</span>
-                                        <span style="color: #ffffff; font-weight: 600; font-size: 0.95rem;">{{ $contractor['company_name'] }}</span>
+                                        <span style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">{{ $contractor['company_name'] }}</span>
                                     </div>
                                     <div>
                                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Type of Contract</span>
-                                        <span style="color: #ffffff; font-weight: 600; font-size: 0.95rem;">{{ $contractor['type_of_contract'] }}</span>
+                                        <span style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">{{ $contractor['type_of_contract'] }}</span>
                                     </div>
                                 </div>
                                 <div style="margin-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1rem; display: grid; grid-template-columns: 1fr; gap: 1.25rem;">
                                     <div>
                                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Purpose of Contract</span>
-                                        <p style="color: #ffffff; margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-line;">{{ $contractor['purpose_of_contract'] }}</p>
+                                        <p style="color: var(--text-main); margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-line;">{{ $contractor['purpose_of_contract'] }}</p>
                                     </div>
                                     <div>
                                         <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Address</span>
-                                        <p style="color: #ffffff; margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-line;">{{ $contractor['address'] }}</p>
+                                        <p style="color: var(--text-main); margin: 0; font-size: 0.95rem; line-height: 1.5; white-space: pre-line;">{{ $contractor['address'] }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -1152,19 +1152,19 @@
                                         stroke-linecap="round" transform="rotate(-90 60 60)"
                                         style="transition: stroke-dashoffset 0.5s ease-in-out;" />
                             </svg>
-                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-main);">
                                 <span style="font-size: 1.15rem; font-weight: 700;">{{ number_format($stage5SpentPercentage, 0) }}%</span>
                                 <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Spent</span>
                             </div>
                         </div>
                         <!-- Stats Details -->
                         <div style="flex-grow: 1; min-width: 250px;">
-                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Financial Summary (Allocated Budget)</h4>
+                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Financial Summary (Allocated Budget)</h4>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.75rem;">
                                 <!-- Total Budget Card -->
                                 <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 0.5rem 0.75rem; border-radius: 6px;">
                                     <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Total Allocated</div>
-                                    <span style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">₹{{ number_format($stage5TotalBudget, 2) }}</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">₹{{ number_format($stage5TotalBudget, 2) }}</span>
                                 </div>
                                 <!-- Balance Card -->
                                 <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px;">
@@ -1201,19 +1201,19 @@
                                         stroke-linecap="round" transform="rotate(-90 60 60)"
                                         style="transition: stroke-dashoffset 0.5s ease-in-out;" />
                             </svg>
-                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff;">
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-main);">
                                 <span style="font-size: 1.15rem; font-weight: 700;">{{ number_format($stage5CommSpentPercentage, 0) }}%</span>
                                 <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Spent</span>
                             </div>
                         </div>
                         <!-- Stats Details -->
                         <div style="flex-grow: 1; min-width: 250px;">
-                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Financial Summary (Community Contribution)</h4>
+                            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Financial Summary (Community Contribution)</h4>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.75rem;">
                                 <!-- Total Budget Card -->
                                 <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 0.5rem 0.75rem; border-radius: 6px;">
                                     <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Total Contribution</div>
-                                    <span style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">₹{{ number_format($stage5CommTotal, 2) }}</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">₹{{ number_format($stage5CommTotal, 2) }}</span>
                                 </div>
                                 <!-- Balance Card -->
                                 <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px;">
@@ -1242,7 +1242,7 @@
                 <!-- Expenses Section -->
                 @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
-                    <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Allocated Items & Spent Expenses</h3>
+                    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Allocated Items & Spent Expenses</h3>
 
                     <table class="stage-table">
                         <thead>
@@ -1269,10 +1269,10 @@
                                 @endphp
                                 <!-- Material Header Row -->
                                 <tr style="background-color: rgba(255, 255, 255, 0.01); border-bottom: 1px solid var(--panel-border);">
-                                    <td style="font-weight: 700; color: #ffffff; vertical-align: middle;">
+                                    <td style="font-weight: 700; color: var(--text-main); vertical-align: middle;">
                                         <i class="bx bx-package" style="color: var(--accent-cyan); margin-right: 0.5rem;"></i>{{ $material['material'] }}
                                     </td>
-                                    <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">₹{{ number_format($material['amount'], 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">₹{{ number_format($material['amount'], 2) }}</td>
                                     <td style="text-align: right; font-weight: 600; color: var(--accent-red); vertical-align: middle;">₹{{ number_format($itemTotalSpent, 2) }}</td>
                                     <td style="text-align: right; font-weight: 600; color: {{ $itemBalance >= 0 ? 'var(--accent-cyan)' : 'var(--accent-red)' }}; vertical-align: middle;">
                                         ₹{{ number_format($itemBalance, 2) }}
@@ -1340,7 +1340,7 @@
 
                 <!-- Community Contribution Expenses Section -->
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
-                    <h3 style="color: #ffffff; font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Community Contribution Items & Spent Expenses</h3>
+                    <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Community Contribution Items & Spent Expenses</h3>
 
                     <table class="stage-table">
                         <thead>
@@ -1367,10 +1367,10 @@
                                 @endphp
                                 <!-- Comm Header Row -->
                                 <tr style="background-color: rgba(255, 255, 255, 0.01); border-bottom: 1px solid var(--panel-border);">
-                                    <td style="font-weight: 700; color: #ffffff; vertical-align: middle;">
+                                    <td style="font-weight: 700; color: var(--text-main); vertical-align: middle;">
                                         <i class="bx bx-group" style="color: var(--accent-cyan); margin-right: 0.5rem;"></i>{{ $comm['item'] }}
                                     </td>
-                                    <td style="text-align: right; font-weight: 600; color: #ffffff; vertical-align: middle;">₹{{ number_format($comm['amount'], 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">₹{{ number_format($comm['amount'], 2) }}</td>
                                     <td style="text-align: right; font-weight: 600; color: var(--accent-red); vertical-align: middle;">₹{{ number_format($itemTotalCommSpent, 2) }}</td>
                                     <td style="text-align: right; font-weight: 600; color: {{ $itemCommBalance >= 0 ? 'var(--accent-cyan)' : 'var(--accent-red)' }}; vertical-align: middle;">
                                         ₹{{ number_format($itemCommBalance, 2) }}
@@ -1446,17 +1446,17 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td style="font-weight: 600; color: #ffffff;">Foundation Inspection</td>
+                            <td style="font-weight: 600; color: var(--text-main);">Foundation Inspection</td>
                             <td>{{ $project->projectManager ? $project->projectManager->name : 'Project Manager' }}</td>
                             <td><span style="background-color: rgba(16, 185, 129, 0.15); color: var(--accent-green); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Completed</span></td>
                         </tr>
                         <tr>
-                            <td style="font-weight: 600; color: #ffffff;">Superstructure Check</td>
+                            <td style="font-weight: 600; color: var(--text-main);">Superstructure Check</td>
                             <td>{{ $project->projectManager ? $project->projectManager->name : 'Project Manager' }}</td>
                             <td><span style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">In Progress</span></td>
                         </tr>
                         <tr>
-                            <td style="font-weight: 600; color: #ffffff;">Safety Verification</td>
+                            <td style="font-weight: 600; color: var(--text-main);">Safety Verification</td>
                             <td>Structural Auditor</td>
                             <td><span style="background-color: rgba(239, 68, 68, 0.15); color: var(--accent-red); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Pending</span></td>
                         </tr>
@@ -1466,7 +1466,7 @@
 
                 @if($project->stage == 5 && $project->status !== 'Completed')
                     <div style="margin-top: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
-                        <h4 style="color: #ffffff; font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">Promote to Stage 6</h4>
+                        <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">Promote to Stage 6</h4>
                         @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
                             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
                                 Once all expenses have been logged and the evaluation is complete, you can promote this project to Stage 6 (Completion Stage).
@@ -1554,7 +1554,7 @@
                     </div>
                 @elseif($project->stage == 6)
                     <div style="margin-bottom: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
-                        <h4 style="color: #ffffff; font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">COO Final Approval</h4>
+                        <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">COO Final Approval</h4>
                         @if($isCoo || $isSuperAdmin)
                             <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
                                 @csrf
@@ -1577,7 +1577,7 @@
 
                 <!-- Completion Documents (Stage 6 Upload/Reference) -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-                    <h3 style="color: #ffffff; font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Completion Documents</h3>
+                    <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Completion Documents</h3>
 
                     @if($project->status === 'Completed')
                         <div style="display: flex; flex-direction: column; gap: 1rem;">
@@ -1612,7 +1612,7 @@
                         <!-- Completion Certificate row -->
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Completion Certificate</span>
+                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Completion Certificate</span>
                                 @if($compCertTime)
                                     <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $compCertTime }}</span>
                                 @endif
@@ -1653,7 +1653,7 @@
                         <!-- Measurement Book row -->
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Measurement Book</span>
+                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Measurement Book</span>
                                 @if($measBookTime)
                                     <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $measBookTime }}</span>
                                 @endif
@@ -1694,7 +1694,7 @@
                         <!-- Location Map Link row -->
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--panel-border);">
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: #e0e0e0; min-width: 200px;">Location Map Link</span>
+                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Location Map Link</span>
                                 @if(!empty($locationMapLink))
                                     <span style="font-size: 0.75rem; color: var(--text-muted); overflow-wrap: anywhere; word-break: break-all; max-width: 400px; display: inline-block;">Current: <a href="{{ $locationMapLink }}" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">{{ $locationMapLink }}</a></span>
                                 @else
@@ -1734,7 +1734,7 @@
                 <!-- Photo Gallery -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
                     <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
-                        <h3 style="color: #ffffff; font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Project Photos</h3>
+                        <h3 style="color: var(--text-main); font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Project Photos</h3>
                     </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
@@ -1749,7 +1749,7 @@
 
                         @foreach($columns as $key => $colData)
                             <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column;">
-                                <h4 style="color: #ffffff; font-size: 0.95rem; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
                                     <span>{{ $colData['title'] }}</span>
                                     <span style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted);">{{ count($colData['photos']) }}</span>
                                 </h4>
@@ -1799,63 +1799,140 @@
 
                 <!-- Financial & Completion Details -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
-                    <h3 style="color: #ffffff; font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Financial & Handover Details</h3>
+                    <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Financial & Handover Details</h3>
 
                     @if($isProjectManager && $project->status !== 'Completed')
+                        @php
+                            $compDetails = $project->files['completion_details'] ?? [];
+                        @endphp
                         <form action="{{ route('projects.save_completion_details', $project->id) }}" method="POST" style="margin: 0;">
                             @csrf
+                            {{-- Hidden fields for auto-calculated read-only values --}}
+                            <input type="hidden" name="total_project_cost" id="fin_total_grands_hidden" value="{{ $totalAmount ?? 0 }}">
+                            <input type="hidden" name="total_amount" id="fin_comm_hidden" value="{{ $commTotal ?? 0 }}">
+                            <input type="hidden" name="deductions" id="fin_total_cost_hidden" value="{{ old('deductions', $compDetails['deductions'] ?? 0) }}">
+
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+
+                                {{-- 1. Total Grands (read-only, from allocated expenses) --}}
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Total Project Cost (₹)</label>
-                                    <input type="number" name="total_project_cost" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('total_project_cost', $compDetails['total_project_cost'] ?? $project->available_budget) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
+                                        Total Grands (₹)
+                                        <span style="font-size: 0.75rem; color: var(--accent-cyan); margin-left: 0.3rem;">(auto)</span>
+                                    </label>
+                                    <input type="text" id="fin_total_grands_display" readonly
+                                           class="form-control-dark"
+                                           style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;"
+                                           value="{{ number_format($totalAmount ?? 0, 2) }}">
                                 </div>
+
+                                {{-- 2. Community Contribution (read-only, from contribution expenses) --}}
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Total Amount (₹)</label>
-                                    <input type="number" name="total_amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('total_amount', $compDetails['total_amount'] ?? $project->available_budget) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
+                                        Community Contribution (₹)
+                                        <span style="font-size: 0.75rem; color: var(--accent-cyan); margin-left: 0.3rem;">(auto)</span>
+                                    </label>
+                                    <input type="text" id="fin_comm_display" readonly
+                                           class="form-control-dark"
+                                           style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;"
+                                           value="{{ number_format($commTotal ?? 0, 2) }}">
                                 </div>
+
+                                {{-- 3. Leverage (manual input) --}}
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Amount Paid by Donor (₹)</label>
-                                    <input type="number" name="amount_paid_by_donor" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('amount_paid_by_donor', $compDetails['amount_paid_by_donor'] ?? 0) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Leverage (₹)</label>
+                                    <input type="number" name="amount_paid_by_donor" id="fin_leverage" min="0" step="any" class="form-control-dark"
+                                           style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);"
+                                           value="{{ old('amount_paid_by_donor', $compDetails['amount_paid_by_donor'] ?? 0) }}"
+                                           oninput="recalcFinancialTotal()">
                                 </div>
+
+                                {{-- 4. Any Others (manual input) --}}
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Community Contribution (₹)</label>
-                                    <input type="number" name="community_contribution" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('community_contribution', $compDetails['community_contribution'] ?? 0) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Any Others (₹)</label>
+                                    <input type="number" name="community_contribution" id="fin_any_other" min="0" step="any" class="form-control-dark"
+                                           style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);"
+                                           value="{{ old('community_contribution', $compDetails['community_contribution'] ?? 0) }}"
+                                           oninput="recalcFinancialTotal()">
                                 </div>
+
+                                {{-- 5. Deduction (manual input) --}}
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Any Other (₹)</label>
-                                    <input type="number" name="any_other" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('any_other', $compDetails['any_other'] ?? 0) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Deduction (₹)</label>
+                                    <input type="number" name="any_other" id="fin_deduction" min="0" step="any" class="form-control-dark"
+                                           style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);"
+                                           value="{{ old('any_other', $compDetails['any_other'] ?? 0) }}"
+                                           oninput="recalcFinancialTotal()">
                                 </div>
+
+                                {{-- 6. Total Project Cost (read-only, auto-calculated) --}}
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Deductions (₹)</label>
-                                    <input type="number" name="deductions" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('deductions', $compDetails['deductions'] ?? 0) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
+                                        Total Project Cost (₹)
+                                        <span style="font-size: 0.75rem; color: #10b981; margin-left: 0.3rem;">(auto)</span>
+                                    </label>
+                                    <input type="text" id="fin_total_cost_display" readonly
+                                           class="form-control-dark"
+                                           style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid rgba(16,185,129,0.4); background-color: rgba(16,185,129,0.05); color: #10b981; cursor: not-allowed; font-weight: 700; font-size: 1rem;"
+                                           value="0.00">
                                 </div>
+
                             </div>
                             <button type="submit" class="btn-custom" style="padding: 0.5rem 1.5rem; cursor: pointer;">Save Details</button>
                         </form>
+
+                        <script>
+                        (function() {
+                            var grands   = {{ $totalAmount ?? 0 }};
+                            var comm     = {{ $commTotal ?? 0 }};
+
+                            function recalcFinancialTotal() {
+                                var leverage  = parseFloat(document.getElementById('fin_leverage').value)   || 0;
+                                var anyOther  = parseFloat(document.getElementById('fin_any_other').value)  || 0;
+                                var deduction = parseFloat(document.getElementById('fin_deduction').value)  || 0;
+                                var total     = grands + comm + leverage + anyOther - deduction;
+                                if (total < 0) total = 0;
+                                var formatted = total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                document.getElementById('fin_total_cost_display').value = formatted;
+                                document.getElementById('fin_total_cost_hidden').value  = total.toFixed(2);
+                            }
+
+                            window.recalcFinancialTotal = recalcFinancialTotal;
+                            recalcFinancialTotal(); // run on page load
+                        })();
+                        </script>
+
                     @else
+                        @php
+                            $compDetails = $project->files['completion_details'] ?? [];
+                            $dispTotalCost = ($totalAmount ?? 0) + ($commTotal ?? 0)
+                                           + ($compDetails['amount_paid_by_donor'] ?? 0)
+                                           + ($compDetails['community_contribution'] ?? 0)
+                                           - ($compDetails['any_other'] ?? 0);
+                        @endphp
                         <div class="details-grid">
-                            <div class="details-label">Total Project Cost</div><div class="details-colon">:</div>
-                            <div class="details-value">₹{{ number_format($compDetails['total_project_cost'] ?? $project->available_budget, 2) }}</div>
-
-                            <div class="details-label">Total Amount</div><div class="details-colon">:</div>
-                            <div class="details-value">₹{{ number_format($compDetails['total_amount'] ?? $project->available_budget, 2) }}</div>
-
-                            <div class="details-label">Amount Paid by Donor</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['amount_paid_by_donor'] ?? 0, 2) }}</div>
+                            <div class="details-label">Total Grands</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: var(--accent-cyan); font-weight: 600;">₹{{ number_format($totalAmount ?? 0, 2) }}</div>
 
                             <div class="details-label">Community Contribution</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['community_contribution'] ?? 0, 2) }}</div>
+                            <div class="details-value" style="color: var(--accent-cyan); font-weight: 600;">₹{{ number_format($commTotal ?? 0, 2) }}</div>
 
-                            <div class="details-label">Any Other</div><div class="details-colon">:</div>
-                            <div class="details-value">₹{{ number_format($compDetails['any_other'] ?? 0, 2) }}</div>
+                            <div class="details-label">Leverage</div><div class="details-colon">:</div>
+                            <div class="details-value">₹{{ number_format($compDetails['amount_paid_by_donor'] ?? 0, 2) }}</div>
 
-                            <div class="details-label">Deductions</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-red);">₹{{ number_format($compDetails['deductions'] ?? 0, 2) }}</div>
+                            <div class="details-label">Any Others</div><div class="details-colon">:</div>
+                            <div class="details-value">₹{{ number_format($compDetails['community_contribution'] ?? 0, 2) }}</div>
+
+                            <div class="details-label">Deduction</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: var(--accent-red);">₹{{ number_format($compDetails['any_other'] ?? 0, 2) }}</div>
+
+                            <div class="details-label" style="font-weight: 700;">Total Project Cost</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: #10b981; font-weight: 700; font-size: 1rem;">₹{{ number_format($dispTotalCost, 2) }}</div>
 
                             <div class="details-label">Completion Status</div><div class="details-colon">:</div>
                             <div class="details-value">
                                 @if($project->status === 'Approved')
-                                    <span style="background-color: rgba(16,185,129,0.2); color: var(--accent-green); padding: 0.3rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(16,185,129,0.3);">APPROVED & HANDED OVER</span>
+                                    <span style="background-color: rgba(16,185,129,0.2); color: var(--accent-green); padding: 0.3rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(16,185,129,0.3);">APPROVED &amp; HANDED OVER</span>
                                 @elseif($project->status === 'Completed')
                                     <span style="background-color: rgba(16,185,129,0.2); color: var(--accent-green); padding: 0.3rem 1rem; border-radius: 4px; font-size: 0.9rem; border: 1px solid rgba(16,185,129,0.3);">COMPLETED</span>
                                 @else
@@ -2033,7 +2110,7 @@
                 container.innerHTML = `
                     <div style="text-align: center; padding: 3rem; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--panel-border); margin: 2rem 0;">
                         <i class="bx bx-link-external" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                        <h3 style="color: #ffffff; font-size: 1.2rem; margin-bottom: 0.5rem;">No Application Connected</h3>
+                        <h3 style="color: var(--text-main); font-size: 1.2rem; margin-bottom: 0.5rem;">No Application Connected</h3>
                         <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0 auto;">Please connect this project to an application using the form below to view application details.</p>
                     </div>
                 `;
@@ -2070,7 +2147,7 @@
             let col1Rows = `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                     <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td>
-                    <td style="color: #ffffff; font-weight: 600;">${formatVal(app.applicant_name)}</td>
+                    <td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)}</td>
                 </tr>
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                     <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Status:</td>
@@ -2308,7 +2385,7 @@
     <!-- Add Material Modal -->
     <div id="addMaterialModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Material / Budget Item</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Material / Budget Item</h3>
             <form action="{{ route('projects.add_material', $project->id) }}" method="POST" style="margin: 0;">
                 @csrf
                 <div style="margin-bottom: 1rem;">
@@ -2330,17 +2407,17 @@
     <!-- Edit Material Modal -->
     <div id="editMaterialModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Material / Budget Item</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Material / Budget Item</h3>
             <form id="editMaterialForm" method="POST" style="margin: 0;">
                 @csrf
                 @method('PUT')
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Material / Item Name</label>
-                    <input type="text" id="editMaterialName" name="material" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="text" id="editMaterialName" name="material" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
-                    <input type="number" id="editMaterialAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="number" id="editMaterialAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                     <button type="button" onclick="closeEditMaterialModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
@@ -2353,7 +2430,7 @@
     <!-- Add Expense Modal -->
     <div id="addExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Expense (<span id="addExpenseModalMaterialName" style="color: var(--accent-cyan);"></span>)</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Expense (<span id="addExpenseModalMaterialName" style="color: var(--accent-cyan);"></span>)</h3>
             <form action="{{ route('projects.add_expense', $project->id) }}" method="POST" style="margin: 0;">
                 @csrf
                 <input type="hidden" name="material_index" id="addExpenseFormMaterialIndex">
@@ -2380,22 +2457,22 @@
     <!-- Edit Expense Modal -->
     <div id="editExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Expense</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Expense</h3>
             <form id="editExpenseForm" method="POST" style="margin: 0;">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="material_index" id="editExpenseFormMaterialIndex">
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Expense Description / Item</label>
-                    <input type="text" id="editExpenseName" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="text" id="editExpenseName" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Quantity</label>
-                    <input type="number" id="editExpenseQuantity" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="number" id="editExpenseQuantity" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
-                    <input type="number" id="editExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="number" id="editExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                     <button type="button" onclick="closeEditExpenseModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
@@ -2408,7 +2485,7 @@
     <!-- Add Community Contribution Modal -->
     <div id="addCommContribModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Community Contribution Item</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add New Community Contribution Item</h3>
             <form action="{{ route('projects.add_community_contribution', $project->id) }}" method="POST" style="margin: 0;">
                 @csrf
                 <div style="margin-bottom: 1rem;">
@@ -2430,17 +2507,17 @@
     <!-- Edit Community Contribution Modal -->
     <div id="editCommContribModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Community Contribution Item</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Community Contribution Item</h3>
             <form id="editCommContribForm" method="POST" style="margin: 0;">
                 @csrf
                 @method('PUT')
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Item Name / Description</label>
-                    <input type="text" id="editCommContribName" name="item" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="text" id="editCommContribName" name="item" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
-                    <input type="number" id="editCommContribAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="number" id="editCommContribAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                     <button type="button" onclick="closeEditCommContribModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
@@ -2453,7 +2530,7 @@
     <!-- Add Contractor Modal -->
     <div id="addContractorModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add Contractor</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add Contractor</h3>
             <form action="{{ route('projects.add_contractor', $project->id) }}" method="POST" style="margin: 0;">
                 @csrf
                 <div style="margin-bottom: 1rem;">
@@ -2492,7 +2569,7 @@
     <!-- Edit Contractor Modal -->
     <div id="editContractorModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Contractor</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Contractor</h3>
             <form id="editContractorForm" method="POST" style="margin: 0;">
                 @csrf
                 @method('PUT')
@@ -2515,11 +2592,11 @@
 
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Type of Contract</label>
-                    <input type="text" id="edit_contractor_type" name="type_of_contract" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="text" id="edit_contractor_type" name="type_of_contract" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Purpose of Contract</label>
-                    <textarea id="edit_contractor_purpose" name="purpose_of_contract" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; min-height: 80px;"></textarea>
+                    <textarea id="edit_contractor_purpose" name="purpose_of_contract" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); min-height: 80px;"></textarea>
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                     <button type="button" onclick="closeEditContractorModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
@@ -2604,7 +2681,7 @@
     <!-- Add Comm Expense Modal -->
     <div id="addCommExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add Expense for (<span id="addCommExpenseModalName" style="color: var(--accent-cyan);"></span>)</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Add Expense for (<span id="addCommExpenseModalName" style="color: var(--accent-cyan);"></span>)</h3>
             <form action="{{ route('projects.add_expense', $project->id) }}" method="POST" style="margin: 0;">
                 @csrf
                 <input type="hidden" name="comm_index" id="addCommExpenseFormIndex">
@@ -2631,22 +2708,22 @@
     <!-- Edit Comm Expense Modal -->
     <div id="editCommExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Contribution Expense</h3>
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Edit Contribution Expense</h3>
             <form id="editCommExpenseForm" method="POST" style="margin: 0;">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="comm_index" id="editCommExpenseFormIndex">
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Expense Description / Item</label>
-                    <input type="text" id="editCommExpenseName" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="text" id="editCommExpenseName" name="expense_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Quantity</label>
-                    <input type="number" id="editCommExpenseQuantity" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="number" id="editCommExpenseQuantity" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
-                    <input type="number" id="editCommExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <input type="number" id="editCommExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
                     <button type="button" onclick="closeEditCommExpenseModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>

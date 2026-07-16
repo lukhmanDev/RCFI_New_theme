@@ -455,42 +455,7 @@
                 <div style="margin-bottom: 2rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">4. Address & Contact Details</h4>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="house_name">House Name *</label>
-                            <input type="text" class="form-control-dark" id="house_name" name="meta[house_name]" value="{{ old('meta.house_name') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="place">Place *</label>
-                            <input type="text" class="form-control-dark" id="place" name="meta[place]" value="{{ old('meta.place') }}" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="town">Town *</label>
-                            <input type="text" class="form-control-dark" id="town" name="meta[town]" value="{{ old('meta.town') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="post_office">Post Office *</label>
-                            <input type="text" class="form-control-dark" id="post_office" name="meta[post_office]" value="{{ old('meta.post_office') }}" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="district">District *</label>
-                            <input type="text" class="form-control-dark" id="district" name="meta[district]" value="{{ old('meta.district') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="state">State *</label>
-                            <input type="text" class="form-control-dark" id="state" name="meta[state]" value="{{ old('meta.state') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="pin_code">Pin Code *</label>
-                            <input type="text" class="form-control-dark" id="pin_code" name="meta[pin_code]" value="{{ old('meta.pin_code') }}" required>
-                        </div>
-                    </div>
+                                        @include('applications.address_form_fields', ['idPrefix' => '', 'app' => null])
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
@@ -733,42 +698,7 @@
                 <div style="margin-bottom: 2rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">4. Address & Contact Details</h4>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_house_name">House Name *</label>
-                            <input type="text" class="form-control-dark" id="edit_house_name" name="meta[house_name]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_place">Place *</label>
-                            <input type="text" class="form-control-dark" id="edit_place" name="meta[place]" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_town">Town *</label>
-                            <input type="text" class="form-control-dark" id="edit_town" name="meta[town]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_post_office">Post Office *</label>
-                            <input type="text" class="form-control-dark" id="edit_post_office" name="meta[post_office]" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_district">District *</label>
-                            <input type="text" class="form-control-dark" id="edit_district" name="meta[district]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_state">State *</label>
-                            <input type="text" class="form-control-dark" id="edit_state" name="meta[state]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_pin_code">Pin Code *</label>
-                            <input type="text" class="form-control-dark" id="edit_pin_code" name="meta[pin_code]" required>
-                        </div>
-                    </div>
+                                        @include('applications.address_form_fields', ['idPrefix' => 'edit_', 'app' => null])
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
@@ -862,13 +792,14 @@
             document.getElementById('edit_health_status').value = meta.health_status || '';
             document.getElementById('edit_sponsorship_details').value = meta.sponsorship_details || '';
 
-            document.getElementById('edit_house_name').value = meta.house_name || '';
-            document.getElementById('edit_place').value = meta.place || '';
-            document.getElementById('edit_town').value = meta.town || '';
-            document.getElementById('edit_post_office').value = meta.post_office || '';
-            document.getElementById('edit_district').value = meta.district || '';
-            document.getElementById('edit_state').value = meta.state || '';
-            document.getElementById('edit_pin_code').value = meta.pin_code || '';
+                        if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = appItem.house_name || ''; }
+            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = appItem.place || ''; }
+            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = appItem.post_office || ''; }
+            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = appItem.village || ''; }
+            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = appItem.panchayat || ''; }
+            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = appItem.district || ''; }
+            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = appItem.state || ''; }
+            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = appItem.pin_code || ''; }
             document.getElementById('edit_mobile_1').value = meta.mobile_1 || '';
             document.getElementById('edit_mobile_2').value = meta.mobile_2 || '';
 

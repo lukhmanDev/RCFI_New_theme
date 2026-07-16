@@ -36,7 +36,6 @@
             <table class="table-custom">
                 <thead>
                     <tr>
-                        <th style="text-align: center; width: 80px;">Logo</th>
                         <th>Partner Details</th>
                         <th>Type of Partner</th>
                         <th>Type of Fund</th>
@@ -51,20 +50,10 @@
                 <tbody>
                     @forelse($donors as $donor)
                         <tr>
-                            <!-- Image / Logo Thumbnail -->
-                            <td style="text-align: center; vertical-align: middle;">
-                                @if($donor->image_path)
-                                    <img src="{{ asset('storage/' . $donor->image_path) }}" alt="Logo" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--panel-border);">
-                                @else
-                                    <div style="width: 48px; height: 48px; border-radius: 8px; background-color: #1f2937; display: flex; align-items: center; justify-content: center; border: 1px solid var(--panel-border);">
-                                        <i class="bx bxs-business" style="font-size: 1.5rem; color: var(--text-muted);"></i>
-                                    </div>
-                                @endif
-                            </td>
 
                             <!-- Partner Details -->
                             <td>
-                                <div style="font-weight: 600; color: #ffffff;">{{ $donor->name }}</div>
+                                <div style="font-weight: 600; ">{{ $donor->name }}</div>
                                 @if($donor->short_name)
                                     <div style="font-size: 0.8rem; color: var(--text-muted);">({{ $donor->short_name }})</div>
                                 @endif

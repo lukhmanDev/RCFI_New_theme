@@ -51,7 +51,7 @@
                         <tr>
                             <!-- Contractor Name -->
                             <td>
-                                <div style="font-weight: 600; color: #ffffff;">{{ $contractor->name }}</div>
+                                <div style="font-weight: 600;">{{ $contractor->name }}</div>
                             </td>
 
                             <!-- Company Name -->

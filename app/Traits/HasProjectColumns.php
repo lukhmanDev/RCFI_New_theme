@@ -18,9 +18,9 @@ trait HasProjectColumns
     protected $tempExpensesToSave;
 
     // Define polymorphic relations
-    public function projectFiles()
+    public function projectFile()
     {
-        return $this->morphMany(ProjectFile::class, 'project');
+        return $this->morphOne(ProjectFile::class, 'project');
     }
 
     public function projectDocument()
@@ -83,20 +83,12 @@ trait HasProjectColumns
         })->toArray();
 
         // 3. Fetch photos
-        $photosFile = $this->projectFiles()->where('name', 'photos')->first();
-        $files['photos'] = $photosFile ? json_decode($photosFile->path, true) : [];
-
-        $beforePhotosFile = $this->projectFiles()->where('name', 'photos_before')->first();
-        $files['photos_before'] = $beforePhotosFile ? json_decode($beforePhotosFile->path, true) : [];
-
-        $inbetweenPhotosFile = $this->projectFiles()->where('name', 'photos_inbetween')->first();
-        $files['photos_inbetween'] = $inbetweenPhotosFile ? json_decode($inbetweenPhotosFile->path, true) : [];
-
-        $afterPhotosFile = $this->projectFiles()->where('name', 'photos_after')->first();
-        $files['photos_after'] = $afterPhotosFile ? json_decode($afterPhotosFile->path, true) : [];
-
-        $inaugurationPhotosFile = $this->projectFiles()->where('name', 'photos_inauguration')->first();
-        $files['photos_inauguration'] = $inaugurationPhotosFile ? json_decode($inaugurationPhotosFile->path, true) : [];
+        $photosFile = $this->projectFile;
+        $files['photos'] = ($photosFile && $photosFile->photos) ? json_decode($photosFile->photos, true) : [];
+        $files['photos_before'] = ($photosFile && $photosFile->photos_before) ? json_decode($photosFile->photos_before, true) : [];
+        $files['photos_inbetween'] = ($photosFile && $photosFile->photos_inbetween) ? json_decode($photosFile->photos_inbetween, true) : [];
+        $files['photos_after'] = ($photosFile && $photosFile->photos_after) ? json_decode($photosFile->photos_after, true) : [];
+        $files['photos_inauguration'] = ($photosFile && $photosFile->photos_inauguration) ? json_decode($photosFile->photos_inauguration, true) : [];
 
         // 4. Fetch community contributions with self-healing legacy auto-migration
         $contribs = [];
@@ -265,18 +257,25 @@ trait HasProjectColumns
             $model->projectDocument()->delete();
 
             // 3. Delete project files (photos etc.) — also remove physical files from storage
-            $model->projectFiles()->each(function ($file) {
-                if ($file->name === 'photos') {
-                    $photos = json_decode($file->path, true) ?? [];
-                    foreach ($photos as $photoPath) {
-                        $fullPath = public_path($photoPath);
-                        if (file_exists($fullPath)) {
-                            @unlink($fullPath);
+            $file = $model->projectFile;
+            if ($file) {
+                $allPhotos = [];
+                foreach (['photos', 'photos_before', 'photos_inbetween', 'photos_after', 'photos_inauguration'] as $col) {
+                    if ($file->$col) {
+                        $paths = json_decode($file->$col, true) ?? [];
+                        if (is_array($paths)) {
+                            $allPhotos = array_merge($allPhotos, $paths);
                         }
                     }
                 }
+                foreach ($allPhotos as $photoPath) {
+                    $fullPath = public_path($photoPath);
+                    if (file_exists($fullPath)) {
+                        @unlink($fullPath);
+                    }
+                }
                 $file->delete();
-            });
+            }
 
             // 4. Delete project contractors
             $model->projectContractors()->delete();
@@ -305,45 +304,26 @@ trait HasProjectColumns
             if (isset($model->tempFilesToSave)) {
                 $value = $model->tempFilesToSave;
 
-                // Sync photos
+                // Sync photos in one row
+                $photoData = [];
                 if (isset($value['photos'])) {
-                    $model->projectFiles()->where('name', 'photos')->delete();
-                    $model->projectFiles()->create([
-                        'name' => 'photos',
-                        'path' => json_encode($value['photos']),
-                    ]);
+                    $photoData['photos'] = json_encode($value['photos']);
                 }
-
                 if (isset($value['photos_before'])) {
-                    $model->projectFiles()->where('name', 'photos_before')->delete();
-                    $model->projectFiles()->create([
-                        'name' => 'photos_before',
-                        'path' => json_encode($value['photos_before']),
-                    ]);
+                    $photoData['photos_before'] = json_encode($value['photos_before']);
                 }
-
                 if (isset($value['photos_inbetween'])) {
-                    $model->projectFiles()->where('name', 'photos_inbetween')->delete();
-                    $model->projectFiles()->create([
-                        'name' => 'photos_inbetween',
-                        'path' => json_encode($value['photos_inbetween']),
-                    ]);
+                    $photoData['photos_inbetween'] = json_encode($value['photos_inbetween']);
                 }
-
                 if (isset($value['photos_after'])) {
-                    $model->projectFiles()->where('name', 'photos_after')->delete();
-                    $model->projectFiles()->create([
-                        'name' => 'photos_after',
-                        'path' => json_encode($value['photos_after']),
-                    ]);
+                    $photoData['photos_after'] = json_encode($value['photos_after']);
+                }
+                if (isset($value['photos_inauguration'])) {
+                    $photoData['photos_inauguration'] = json_encode($value['photos_inauguration']);
                 }
 
-                if (isset($value['photos_inauguration'])) {
-                    $model->projectFiles()->where('name', 'photos_inauguration')->delete();
-                    $model->projectFiles()->create([
-                        'name' => 'photos_inauguration',
-                        'path' => json_encode($value['photos_inauguration']),
-                    ]);
+                if (!empty($photoData)) {
+                    $model->projectFile()->updateOrCreate([], $photoData);
                 }
 
                 // Sync contractors

@@ -761,14 +761,14 @@
 
             // Meta fields mapping
             const meta = appItem.meta || {};
-            document.getElementById('edit_location').value = meta.location || '';
-            document.getElementById('edit_address').value = meta.address || '';
-            document.getElementById('edit_village').value = meta.village || '';
-            document.getElementById('edit_post').value = meta.post || '';
-            document.getElementById('edit_panchayath').value = meta.panchayath || '';
-            document.getElementById('edit_district').value = meta.district || '';
-            document.getElementById('edit_state').value = meta.state || '';
-            document.getElementById('edit_pin').value = meta.pin || '';
+                        if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = appItem.house_name || ''; }
+            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = appItem.place || ''; }
+            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = appItem.post_office || ''; }
+            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = appItem.village || ''; }
+            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = appItem.panchayat || ''; }
+            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = appItem.district || ''; }
+            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = appItem.state || ''; }
+            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = appItem.pin_code || ''; }
             document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
             document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
             document.getElementById('edit_job').value = meta.job || '';

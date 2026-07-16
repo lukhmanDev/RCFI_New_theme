@@ -9,8 +9,11 @@ class ProjectFile extends Model
     protected $fillable = [
         'project_id',
         'project_type',
-        'name',
-        'path'
+        'photos',
+        'photos_before',
+        'photos_inbetween',
+        'photos_after',
+        'photos_inauguration',
     ];
 
     public function project()

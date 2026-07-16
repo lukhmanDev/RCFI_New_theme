@@ -27,9 +27,18 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            if ($user->is_suspended) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return back()->withErrors([
+                    'email' => 'Your account has been suspended. Please contact administrator.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
             
-            $user = Auth::user();
             // Redirect based on role (1 is Admin, 2+ is user)
             if ($user->role == 1) {
                 return redirect()->intended('dashboard');
