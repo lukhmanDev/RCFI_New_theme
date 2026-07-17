@@ -9,6 +9,7 @@ use App\Models\ProjectDocument;
 use App\Models\ProjectStatus;
 use App\Models\ProjectCommunityContribution;
 use App\Models\ProjectCompletionDetail;
+use App\Models\ProjectInspection;
 use Illuminate\Support\Facades\DB;
 
 trait HasProjectColumns
@@ -53,6 +54,11 @@ trait HasProjectColumns
         return $this->morphOne(ProjectCompletionDetail::class, 'project');
     }
 
+    public function projectInspections()
+    {
+        return $this->morphMany(ProjectInspection::class, 'project');
+    }
+
     // Accessor for $project->files
     public function getFilesAttribute()
     {
@@ -86,8 +92,11 @@ trait HasProjectColumns
         $photosFile = $this->projectFile;
         $files['photos'] = ($photosFile && $photosFile->photos) ? json_decode($photosFile->photos, true) : [];
         $files['photos_before'] = ($photosFile && $photosFile->photos_before) ? json_decode($photosFile->photos_before, true) : [];
+        $files['photos_starting'] = ($photosFile && $photosFile->photos_starting) ? json_decode($photosFile->photos_starting, true) : [];
         $files['photos_inbetween'] = ($photosFile && $photosFile->photos_inbetween) ? json_decode($photosFile->photos_inbetween, true) : [];
         $files['photos_after'] = ($photosFile && $photosFile->photos_after) ? json_decode($photosFile->photos_after, true) : [];
+        $files['photos_banner'] = ($photosFile && $photosFile->photos_banner) ? json_decode($photosFile->photos_banner, true) : [];
+        $files['photos_stone'] = ($photosFile && $photosFile->photos_stone) ? json_decode($photosFile->photos_stone, true) : [];
         $files['photos_inauguration'] = ($photosFile && $photosFile->photos_inauguration) ? json_decode($photosFile->photos_inauguration, true) : [];
 
         // 4. Fetch community contributions with self-healing legacy auto-migration
@@ -282,6 +291,9 @@ trait HasProjectColumns
 
             // 5. Delete project expenses (materials + spent)
             $model->projectExpenses()->delete();
+
+            // 6. Delete project inspections
+            $model->projectInspections()->delete();
         });
 
         // Automatically create projectDocument and projectStatus records when a project is created
@@ -312,11 +324,20 @@ trait HasProjectColumns
                 if (isset($value['photos_before'])) {
                     $photoData['photos_before'] = json_encode($value['photos_before']);
                 }
+                if (isset($value['photos_starting'])) {
+                    $photoData['photos_starting'] = json_encode($value['photos_starting']);
+                }
                 if (isset($value['photos_inbetween'])) {
                     $photoData['photos_inbetween'] = json_encode($value['photos_inbetween']);
                 }
                 if (isset($value['photos_after'])) {
                     $photoData['photos_after'] = json_encode($value['photos_after']);
+                }
+                if (isset($value['photos_banner'])) {
+                    $photoData['photos_banner'] = json_encode($value['photos_banner']);
+                }
+                if (isset($value['photos_stone'])) {
+                    $photoData['photos_stone'] = json_encode($value['photos_stone']);
                 }
                 if (isset($value['photos_inauguration'])) {
                     $photoData['photos_inauguration'] = json_encode($value['photos_inauguration']);

@@ -266,6 +266,9 @@
                     <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
                     <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
                     <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
+                    <div class="details-label">Theme</div><div class="details-colon">:</div><div class="details-value">{{ $project->theme ?? 'N/A' }}</div>
+                    <div class="details-label">Subtheme</div><div class="details-colon">:</div><div class="details-value">{{ $project->subtheme ?? 'N/A' }}</div>
+                    <div class="details-label">Activity</div><div class="details-colon">:</div><div class="details-value">{{ $project->activity ?? 'N/A' }}</div>
                     <div class="details-label">Remarks</div><div class="details-colon">:</div><div class="details-value" style="font-weight: normal; color: var(--text-muted);">{{ $project->remarks ?? 'N/A' }}</div>
                     <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ $project->status === 'Completed' ? 'Completed' : ($project->project_phase === 'Other' ? ($project->project_phase_custom ?: 'Other') : $project->project_phase) }}</div>
                 </div>
@@ -562,56 +565,48 @@
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                             <!-- Col 1 -->
                             <div>
-                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Committee</h4>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Orphan & Family Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">{!! $formatVal($application->applicant_name) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>{!! $formatVal($metaData['committee_name'] ?? $metaData['mahallu_name'] ?? $metaData['place'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>{!! $formatVal($metaData['reg_number'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>{!! $formatVal($metaData['year'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['location'] ?? $metaData['place'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['village'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>{!! $formatVal($metaData['post'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>{!! $formatVal($metaData['panchayath'] ?? $metaData['panchayat'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? $metaData['contact1'] ?? $metaData['mobile'] ?? null) !!} / {!! $formatVal($metaData['contact_number_2'] ?? $metaData['contact2'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>{!! $formatVal($metaData['submitted_before'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>{!! $formatVal($metaData['received_support_before'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Orphan Name:</td><td style="color: var(--text-main); font-weight: 600;">{!! $formatVal($application->applicant_name) !!} ({!! $formatVal($metaData['gender'] ?? null) !!})</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>{!! $formatVal($metaData['dob'] ?? null) !!} / {!! $formatVal($metaData['age'] ?? null) !!} yrs</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhar Number:</td><td>{!! $formatVal($metaData['aadhar_number'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>{!! $formatVal($metaData['father_name'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Grandfather's Name:</td><td>{!! $formatVal($metaData['grandfather_name'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>{!! $formatVal($metaData['mother_name'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Father Name:</td><td>{!! $formatVal($metaData['mothers_father_name'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian / Relation:</td><td>{!! $formatVal($metaData['guardian_name'] ?? null) !!} ({!! $formatVal($metaData['guardian_relation'] ?? null) !!})</td></tr>
                                 </table>
 
-                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Parental Death & Sibling Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td>{!! $formatVal($metaData['mahallu_name'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['locality_location'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['locality_village'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['locality_district'] ?? null) !!} / {!! $formatVal($metaData['locality_state'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td>{!! $formatVal($metaData['families_in_mahallu'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Requirement:</td><td>{!! $formatVal($metaData['requirement'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Father's Death Date:</td><td>{!! $formatVal($metaData['father_death_date'] ?? null) !!} <span style="font-size: 0.8rem; color: var(--text-muted);">({!! $formatVal($metaData['father_death_cause'] ?? null) !!})</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Alive Status:</td><td>{!! $formatVal($metaData['mother_alive_status'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Death Date:</td><td>{!! $formatVal($metaData['mother_death_date'] ?? null) !!} <span style="font-size: 0.8rem; color: var(--text-muted);">({!! $formatVal($metaData['mother_death_cause'] ?? null) !!})</span></td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Re-Married?</td><td>{!! $formatVal($metaData['mother_remarried_status'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Brothers & Sisters:</td><td>Total: {!! $formatVal($metaData['siblings_total'] ?? null) !!} (M: {!! $formatVal($metaData['siblings_male'] ?? null) !!} / F: {!! $formatVal($metaData['siblings_female'] ?? null) !!})</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>{{ isset($metaData['monthly_income']) ? '₹' . number_format($metaData['monthly_income']) : 'N/A' }}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Expense:</td><td>{{ isset($metaData['monthly_expense']) ? '₹' . number_format($metaData['monthly_expense']) : 'N/A' }}</td></tr>
                                 </table>
                             </div>
 
                             <!-- Col 2 -->
                             <div>
-                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Current Status & Students</h4>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Education & House Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Has Building?</td><td>{!! $formatVal($metaData['site_has_building'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Status:</td><td>{!! $formatVal($metaData['status_of_current_building'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Boys Count:</td><td>{!! $formatVal($metaData['students_boys'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Girls Count:</td><td>{!! $formatVal($metaData['students_girls'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Center Nearby?</td><td>{!! $formatVal($metaData['education_center_nearby'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Distance to CC (KM):</td><td>{!! $formatVal($metaData['distance_cultural_centre'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Syllabus:</td><td>{!! $formatVal($metaData['syllabus'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Type Of House:</td><td>{!! $formatVal($metaData['house_type'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">School Name:</td><td>{!! $formatVal($metaData['school_name'] ?? null) !!} (Class: {!! $formatVal($metaData['school_class'] ?? null) !!})</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Madrassa Name:</td><td>{!! $formatVal($metaData['madrassa_name'] ?? null) !!} (Class: {!! $formatVal($metaData['madrassa_class'] ?? null) !!})</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">If Not Studying, Reason:</td><td>{!! $formatVal($metaData['not_studying_reason'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Health Status:</td><td>{!! $formatVal($metaData['health_status'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Sponsorship Details:</td><td>{!! $formatVal($metaData['sponsorship_details'] ?? null) !!}</td></tr>
                                 </table>
 
-                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Details</h4>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: var(--text-main);">{!! $formatVal($metaData['project_type'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Area (Sq):</td><td>{!! $formatVal($metaData['building_area_sq'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td>{!! $formatVal($metaData['land_area_sq'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td>{!! $formatVal($metaData['num_classrooms'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Students:</td><td>{!! $formatVal($metaData['num_students'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">{{ $application->amount_requested ? '₹' . number_format($application->amount_requested) : 'N/A' }}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td>{!! $formatVal($metaData['legal_approvals_status'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Area / Zone:</td><td>{!! $formatVal($metaData['area'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>{!! $formatVal($metaData['house_name'] ?? null) !!} / {!! $formatVal($application->place ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Town / Post Office:</td><td>{!! $formatVal($metaData['town'] ?? null) !!} / {!! $formatVal($metaData['post_office'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State / Pin:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!} / {!! $formatVal($metaData['pin_code'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1 / 2:</td><td>{!! $formatVal($metaData['mobile_1'] ?? null) !!} / {!! $formatVal($metaData['mobile_2'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">{{ $application->status }}</td></tr>
                                 </table>
                             </div>
@@ -1402,34 +1397,69 @@
                     </table>
                 </div>
 
-                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
-                <table class="stage-table">
-                    <thead>
-                        <tr>
-                            <th>Inspection Parameter</th>
-                            <th>Inspected By</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="font-weight: 600; color: var(--text-main);">Foundation Inspection</td>
-                            <td>{{ $project->projectManager ? $project->projectManager->name : 'Project Manager' }}</td>
-                            <td><span style="background-color: rgba(16, 185, 129, 0.15); color: var(--accent-green); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: var(--text-main);">Superstructure Check</td>
-                            <td>{{ $project->projectManager ? $project->projectManager->name : 'Project Manager' }}</td>
-                            <td><span style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">In Progress</span></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: var(--text-main);">Safety Verification</td>
-                            <td>Structural Auditor</td>
-                            <td><span style="background-color: rgba(239, 68, 68, 0.15); color: var(--accent-red); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Pending</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-                @endif
+                                <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                        <h3 style="color: var(--text-main); font-size: 1.1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Monitoring Visit Reports</h3>
+                        @if($isProjectManager && !$isLockedForEditing)
+                            <button onclick="openAddInspectionModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                <i class="bx bx-plus"></i> Add Row
+                            </button>
+                        @endif
+                    </div>
+
+                    <table class="stage-table" style="margin-bottom: 1.5rem;">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px; text-align: center;">S.No</th>
+                                <th>Name</th>
+                                <th>Designation</th>
+                                <th style="width: 140px;">Date</th>
+                                <th>Remarks</th>
+                                @if($isProjectManager && !$isLockedForEditing)
+                                    <th style="text-align: center; width: 100px;">Actions</th>
+                                @endif
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $inspections = $project->projectInspections()->orderBy('date', 'asc')->get();
+                            @endphp
+                            @if($inspections->isEmpty())
+                                <tr>
+                                    <td colspan="{{ ($isProjectManager && !$isLockedForEditing) ? 6 : 5 }}" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem;">
+                                        No inspection reports logged yet.
+                                    </td>
+                                </tr>
+                            @else
+                                @foreach($inspections as $index => $inspection)
+                                    <tr>
+                                        <td style="text-align: center; font-weight: 600; color: var(--text-muted); vertical-align: middle;">{{ $loop->iteration }}</td>
+                                        <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $inspection->name }}</td>
+                                        <td style="color: var(--text-main); vertical-align: middle;">{{ $inspection->designation }}</td>
+                                        <td style="color: var(--text-main); vertical-align: middle;">{{ \Carbon\Carbon::parse($inspection->date)->format('d-M-Y') }}</td>
+                                        <td style="color: var(--text-muted); vertical-align: middle; white-space: pre-line;">{{ $inspection->remarks ?? '-' }}</td>
+                                        @if($isProjectManager && !$isLockedForEditing)
+                                            <td style="text-align: center; vertical-align: middle;">
+                                                <div style="display: inline-flex; gap: 0.4rem;">
+                                                    <button onclick="openEditInspectionModal({{ $inspection->id }}, '{{ addslashes($inspection->name) }}', '{{ addslashes($inspection->designation) }}', '{{ $inspection->date }}', '{{ addslashes(str_replace(["\r", "\n"], ['\r', '\n'], $inspection->remarks)) }}')" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
+                                                        <i class="bx bx-pencil"></i>
+                                                    </button>
+                                                    <form action="{{ route('projects.delete_inspection', [$project->id, $inspection->id]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this inspection report?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn-danger-custom" style="padding: 0.25rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;" title="Delete">
+                                                            <i class="bx bx-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        @endif
+                                    </tr>
+                                @endforeach
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
 
                 @if($project->stage == 5 && $project->status !== 'Completed')
                     <div style="margin-top: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
@@ -2025,67 +2055,54 @@
                 }
             }
 
-            const keys = Object.keys(meta).filter(k => k !== 'applicant_name' && k !== 'details');
-            const half = Math.ceil(keys.length / 2);
-            const col1Keys = keys.slice(0, half);
-            const col2Keys = keys.slice(half);
-
-            const formatKeyLabel = (key) => {
-                return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            };
-
-            let col1Rows = `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                    <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td>
-                    <td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Status:</td>
-                    <td>
-                        <span style="background-color: ${app.status === 'Approved' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}; color: ${app.status === 'Approved' ? 'var(--accent-green)' : '#f59e0b'}; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
-                            ${app.status}
-                        </span>
-                    </td>
-                </tr>
-            `;
-
-            col1Keys.forEach(k => {
-                col1Rows += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                        <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">${formatKeyLabel(k)}:</td>
-                        <td>${formatVal(meta[k])}</td>
-                    </tr>
-                `;
-            });
-
-            let col2Rows = '';
-            col2Keys.forEach(k => {
-                col2Rows += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                        <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">${formatKeyLabel(k)}:</td>
-                        <td>${formatVal(meta[k])}</td>
-                    </tr>
-                `;
-            });
-
-            const amountText = app.amount_requested ? '₹' + Number(app.amount_requested).toLocaleString() : 'N/A';
+            const incomeText = meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A';
+            const expenseText = meta.monthly_expense ? '₹' + Number(meta.monthly_expense).toLocaleString() : 'N/A';
 
             container.innerHTML = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                     <div>
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Application Details</h4>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Orphan & Family Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                            ${col1Rows}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Orphan Name:</td><td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)} (${formatVal(meta.gender)})</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>${formatVal(meta.dob)} / ${formatVal(meta.age)} yrs</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Grandfather's Name:</td><td>${formatVal(meta.grandfather_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Father Name:</td><td>${formatVal(meta.mothers_father_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian / Relation:</td><td>${formatVal(meta.guardian_name)} (${formatVal(meta.guardian_relation)})</td></tr>
+                        </table>
+
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Parental Death & Sibling Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Father's Death Date:</td><td>${formatVal(meta.father_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(${formatVal(meta.father_death_cause)})</span></td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Alive Status:</td><td>${formatVal(meta.mother_alive_status)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Death Date:</td><td>${formatVal(meta.mother_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(${formatVal(meta.mother_death_cause)})</span></td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Re-Married?</td><td>${formatVal(meta.mother_remarried_status)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Brothers & Sisters:</td><td>Total: ${formatVal(meta.siblings_total)} (M: ${formatVal(meta.siblings_male)} / F: ${formatVal(meta.siblings_female)})</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>${incomeText}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Expense:</td><td>${expenseText}</td></tr>
                         </table>
                     </div>
+
                     <div>
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Additional Specifications</h4>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Education & House Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                            ${col2Rows || '<tr><td colspan="2" style="color: var(--text-muted); font-style: italic;">No additional metadata keys available.</td></tr>'}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                                <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td>
-                                <td style="color: var(--accent-green); font-weight: 600;">${amountText}</td>
-                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Type Of House:</td><td>${formatVal(meta.house_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">School Name:</td><td>${formatVal(meta.school_name)} (Class: ${formatVal(meta.school_class)})</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Madrassa Name:</td><td>${formatVal(meta.madrassa_name)} (Class: ${formatVal(meta.madrassa_class)})</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">If Not Studying, Reason:</td><td>${formatVal(meta.not_studying_reason)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Health Status:</td><td>${formatVal(meta.health_status)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Sponsorship Details:</td><td>${formatVal(meta.sponsorship_details)}</td></tr>
+                        </table>
+
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>${formatVal(meta.house_name)} / ${formatVal(app.place)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Town / Post Office:</td><td>${formatVal(meta.town)} / ${formatVal(meta.post_office)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin_code)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1 / 2:</td><td>${formatVal(meta.mobile_1)} / ${formatVal(meta.mobile_2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">${app.status}</td></tr>
                         </table>
                     </div>
                 </div>
@@ -2566,7 +2583,26 @@
                 card.style.display = 'none';
             }
         }
-    </script>
+            // Inspection Modal Controls
+        function openAddInspectionModal() {
+            document.getElementById('addInspectionModal').style.display = 'flex';
+        }
+        function closeAddInspectionModal() {
+            document.getElementById('addInspectionModal').style.display = 'none';
+        }
+        function openEditInspectionModal(id, name, designation, date, remarks) {
+            const form = document.getElementById('editInspectionForm');
+            form.setAttribute('action', `/admin/projects/${activeProjectId}/inspections/${id}`);
+            document.getElementById('edit_inspection_name').value = name;
+            document.getElementById('edit_inspection_designation').value = designation;
+            document.getElementById('edit_inspection_date').value = date;
+            document.getElementById('edit_inspection_remarks').value = remarks;
+            document.getElementById('editInspectionModal').style.display = 'flex';
+        }
+        function closeEditInspectionModal() {
+            document.getElementById('editInspectionModal').style.display = 'none';
+        }
+</script>
 
     <!-- Add Comm Expense Modal -->
     <div id="addCommExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
@@ -2622,6 +2658,67 @@
             </form>
         </div>
     </div>
-    @endif
+    
+    <!-- Add Inspection Modal -->
+    <div id="addInspectionModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Add Inspection Report</h3>
+            <form action="{{ route('projects.add_inspection', $project->id) }}" method="POST" style="margin: 0;">
+                @csrf
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Inspector Name</label>
+                    <input type="text" name="name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="Enter name...">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Designation</label>
+                    <input type="text" name="designation" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. Project Manager, Auditor">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Inspection Date</label>
+                    <input type="date" name="date" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ date('Y-m-d') }}">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Remarks</label>
+                    <textarea name="remarks" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; min-height: 80px;" placeholder="Enter inspection remarks..."></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeAddInspectionModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Add Inspection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Inspection Modal -->
+    <div id="editInspectionModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Edit Inspection Report</h3>
+            <form id="editInspectionForm" method="POST" style="margin: 0;">
+                @csrf
+                @method('PUT')
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Inspector Name</label>
+                    <input type="text" id="edit_inspection_name" name="name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Designation</label>
+                    <input type="text" id="edit_inspection_designation" name="designation" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Inspection Date</label>
+                    <input type="date" id="edit_inspection_date" name="date" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Remarks</label>
+                    <textarea id="edit_inspection_remarks" name="remarks" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; min-height: 80px;"></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditInspectionModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endif
 
 @endsection

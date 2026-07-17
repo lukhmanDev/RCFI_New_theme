@@ -1,5 +1,4 @@
 @php
-<<<<<<< HEAD
     $recipientNotifications = \App\Models\NotificationRecipient::where('user_id', Auth::id())
         ->with('notification')
         ->orderBy('created_at', 'desc')
@@ -8,10 +7,6 @@
     $unreadNotificationsCount = \App\Models\NotificationRecipient::where('user_id', Auth::id())
         ->where('is_read', false)
         ->count();
-=======
-    $notifications = \App\Models\Notification::orderBy('created_at', 'desc')->take(6)->get();
-    $unreadNotificationsCount = \App\Models\Notification::where('is_read', false)->count();
->>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
 @endphp
 <!-- Topbar Header -->
 <header class="topbar">
@@ -44,7 +39,6 @@
                     @endif
                 </div>
                 <div class="topbar-notifications-list">
-<<<<<<< HEAD
                     @forelse($recipientNotifications as $recipient)
                         @php $notif = $recipient->notification; @endphp
                         @if($notif)
@@ -57,17 +51,6 @@
                                 </div>
                             </a>
                         @endif
-=======
-                    @forelse($notifications as $notif)
-                        <a href="{{ $notif->url ?? '#' }}" class="topbar-notifications-item {{ !$notif->is_read ? 'unread' : '' }}" onclick="markSingleNotificationAsRead(event, {{ $notif->id }})">
-                            <div class="notif-dot"></div>
-                            <div class="notif-content">
-                                <span class="notif-title">{{ $notif->title }}</span>
-                                <p class="notif-message">{{ $notif->message }}</p>
-                                <span class="notif-time">{{ $notif->created_at ? $notif->created_at->diffForHumans() : 'Just now' }}</span>
-                            </div>
-                        </a>
->>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
                     @empty
                         <div class="topbar-notifications-empty">
                             <i class="bx bx-bell-off"></i>

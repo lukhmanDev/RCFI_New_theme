@@ -266,6 +266,9 @@
                     <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
                     <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
                     <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
+                    <div class="details-label">Theme</div><div class="details-colon">:</div><div class="details-value">{{ $project->theme ?? 'N/A' }}</div>
+                    <div class="details-label">Subtheme</div><div class="details-colon">:</div><div class="details-value">{{ $project->subtheme ?? 'N/A' }}</div>
+                    <div class="details-label">Activity</div><div class="details-colon">:</div><div class="details-value">{{ $project->activity ?? 'N/A' }}</div>
                     <div class="details-label">Remarks</div><div class="details-colon">:</div><div class="details-value" style="font-weight: normal; color: var(--text-muted);">{{ $project->remarks ?? 'N/A' }}</div>
                     <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ $project->status === 'Completed' ? 'Completed' : ($project->project_phase === 'Other' ? ($project->project_phase_custom ?: 'Other') : $project->project_phase) }}</div>
                 </div>
@@ -1395,34 +1398,69 @@
                     </table>
                 </div>
 
-                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
-                <table class="stage-table">
-                    <thead>
-                        <tr>
-                            <th>Inspection Parameter</th>
-                            <th>Inspected By</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="font-weight: 600; color: var(--text-main);">Foundation Inspection</td>
-                            <td>{{ $project->projectManager ? $project->projectManager->name : 'Project Manager' }}</td>
-                            <td><span style="background-color: rgba(16, 185, 129, 0.15); color: var(--accent-green); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Completed</span></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: var(--text-main);">Superstructure Check</td>
-                            <td>{{ $project->projectManager ? $project->projectManager->name : 'Project Manager' }}</td>
-                            <td><span style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">In Progress</span></td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: 600; color: var(--text-main);">Safety Verification</td>
-                            <td>Structural Auditor</td>
-                            <td><span style="background-color: rgba(239, 68, 68, 0.15); color: var(--accent-red); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Pending</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-                @endif
+                                <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                        <h3 style="color: var(--text-main); font-size: 1.1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Monitoring Visit Reports</h3>
+                        @if($isProjectManager && !$isLockedForEditing)
+                            <button onclick="openAddInspectionModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                <i class="bx bx-plus"></i> Add Row
+                            </button>
+                        @endif
+                    </div>
+
+                    <table class="stage-table" style="margin-bottom: 1.5rem;">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px; text-align: center;">S.No</th>
+                                <th>Name</th>
+                                <th>Designation</th>
+                                <th style="width: 140px;">Date</th>
+                                <th>Remarks</th>
+                                @if($isProjectManager && !$isLockedForEditing)
+                                    <th style="text-align: center; width: 100px;">Actions</th>
+                                @endif
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $inspections = $project->projectInspections()->orderBy('date', 'asc')->get();
+                            @endphp
+                            @if($inspections->isEmpty())
+                                <tr>
+                                    <td colspan="{{ ($isProjectManager && !$isLockedForEditing) ? 6 : 5 }}" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 2rem;">
+                                        No inspection reports logged yet.
+                                    </td>
+                                </tr>
+                            @else
+                                @foreach($inspections as $index => $inspection)
+                                    <tr>
+                                        <td style="text-align: center; font-weight: 600; color: var(--text-muted); vertical-align: middle;">{{ $loop->iteration }}</td>
+                                        <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $inspection->name }}</td>
+                                        <td style="color: var(--text-main); vertical-align: middle;">{{ $inspection->designation }}</td>
+                                        <td style="color: var(--text-main); vertical-align: middle;">{{ \Carbon\Carbon::parse($inspection->date)->format('d-M-Y') }}</td>
+                                        <td style="color: var(--text-muted); vertical-align: middle; white-space: pre-line;">{{ $inspection->remarks ?? '-' }}</td>
+                                        @if($isProjectManager && !$isLockedForEditing)
+                                            <td style="text-align: center; vertical-align: middle;">
+                                                <div style="display: inline-flex; gap: 0.4rem;">
+                                                    <button onclick="openEditInspectionModal({{ $inspection->id }}, '{{ addslashes($inspection->name) }}', '{{ addslashes($inspection->designation) }}', '{{ $inspection->date }}', '{{ addslashes(str_replace(["\r", "\n"], ['\r', '\n'], $inspection->remarks)) }}')" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
+                                                        <i class="bx bx-pencil"></i>
+                                                    </button>
+                                                    <form action="{{ route('projects.delete_inspection', [$project->id, $inspection->id]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this inspection report?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn-danger-custom" style="padding: 0.25rem; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;" title="Delete">
+                                                            <i class="bx bx-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        @endif
+                                    </tr>
+                                @endforeach
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
 
                 @if($project->stage == 5 && $project->status !== 'Completed')
                     <div style="margin-top: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
@@ -2559,7 +2597,26 @@
                 card.style.display = 'none';
             }
         }
-    </script>
+            // Inspection Modal Controls
+        function openAddInspectionModal() {
+            document.getElementById('addInspectionModal').style.display = 'flex';
+        }
+        function closeAddInspectionModal() {
+            document.getElementById('addInspectionModal').style.display = 'none';
+        }
+        function openEditInspectionModal(id, name, designation, date, remarks) {
+            const form = document.getElementById('editInspectionForm');
+            form.setAttribute('action', `/admin/projects/${activeProjectId}/inspections/${id}`);
+            document.getElementById('edit_inspection_name').value = name;
+            document.getElementById('edit_inspection_designation').value = designation;
+            document.getElementById('edit_inspection_date').value = date;
+            document.getElementById('edit_inspection_remarks').value = remarks;
+            document.getElementById('editInspectionModal').style.display = 'flex';
+        }
+        function closeEditInspectionModal() {
+            document.getElementById('editInspectionModal').style.display = 'none';
+        }
+</script>
 
     <!-- Add Comm Expense Modal -->
     <div id="addCommExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
@@ -2615,6 +2672,67 @@
             </form>
         </div>
     </div>
-    @endif
+    
+    <!-- Add Inspection Modal -->
+    <div id="addInspectionModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Add Inspection Report</h3>
+            <form action="{{ route('projects.add_inspection', $project->id) }}" method="POST" style="margin: 0;">
+                @csrf
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Inspector Name</label>
+                    <input type="text" name="name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="Enter name...">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Designation</label>
+                    <input type="text" name="designation" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. Project Manager, Auditor">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Inspection Date</label>
+                    <input type="date" name="date" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ date('Y-m-d') }}">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Remarks</label>
+                    <textarea name="remarks" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; min-height: 80px;" placeholder="Enter inspection remarks..."></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeAddInspectionModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Add Inspection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Inspection Modal -->
+    <div id="editInspectionModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Edit Inspection Report</h3>
+            <form id="editInspectionForm" method="POST" style="margin: 0;">
+                @csrf
+                @method('PUT')
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Inspector Name</label>
+                    <input type="text" id="edit_inspection_name" name="name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Designation</label>
+                    <input type="text" id="edit_inspection_designation" name="designation" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Inspection Date</label>
+                    <input type="date" id="edit_inspection_date" name="date" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Remarks</label>
+                    <textarea id="edit_inspection_remarks" name="remarks" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff; min-height: 80px;"></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditInspectionModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endif
 
 @endsection

@@ -243,13 +243,18 @@ class ProjectController extends Controller
             ->orWhere('designation', 'like', '%engineer%')
             ->get();
 
+        $themes = \Illuminate\Support\Facades\DB::table('themes')->where('status', 1)->get();
+        $subthemes = \Illuminate\Support\Facades\DB::table('subthemes')->where('status', 1)->get();
+
         return view($config['view'], compact(
             'categoryName',
             'categorySlug',
             'projects',
             'donors',
             'managers',
-            'engineers'
+            'engineers',
+            'themes',
+            'subthemes'
         ));
     }
 
@@ -275,6 +280,9 @@ class ProjectController extends Controller
             'unit' => ['nullable', 'string', 'max:255'],
             'available_budget' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
             'type_of_project' => ['required', 'string'],
+            'theme' => ['nullable', 'string', 'max:255'],
+            'subtheme' => ['nullable', 'string', 'max:255'],
+            'activity' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string'],
         ]);
 
@@ -340,6 +348,9 @@ class ProjectController extends Controller
             'unit' => ['nullable', 'string', 'max:255'],
             'available_budget' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
             'type_of_project' => ['required', 'string'],
+            'theme' => ['nullable', 'string', 'max:255'],
+            'subtheme' => ['nullable', 'string', 'max:255'],
+            'activity' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string'],
         ]);
 
@@ -1481,7 +1492,7 @@ class ProjectController extends Controller
 
         $request->validate([
             'photo' => 'required|image|max:10240', // 10MB max
-            'category' => 'nullable|string|in:before,inbetween,after,inauguration'
+            'category' => 'nullable|string|in:before,starting,inbetween,after,banner,stone,inauguration'
         ]);
 
         if ($request->hasFile('photo')) {
@@ -1491,6 +1502,9 @@ class ProjectController extends Controller
             
             $files = $project->files ?? [];
             $category = $request->input('category') ?? 'after';
+            if (!in_array($category, ['before', 'starting', 'inbetween', 'after', 'banner', 'stone', 'inauguration'])) {
+                $category = 'after';
+            }
             $key = 'photos_' . $category;
             
             $photos = $files[$key] ?? [];
@@ -1523,6 +1537,9 @@ class ProjectController extends Controller
         }
 
         $category = $request->input('category') ?? 'after';
+        if (!in_array($category, ['before', 'starting', 'inbetween', 'after', 'banner', 'stone', 'inauguration'])) {
+            $category = 'after';
+        }
         $key = 'photos_' . $category;
         
         $files = $project->files ?? [];
@@ -1721,5 +1738,95 @@ class ProjectController extends Controller
         }
 
         return $query;
+    }
+
+    public function addInspection(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
+        }
+
+        $project = $this->getProjectInstance($request, $id, false);
+        if (!$project) {
+            abort(404);
+        }
+
+        if ($project->status === 'Completed') {
+            return redirect()->back()->with('error', 'Project is finalized and locked.');
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'designation' => 'required|string|max:255',
+            'date' => 'required|date',
+            'remarks' => 'nullable|string',
+        ]);
+
+        $project->projectInspections()->create([
+            'name' => $request->name,
+            'designation' => $request->designation,
+            'date' => $request->date,
+            'remarks' => $request->remarks,
+        ]);
+
+        return redirect()->route('projects.show', $id)->with('success', 'Inspection report added successfully!');
+    }
+
+    public function updateInspection(Request $request, $id, $inspectionId)
+    {
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
+        }
+
+        $project = $this->getProjectInstance($request, $id, false);
+        if (!$project) {
+            abort(404);
+        }
+
+        if ($project->status === 'Completed') {
+            return redirect()->back()->with('error', 'Project is finalized and locked.');
+        }
+
+        $inspection = $project->projectInspections()->findOrFail($inspectionId);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'designation' => 'required|string|max:255',
+            'date' => 'required|date',
+            'remarks' => 'nullable|string',
+        ]);
+
+        $inspection->update([
+            'name' => $request->name,
+            'designation' => $request->designation,
+            'date' => $request->date,
+            'remarks' => $request->remarks,
+        ]);
+
+        return redirect()->route('projects.show', $id)->with('success', 'Inspection report updated successfully!');
+    }
+
+    public function deleteInspection(Request $request, $id, $inspectionId)
+    {
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
+        }
+
+        $project = $this->getProjectInstance($request, $id, false);
+        if (!$project) {
+            abort(404);
+        }
+
+        if ($project->status === 'Completed') {
+            return redirect()->back()->with('error', 'Project is finalized and locked.');
+        }
+
+        $inspection = $project->projectInspections()->findOrFail($inspectionId);
+        $inspection->delete();
+
+        return redirect()->route('projects.show', $id)->with('success', 'Inspection report deleted successfully!');
     }
 }

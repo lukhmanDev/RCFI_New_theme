@@ -95,6 +95,13 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::put('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'updateContractor'])->name('projects.update_contractor');
     Route::delete('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'deleteContractor'])->name('projects.delete_contractor');
 
+    Route::post('/admin/projects/{id}/inspections', [ProjectController::class, 'addInspection'])->name('projects.add_inspection');
+    Route::put('/admin/projects/{id}/inspections/{inspection_id}', [ProjectController::class, 'updateInspection'])->name('projects.update_inspection');
+    Route::delete('/admin/projects/{id}/inspections/{inspection_id}', [ProjectController::class, 'deleteInspection'])->name('projects.delete_inspection');
+    Route::get('/admin/projects/{id}/inspections', function($id) {
+        return redirect()->route('projects.show', $id);
+    });
+
     // Fallback GET routes for action endpoints to prevent 405 Method Not Allowed errors on refreshes/navigation anomalies
     Route::get('/admin/projects/{id}/community-contributions', function($id) {
         return redirect()->route('projects.show', $id);
@@ -123,30 +130,22 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::post('/admin/profile/credentials', [ProfileController::class, 'updateCredentials'])->name('profile.update_credentials');
     // Notifications routes
     Route::post('/admin/notifications/mark-all-read', function() {
-<<<<<<< HEAD
         \App\Models\NotificationRecipient::where('user_id', Auth::id())
             ->where('is_read', false)
             ->update([
                 'is_read' => true,
                 'read_at' => now(),
             ]);
-=======
-        \App\Models\Notification::where('is_read', false)->update(['is_read' => true]);
->>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
         return response()->json(['success' => true]);
     })->name('notifications.mark_all_read');
 
     Route::post('/admin/notifications/{id}/mark-read', function($id) {
-<<<<<<< HEAD
         \App\Models\NotificationRecipient::where('user_id', Auth::id())
             ->where('id', $id)
             ->update([
                 'is_read' => true,
                 'read_at' => now(),
             ]);
-=======
-        \App\Models\Notification::where('id', $id)->update(['is_read' => true]);
->>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
         return response()->json(['success' => true]);
     })->name('notifications.mark_read');
 });

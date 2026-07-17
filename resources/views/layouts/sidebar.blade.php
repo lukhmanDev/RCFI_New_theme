@@ -63,11 +63,7 @@
                 <span>Reports</span>
             </a>
         </li>
-<<<<<<< HEAD
         <li>
-=======
-        <li>s
->>>>>>> 931b70b15894ca6c070c71c54872cb207eaf9da3
             <a href="" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
                 <i class="bx bxs-cog"></i>
                 <span>Settings</span>

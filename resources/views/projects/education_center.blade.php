@@ -426,6 +426,27 @@
                     <label for="available_budget">Available Budget</label>
                     <input type="number" step="0.01" name="available_budget" id="available_budget" required placeholder="Enter available budget">
                 </div>
+                <div class="form-group-custom">
+                    <label for="add_theme">Theme</label>
+                    <select name="theme" id="add_theme" required onchange="populateSubthemes('add_theme', 'add_subtheme')">
+                        <option value="">Select Theme</option>
+                        @foreach($themes as $t)
+                            <option value="{{ $t->name }}" data-theme-id="{{ $t->id }}">{{ $t->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="add_subtheme">Subtheme</label>
+                    <select name="subtheme" id="add_subtheme" required>
+                        <option value="">Select Subtheme</option>
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="add_activity">Activity</label>
+                    <input type="text" name="activity" id="add_activity" required placeholder="Enter activity">
+                </div>
 
                 <div class="form-group-custom">
                     <label for="type_of_project">Type of Project</label>
@@ -530,6 +551,27 @@
                     <label for="edit_available_budget">Available Budget</label>
                     <input type="number" step="0.01" name="available_budget" id="edit_available_budget" required>
                 </div>
+                <div class="form-group-custom">
+                    <label for="edit_theme">Theme</label>
+                    <select name="theme" id="edit_theme" required onchange="populateSubthemes('edit_theme', 'edit_subtheme')">
+                        <option value="">Select Theme</option>
+                        @foreach($themes as $t)
+                            <option value="{{ $t->name }}" data-theme-id="{{ $t->id }}">{{ $t->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="edit_subtheme">Subtheme</label>
+                    <select name="subtheme" id="edit_subtheme" required>
+                        <option value="">Select Subtheme</option>
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="edit_activity">Activity</label>
+                    <input type="text" name="activity" id="edit_activity" required placeholder="Enter activity">
+                </div>
 
                 <div class="form-group-custom">
                     <label for="edit_type_of_project">Type of Project</label>
@@ -574,6 +616,10 @@
         document.getElementById('edit_unit').value = project.unit || 'RCFI';
         document.getElementById('edit_available_budget').value = project.available_budget || '';
         document.getElementById('edit_remarks').value = project.remarks || '';
+        const currentProj = (typeof project !== 'undefined' ? project : (typeof projectData !== 'undefined' ? projectData : {}));
+        document.getElementById('edit_theme').value = currentProj.theme || '';
+        populateSubthemes('edit_theme', 'edit_subtheme', currentProj.subtheme || '');
+        document.getElementById('edit_activity').value = currentProj.activity || '';
 
         document.getElementById('editProjectModal').style.display = 'flex';
     }
@@ -603,6 +649,39 @@
             trs[i].style.display = match ? '' : 'none';
         }
     }
+
+    const themesData = {
+        @foreach($themes as $t)
+            "{{ $t->id }}": [
+                @foreach($subthemes->where('theme_id', $t->id) as $st)
+                    {!! json_encode($st->name) !!},
+                @endforeach
+            ],
+        @endforeach
+    };
+
+    function populateSubthemes(themeId, subthemeId, selectedSubtheme = '') {
+        const themeSelect = document.getElementById(themeId);
+        const subthemeSelect = document.getElementById(subthemeId);
+        if (!themeSelect || !subthemeSelect) return;
+
+        const selectedOption = themeSelect.options[themeSelect.selectedIndex];
+        const themeIdVal = selectedOption ? selectedOption.getAttribute('data-theme-id') : null;
+        subthemeSelect.innerHTML = '<option value="">Select Subtheme</option>';
+
+        if (themeIdVal && themesData[themeIdVal]) {
+            themesData[themeIdVal].forEach(sub => {
+                const option = document.createElement('option');
+                option.value = sub;
+                option.textContent = sub;
+                if (sub === selectedSubtheme) {
+                    option.selected = true;
+                }
+                subthemeSelect.appendChild(option);
+            });
+        }
+    }
+
 </script>
 
 

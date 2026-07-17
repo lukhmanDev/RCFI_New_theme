@@ -11,8 +11,11 @@ class ProjectFile extends Model
         'project_type',
         'photos',
         'photos_before',
+        'photos_starting',
         'photos_inbetween',
         'photos_after',
+        'photos_banner',
+        'photos_stone',
         'photos_inauguration',
     ];
 
