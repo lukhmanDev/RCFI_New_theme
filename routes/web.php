@@ -9,6 +9,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ContractorController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ClusterController;
 
 // Redirect root to login page
 Route::get('/', function () {
@@ -49,6 +50,12 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::put('/admin/contractors/{id}', [ContractorController::class, 'update'])->name('contractors.update');
     Route::delete('/admin/contractors/{id}', [ContractorController::class, 'destroy'])->name('contractors.destroy');
 
+    // Clusters routes
+    Route::get('/admin/clusters', [ClusterController::class, 'index'])->name('clusters.index');
+    Route::post('/admin/clusters', [ClusterController::class, 'store'])->name('clusters.store');
+    Route::put('/admin/clusters/{id}', [ClusterController::class, 'update'])->name('clusters.update');
+    Route::delete('/admin/clusters/{id}', [ClusterController::class, 'destroy'])->name('clusters.destroy');
+
     // Applications routes
     Route::get('/admin/applications/approved', [ApplicationController::class, 'showApprovedDashboard'])->name('applications.approved.index');
     Route::get('/admin/applications/approved/category/{category}', [ApplicationController::class, 'showApprovedCategory'])->name('applications.approved.category');
@@ -61,6 +68,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::delete('/admin/applications/{id}', [ApplicationController::class, 'destroy'])->name('applications.destroy');
     Route::post('/admin/applications/{category}/{id}/approve', [ApplicationController::class, 'approveApplication'])->name('applications.approve');
     Route::post('/admin/applications/{category}/{id}/reject', [ApplicationController::class, 'rejectApplication'])->name('applications.reject');
+    Route::post('/admin/applications/{id}/update-cluster', [ApplicationController::class, 'updateCluster'])->name('applications.update_cluster');
 
     // Projects routes
     Route::get('/admin/projects', [ProjectController::class, 'index'])->name('projects.index');

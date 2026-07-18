@@ -415,40 +415,54 @@ class ProjectController extends Controller
         abort(400, 'Invalid category');
     }
 
+
+
+    private function isProjectLocked($project)
+    {
+        $isSixStage = in_array($project->type_of_project, [
+            'Education Center', 'Cultural Center', 'Hospital or Clinics', 
+            'Shops and Others', 'House', 'Drinking Water - Group Level', 
+            'Drinking Water - Individual Level'
+        ]);
+
+        if ($project->status === 'Completed') {
+            return true;
+        }
+
+        if (!$isSixStage && $project->status === 'Approved') {
+            return true;
+        }
+
+        return false;
+    }
+
     private function getProjectInstance(Request $request, $id, $checkLock = false)
     {
-        $this->resolveActiveCategory($request);
-        $type = $request->query('type');
+        $slugsToModels = array_column($this->categories, 'model', 'name');
         
-        // 1. Fallback to Referer header query string
-        if (!$type) {
+        // 1. Reorder categories array if type is identified from headers, query, or session
+        $this->resolveActiveCategory($request);
+
+        $user = auth()->user();
+        $project = null;
+
+        // 2. Try first category in reordered array
+        $firstSlug = array_key_first($this->categories);
+        if ($firstSlug) {
+            $project = $this->scopeProjectsForUser($this->categories[$firstSlug]['model']::query(), $user)->find($id);
+        }
+
+        // 3. Fallback to parsing referer headers or routing clues
+        if (!$project) {
             $referer = $request->headers->get('referer');
             if ($referer) {
-                $query = parse_url($referer, PHP_URL_QUERY);
-                if ($query) {
-                    parse_str($query, $queryParams);
-                    $type = $queryParams['type'] ?? null;
-                }
-            }
-        }
-        
-        // 2. Fallback to Session
-        if (!$type) {
-            $type = session('active_project_type_' . $id);
-        }
-        
-        $project = null;
-        $user = auth()->user();
-        
-        // 3. Resolve model if type is found
-        if ($type) {
-            foreach ($this->categories as $slug => $config) {
-                if (strtolower($config['name']) === strtolower($type) || strtolower($slug) === strtolower($type)) {
-                    $model = $config['model'];
-                    $project = $this->scopeProjectsForUser($model::query(), $user)->find($id);
-                    if ($project) {
-                        session(['active_project_type_' . $id => $config['name']]);
-                        break;
+                foreach ($this->categories as $slug => $config) {
+                    if (str_contains($referer, "/category/{$slug}")) {
+                        $project = $this->scopeProjectsForUser($config['model']::query(), $user)->find($id);
+                        if ($project) {
+                            session(['active_project_type_' . $id => $config['name']]);
+                            break;
+                        }
                     }
                 }
             }
@@ -467,7 +481,7 @@ class ProjectController extends Controller
 
         if ($project && $checkLock) {
             $user = auth()->user();
-            if ($project->status === 'Completed') {
+            if ($this->isProjectLocked($project)) {
                 abort(403, 'This project is completed and locked for editing.');
             }
         }
@@ -516,9 +530,9 @@ class ProjectController extends Controller
             'House' => 'house',
             'Drinking Water - Group Level' => 'drinking_water_group',
             'Drinking Water - Individual Level' => 'drinking_water_individual',
-            'Orphan Care' => 'orphan_care',
-            'Differently Abled' => 'differently_abled',
-            'Family Aid' => 'family_aid',
+            'Orphan Care' => 'social_aid_project_detals',
+            'Differently Abled' => 'social_aid_project_detals',
+            'Family Aid' => 'social_aid_project_detals',
             'General' => 'general'
         ];
 
@@ -527,6 +541,11 @@ class ProjectController extends Controller
             $candidate = 'admin.project_detail.' . $views[$project->type_of_project];
             if (view()->exists($candidate)) {
                 $viewName = $candidate;
+            } else {
+                $candidateDirect = 'admin.' . $views[$project->type_of_project];
+                if (view()->exists($candidateDirect)) {
+                    $viewName = $candidateDirect;
+                }
             }
         }
 
@@ -812,6 +831,19 @@ class ProjectController extends Controller
         $project->stage = 6;
         $project->save();
 
+        $statusRecord = $project->projectStatus;
+        if (!$statusRecord) {
+            $statusRecord = $project->projectStatus()->create([
+                'status' => null,
+                'status_custom' => null,
+            ]);
+        }
+        $statusRecord->status = 'Approved';
+        $statusRecord->coo_approved_at = now();
+        $statusRecord->coo_approver_id = auth()->id();
+        $statusRecord->coo_remarks = $request->input('remarks');
+        $statusRecord->save();
+
         return redirect()->route('projects.show', $id)->with('success', 'Project completely approved and finalized by COO!');
     }
 
@@ -883,7 +915,7 @@ class ProjectController extends Controller
         if (!$this->isPmOrEngineer($user)) {
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to add files.');
         }
-        if ($project->status === 'Completed') {
+        if ($this->isProjectLocked($project)) {
             return redirect()->back()->with('error', 'Project is finalized and locked.');
         }
         $request->validate([
@@ -943,7 +975,7 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Please connect an application first.');
         }
 
-        if ($project->status === 'Completed') {
+        if ($this->isProjectLocked($project)) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => 'Project is finalized and locked.'], 403);
             }
@@ -1752,7 +1784,7 @@ class ProjectController extends Controller
             abort(404);
         }
 
-        if ($project->status === 'Completed') {
+        if ($this->isProjectLocked($project)) {
             return redirect()->back()->with('error', 'Project is finalized and locked.');
         }
 
@@ -1785,7 +1817,7 @@ class ProjectController extends Controller
             abort(404);
         }
 
-        if ($project->status === 'Completed') {
+        if ($this->isProjectLocked($project)) {
             return redirect()->back()->with('error', 'Project is finalized and locked.');
         }
 
@@ -1820,7 +1852,7 @@ class ProjectController extends Controller
             abort(404);
         }
 
-        if ($project->status === 'Completed') {
+        if ($this->isProjectLocked($project)) {
             return redirect()->back()->with('error', 'Project is finalized and locked.');
         }
 

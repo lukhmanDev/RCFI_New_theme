@@ -228,6 +228,60 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Cluster & Agency Details -->
+                <div style="margin-top: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
+                    <h4 style="color: var(--accent-green); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">
+                        Cluster &amp; Agency Number Details
+                    </h4>
+                    
+                    <div id="modal-cluster-container">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Assigned Cluster:</td>
+                                    <td id="modal-cluster-display-name" style="font-weight: 600; color: #ffffff;">
+                                        ${appItem.cluster ? `${appItem.cluster.name} (${appItem.cluster.code})` : '<span style="color: var(--text-muted); font-style: italic;">Not assigned</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Number:</td>
+                                    <td id="modal-agency-display-number" style="font-weight: 600; color: #ffffff;">
+                                        ${appItem.agency_number ? appItem.agency_number : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <button onclick="toggleClusterEditForm()" class="btn-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                                <i class="bx bx-edit"></i> Edit
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="modal-cluster-edit-form" style="display: none;">
+                        <form id="save-cluster-form" onsubmit="submitClusterForm(event, ${appItem.id})">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Select Cluster</label>
+                                    <select id="assign_cluster_id" name="cluster_id" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                                        <option value="">-- No Cluster --</option>
+                                        @foreach($clusters as $cl)
+                                            <option value="{{ $cl->id }}" \${appItem.cluster_id == {{ $cl->id }} ? 'selected' : ''}>{{ $cl->name }} ({{ $cl->code }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Agency Number</label>
+                                    <input type="text" id="assign_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="\${appItem.agency_number || ''}">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <button type="button" onclick="toggleClusterEditForm()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.4rem 1rem; font-size: 0.8rem; cursor: pointer;">Cancel</button>
+                                <button type="submit" class="btn-custom" style="padding: 0.4rem 1.2rem; font-size: 0.8rem; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; cursor: pointer;">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             `;
             document.getElementById('details_content').innerHTML = html;
             
@@ -251,6 +305,60 @@
                     row.style.display = 'none';
                 }
             });
+        }
+
+        function toggleClusterEditForm() {
+            const displayDiv = document.getElementById('modal-cluster-container');
+            const editDiv = document.getElementById('modal-cluster-edit-form');
+            if (displayDiv.style.display === 'none') {
+                displayDiv.style.display = 'block';
+                editDiv.style.display = 'none';
+            } else {
+                displayDiv.style.display = 'none';
+                editDiv.style.display = 'block';
+            }
+        }
+
+        async function submitClusterForm(event, appId) {
+            event.preventDefault();
+            const form = event.target;
+            const clusterId = form.querySelector('[name="cluster_id"]').value;
+            const agencyNumber = form.querySelector('[name="agency_number"]').value;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            try {
+                const response = await fetch(`/admin/applications/${appId}/update-cluster`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        cluster_id: clusterId || null,
+                        agency_number: agencyNumber || null
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    // Update display
+                    document.getElementById('modal-cluster-display-name').innerHTML = result.cluster 
+                        ? `${result.cluster.name} (${result.cluster.code})` 
+                        : '<span style="color: var(--text-muted); font-style: italic;">Not assigned</span>';
+                    document.getElementById('modal-agency-display-number').innerHTML = result.agency_number 
+                        ? result.agency_number 
+                        : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>';
+                    
+                    // Reload page to update the main list view
+                    window.location.reload();
+                } else {
+                    alert(result.error || 'Failed to update Cluster and Agency Number.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while updating.');
+            }
         }
     </script>
 

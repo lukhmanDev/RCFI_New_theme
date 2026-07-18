@@ -93,7 +93,11 @@ class ApplicationController extends Controller
         $model = $config['model'];
 
         // Retrieve only applications in this category
-        $applications = $model::orderBy('created_at', 'desc')->get();
+        if ($model === \App\Models\OrphanCareApplication::class) {
+            $applications = $model::with('cluster')->orderBy('created_at', 'desc')->get();
+        } else {
+            $applications = $model::orderBy('created_at', 'desc')->get();
+        }
 
         $projectsMap = [];
         $projectModels = [
@@ -119,7 +123,12 @@ class ApplicationController extends Controller
             $projectsMap = $projects->toArray();
         }
 
-        return view($config['view'], compact('applications', 'categoryName', 'categorySlug', 'projectsMap'));
+        $clusters = [];
+        if ($categorySlug === 'orphan-care') {
+            $clusters = \App\Models\Cluster::orderBy('name', 'asc')->get();
+        }
+
+        return view($config['view'], compact('applications', 'categoryName', 'categorySlug', 'projectsMap', 'clusters'));
     }
 
     public function store(Request $request)
@@ -515,7 +524,11 @@ class ApplicationController extends Controller
         $categorySlug = $category;
         $model = $config['model'];
 
-        $applications = $model::where('status', 'Approved')->orderBy('created_at', 'desc')->get();
+        if ($model === \App\Models\OrphanCareApplication::class) {
+            $applications = $model::with('cluster')->where('status', 'Approved')->orderBy('created_at', 'desc')->get();
+        } else {
+            $applications = $model::where('status', 'Approved')->orderBy('created_at', 'desc')->get();
+        }
         
         // Find assigned projects
         $projectsMap = [];
@@ -546,7 +559,12 @@ class ApplicationController extends Controller
 
         $viewName = str_replace('applications.', 'approved_applications.', $config['view']);
 
-        return view($viewName, compact('applications', 'categoryName', 'categorySlug', 'projectsMap'));
+        $clusters = [];
+        if ($categorySlug === 'orphan-care') {
+            $clusters = \App\Models\Cluster::orderBy('name', 'asc')->get();
+        }
+
+        return view($viewName, compact('applications', 'categoryName', 'categorySlug', 'projectsMap', 'clusters'));
     }
 
     private function scopeProjectsForUser($query, $user)
@@ -582,5 +600,41 @@ class ApplicationController extends Controller
         }
 
         return $query;
+    }
+
+    public function updateCluster(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!in_array($user->role, [1, 2, 4]) && !(in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']))) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'Unauthorized action.'], 403);
+            }
+            return redirect()->back()->with('error', 'You are not authorized to edit applications.');
+        }
+
+        $request->validate([
+            'cluster_id' => ['nullable', 'exists:clusters,id'],
+            'agency_number' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $app = \App\Models\OrphanCareApplication::findOrFail($id);
+        $app->cluster_id = $request->input('cluster_id');
+        $app->agency_number = $request->input('agency_number');
+        $app->save();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cluster and Agency Number updated successfully.',
+                'cluster' => $app->cluster ? [
+                    'id' => $app->cluster->id,
+                    'name' => $app->cluster->name,
+                    'code' => $app->cluster->code
+                ] : null,
+                'agency_number' => $app->agency_number
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Cluster and Agency Number updated successfully.');
     }
 }

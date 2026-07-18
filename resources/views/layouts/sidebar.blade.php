@@ -54,6 +54,12 @@
                 <span>Contractors</span>
             </a>
         </li>
+        <li>
+            <a href="{{ route('clusters.index') }}" class="{{ request()->routeIs('clusters.*') ? 'active' : '' }}">
+                <i class="bx bxs-group"></i>
+                <span>Clusters</span>
+            </a>
+        </li>
 
         {{-- NOTE: adjust route names below ('reports.index' / 'settings.index')
              to whatever your actual named routes are for these pages. --}}
