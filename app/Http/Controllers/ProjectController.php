@@ -215,6 +215,7 @@ class ProjectController extends Controller
         }
 
         return view('admin.projects_dashboard', [
+            'categories' => $this->categories,
             'groupedCategories' => $this->groupedCategories,
             'counts' => $counts
         ]);
@@ -508,10 +509,14 @@ class ProjectController extends Controller
                 ->pluck('application_id')
                 ->toArray();
 
-            $allApplications = $appModel::where('status', 'Approved')
-                ->whereNotIn('id', $assignedAppIds)
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $appQuery = $appModel::where('status', 'Approved')
+                ->whereNotIn('id', $assignedAppIds);
+
+            if ($project->type_of_project === 'Orphan Care') {
+                $appQuery->where('sponsor_status', 'Sponsored');
+            }
+
+            $allApplications = $appQuery->orderBy('created_at', 'desc')->get();
             if ($project->application_id) {
                 $application = $appModel::find($project->application_id);
             }
@@ -619,6 +624,9 @@ class ProjectController extends Controller
                 }
                 if ($checkApp->status !== 'Approved') {
                     return redirect()->back()->with('error', 'Only approved applications can be assigned.');
+                }
+                if ($project->type_of_project === 'Orphan Care' && ($checkApp->sponsor_status ?? '') !== 'Sponsored') {
+                    return redirect()->back()->with('error', 'Only sponsored Orphan Care applications can be assigned.');
                 }
             }
         }
@@ -1860,5 +1868,122 @@ class ProjectController extends Controller
         $inspection->delete();
 
         return redirect()->route('projects.show', $id)->with('success', 'Inspection report deleted successfully!');
+    }
+
+    public function orphanCareUploadPhoto(Request $request, $id)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        if (!$project->application_id) {
+            return redirect()->back()->with('error', 'No application is linked to this project.');
+        }
+        $application = \App\Models\OrphanCareApplication::findOrFail($project->application_id);
+
+        $request->validate([
+            'student_photo' => 'required|image|max:5120',
+        ]);
+
+        if ($request->hasFile('student_photo')) {
+            if ($application->student_photo) {
+                $oldPath = public_path($application->student_photo);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            $uploadedFile = $request->file('student_photo');
+            $filename = 'student_' . time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
+            $uploadedFile->move(public_path('uploads/students/' . $application->id), $filename);
+
+            $application->student_photo = 'uploads/students/' . $application->id . '/' . $filename;
+            $application->save();
+
+            return redirect()->back()->with('success', 'Student photo uploaded successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Student photo upload failed.');
+    }
+
+    public function orphanCareDeletePhoto(Request $request, $id)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        if (!$project->application_id) {
+            return redirect()->back()->with('error', 'No application is linked to this project.');
+        }
+        $application = \App\Models\OrphanCareApplication::findOrFail($project->application_id);
+
+        if ($application->student_photo) {
+            $path = public_path($application->student_photo);
+            if (file_exists($path)) {
+                @unlink($path);
+            }
+            $application->student_photo = null;
+            $application->save();
+
+            return redirect()->back()->with('success', 'Student photo deleted successfully!');
+        }
+
+        return redirect()->back()->with('error', 'No photo found to delete.');
+    }
+
+    public function orphanCareUpdateAddress(Request $request, $id)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        if (!$project->application_id) {
+            return redirect()->back()->with('error', 'No application is linked to this project.');
+        }
+        $application = \App\Models\OrphanCareApplication::findOrFail($project->application_id);
+
+        $data = $request->validate([
+            'house_name' => 'nullable|string|max:255',
+            'place' => 'nullable|string|max:255',
+            'post_office' => 'nullable|string|max:255',
+            'village' => 'nullable|string|max:255',
+            'panchayat' => 'nullable|string|max:255',
+            'district' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:255',
+        ]);
+
+        $application->update($data);
+
+        return redirect()->back()->with('success', 'Student address updated successfully!');
+    }
+
+    public function orphanCareAddFund(Request $request, $id)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+
+        $request->validate([
+            'date' => 'required|date',
+            'amount' => 'required|numeric|min:0.01',
+            'agency' => 'required|string|max:255',
+        ]);
+
+        $financials = $project->financial_data ?? [];
+        $financials[] = [
+            'date' => $request->input('date'),
+            'amount' => (float)$request->input('amount'),
+            'agency' => $request->input('agency'),
+        ];
+
+        $project->financial_data = $financials;
+        $project->save();
+
+        return redirect()->back()->with('success', 'Fund transfer record added successfully!');
+    }
+
+    public function orphanCareDeleteFund(Request $request, $id, $index)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+
+        $financials = $project->financial_data ?? [];
+        if (isset($financials[$index])) {
+            array_splice($financials, $index, 1);
+            $project->financial_data = $financials;
+            $project->save();
+
+            return redirect()->back()->with('success', 'Fund transfer record deleted successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Record not found.');
     }
 }

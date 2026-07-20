@@ -98,7 +98,6 @@
                         <th>Village</th>
                         <th>Panchayath</th>
                         <th>Requirement</th>
-                        <th>Project Type</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
@@ -148,9 +147,6 @@
 
                             <!-- Requirement -->
                             <td>{{ $meta['requirement'] ?? 'N/A' }}</td>
-
-                            <!-- Project Type -->
-                            <td style="text-transform: capitalize;">{{ $meta['project_type'] ?? 'N/A' }}</td>
 
                             <!-- Status -->
                             <td style="text-align: center;">
@@ -404,14 +400,14 @@
                         </div>
                         <div>
                             <label class="form-label" for="education_center_nearby">Education Center Nearby *</label>
-                            <input type="text" class="form-control-dark" id="education_center_nearby" name="meta[education_center_nearby]" value="{{ old('meta.education_center_nearby') }}" required>
+                            <input type="text" class="form-control-dark" id="education_center_nearby" name="meta[education_center_nearby]" value="{{ old('meta.education_center_nearby') ?? old('meta.cultural_center_nearby') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="distance_cultural_centre">Distance to Cultural Center (KM) *</label>
-                            <input type="number" step="0.1" class="form-control-dark" id="distance_cultural_centre" name="meta[distance_cultural_centre]" value="{{ old('meta.distance_cultural_centre') }}" required>
+                            <label class="form-label" for="distance_education_center">Distance to Education Center (KM) *</label>
+                            <input type="number" step="0.1" class="form-control-dark" id="distance_education_center" name="meta[distance_education_center]" value="{{ old('meta.distance_education_center') ?? old('meta.distance_cultural_centre') }}" required>
                         </div>
                         <div>
                             <label class="form-label" for="syllabus">Syllabus *</label>

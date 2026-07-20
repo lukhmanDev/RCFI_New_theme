@@ -12,7 +12,11 @@ class OrphanCareProject extends Model
     protected $table = 'orphan_care_projects';
     protected $guarded = [];
     protected $casts = [
-        'stage' => 'integer','community_contributions' => 'array', 'completion_details' => 'array'];
+        'stage' => 'integer',
+        'community_contributions' => 'array',
+        'completion_details' => 'array',
+        'financial_data' => 'array'
+    ];
 
     protected static function boot()
     {

@@ -163,7 +163,10 @@
 
     <!-- Stage Navigation Tabs (Interactive Navigation) -->
     <div class="stages-tabs">
-        @for($i = 1; $i <= 6; $i++)
+        @php
+            $maxStages = $project->type_of_project === 'Orphan Care' ? 3 : 6;
+        @endphp
+        @for($i = 1; $i <= $maxStages; $i++)
             @php
                 $isActive = $project->stage == $i;
                 $isCompleted = $project->stage > $i;
@@ -181,7 +184,11 @@
                         $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
                     }
                 } else {
-                    $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
+                    if ($project->type_of_project === 'Orphan Care') {
+                        $isLocked = false;
+                    } else {
+                        $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
+                    }
                 }
                 if ($isLocked) {
                     $class .= ' locked';
@@ -256,22 +263,155 @@
                     @endif
                 @endif
 
-                <div class="details-grid">
-                    <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
-                    <div class="details-label">Project Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->project_name ?? 'N/A' }}</div>
-                    <div class="details-label">Sponsor</div><div class="details-colon">:</div><div class="details-value">{{ $project->sponsor ?? 'N/A' }}</div>
-                    <div class="details-label">Project Spec</div><div class="details-colon">:</div><div class="details-value" style="white-space: pre-wrap;">{{ $project->project_spec ?? 'N/A' }}</div>
-                    <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value">{{ $project->agency_project_no ?? 'N/A' }}</div>
-                    <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
-                    <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
-                    <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
-                    <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
-                    <div class="details-label">Theme</div><div class="details-colon">:</div><div class="details-value">{{ $project->theme ?? 'N/A' }}</div>
-                    <div class="details-label">Subtheme</div><div class="details-colon">:</div><div class="details-value">{{ $project->subtheme ?? 'N/A' }}</div>
-                    <div class="details-label">Activity</div><div class="details-colon">:</div><div class="details-value">{{ $project->activity ?? 'N/A' }}</div>
-                    <div class="details-label">Remarks</div><div class="details-colon">:</div><div class="details-value" style="font-weight: normal; color: var(--text-muted);">{{ $project->remarks ?? 'N/A' }}</div>
-                    <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ in_array($project->status, ['Approved', 'Completed']) ? $project->status : ($project->project_phase === 'Other' ? ($project->project_phase_custom ?: 'Other') : $project->project_phase) }}</div>
-                </div>
+                @if($project->type_of_project === 'Orphan Care' && $application)
+                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 2rem; margin-bottom: 2.5rem; align-items: start;">
+                        <!-- Left Side: Student Photo Card -->
+                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;">
+                            <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin-top: 0; margin-bottom: 1.25rem; letter-spacing: 0.05em;">Student Photo</h4>
+                            
+                            <div style="width: 180px; height: 180px; border-radius: 12px; border: 2px dashed var(--panel-border); margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: rgba(255,255,255,0.02);">
+                                @if($application->student_photo)
+                                    <img src="{{ asset($application->student_photo) }}" alt="Student Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                @else
+                                    <div style="text-align: center; color: var(--text-muted); padding: 1rem;">
+                                        <i class="bx bx-image-add" style="font-size: 2.5rem; margin-bottom: 0.5rem; display: block; color: var(--accent-cyan);"></i>
+                                        <span style="font-size: 0.75rem;">No Photo Uploaded</span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <form action="{{ route('projects.orphan_care.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-top: 1rem;">
+                                @csrf
+                                <button type="button" class="btn-custom" onclick="document.getElementById('student_photo_input').click()" style="width: 100%; margin-bottom: 0.5rem; justify-content: center; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem;">
+                                    <i class="bx bx-upload"></i> {{ $application->student_photo ? 'Change Photo' : 'Upload Photo' }}
+                                </button>
+                                <input type="file" name="student_photo" id="student_photo_input" accept="image/*" style="display: none;" onchange="this.form.submit()">
+                            </form>
+                            @if($application->student_photo)
+                                <form action="{{ route('projects.orphan_care.delete_photo', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this photo?')" style="margin-top: 0.5rem;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-custom" style="width: 100%; background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); justify-content: center; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem;">
+                                        <i class="bx bx-trash"></i> Delete Photo
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+
+                        <!-- Right Side: Address details and editing -->
+                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                                <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Student Address</h4>
+                                <button type="button" id="edit-address-btn" onclick="toggleAddressEdit()" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; border-radius: 6px;">
+                                    <i class="bx bx-edit"></i> Edit Address
+                                </button>
+                            </div>
+
+                            <!-- Display Address View -->
+                            <div id="address-display-view">
+                                <div class="details-grid">
+                                    <div class="details-label">House Name</div><div class="details-colon">:</div><div class="details-value" id="display-house_name">{{ $application->house_name ?? 'N/A' }}</div>
+                                    <div class="details-label">Place</div><div class="details-colon">:</div><div class="details-value" id="display-place">{{ $application->place ?? 'N/A' }}</div>
+                                    <div class="details-label">Post Office</div><div class="details-colon">:</div><div class="details-value" id="display-post_office">{{ $application->post_office ?? 'N/A' }}</div>
+                                    <div class="details-label">Village</div><div class="details-colon">:</div><div class="details-value" id="display-village">{{ $application->village ?? 'N/A' }}</div>
+                                    <div class="details-label">Panchayat</div><div class="details-colon">:</div><div class="details-value" id="display-panchayat">{{ $application->panchayat ?? 'N/A' }}</div>
+                                    <div class="details-label">District</div><div class="details-colon">:</div><div class="details-value" id="display-district">{{ $application->district ?? 'N/A' }}</div>
+                                    <div class="details-label">State</div><div class="details-colon">:</div><div class="details-value" id="display-state">{{ $application->state ?? 'N/A' }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Edit Address Form -->
+                            <form id="address-edit-form" action="{{ route('projects.orphan_care.update_address', $project->id) }}" method="POST" style="display: none;">
+                                @csrf
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">House Name</label>
+                                        <input type="text" name="house_name" value="{{ $application->house_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Place</label>
+                                        <input type="text" name="place" value="{{ $application->place }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Post Office</label>
+                                        <input type="text" name="post_office" value="{{ $application->post_office }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Village</label>
+                                        <input type="text" name="village" value="{{ $application->village }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Panchayat</label>
+                                        <input type="text" name="panchayat" value="{{ $application->panchayat }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">District</label>
+                                        <input type="text" name="district" value="{{ $application->district }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="grid-column: span 2; margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">State</label>
+                                        <input type="text" name="state" value="{{ $application->state }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                                    <button type="button" onclick="toggleAddressEdit()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">Cancel</button>
+                                    <button type="submit" class="btn-custom" style="border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <script>
+                        function toggleAddressEdit() {
+                            const display = document.getElementById('address-display-view');
+                            const form = document.getElementById('address-edit-form');
+                            const btn = document.getElementById('edit-address-btn');
+                            if (form.style.display === 'none') {
+                                form.style.display = 'block';
+                                display.style.display = 'none';
+                                btn.style.display = 'none';
+                            } else {
+                                form.style.display = 'none';
+                                display.style.display = 'block';
+                                btn.style.display = 'inline-flex';
+                            }
+                        }
+                    </script>
+                @endif
+
+                @if($project->type_of_project === 'Orphan Care' && $application)
+                    <div class="details-grid">
+                        <div class="details-label">Student ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ 'APLRCFI' . (!empty($application->created_at) ? date('y', strtotime($application->created_at)) : '24') . 'OC' . str_pad($application->id, 5, '0', STR_PAD_LEFT) }}</div>
+                        <div class="details-label">Student Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->applicant_name ?? 'N/A' }}</div>
+                        <div class="details-label">Gender</div><div class="details-colon">:</div><div class="details-value">{{ $application->gender ?? 'N/A' }}</div>
+                        <div class="details-label">Date of Birth</div><div class="details-colon">:</div><div class="details-value">{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} (Age: {{ $application->age ?? 'N/A' }})</div>
+                        <div class="details-label">Father's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->father_name ?? 'N/A' }}</div>
+                        <div class="details-label">Mother's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->mother_name ?? 'N/A' }}</div>
+                        <div class="details-label">Guardian</div><div class="details-colon">:</div><div class="details-value">{{ $application->guardian_name ?? 'N/A' }} (Relation: {{ $application->guardian_relation ?? 'N/A' }})</div>
+                        <div class="details-label">School Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->school_name ?? 'N/A' }} (Class: {{ $application->school_class ?? 'N/A' }})</div>
+                        <div class="details-label">Madrassa Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->madrassa_name ?? 'N/A' }} (Class: {{ $application->madrassa_class ?? 'N/A' }})</div>
+                        <div class="details-label">Sponsor Status</div><div class="details-colon">:</div><div class="details-value" style="font-weight: 600; color: var(--accent-cyan);">{{ $application->sponsor_status ?? 'N/A' }}</div>
+                        <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
+                        <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
+                    </div>
+                @else
+                    <div class="details-grid">
+                        <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
+                        <div class="details-label">Project Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->project_name ?? 'N/A' }}</div>
+                        <div class="details-label">Sponsor</div><div class="details-colon">:</div><div class="details-value">{{ $project->sponsor ?? 'N/A' }}</div>
+                        <div class="details-label">Project Spec</div><div class="details-colon">:</div><div class="details-value" style="white-space: pre-wrap;">{{ $project->project_spec ?? 'N/A' }}</div>
+                        <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value">{{ $project->agency_project_no ?? 'N/A' }}</div>
+                        <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
+                        <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
+                        <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
+                        <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
+                        <div class="details-label">Theme</div><div class="details-colon">:</div><div class="details-value">{{ $project->theme ?? 'N/A' }}</div>
+                        <div class="details-label">Subtheme</div><div class="details-colon">:</div><div class="details-value">{{ $project->subtheme ?? 'N/A' }}</div>
+                        <div class="details-label">Activity</div><div class="details-colon">:</div><div class="details-value">{{ $project->activity ?? 'N/A' }}</div>
+                        <div class="details-label">Remarks</div><div class="details-colon">:</div><div class="details-value" style="font-weight: normal; color: var(--text-muted);">{{ $project->remarks ?? 'N/A' }}</div>
+                        <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ in_array($project->status, ['Approved', 'Completed']) ? $project->status : ($project->project_phase === 'Other' ? ($project->project_phase_custom ?: 'Other') : $project->project_phase) }}</div>
+                    </div>
+                @endif
 
                 {{-- ===== PROJECT PHASE / STATUS SELECTOR ===== --}}
                 @php
@@ -299,6 +439,7 @@
                     
 
                 @endphp
+                @if($project->type_of_project !== 'Orphan Care')
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
                         
@@ -437,15 +578,117 @@
                     @endif
                 </div>
                 @endif
+                @endif
             </div>
         </div>
 
-        <!-- ================= STAGE 2 PANEL (APPLICANT DETAIL) ================= -->
+        <!-- ================= STAGE 2 PANEL (APPLICANT DETAIL / FINANCIAL DATA) ================= -->
         <div class="stage-content-panel" id="stage-content-2">
             <div class="detail-header-panel">
-                <h2>APPLICANT DETAIL</h2>
+                <h2>{{ $project->type_of_project === 'Orphan Care' ? 'FINANCIAL DATA' : 'APPLICANT DETAIL' }}</h2>
             </div>
             <div style="padding: 1.5rem;">
+                @if($project->type_of_project === 'Orphan Care')
+                    <!-- Orphan Care Financial Data Table -->
+                    <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Fund Transfers</h4>
+                            <button type="button" class="btn-custom" onclick="openAddFundModal()" style="border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">
+                                <i class="bx bx-plus"></i> Add New Row
+                            </button>
+                        </div>
+
+                        <div class="table-responsive-custom" style="overflow-x: auto;">
+                            <table class="table-dark-custom" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid var(--panel-border); color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700;">Serial No</th>
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700;">Date of Fund Transferred</th>
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700; text-align: right;">Rs (Amount)</th>
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700;">Agency</th>
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700; text-align: center; width: 100px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $financials = $project->financial_data ?? [];
+                                    @endphp
+                                    @forelse($financials as $index => $row)
+                                        <tr style="border-bottom: 1px solid var(--panel-border); font-size: 0.9rem; transition: background 0.15s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
+                                            <td style="padding: 0.75rem 1rem; color: var(--text-muted);">{{ $index + 1 }}</td>
+                                            <td style="padding: 0.75rem 1rem;">{{ !empty($row['date']) ? date('d-M-Y', strtotime($row['date'])) : 'N/A' }}</td>
+                                            <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹{{ number_format($row['amount'], 2) }}</td>
+                                            <td style="padding: 0.75rem 1rem;">{{ $row['agency'] ?? 'N/A' }}</td>
+                                            <td style="padding: 0.75rem 1rem; text-align: center;">
+                                                <form action="{{ route('projects.orphan_care.delete_fund', [$project->id, $index]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this row?')" style="display: inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem;" title="Delete">
+                                                        <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted); font-style: italic;">
+                                                No fund transfer records found. Click "Add New Row" to add one.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                                @if(count($financials) > 0)
+                                    <tfoot>
+                                        <tr style="border-top: 2px solid var(--panel-border); font-weight: 700; font-size: 0.95rem;">
+                                            <td colspan="2" style="padding: 0.75rem 1rem; color: var(--text-main); text-align: left;">Total</td>
+                                            <td style="padding: 0.75rem 1rem; text-align: right; color: var(--accent-cyan);">₹{{ number_format(array_sum(array_column($financials, 'amount')), 2) }}</td>
+                                            <td colspan="2" style="padding: 0.75rem 1rem;"></td>
+                                        </tr>
+                                    </tfoot>
+                                @endif
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Add Fund Row Modal -->
+                    <div id="addFundModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
+                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.75rem; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); box-sizing: border-box; position: relative;">
+                            <h3 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
+                                Add Fund Transfer Row
+                            </h3>
+                            <form action="{{ route('projects.orphan_care.add_fund', $project->id) }}" method="POST">
+                                @csrf
+                                <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.75rem;">
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Date of Fund Transferred</label>
+                                        <input type="date" name="date" required class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Rs (Amount)</label>
+                                        <input type="number" name="amount" step="0.01" required min="0.01" placeholder="Enter amount..." class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Agency</label>
+                                        <input type="text" name="agency" required placeholder="Enter agency..." class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                                    <button type="button" onclick="closeAddFundModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">Cancel</button>
+                                    <button type="submit" class="btn-custom" style="border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">Add Row</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <script>
+                        function openAddFundModal() {
+                            document.getElementById('addFundModal').style.display = 'flex';
+                        }
+                        function closeAddFundModal() {
+                            document.getElementById('addFundModal').style.display = 'none';
+                        }
+                    </script>
+                @else
                 @php
                     $appYear = ($application && !empty($application->created_at)) ? date('y', strtotime($application->created_at)) : '24';
                     $prefixes = [
@@ -722,6 +965,7 @@
                             <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0 auto;">Please connect this project to an application using the form below to view application details.</p>
                         </div>
                     @endif
+                @endif
                 </div>
             </div>
         </div>
@@ -2333,7 +2577,9 @@
         function switchStage(stageNum) {
             let isLocked = false;
             const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
-            if (isSixStage) {
+            if (projectType === 'Orphan Care') {
+                isLocked = false;
+            } else if (isSixStage) {
                 if (stageNum <= 2) {
                     isLocked = false;
                 } else if (stageNum === 3 || stageNum === 4) {
@@ -2350,8 +2596,8 @@
 
             if (isLocked) {
                 const msg = isSixStage 
-                    ? "Access Locked: This stage is not yet unlocked." 
-                    : "Access Locked: This stage is only accessible after COO approval.";
+                ? "Access Locked: This stage is not yet unlocked." 
+                : "Access Locked: This stage is only accessible after COO approval.";
                 if (typeof showToast === 'function') {
                     showToast(msg, "danger");
                 } else {
@@ -2391,7 +2637,9 @@
                 const stageNum = Number(savedStage);
                 let isLocked = false;
                 const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
-                if (isSixStage) {
+                if (projectType === 'Orphan Care') {
+                    isLocked = false;
+                } else if (isSixStage) {
                     if (stageNum <= 2) {
                         isLocked = false;
                     } else if (stageNum === 3 || stageNum === 4) {

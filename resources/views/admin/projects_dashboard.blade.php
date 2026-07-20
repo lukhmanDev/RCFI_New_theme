@@ -86,28 +86,30 @@
         <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">Select a category card to manage registered projects for each application.</p>
     </div>
 
-    <!-- Groups loop matching the category setup -->
-    @foreach($groupedCategories as $groupName => $cats)
-        <div class="group-container">
-            <h3 class="group-header">{{ $groupName }}</h3>
-            <div class="projects-grid">
-                @foreach($cats as $slug => $config)
-                    @php
-                        $count = $counts[$config['name']] ?? 0;
-                    @endphp
-                    <a href="{{ route('projects.category', $slug) }}" class="project-card">
-                        <div class="project-card-top">
-                            <div class="project-card-info">
-                                <h5>{{ $config['name'] }}</h5>
-                                <h4>{{ $count }}</h4>
-                            </div>
+    @foreach($groupedCategories as $groupTitle => $cats)
+        <!-- Group Section Divider Header -->
+        <div style="margin-top: 2.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+            <span style="color: #4f46e5; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;">{{ $groupTitle }}</span>
+            <div style="flex: 1; height: 1px; background-color: #e2e8f0;"></div>
+        </div>
+
+        <div class="projects-grid">
+            @foreach($cats as $slug => $config)
+                @php
+                    $count = $counts[$config['name']] ?? 0;
+                @endphp
+                <a href="{{ route('projects.category', $slug) }}" class="project-card">
+                    <div class="project-card-top">
+                        <div class="project-card-info">
+                            <h5>{{ $config['name'] }}</h5>
+                            <h4>{{ $count }}</h4>
                         </div>
-                        <div class="project-card-bottom">
-                            <span>View Projects</span>
-                        </div>
-                    </a>
-                @endforeach
-            </div>
+                    </div>
+                    <div class="project-card-bottom">
+                        <span>View Projects</span>
+                    </div>
+                </a>
+            @endforeach
         </div>
     @endforeach
 

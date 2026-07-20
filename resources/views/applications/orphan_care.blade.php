@@ -181,12 +181,9 @@
                                 @if($appItem->status !== 'Approved' && Auth::user()->role == 2)
                                     @if($appItem->status === 'Pending')
                                         <!-- Approve -->
-                                        <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
-                                            @csrf
-                                            <button type="submit" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
-                                                <i class="bx bx-check"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
+                                            <i class="bx bx-check"></i>
+                                        </button>
 
                                         <!-- Reject -->
                                         <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
@@ -476,6 +473,26 @@
                     <input type="hidden" name="status" value="Pending">
                 </div>
 
+                <!-- Form Section 5: Cluster & Agency Details -->
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">5. Cluster & Agency Details (Optional)</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="cluster_id">Cluster</label>
+                            <select class="form-select-dark" id="cluster_id" name="cluster_id" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                                <option value="">-- Select Cluster --</option>
+                                @foreach($clusters as $cl)
+                                    <option value="{{ $cl->id }}" {{ old('cluster_id') == $cl->id ? 'selected' : '' }}>{{ $cl->name }} ({{ $cl->code }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="agency_number">Agency Number</label>
+                            <input type="text" class="form-control-dark" id="agency_number" name="agency_number" value="{{ old('agency_number') }}">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Submit Button -->
                 <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Submit Application
@@ -719,10 +736,64 @@
                     </div>
                 </div>
 
+                <!-- Form Section 5: Cluster & Agency Details -->
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">5. Cluster & Agency Details (Optional)</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_cluster_id">Cluster</label>
+                            <select class="form-select-dark" id="edit_cluster_id" name="cluster_id" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                                <option value="">-- Select Cluster --</option>
+                                @foreach($clusters as $cl)
+                                    <option value="{{ $cl->id }}">{{ $cl->name }} ({{ $cl->code }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_agency_number">Agency Number</label>
+                            <input type="text" class="form-control-dark" id="edit_agency_number" name="agency_number">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Submit Button -->
                 <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Save Changes
                 </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Approve Application Modal Dialog -->
+    <div id="approveAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1200; overflow-y: auto;" onclick="closeApproveModal()">
+        <div class="panel" style="width: 100%; max-width: 500px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; overflow-y: auto;" onclick="event.stopPropagation()">
+            
+            <button onclick="closeApproveModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
+            
+            <div class="panel-header" style="margin-bottom: 1.5rem;">
+                <h2 class="panel-title" style="font-size: 1.25rem;"><i class="bx bx-check-circle" style="vertical-align: middle; margin-right: 0.5rem; color: var(--accent-green);"></i> Approve Orphan Care Application</h2>
+            </div>
+
+            <form id="approveAppForm" action="" method="POST">
+                @csrf
+                <div style="margin-bottom: 1.25rem;">
+                    <label class="form-label" for="approve_cluster_id">Select Cluster *</label>
+                    <select id="approve_cluster_id" name="cluster_id" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" required>
+                        <option value="">-- Choose Cluster --</option>
+                        @foreach($clusters as $cl)
+                            <option value="{{ $cl->id }}">{{ $cl->name }} ({{ $cl->code }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="form-label" for="approve_agency_number">Agency Number *</label>
+                    <input type="text" id="approve_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" required>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeApproveModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.6rem 1.5rem;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; padding: 0.6rem 1.5rem; font-weight: 600;">Approve Application</button>
+                </div>
             </form>
         </div>
     </div>
@@ -802,6 +873,8 @@
             if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = appItem.pin_code || ''; }
             document.getElementById('edit_mobile_1').value = meta.mobile_1 || '';
             document.getElementById('edit_mobile_2').value = meta.mobile_2 || '';
+            document.getElementById('edit_cluster_id').value = appItem.cluster_id || '';
+            document.getElementById('edit_agency_number').value = appItem.agency_number || '';
 
             document.getElementById('editAppModal').style.display = 'flex';
         }
@@ -824,12 +897,9 @@
 
                 if (appItem.status === 'Pending') {
                     statusHtml = `
-                        <form action="${approveUrl}" method="POST" style="display: inline-block;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-check"></i> Approve
-                            </button>
-                        </form>
+                        <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
+                            <i class="bx bx-check"></i> Approve
+                        </button>
                         <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
@@ -838,6 +908,7 @@
                         </form>
                     `;
                 } else if (appItem.status === 'Approved') {
+                    const sponsorUrl = `/admin/applications/orphan-care/${appItem.id}/toggle-sponsor`;
                     statusHtml = `
                         <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
                             <input type="hidden" name="_token" value="${csrfToken}">
@@ -846,14 +917,27 @@
                             </button>
                         </form>
                     `;
+                    @if(in_array(Auth::user()->role, [1, 2, 4]))
+                        statusHtml += `
+                            <form action="${sponsorUrl}" method="POST" style="display: inline-block;">
+                                <input type="hidden" name="_token" value="${csrfToken}">
+                                ${appItem.sponsor_status === 'Sponsored' ? `
+                                    <button type="submit" class="btn-custom" style="background: transparent; color: #f59e0b; border: 1px solid #f59e0b; padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
+                                        <i class="bx bx-x-circle"></i> Un-sponsor
+                                    </button>
+                                ` : `
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; border: none; cursor: pointer; color: #ffffff;">
+                                        <i class="bx bx-check-circle"></i> Sponsor
+                                    </button>
+                                `}
+                            </form>
+                        `;
+                    @endif
                 } else if (appItem.status === 'Rejected') {
                     statusHtml = `
-                        <form action="${approveUrl}" method="POST" style="display: inline-block;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-check"></i> Approve Application
-                            </button>
-                        </form>
+                        <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
+                            <i class="bx bx-check"></i> Approve Application
+                        </button>
                     `;
                 }
                 statusActionsContainer.innerHTML = statusHtml;
@@ -934,6 +1018,14 @@
                                         ${appItem.agency_number ? appItem.agency_number : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
                                     </td>
                                 </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Sponsor Status:</td>
+                                    <td style="font-weight: 600; color: #ffffff;">
+                                        ${appItem.sponsor_status === 'Sponsored'
+                                            ? '<span style="background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Sponsored</span>'
+                                            : '<span style="background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Not Sponsored</span>'}
+                                    </td>
+                                </tr>
                             </table>
                             
                             <button onclick="toggleClusterEditForm()" class="btn-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
@@ -946,17 +1038,17 @@
                         <form id="save-cluster-form" onsubmit="submitClusterForm(event, ${appItem.id})">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                                 <div>
-                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Select Cluster</label>
-                                    <select id="assign_cluster_id" name="cluster_id" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
-                                        <option value="">-- No Cluster --</option>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Select Cluster *</label>
+                                    <select id="assign_cluster_id" name="cluster_id" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" required>
+                                        <option value="">-- Choose Cluster --</option>
                                         @foreach($clusters as $cl)
-                                            <option value="{{ $cl->id }}" \${appItem.cluster_id == {{ $cl->id }} ? 'selected' : ''}>{{ $cl->name }} ({{ $cl->code }})</option>
+                                            <option value="{{ $cl->id }}" ${appItem.cluster_id == {{ $cl->id }} ? 'selected' : ''}>{{ $cl->name }} ({{ $cl->code }})</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div>
-                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Agency Number</label>
-                                    <input type="text" id="assign_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="\${appItem.agency_number || ''}">
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Agency Number *</label>
+                                    <input type="text" id="assign_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" required value="${appItem.agency_number || ''}">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
@@ -1082,7 +1174,20 @@
                 openModal();
             });
         @endif
-    
+        function openApproveModal(appId, clusterId = '', agencyNumber = '') {
+            const form = document.getElementById('approveAppForm');
+            form.action = `/admin/applications/orphan-care/${appId}/approve`;
+            
+            document.getElementById('approve_cluster_id').value = clusterId || '';
+            document.getElementById('approve_agency_number').value = agencyNumber || '';
+            
+            document.getElementById('approveAppModal').style.display = 'flex';
+        }
+
+        function closeApproveModal() {
+            document.getElementById('approveAppModal').style.display = 'none';
+        }
+
         function toggleClusterEditForm() {
             const displayDiv = document.getElementById('modal-cluster-container');
             const editDiv = document.getElementById('modal-cluster-edit-form');

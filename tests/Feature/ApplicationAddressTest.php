@@ -52,6 +52,10 @@ class ApplicationAddressTest extends TestCase
         
         $this->assertDatabaseHas('house_applications', [
             'applicant_name' => 'John Doe House Test',
+        ]);
+
+        $this->assertDatabaseHas('applicant_addresses', [
+            'addressable_type' => HouseApplication::class,
             'house_name' => 'Happy Villa',
             'place' => 'Downtown',
             'post_office' => 'PO City',
@@ -99,6 +103,10 @@ class ApplicationAddressTest extends TestCase
 
         $this->assertDatabaseHas('education_center_applications', [
             'applicant_name' => 'Group Edu Test',
+        ]);
+
+        $this->assertDatabaseHas('applicant_addresses', [
+            'addressable_type' => EducationCenterApplication::class,
             'place' => 'Uptown',
             'post_office' => 'PO North',
             'village' => 'Blue Village',

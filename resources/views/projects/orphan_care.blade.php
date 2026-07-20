@@ -276,11 +276,6 @@
         <a href="{{ route('projects.export', 'orphan-care') }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
             <i class="bx bx-download"></i> Download Excel
         </a>
-        @if($canCreateProject)
-        <button onclick="openModal()" class="btn-custom">
-            <i class="bx bx-plus-circle"></i> Add Project
-        </button>
-        @endif
     </div>
 
     <div class="search-container">

@@ -36,14 +36,13 @@
             <table class="table-custom">
                 <thead>
                     <tr>
-                        <th colspan="4" style="text-align: center; border-right: 2px solid #2a3547; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.05em; background-color: rgba(0,0,0,0.15);">APPLICATION DETAILS</th>
+                        <th colspan="3" style="text-align: center; border-right: 2px solid #2a3547; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.05em; background-color: rgba(0,0,0,0.15);">APPLICATION DETAILS</th>
                         <th colspan="4" style="text-align: center; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.05em; background-color: rgba(0,0,0,0.15);">PROJECT DETAILS</th>
                     </tr>
                     <tr>
                         <th>Application ID</th>
                         <th>Name of Applicant</th>
-                        <th>Panchayath</th>
-                        <th style="border-right: 2px solid #2a3547;">Project Type</th>
+                        <th style="border-right: 2px solid #2a3547;">Panchayath</th>
                         <th>Project ID</th>
                         <th>Project Manager</th>
                         <th>Donor</th>
@@ -89,8 +88,7 @@
                         <tr class="app-row" data-search="{{ $searchStr }}" data-place="{{ $appItem->place ?? '' }}">
                             <td style="font-weight: 600; color: var(--accent-cyan);">{{ $appId }}</td>
                             <td>{{ $appItem->applicant_name }}</td>
-                            <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? '-' }}</td>
-                            <td style="border-right: 2px solid #2a3547;">{{ $meta['project_type'] ?? '-' }}</td>
+                            <td style="border-right: 2px solid #2a3547;">{{ $appItem->panchayat ?? $appItem->panchayath ?? '-' }}</td>
                             <!-- Project ID & Status -->
                             <td>
                                 @if($project)

@@ -69,6 +69,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::post('/admin/applications/{category}/{id}/approve', [ApplicationController::class, 'approveApplication'])->name('applications.approve');
     Route::post('/admin/applications/{category}/{id}/reject', [ApplicationController::class, 'rejectApplication'])->name('applications.reject');
     Route::post('/admin/applications/{id}/update-cluster', [ApplicationController::class, 'updateCluster'])->name('applications.update_cluster');
+    Route::post('/admin/applications/orphan-care/{id}/toggle-sponsor', [ApplicationController::class, 'toggleSponsor'])->name('applications.toggle_sponsor');
 
     // Projects routes
     Route::get('/admin/projects', [ProjectController::class, 'index'])->name('projects.index');
@@ -129,6 +130,12 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::get('/admin/projects/{id}/assign-application', function($id) {
         return redirect()->route('projects.show', $id);
     });
+
+    Route::post('/admin/projects/orphan-care/{id}/upload-photo', [ProjectController::class, 'orphanCareUploadPhoto'])->name('projects.orphan_care.upload_photo');
+    Route::delete('/admin/projects/orphan-care/{id}/delete-photo', [ProjectController::class, 'orphanCareDeletePhoto'])->name('projects.orphan_care.delete_photo');
+    Route::post('/admin/projects/orphan-care/{id}/update-address', [ProjectController::class, 'orphanCareUpdateAddress'])->name('projects.orphan_care.update_address');
+    Route::post('/admin/projects/orphan-care/{id}/add-fund', [ProjectController::class, 'orphanCareAddFund'])->name('projects.orphan_care.add_fund');
+    Route::delete('/admin/projects/orphan-care/{id}/delete-fund/{index}', [ProjectController::class, 'orphanCareDeleteFund'])->name('projects.orphan_care.delete_fund');
     
     // Profile routes
     Route::get('/admin/profile', [ProfileController::class, 'edit'])->name('profile.edit');

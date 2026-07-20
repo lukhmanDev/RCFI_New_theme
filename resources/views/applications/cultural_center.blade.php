@@ -98,7 +98,6 @@
                         <th>Village</th>
                         <th>Panchayath</th>
                         <th>Requirement</th>
-                        <th>Project Type</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
@@ -148,9 +147,6 @@
 
                             <!-- Requirement -->
                             <td>{{ $meta['requirement'] ?? 'N/A' }}</td>
-
-                            <!-- Project Type -->
-                            <td style="text-transform: capitalize;">{{ $meta['project_type'] ?? 'N/A' }}</td>
 
                             <!-- Status -->
                             <td style="text-align: center;">
@@ -395,11 +391,11 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="cultural_center_nearby">Is there a cultural center nearby? *</label>
-                            <input type="text" class="form-control-dark" id="cultural_center_nearby" name="meta[cultural_center_nearby]" value="{{ old('meta.cultural_center_nearby') }}" required>
+                            <label class="form-label" for="education_center_nearby">Education Center Nearby *</label>
+                            <input type="text" class="form-control-dark" id="education_center_nearby" name="meta[education_center_nearby]" value="{{ old('meta.education_center_nearby') ?? old('meta.cultural_center_nearby') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="distance_cultural_centre">Distance to closest Cultural Center (KM) *</label>
+                            <label class="form-label" for="distance_cultural_centre">Distance to closest Education Center (KM) *</label>
                             <input type="number" step="0.1" class="form-control-dark" id="distance_cultural_centre" name="meta[distance_cultural_centre]" value="{{ old('meta.distance_cultural_centre') }}" required>
                         </div>
                     </div>

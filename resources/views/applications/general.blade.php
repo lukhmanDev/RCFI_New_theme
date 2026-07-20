@@ -97,7 +97,6 @@
                         <th>Place</th>
                         <th>Village</th>
                         <th>Panchayath</th>
-                        <th>Type of Application</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
@@ -144,9 +143,6 @@
 
                             <!-- Panchayath -->
                             <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? 'N/A' }}</td>
-
-                            <!-- Type of Application -->
-                            <td>{{ $meta['office_application_type'] ?? 'N/A' }}</td>
 
                             <!-- Status -->
                             <td style="text-align: center;">

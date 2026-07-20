@@ -1281,6 +1281,7 @@
             const remarksInput = document.getElementById('confirmRemarksInput');
             
             const isUntick = message.toLowerCase().includes('untick');
+            const isSponsor = message.toLowerCase().includes('sponsor');
             
             if (remarksContainer) {
                 remarksContainer.style.display = isRejection ? 'block' : 'none';
@@ -1288,31 +1289,85 @@
             }
 
             if (isRejection) {
-                if (panel) panel.classList.add('confirm-warning');
-                if (iconBox) iconBox.classList.add('confirm-warning');
+                if (panel) {
+                    panel.classList.add('confirm-warning');
+                    panel.style.borderColor = '';
+                }
+                if (iconBox) {
+                    iconBox.classList.add('confirm-warning');
+                    iconBox.style.backgroundColor = '';
+                    iconBox.style.color = '';
+                    iconBox.style.borderColor = '';
+                    iconBox.style.animation = '';
+                }
                 if (okBtn) {
                     okBtn.classList.add('confirm-warning');
                     okBtn.innerText = 'Reject';
+                    okBtn.style.background = '';
+                    okBtn.style.boxShadow = '';
                 }
                 if (icon) {
                     icon.className = 'bx bx-x-circle';
                 }
             } else if (isUntick) {
-                if (panel) panel.classList.add('confirm-warning');
-                if (iconBox) iconBox.classList.add('confirm-warning');
+                if (panel) {
+                    panel.classList.add('confirm-warning');
+                    panel.style.borderColor = '';
+                }
+                if (iconBox) {
+                    iconBox.classList.add('confirm-warning');
+                    iconBox.style.backgroundColor = '';
+                    iconBox.style.color = '';
+                    iconBox.style.borderColor = '';
+                    iconBox.style.animation = '';
+                }
                 if (okBtn) {
                     okBtn.classList.add('confirm-warning');
                     okBtn.innerText = 'Untick';
+                    okBtn.style.background = '';
+                    okBtn.style.boxShadow = '';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-info-circle';
+                }
+            } else if (isSponsor) {
+                if (panel) {
+                    panel.classList.remove('confirm-warning');
+                    panel.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                }
+                if (iconBox) {
+                    iconBox.classList.remove('confirm-warning');
+                    iconBox.style.backgroundColor = 'rgba(16, 185, 129, 0.12)';
+                    iconBox.style.color = '#10b981';
+                    iconBox.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+                    iconBox.style.animation = 'none';
+                }
+                if (okBtn) {
+                    okBtn.classList.remove('confirm-warning');
+                    okBtn.innerText = 'Confirm';
+                    okBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    okBtn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.25)';
                 }
                 if (icon) {
                     icon.className = 'bx bx-info-circle';
                 }
             } else {
-                if (panel) panel.classList.remove('confirm-warning');
-                if (iconBox) iconBox.classList.remove('confirm-warning');
+                if (panel) {
+                    panel.classList.remove('confirm-warning');
+                    panel.style.borderColor = '';
+                }
+                if (iconBox) {
+                    iconBox.classList.remove('confirm-warning');
+                    iconBox.style.backgroundColor = '';
+                    iconBox.style.color = '';
+                    iconBox.style.borderColor = '';
+                    iconBox.style.animation = '';
+                }
                 if (okBtn) {
                     okBtn.classList.remove('confirm-warning');
                     okBtn.innerText = 'Delete';
+                    okBtn.style.background = '';
+                    okBtn.style.boxShadow = '';
                 }
                 if (icon) {
                     icon.className = 'bx bxs-trash-alt';

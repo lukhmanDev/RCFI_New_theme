@@ -343,4 +343,261 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertNull(HouseApplication::find($pendingApp->id));
     }
+
+    public function test_orphan_care_cluster_and_agency_validation(): void
+    {
+        $coo = User::create([
+            'name' => 'COO Test App validation',
+            'email' => 'coo_test_val@rcfi.org',
+            'mobile' => '9888888823',
+            'role' => 2,
+            'password' => bcrypt('password'),
+            'designation' => 'COO',
+        ]);
+
+        $cluster = \App\Models\Cluster::create([
+            'name' => 'Test Cluster',
+            'code' => 'TC01',
+        ]);
+
+        // 1. Store a pending orphan care application without cluster and agency (should succeed)
+        $response = $this->actingAs($coo)->post('/admin/applications', [
+            'applicant_name' => 'Pending Orphan',
+            'category' => 'Orphan Care',
+            'redirect_category' => 'orphan-care',
+            'status' => 'Pending',
+        ]);
+        $response->assertRedirect('/admin/applications/category/orphan-care');
+        $response->assertSessionHas('success');
+
+        $app = \App\Models\OrphanCareApplication::where('applicant_name', 'Pending Orphan')->first();
+        $this->assertNotNull($app);
+        $this->assertNull($app->cluster_id);
+        $this->assertNull($app->agency_number);
+
+        // 2. Attempt to approve without cluster_id and agency_number (should fail validation)
+        $response = $this->actingAs($coo)->post("/admin/applications/orphan-care/{$app->id}/approve", []);
+        $response->assertSessionHasErrors(['cluster_id', 'agency_number']);
+        $this->assertEquals('Pending', $app->fresh()->status);
+
+        // 3. Approve with cluster_id and agency_number (should succeed)
+        $response = $this->actingAs($coo)->post("/admin/applications/orphan-care/{$app->id}/approve", [
+            'cluster_id' => $cluster->id,
+            'agency_number' => 'AG123',
+        ]);
+        $response->assertSessionHas('success');
+        $this->assertEquals('Approved', $app->fresh()->status);
+        $this->assertEquals($cluster->id, $app->fresh()->cluster_id);
+        $this->assertEquals('AG123', $app->fresh()->agency_number);
+
+        // 4. Create another pending application to test updating approved with missing fields
+        $app2 = \App\Models\OrphanCareApplication::create([
+            'category' => 'Orphan Care',
+            'applicant_name' => 'Orphan Two',
+            'status' => 'Pending',
+        ]);
+
+        // Update to approved status without cluster and agency -> should fail
+        $response = $this->actingAs($coo)->put("/admin/applications/{$app2->id}", [
+            'applicant_name' => 'Orphan Two Updated',
+            'category' => 'Orphan Care',
+            'redirect_category' => 'orphan-care',
+            'status' => 'Approved',
+        ]);
+        $response->assertSessionHasErrors(['cluster_id', 'agency_number']);
+    }
+
+    public function test_orphan_care_sponsor_status_toggling(): void
+    {
+        $coo = User::create([
+            'name' => 'COO Sponsor Test',
+            'email' => 'coo_sponsor@rcfi.org',
+            'mobile' => '9888888824',
+            'role' => 2,
+            'password' => bcrypt('password'),
+            'designation' => 'COO',
+        ]);
+
+        $pm = User::create([
+            'name' => 'PM Sponsor Test',
+            'email' => 'pm_sponsor@rcfi.org',
+            'mobile' => '9888888825',
+            'role' => 5,
+            'password' => bcrypt('password'),
+            'designation' => 'Project Manager',
+        ]);
+
+        // 1. Create an approved orphan care application
+        $app = \App\Models\OrphanCareApplication::create([
+            'category' => 'Orphan Care',
+            'applicant_name' => 'Orphan Sponsor Test',
+            'status' => 'Approved',
+        ]);
+
+        // Assert default sponsor status is 'Not Sponsored'
+        $this->assertEquals('Not Sponsored', $app->sponsor_status);
+
+        // 2. PM attempts to toggle -> Should fail / redirect with error
+        $response = $this->actingAs($pm)->post("/admin/applications/orphan-care/{$app->id}/toggle-sponsor");
+        $response->assertSessionHas('error', 'You are not authorized to update sponsor status.');
+        $this->assertEquals('Not Sponsored', $app->fresh()->sponsor_status);
+
+        // 3. COO attempts to toggle -> Should succeed (toggle to Sponsored)
+        $response = $this->actingAs($coo)->post("/admin/applications/orphan-care/{$app->id}/toggle-sponsor");
+        $response->assertSessionHas('success', 'Sponsor status updated successfully.');
+        $this->assertEquals('Sponsored', $app->fresh()->sponsor_status);
+
+        // Assert OrphanCareProject was automatically created
+        $project = \App\Models\OrphanCareProject::where('application_id', $app->id)->first();
+        $this->assertNotNull($project);
+        $this->assertEquals($app->applicant_name, $project->project_name);
+
+        // 4. COO toggles again -> Should toggle back to 'Not Sponsored'
+        $response = $this->actingAs($coo)->post("/admin/applications/orphan-care/{$app->id}/toggle-sponsor");
+        $response->assertSessionHas('success', 'Sponsor status updated successfully.');
+        $this->assertEquals('Not Sponsored', $app->fresh()->sponsor_status);
+
+        // Assert OrphanCareProject was automatically deleted
+        $this->assertNull(\App\Models\OrphanCareProject::where('application_id', $app->id)->first());
+    }
+
+    public function test_orphan_care_project_assign_only_sponsored(): void
+    {
+        $coo = User::create([
+            'name' => 'COO Test',
+            'email' => 'coo_assign_sponsor@rcfi.org',
+            'mobile' => '9888888877',
+            'role' => 2,
+            'password' => bcrypt('password'),
+            'designation' => 'COO',
+        ]);
+
+        $project = \App\Models\OrphanCareProject::create([
+            'project_id' => 'PRJ-OC-9999',
+            'type_of_project' => 'Orphan Care',
+            'status' => 'Pending',
+            'available_budget' => 150000,
+        ]);
+
+        // Create one approved, not sponsored application
+        $notSponsoredApp = \App\Models\OrphanCareApplication::create([
+            'category' => 'Orphan Care',
+            'applicant_name' => 'Not Sponsored Student',
+            'status' => 'Approved',
+            'sponsor_status' => 'Not Sponsored',
+        ]);
+
+        // Create one approved, sponsored application
+        $sponsoredApp = \App\Models\OrphanCareApplication::create([
+            'category' => 'Orphan Care',
+            'applicant_name' => 'Sponsored Student',
+            'status' => 'Approved',
+            'sponsor_status' => 'Sponsored',
+        ]);
+
+        // Attempt to assign not sponsored application -> Should fail
+        $response = $this->actingAs($coo)->post("/admin/projects/{$project->id}/assign-application", [
+            'application_id' => $notSponsoredApp->id
+        ]);
+        $response->assertSessionHas('error', 'Only sponsored Orphan Care applications can be assigned.');
+        $this->assertNull($project->fresh()->application_id);
+
+        // Delete the auto-created project first so we can assign it manually to $project
+        \App\Models\OrphanCareProject::where('application_id', $sponsoredApp->id)->delete();
+
+        // Attempt to assign sponsored application -> Should succeed
+        $response = $this->actingAs($coo)->post("/admin/projects/{$project->id}/assign-application", [
+            'application_id' => $sponsoredApp->id
+        ]);
+        $this->assertEquals($sponsoredApp->id, $project->fresh()->application_id);
+    }
+
+    public function test_orphan_care_project_photo_and_address_management(): void
+    {
+        $coo = User::create([
+            'name' => 'COO Test',
+            'email' => 'coo_orphan_stage@rcfi.org',
+            'mobile' => '9888888899',
+            'role' => 2,
+            'password' => bcrypt('password'),
+            'designation' => 'COO',
+        ]);
+
+        $app = \App\Models\OrphanCareApplication::create([
+            'category' => 'Orphan Care',
+            'applicant_name' => 'Test Student',
+            'status' => 'Approved',
+            'sponsor_status' => 'Sponsored',
+            'house_name' => 'Old House',
+            'place' => 'Old Place',
+        ]);
+
+        $project = \App\Models\OrphanCareProject::where('application_id', $app->id)->first();
+        $this->assertNotNull($project);
+
+        $response = $this->actingAs($coo)->post("/admin/projects/orphan-care/{$project->id}/update-address", [
+            'house_name' => 'New House',
+            'place' => 'New Place',
+            'post_office' => 'New PO',
+        ]);
+        $response->assertSessionHas('success', 'Student address updated successfully!');
+        $this->assertEquals('New House', $app->fresh()->house_name);
+        $this->assertEquals('New Place', $app->fresh()->place);
+
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $file = \Illuminate\Http\UploadedFile::fake()->image('student.jpg');
+
+        $response = $this->actingAs($coo)->post("/admin/projects/orphan-care/{$project->id}/upload-photo", [
+            'student_photo' => $file
+        ]);
+        $response->assertSessionHas('success', 'Student photo uploaded successfully!');
+        
+        $updatedApp = $app->fresh();
+        $this->assertNotNull($updatedApp->student_photo);
+        $this->assertFileExists(public_path($updatedApp->student_photo));
+
+        $photoPath = public_path($updatedApp->student_photo);
+        $response = $this->actingAs($coo)->delete("/admin/projects/orphan-care/{$project->id}/delete-photo");
+        $response->assertSessionHas('success', 'Student photo deleted successfully!');
+        $this->assertNull($app->fresh()->student_photo);
+        $this->assertFileDoesNotExist($photoPath);
+    }
+
+    public function test_orphan_care_project_fund_transfers(): void
+    {
+        $coo = User::create([
+            'name' => 'COO Test',
+            'email' => 'coo_orphan_fund@rcfi.org',
+            'mobile' => '9888888877',
+            'role' => 2,
+            'password' => bcrypt('password'),
+            'designation' => 'COO',
+        ]);
+
+        $app = \App\Models\OrphanCareApplication::create([
+            'category' => 'Orphan Care',
+            'applicant_name' => 'Fund Test Student',
+            'status' => 'Approved',
+            'sponsor_status' => 'Sponsored',
+        ]);
+
+        $project = \App\Models\OrphanCareProject::where('application_id', $app->id)->first();
+        $this->assertNotNull($project);
+
+        $response = $this->actingAs($coo)->post("/admin/projects/orphan-care/{$project->id}/add-fund", [
+            'date' => '2026-07-20',
+            'amount' => 5000,
+            'agency' => 'Agency A',
+        ]);
+        $response->assertSessionHas('success', 'Fund transfer record added successfully!');
+
+        $project = $project->fresh();
+        $this->assertCount(1, $project->financial_data);
+        $this->assertEquals(5000, $project->financial_data[0]['amount']);
+        $this->assertEquals('Agency A', $project->financial_data[0]['agency']);
+
+        $response = $this->actingAs($coo)->delete("/admin/projects/orphan-care/{$project->id}/delete-fund/0");
+        $response->assertSessionHas('success', 'Fund transfer record deleted successfully!');
+        $this->assertEmpty($project->fresh()->financial_data);
+    }
 }

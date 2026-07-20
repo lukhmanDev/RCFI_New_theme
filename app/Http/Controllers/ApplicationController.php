@@ -63,6 +63,27 @@ class ApplicationController extends Controller
             'model' => \App\Models\GeneralApplication::class
         ]
     ];
+    private $groupedCategories = [
+        'Construction Applications' => [
+            'education-center' => [ 'name' => 'Education Center', 'slug' => 'education-center' ],
+            'cultural-center' => [ 'name' => 'Cultural Center', 'slug' => 'cultural-center' ],
+            'hospital-or-clinics' => [ 'name' => 'Hospital or Clinics', 'slug' => 'hospital-or-clinics' ],
+            'shops-and-others' => [ 'name' => 'Shops and Others', 'slug' => 'shops-and-others' ],
+            'house' => [ 'name' => 'House', 'slug' => 'house' ],
+        ],
+        'Drinking Water Applications' => [
+            'drinking-water-group-level' => [ 'name' => 'Drinking Water - Group Level', 'slug' => 'drinking-water-group-level' ],
+            'drinking-water-individual-level' => [ 'name' => 'Drinking Water - Individual Level', 'slug' => 'drinking-water-individual-level' ],
+        ],
+        'Social Aid & Care' => [
+            'orphan-care' => [ 'name' => 'Orphan Care', 'slug' => 'orphan-care' ],
+            'differently-abled' => [ 'name' => 'Differently Abled', 'slug' => 'differently-abled' ],
+            'family-aid' => [ 'name' => 'Family Aid', 'slug' => 'family-aid' ],
+        ],
+        'General Schemes' => [
+            'general' => [ 'name' => 'General', 'slug' => 'general' ],
+        ]
+    ];
 
     public function index()
     {
@@ -78,7 +99,9 @@ class ApplicationController extends Controller
             $totalProjectCounts[$config['name']] = $model::count();
         }
 
-        return view('admin.applications', compact('counts', 'pendingCounts', 'approvedProjectCounts', 'totalProjectCounts'));
+        $categories = $this->categories;
+        $groupedCategories = $this->groupedCategories;
+        return view('admin.applications', compact('categories', 'groupedCategories', 'counts', 'pendingCounts', 'approvedProjectCounts', 'totalProjectCounts'));
     }
 
     public function showCategory($slug)
@@ -93,28 +116,17 @@ class ApplicationController extends Controller
         $model = $config['model'];
 
         // Retrieve only applications in this category
-        if ($model === \App\Models\OrphanCareApplication::class) {
-            $applications = $model::with('cluster')->orderBy('created_at', 'desc')->get();
+        $user = auth()->user();
+        if ($categorySlug === 'orphan-care') {
+            $applications = $model::with(['address', 'cluster'])->orderBy('created_at', 'desc')->get();
         } else {
-            $applications = $model::orderBy('created_at', 'desc')->get();
+            $applications = $model::with('address')->orderBy('created_at', 'desc')->get();
         }
 
+        $projectModel = str_replace('Application', 'Project', $model);
         $projectsMap = [];
-        $projectModels = [
-            'education-center' => \App\Models\EducationCenterProject::class,
-            'cultural-center' => \App\Models\CulturalCenterProject::class,
-            'hospital-or-clinics' => \App\Models\HospitalClinicProject::class,
-            'shops-and-others' => \App\Models\ShopOtherProject::class,
-            'house' => \App\Models\HouseProject::class,
-            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupProject::class,
-            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualProject::class,
-            'general' => \App\Models\GeneralProject::class,
-        ];
-
-        if (array_key_exists($slug, $projectModels)) {
-            $projectModel = $projectModels[$slug];
+        if (class_exists($projectModel)) {
             $appIds = $applications->pluck('id')->toArray();
-            $user = auth()->user();
             $query = $projectModel::whereIn('application_id', $appIds)
                 ->with(['donor', 'projectManager']);
             $projects = $this->scopeProjectsForUser($query, $user)
@@ -133,12 +145,13 @@ class ApplicationController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $rules = [
             'applicant_name' => ['required', 'string', 'min:2', 'max:255'],
             'category' => ['required', 'string'],
             'amount_requested' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'string', 'in:Pending,Approved,Rejected'],
             'contact_email' => ['nullable', 'email', 'max:255'],
+            'additional_note' => ['nullable', 'string'],
             'details' => ['nullable', 'string'],
             'meta' => ['nullable', 'array'],
             'house_name' => ['nullable', 'string', 'max:255'],
@@ -149,6 +162,21 @@ class ApplicationController extends Controller
             'district' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],
             'pin_code' => ['nullable', 'string', 'max:255'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'cluster_id' => ['nullable', 'exists:clusters,id'],
+            'agency_number' => ['nullable', 'string', 'max:255'],
+        ];
+
+        $redirectCategory = $request->input('redirect_category');
+        $isOrphanCare = ($request->input('category') === 'Orphan Care' || $redirectCategory === 'orphan-care');
+        if ($isOrphanCare && $request->input('status') === 'Approved') {
+            $rules['cluster_id'] = ['required', 'exists:clusters,id'];
+            $rules['agency_number'] = ['required', 'string', 'max:255'];
+        }
+
+        $data = $request->validate($rules, [
+            'cluster_id.required' => 'The cluster field is required when the application is approved.',
+            'agency_number.required' => 'The agency number field is required when the application is approved.',
         ]);
 
         $redirectCategory = $request->input('redirect_category');
@@ -178,11 +206,29 @@ class ApplicationController extends Controller
                 }
             }
 
+            $addressFields = ['house_name', 'place', 'post_office', 'village', 'panchayat', 'district', 'state', 'pin_code', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
+            $addressData = array_intersect_key($data, array_flip($addressFields));
+
+            if (isset($data['details']) && !isset($data['additional_note'])) {
+                $data['additional_note'] = $data['details'];
+            }
+            unset($data['details']);
+
+            $categoryName = $data['category'] ?? ($config['name'] ?? '');
+            unset($data['category']);
+            foreach ($addressFields as $f) {
+                unset($data[$f]);
+            }
+
             $appItem = $model::create($data);
+            if (!empty(array_filter($addressData))) {
+                $appItem->address()->create($addressData);
+            }
+
             try {
                 \App\Models\Notification::create([
                     'title' => 'New Application',
-                    'message' => 'A new application by "' . $data['applicant_name'] . '" has been registered under ' . $data['category'] . '.',
+                    'message' => 'A new application by "' . $data['applicant_name'] . '" has been registered under ' . $categoryName . '.',
                     'url' => route('applications.category', $redirectCategory)
                 ]);
             } catch (\Exception $e) {
@@ -202,12 +248,13 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'You are not authorized to edit applications.');
         }
 
-        $data = $request->validate([
+        $rules = [
             'applicant_name' => ['required', 'string', 'min:2', 'max:255'],
-            'category' => ['required', 'string'],
+            'category' => ['nullable', 'string'],
             'amount_requested' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'string', 'in:Pending,Approved,Rejected'],
             'contact_email' => ['nullable', 'email', 'max:255'],
+            'additional_note' => ['nullable', 'string'],
             'details' => ['nullable', 'string'],
             'meta' => ['nullable', 'array'],
             'house_name' => ['nullable', 'string', 'max:255'],
@@ -218,6 +265,21 @@ class ApplicationController extends Controller
             'district' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],
             'pin_code' => ['nullable', 'string', 'max:255'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'cluster_id' => ['nullable', 'exists:clusters,id'],
+            'agency_number' => ['nullable', 'string', 'max:255'],
+        ];
+
+        $redirectCategory = $request->input('redirect_category');
+        $isOrphanCare = ($request->input('category') === 'Orphan Care' || $redirectCategory === 'orphan-care');
+        if ($isOrphanCare && $request->input('status') === 'Approved') {
+            $rules['cluster_id'] = ['required', 'exists:clusters,id'];
+            $rules['agency_number'] = ['required', 'string', 'max:255'];
+        }
+
+        $data = $request->validate($rules, [
+            'cluster_id.required' => 'The cluster field is required when the application is approved.',
+            'agency_number.required' => 'The agency number field is required when the application is approved.',
         ]);
 
         $redirectCategory = $request->input('redirect_category');
@@ -225,7 +287,7 @@ class ApplicationController extends Controller
 
         if (!$config) {
             foreach ($this->categories as $slug => $c) {
-                if ($c['name'] === $data['category']) {
+                if ($c['name'] === ($data['category'] ?? '')) {
                     $config = $c;
                     $redirectCategory = $slug;
                     break;
@@ -246,8 +308,25 @@ class ApplicationController extends Controller
                 }
             }
 
+            $addressFields = ['house_name', 'place', 'post_office', 'village', 'panchayat', 'district', 'state', 'pin_code', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
+            $addressData = array_intersect_key($data, array_flip($addressFields));
+
+            if (isset($data['details']) && !isset($data['additional_note'])) {
+                $data['additional_note'] = $data['details'];
+            }
+            unset($data['details']);
+
+            unset($data['category']);
+            foreach ($addressFields as $f) {
+                unset($data[$f]);
+            }
+
             $application = $model::findOrFail($id);
             $application->update($data);
+            if (!empty(array_filter($addressData))) {
+                $application->address()->updateOrCreate([], $addressData);
+            }
+
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application details updated successfully!');
         }
 
@@ -321,7 +400,7 @@ class ApplicationController extends Controller
                 }
             }
         }
-        $metaKeys = array_unique($metaKeys);
+        $metaKeys = array_values(array_diff(array_unique($metaKeys), ['category']));
 
         // 2. Prepare headers
         $headers = [
@@ -416,7 +495,7 @@ class ApplicationController extends Controller
         return view('admin.all_applications', compact('allApplications', 'categories'));
     }
 
-    public function approveApplication($category, $id)
+    public function approveApplication(Request $request, $category, $id)
     {
         $user = auth()->user();
         if ($user->role != 2) {
@@ -430,6 +509,20 @@ class ApplicationController extends Controller
 
         $model = $config['model'];
         $app = $model::findOrFail($id);
+
+        if ($category === 'orphan-care') {
+            $request->validate([
+                'cluster_id' => ['required', 'exists:clusters,id'],
+                'agency_number' => ['required', 'string', 'max:255'],
+            ], [
+                'cluster_id.required' => 'The cluster field is required.',
+                'agency_number.required' => 'The agency number field is required.',
+            ]);
+
+            $app->cluster_id = $request->input('cluster_id');
+            $app->agency_number = $request->input('agency_number');
+        }
+
         $app->status = 'Approved';
         $app->save();
 
@@ -464,7 +557,7 @@ class ApplicationController extends Controller
 
         $remarks = $request->input('remarks');
         if ($remarks) {
-            $app->details = ($app->details ? $app->details . "\n" : "") . "Rejection Reason: " . $remarks;
+            $app->additional_note = ($app->additional_note ? $app->additional_note . "\n" : "") . "Rejection Reason: " . $remarks;
         }
 
         $app->save();
@@ -510,7 +603,9 @@ class ApplicationController extends Controller
             $approvedCounts[$config['name']] = $model::where('status', 'Approved')->count();
         }
 
-        return view('approved_applications.index', compact('approvedCounts'));
+        $categories = $this->categories;
+        $groupedCategories = $this->groupedCategories;
+        return view('approved_applications.index', compact('categories', 'groupedCategories', 'approvedCounts'));
     }
 
     public function showApprovedCategory($category)
@@ -613,8 +708,11 @@ class ApplicationController extends Controller
         }
 
         $request->validate([
-            'cluster_id' => ['nullable', 'exists:clusters,id'],
-            'agency_number' => ['nullable', 'string', 'max:255'],
+            'cluster_id' => ['required', 'exists:clusters,id'],
+            'agency_number' => ['required', 'string', 'max:255'],
+        ], [
+            'cluster_id.required' => 'The cluster field is required.',
+            'agency_number.required' => 'The agency number field is required.',
         ]);
 
         $app = \App\Models\OrphanCareApplication::findOrFail($id);
@@ -636,5 +734,30 @@ class ApplicationController extends Controller
         }
 
         return redirect()->back()->with('success', 'Cluster and Agency Number updated successfully.');
+    }
+
+    public function toggleSponsor(Request $request, $id)
+    {
+        $user = auth()->user();
+        if (!in_array($user->role, [1, 2, 4])) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'You are not authorized to update sponsor status.'], 403);
+            }
+            return redirect()->back()->with('error', 'You are not authorized to update sponsor status.');
+        }
+
+        $app = \App\Models\OrphanCareApplication::findOrFail($id);
+        $app->sponsor_status = $app->sponsor_status === 'Sponsored' ? 'Not Sponsored' : 'Sponsored';
+        $app->save();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Sponsor status updated successfully.',
+                'sponsor_status' => $app->sponsor_status
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Sponsor status updated successfully.');
     }
 }

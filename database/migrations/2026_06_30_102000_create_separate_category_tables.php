@@ -251,12 +251,12 @@ return new class extends Migration
             $table->string('locality_location')->nullable();
             $table->string('locality_state')->nullable();
             $table->string('locality_village')->nullable();
-            $table->string('location')->nullable();
+            
             $table->string('mahallu_name')->nullable();
-            $table->string('mobile')->nullable();
+            
             $table->integer('num_classrooms')->nullable();
             $table->integer('num_students')->nullable();
-            $table->string('panchayat')->nullable();
+            
             $table->string('panchayath')->nullable();
             $table->string('place')->nullable();
             $table->string('post')->nullable();

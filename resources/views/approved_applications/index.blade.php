@@ -4,63 +4,6 @@
 
 @section('content')
 
-    @php
-        $groupedCategoryConfigs = [
-            'Construction Applications' => [
-                'education-center' => [
-                    'name' => 'Education Center',
-                    'slug' => 'education-center'
-                ],
-                'cultural-center' => [
-                    'name' => 'Cultural Center',
-                    'slug' => 'cultural-center'
-                ],
-                'hospital-or-clinics' => [
-                    'name' => 'Hospital or Clinics',
-                    'slug' => 'hospital-or-clinics'
-                ],
-                'shops-and-others' => [
-                    'name' => 'Shops and Others',
-                    'slug' => 'shops-and-others'
-                ],
-                'house' => [
-                    'name' => 'House',
-                    'slug' => 'house'
-                ]
-            ],
-            'Drinking Water Applications' => [
-                'drinking-water-group-level' => [
-                    'name' => 'Drinking Water - Group Level',
-                    'slug' => 'drinking-water-group-level'
-                ],
-                'drinking-water-individual-level' => [
-                    'name' => 'Drinking Water - Individual Level',
-                    'slug' => 'drinking-water-individual-level'
-                ]
-            ],
-            'Social Aid & Care' => [
-                'orphan-care' => [
-                    'name' => 'Orphan Care',
-                    'slug' => 'orphan-care'
-                ],
-                'differently-abled' => [
-                    'name' => 'Differently Abled',
-                    'slug' => 'differently-abled'
-                ],
-                'family-aid' => [
-                    'name' => 'Family Aid',
-                    'slug' => 'family-aid'
-                ]
-            ],
-            'General Schemes' => [
-                'general' => [
-                    'name' => 'General',
-                    'slug' => 'general'
-                ]
-            ]
-        ];
-    @endphp
-
     <style>
         .app-grid {
             display: grid;
@@ -131,16 +74,15 @@
         <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">Select a category card to view approved application projects.</p>
     </div>
 
-    <!-- Grouped Cards Grid -->
-    @foreach($groupedCategoryConfigs as $groupTitle => $configs)
-        <!-- Group Divider Header -->
-        <div style="margin-top: 2.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+    @foreach($groupedCategories as $groupTitle => $cats)
+        <!-- Group Section Divider Header -->
+        <div style="margin-top: 2.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1rem;">
             <span style="color: #4f46e5; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;">{{ $groupTitle }}</span>
             <div style="flex: 1; height: 1px; background-color: #e2e8f0;"></div>
         </div>
 
         <div class="app-grid">
-            @foreach($configs as $slug => $config)
+            @foreach($cats as $slug => $config)
                 @php
                     $count = $approvedCounts[$config['name']] ?? 0;
                 @endphp
