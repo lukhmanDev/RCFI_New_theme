@@ -166,7 +166,7 @@
                             <td style="text-align: center; white-space: nowrap;">
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
-                                @if($appItem->status !== 'Approved' && Auth::user()->role == 2)
+                                @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending')
                                         <!-- Approve -->
                                         <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
@@ -214,7 +214,7 @@
             </div>
             
                                     <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; flex-wrap: wrap;">
-                @if(Auth::user()->role == 2)
+                @if(Auth::user()->canApproveApplications())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 @if(in_array(Auth::user()->role, [1, 2, 4]))
@@ -354,8 +354,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="status_of_current_building">Current status if any *</label>
-                            <input type="text" class="form-control-dark" id="status_of_current_building" name="meta[status_of_current_building]" placeholder="dilapidated, semi-completed, etc." value="{{ old('meta.status_of_current_building') }}" required>
+                            <label class="form-label" for="status_of_current_building">Current status if any</label>
+                            <input type="text" class="form-control-dark" id="status_of_current_building" name="meta[status_of_current_building]" placeholder="dilapidated, semi-completed, etc." value="{{ old('meta.status_of_current_building') }}">
                         </div>
                     </div>
                 </div>
@@ -563,8 +563,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_status_of_current_building">Current status if any *</label>
-                            <input type="text" class="form-control-dark" id="edit_status_of_current_building" name="meta[status_of_current_building]" required>
+                            <label class="form-label" for="edit_status_of_current_building">Current status if any</label>
+                            <input type="text" class="form-control-dark" id="edit_status_of_current_building" name="meta[status_of_current_building]">
                         </div>
                     </div>
                 </div>

@@ -208,13 +208,12 @@ trait HasCategoryMeta
 
     public function getLocationAttribute()
     {
-        $addr = $this->getApplicantAddressObject();
-        return ($this->pendingAddressData['location'] ?? null) ?? ($addr ? $addr->location : ($this->attributes['location'] ?? null));
+        return $this->place;
     }
 
     public function setLocationAttribute($value)
     {
-        $this->setAddressField('location', $value);
+        $this->setAddressField('place', $value);
     }
 
     public function getContactNumber1Attribute()

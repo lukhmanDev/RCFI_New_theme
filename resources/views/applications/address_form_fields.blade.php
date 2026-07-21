@@ -28,19 +28,19 @@
     <input type="text" class="form-control-dark" id="{{ $idPrefix }}place" name="place" placeholder="Enter place" value="{{ $app ? $app->place : '' }}">
 </div>
 
-<!-- 3. Post Office -->
-<div style="margin-bottom: 1rem;">
-    <label class="form-label" for="{{ $idPrefix }}post_office">Post Office</label>
-    <input type="text" class="form-control-dark" id="{{ $idPrefix }}post_office" name="post_office" placeholder="Enter post office" value="{{ $app ? $app->post_office : '' }}">
-</div>
-
-<!-- 4. Village -->
+<!-- 3. Village -->
 <div style="margin-bottom: 1rem;">
     <label class="form-label" for="{{ $idPrefix }}village">Village</label>
     <input type="text" class="form-control-dark" id="{{ $idPrefix }}village" name="village" placeholder="Enter village" value="{{ $app ? $app->village : '' }}">
 </div>
 
-<!-- 5. Panchayat -->
+<!-- 4. Post Office (P.O.) -->
+<div style="margin-bottom: 1rem;">
+    <label class="form-label" for="{{ $idPrefix }}post_office">Post Office (P.O.)</label>
+    <input type="text" class="form-control-dark" id="{{ $idPrefix }}post_office" name="post_office" placeholder="Enter post office" value="{{ $app ? $app->post_office : '' }}">
+</div>
+
+<!-- 5. Panchayath -->
 <div style="margin-bottom: 1rem;">
     <label class="form-label" for="{{ $idPrefix }}panchayat">Panchayath</label>
     <input type="text" class="form-control-dark" id="{{ $idPrefix }}panchayat" name="panchayat" placeholder="Enter panchayath" value="{{ $app ? $app->panchayat : '' }}">

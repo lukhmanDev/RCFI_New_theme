@@ -61,13 +61,7 @@
             </div>
         </div>
 
-        <a href="" class="topbar-icon-btn">
-            <i class="bx bx-envelope"></i>
-            @php $unreadMessagesCount = $unreadMessagesCount ?? 7; @endphp
-            @if($unreadMessagesCount > 0)
-                <span class="topbar-badge">{{ $unreadMessagesCount }}</span>
-            @endif
-        </a>
+
 
         <div class="topbar-profile" onclick="toggleTopbarProfileMenu(event)">
             <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6WbkrAqlGF2Xzmb-prbginrkDNrv6zT05ID6KEjTbP2F-gn9w-wg1L3_NiSeXLq3HsqI&usqp=CAU' }}" alt="Profile">

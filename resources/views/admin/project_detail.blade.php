@@ -162,50 +162,73 @@
     </style>
 
     <!-- Stage Navigation Tabs (Interactive Navigation) -->
-    <div class="stages-tabs">
-        @for($i = 1; $i <= 6; $i++)
-            @php
-                $isActive = $project->stage == $i;
-                $isCompleted = $project->stage > $i;
-                $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
-                
-                //   Stage 1 & Stage 2: always accessible
-                //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
-                //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
-                if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
-                    if ($i <= 2) {
-                        $isLocked = false;
-                    } elseif ($i == 3 || $i == 4) {
-                        $isLocked = empty($project->application_id);
-                    } else { // stage 5 or 6
-                        $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
+    <div class="stages-tabs" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--panel-border); margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 0.5rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            @for($i = 1; $i <= 6; $i++)
+                @php
+                    $isActive = $project->stage == $i;
+                    $isCompleted = $project->stage > $i;
+                    $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
+                    
+                    //   Stage 1 & Stage 2: always accessible
+                    //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
+                    //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
+                    if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
+                        if ($i <= 2) {
+                            $isLocked = false;
+                        } elseif ($i == 3 || $i == 4) {
+                            $isLocked = empty($project->application_id);
+                        } else { // stage 5 or 6
+                            $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
+                        }
+                    } else {
+                        $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
                     }
-                } else {
-                    $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
-                }
-                if ($isLocked) {
-                    $class .= ' locked';
-                }
+                    if ($isLocked) {
+                        $class .= ' locked';
+                    }
+                @endphp
+                <div class="stage-tab {{ $class }}" id="tab-{{ $i }}" onclick="switchStage({{ $i }})">
+                    @if($isLocked)
+                        <i class="bx bx-lock-alt" style="margin-right: 0.25rem;"></i>
+                    @endif
+                    Stage {{ $i }}
+                </div>
+            @endfor
+        </div>
+        <div>
+            @php
+                $categorySlugs = [
+                    'Education Center' => 'education-center',
+                    'Cultural Center' => 'cultural-center',
+                    'Hospital or Clinics' => 'hospital-or-clinics',
+                    'Shops and Others' => 'shops-and-others',
+                    'House' => 'house',
+                    'Drinking Water - Group Level' => 'drinking-water-group-level',
+                    'Drinking Water - Individual Level' => 'drinking-water-individual-level',
+                    'Orphan Care' => 'orphan-care',
+                    'Differently Abled' => 'differently-abled',
+                    'Family Aid' => 'family-aid',
+                    'General' => 'general'
+                ];
+                $categorySlug = $categorySlugs[$project->type_of_project] ?? 'education-center';
             @endphp
-            <div class="stage-tab {{ $class }}" id="tab-{{ $i }}" onclick="switchStage({{ $i }})">
-                @if($isLocked)
-                    <i class="bx bx-lock-alt" style="margin-right: 0.25rem;"></i>
-                @endif
-                Stage {{ $i }}
-            </div>
-        @endfor
+            <a href="{{ route('projects.category', $categorySlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; padding: 0.65rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 700;">
+                <i class="bx bx-arrow-back"></i> Back to Project List
+            </a>
+        </div>
     </div>
 
     @php
         $authUser = auth()->user();
-        $isSuperAdmin = ($authUser && $authUser->role == 1);
         $designationLower = strtolower($authUser->designation ?? '');
-        $isCoo = ($authUser && ($authUser->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
-        $isHod = ($authUser && ($authUser->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
-        $isPmOnly = ($authUser && ($authUser->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
-        $isEngineerOnly = ($authUser && ($authUser->role == 6 || strtolower($authUser->designation ?? '') === 'engineer'));
+        $isSuperAdmin = ($authUser && $authUser->isSuperAdmin());
+        $isCoo = ($authUser && ($authUser->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
+        $isHod = ($authUser && ($authUser->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+        $isPmOnly = ($authUser && ($authUser->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
+        $isEngineerOnly = ($authUser && ($authUser->isEngineer() || strtolower($authUser->designation ?? '') === 'engineer'));
         
-        $isProjectManager = ($authUser && (in_array($authUser->role, [1, 2, 3, 4, 6]) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod'])));
+        $isProjectManager = ($authUser && ($authUser->isSuperAdmin() || $authUser->isCoo() || $authUser->isHod() || $authUser->isPm() || $authUser->isEngineer() || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod'])));
         
         $isLockedForEditing = ($project->status === 'Completed');
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
@@ -545,11 +568,24 @@
                 @php
                     $metaData = [];
                     if ($application) {
-                        if (is_array($application->meta)) {
-                            $metaData = $application->meta;
-                        } elseif (is_string($application->meta)) {
-                            $metaData = json_decode($application->meta, true) ?? [];
+                        if (is_object($application)) {
+                            $metaData = method_exists($application, 'toArray') ? $application->toArray() : (array) $application;
+                            if (isset($application->meta)) {
+                                $metaArr = is_array($application->meta) ? $application->meta : (json_decode($application->meta, true) ?? []);
+                                $metaData = array_merge($metaData, $metaArr);
+                            }
+                            if (method_exists($application, 'address') && ($addrObj = $application->address()->first())) {
+                                $metaData = array_merge($metaData, array_filter($addrObj->toArray()));
+                            }
+                        } elseif (is_array($application)) {
+                            $metaData = $application;
                         }
+
+                        $metaData['mobile_1'] = $metaData['mobile_1'] ?? $metaData['contact_number_1'] ?? $metaData['mobile'] ?? null;
+                        $metaData['mobile_2'] = $metaData['mobile_2'] ?? $metaData['contact_number_2'] ?? null;
+                        $metaData['post_office'] = $metaData['post_office'] ?? $metaData['post'] ?? null;
+                        $metaData['panchayat'] = $metaData['panchayat'] ?? $metaData['panchayath'] ?? null;
+                        $metaData['pin_code'] = $metaData['pin_code'] ?? $metaData['pincode'] ?? $metaData['pin'] ?? null;
                     }
 
                     $formatVal = function($val) {
@@ -1983,28 +2019,7 @@
 
     </div>
 
-    <!-- Back Button -->
-    <div style="margin-top: 1.5rem;">
-        @php
-            $categorySlugs = [
-                'Education Center' => 'education-center',
-                'Cultural Center' => 'cultural-center',
-                'Hospital or Clinics' => 'hospital-or-clinics',
-                'Shops and Others' => 'shops-and-others',
-                'House' => 'house',
-                'Drinking Water - Group Level' => 'drinking-water-group-level',
-                'Drinking Water - Individual Level' => 'drinking-water-individual-level',
-                'Orphan Care' => 'orphan-care',
-                'Differently Abled' => 'differently-abled',
-                'Family Aid' => 'family-aid',
-                'General' => 'general'
-            ];
-            $categorySlug = $categorySlugs[$project->type_of_project] ?? 'education-center';
-        @endphp
-        <a href="{{ route('projects.category', $categorySlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted);">
-            <i class="bx bx-arrow-back"></i> Back to Project List
-        </a>
-    </div>
+
 
     <!-- Switch Stage Script -->
     <script>

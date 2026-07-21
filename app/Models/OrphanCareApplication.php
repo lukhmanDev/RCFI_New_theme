@@ -67,25 +67,14 @@ class OrphanCareApplication extends Model
     {
         $projectExists = \App\Models\OrphanCareProject::where('application_id', $application->id)->exists();
         if (!$projectExists) {
-            $donor = \App\Models\Donor::first();
-            $donorId = $donor ? $donor->id : null;
-            
-            $pm = \App\Models\User::where('role', 3)
-                ->orWhere('designation', 'like', '%project manager%')
-                ->first();
-            $pmId = $pm ? $pm->id : 1;
-
             \App\Models\OrphanCareProject::create([
                 'application_id' => $application->id,
                 'project_name' => $application->applicant_name,
                 'agency_project_no' => $application->agency_number,
                 'type_of_project' => 'Orphan Care',
                 'sponsor' => 'Sponsored',
-                'available_budget' => 0,
                 'stage' => 1,
                 'status' => 'Pending',
-                'donor_id' => $donorId,
-                'project_manager_id' => $pmId,
             ]);
         } else {
             $project = \App\Models\OrphanCareProject::where('application_id', $application->id)->first();

@@ -96,7 +96,7 @@ class UserManagementTest extends TestCase
 
         $response->assertRedirect();
         $this->assertEquals('Updated Name', $staff->fresh()->name);
-        $this->assertEquals(3, $staff->fresh()->role);
+        $this->assertEquals('project_manager', $staff->fresh()->role);
     }
 
     public function test_coo_creates_user_with_default_others_role(): void
@@ -113,7 +113,7 @@ class UserManagementTest extends TestCase
         $response->assertRedirect();
         $newUser = User::where('email', 'newstaff@example.com')->first();
         $this->assertNotNull($newUser);
-        $this->assertEquals(5, $newUser->role);
+        $this->assertEquals('others', $newUser->role);
     }
 
     public function test_coo_cannot_change_user_designation_during_update(): void

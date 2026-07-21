@@ -476,7 +476,6 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'project_id' => 'PRJ-OC-9999',
             'type_of_project' => 'Orphan Care',
             'status' => 'Pending',
-            'available_budget' => 150000,
         ]);
 
         // Create one approved, not sponsored application
@@ -592,12 +591,12 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $response->assertSessionHas('success', 'Fund transfer record added successfully!');
 
         $project = $project->fresh();
-        $this->assertCount(1, $project->financial_data);
-        $this->assertEquals(5000, $project->financial_data[0]['amount']);
-        $this->assertEquals('Agency A', $project->financial_data[0]['agency']);
+        $this->assertCount(1, $project->funds);
+        $this->assertEquals(5000, $project->funds->first()->amount);
+        $this->assertEquals('Agency A', $project->funds->first()->agency);
 
-        $response = $this->actingAs($coo)->delete("/admin/projects/orphan-care/{$project->id}/delete-fund/0");
+        $response = $this->actingAs($coo)->delete("/admin/projects/orphan-care/{$project->id}/delete-fund/" . $project->funds->first()->id);
         $response->assertSessionHas('success', 'Fund transfer record deleted successfully!');
-        $this->assertEmpty($project->fresh()->financial_data);
+        $this->assertEmpty($project->fresh()->funds);
     }
 }

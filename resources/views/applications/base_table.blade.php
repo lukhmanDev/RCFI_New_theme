@@ -76,7 +76,7 @@
                         <td style="text-align: center; white-space: nowrap;">
                             <button onclick="alert('Applicant details:\nName: {{ $appItem->applicant_name }}\nAmount: ₹{{ number_format($appItem->amount_requested) }}\nStatus: {{ $appItem->status }}\nEmail: {{ $appItem->contact_email ?? \'N/A\' }}\nDetails: {{ $appItem->details ?? \'-\' }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
-                            @if(in_array(Auth::user()->role, [1, 2, 4]))
+                            @if(Auth::user()->hasAdminAccess())
                             <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
                             
                             <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this application?');" style="display: inline-block;">

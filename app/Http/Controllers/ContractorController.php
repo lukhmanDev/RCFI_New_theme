@@ -12,7 +12,7 @@ class ContractorController extends Controller
         if (!$user) {
             return false;
         }
-        return ($user->role == 3 || $user->role == 1 || $user->role == 6 || strtolower($user->designation) === 'project manager' || strtolower($user->designation) === 'engineer');
+        return ($user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || strtolower($user->designation ?? '') === 'project manager' || strtolower($user->designation ?? '') === 'engineer');
     }
 
     public function index()

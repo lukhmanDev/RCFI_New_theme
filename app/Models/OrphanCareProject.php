@@ -14,8 +14,7 @@ class OrphanCareProject extends Model
     protected $casts = [
         'stage' => 'integer',
         'community_contributions' => 'array',
-        'completion_details' => 'array',
-        'financial_data' => 'array'
+        'completion_details' => 'array'
     ];
 
     protected static function boot()
@@ -31,18 +30,13 @@ class OrphanCareProject extends Model
         });
     }
 
-    public function donor()
+    public function programmes()
     {
-        return $this->belongsTo(Donor::class, 'donor_id');
+        return $this->hasMany(OrphanCareProgramme::class, 'orphan_care_project_id');
     }
 
-    public function projectManager()
+    public function funds()
     {
-        return $this->belongsTo(User::class, 'project_manager_id');
-    }
-
-    public function engineer()
-    {
-        return $this->belongsTo(User::class, 'engineer_id');
+        return $this->hasMany(OrphanCareFund::class, 'orphan_care_project_id');
     }
 }

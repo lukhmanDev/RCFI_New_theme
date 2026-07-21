@@ -31,7 +31,7 @@ class ProfileController extends Controller
         ]);
 
         $user->name = $request->input('name');
-        if ($user->role == 1) {
+        if ($user->isSuperAdmin()) {
             $user->designation = $request->input('designation');
         }
         $user->mobile = $request->input('mobile');

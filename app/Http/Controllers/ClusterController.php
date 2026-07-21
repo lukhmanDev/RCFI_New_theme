@@ -13,7 +13,7 @@ class ClusterController extends Controller
             return false;
         }
         // Super Admin (1), COO (2), HOD (4), Project Manager (3), Engineer (6)
-        return in_array($user->role, [1, 2, 3, 4, 6]) || in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']);
+        return $user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']);
     }
 
     public function index()

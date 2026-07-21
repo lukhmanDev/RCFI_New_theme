@@ -178,7 +178,7 @@
                             <td style="text-align: center; white-space: nowrap;">
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
-                                @if($appItem->status !== 'Approved' && Auth::user()->role == 2)
+                                @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending')
                                         <!-- Approve -->
                                         <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
@@ -223,7 +223,7 @@
             </div>
             
                                     <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; flex-wrap: wrap;">
-                @if(Auth::user()->role == 2)
+                @if(Auth::user()->canApproveApplications())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 @if(in_array(Auth::user()->role, [1, 2, 4]))

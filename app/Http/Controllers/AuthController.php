@@ -40,7 +40,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
             
             // Redirect based on role (1 is Admin, 2+ is user)
-            if ($user->role == 1) {
+            if ($user->isSuperAdmin() || $user->hasAdminAccess()) {
                 return redirect()->intended('dashboard');
             } else {
                 return redirect()->intended('dashboard'); // Redirect to same dashboard or user home

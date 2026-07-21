@@ -10,7 +10,7 @@ class UserController extends Controller
 {
     private function checkAdmin()
     {
-        if (!in_array(auth()->user()->role, [1, 2, 4])) {
+        if (!auth()->user() || !auth()->user()->hasAdminAccess()) {
             abort(403, 'Unauthorized action. Only administrators can access User Management.');
         }
     }
@@ -34,14 +34,14 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8'],
         ];
 
-        if (auth()->user()->role == 1) {
-            $rules['role'] = ['required', 'integer', 'in:2,3,4,5,6'];
+        if (auth()->user()->isSuperAdmin()) {
+            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,Super Admin,COO,Project Manager,HOD,Others,Engineer,1,2,3,4,5,6'];
         }
 
         $data = $request->validate($rules);
 
-        if (auth()->user()->role != 1) {
-            $data['role'] = 5; // default to 'Others'
+        if (!auth()->user()->isSuperAdmin()) {
+            $data['role'] = 'others'; // default to 'others'
         }
 
         $data['password'] = bcrypt($data['password']);
@@ -69,13 +69,13 @@ class UserController extends Controller
             'password' => ['nullable', 'string', 'min:8'],
         ];
 
-        if (auth()->user()->role == 1) {
-            $rules['role'] = ['required', 'integer', 'in:2,3,4,5,6'];
+        if (auth()->user()->isSuperAdmin()) {
+            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,Super Admin,COO,Project Manager,HOD,Others,Engineer,1,2,3,4,5,6'];
         }
 
         $data = $request->validate($rules);
 
-        if (auth()->user()->role != 1) {
+        if (!auth()->user()->isSuperAdmin()) {
             $data['role'] = $user->role;
             $data['designation'] = $user->designation;
         }

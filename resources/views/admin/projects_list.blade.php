@@ -308,7 +308,7 @@
                                     <i class="bx bx-dots-horizontal-rounded"></i>
                                 </button>
 
-                                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                                @if(Auth::user()->hasAdminAccess())
                                 <!-- Edit Button -->
                                 <button onclick="openEditModal({{ json_encode($project) }})" class="btn-action-icon btn-edit" title="Edit">
                                     <i class="bx bx-pencil"></i>

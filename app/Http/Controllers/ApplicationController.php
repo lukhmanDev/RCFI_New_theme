@@ -206,7 +206,7 @@ class ApplicationController extends Controller
                 }
             }
 
-            $addressFields = ['house_name', 'place', 'post_office', 'village', 'panchayat', 'district', 'state', 'pin_code', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
+            $addressFields = ['house_name', 'place', 'post_office', 'village', 'panchayat', 'district', 'state', 'pin_code', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
             $addressData = array_intersect_key($data, array_flip($addressFields));
 
             if (isset($data['details']) && !isset($data['additional_note'])) {
@@ -244,7 +244,7 @@ class ApplicationController extends Controller
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4])) {
+        if (!$user || !$user->hasAdminAccess()) {
             return redirect()->back()->with('error', 'You are not authorized to edit applications.');
         }
 
@@ -308,7 +308,7 @@ class ApplicationController extends Controller
                 }
             }
 
-            $addressFields = ['house_name', 'place', 'post_office', 'village', 'panchayat', 'district', 'state', 'pin_code', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
+            $addressFields = ['house_name', 'place', 'post_office', 'village', 'panchayat', 'district', 'state', 'pin_code', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
             $addressData = array_intersect_key($data, array_flip($addressFields));
 
             if (isset($data['details']) && !isset($data['additional_note'])) {
@@ -347,7 +347,7 @@ class ApplicationController extends Controller
     public function destroy(Request $request, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4])) {
+        if (!$user || !$user->hasAdminAccess()) {
             return redirect()->back()->with('error', 'You are not authorized to delete applications.');
         }
 
@@ -498,7 +498,7 @@ class ApplicationController extends Controller
     public function approveApplication(Request $request, $category, $id)
     {
         $user = auth()->user();
-        if ($user->role != 2) {
+        if (!$user || !$user->canApproveApplications()) {
             return redirect()->back()->with('error', 'You are not authorized to approve applications.');
         }
 
@@ -542,7 +542,7 @@ class ApplicationController extends Controller
     public function rejectApplication(Request $request, $category, $id)
     {
         $user = auth()->user();
-        if ($user->role != 2) {
+        if (!$user || !$user->canApproveApplications()) {
             return redirect()->back()->with('error', 'You are not authorized to reject applications.');
         }
 
@@ -700,7 +700,7 @@ class ApplicationController extends Controller
     public function updateCluster(Request $request, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4]) && !(in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']))) {
+        if (!$user || !$user->hasAdminAccess()) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => 'Unauthorized action.'], 403);
             }
@@ -739,7 +739,7 @@ class ApplicationController extends Controller
     public function toggleSponsor(Request $request, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4])) {
+        if (!$user || !$user->hasAdminAccess()) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => 'You are not authorized to update sponsor status.'], 403);
             }

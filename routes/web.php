@@ -10,6 +10,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ContractorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ClusterController;
+use App\Http\Controllers\ThemeController;
 
 // Redirect root to login page
 Route::get('/', function () {
@@ -55,6 +56,16 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::post('/admin/clusters', [ClusterController::class, 'store'])->name('clusters.store');
     Route::put('/admin/clusters/{id}', [ClusterController::class, 'update'])->name('clusters.update');
     Route::delete('/admin/clusters/{id}', [ClusterController::class, 'destroy'])->name('clusters.destroy');
+
+    // Themes & Subthemes routes
+    Route::get('/admin/themes', [ThemeController::class, 'index'])->name('themes.index');
+    Route::post('/admin/themes', [ThemeController::class, 'storeTheme'])->name('themes.store');
+    Route::put('/admin/themes/{id}', [ThemeController::class, 'updateTheme'])->name('themes.update');
+    Route::delete('/admin/themes/{id}', [ThemeController::class, 'destroyTheme'])->name('themes.destroy');
+
+    Route::post('/admin/subthemes', [ThemeController::class, 'storeSubtheme'])->name('subthemes.store');
+    Route::put('/admin/subthemes/{id}', [ThemeController::class, 'updateSubtheme'])->name('subthemes.update');
+    Route::delete('/admin/subthemes/{id}', [ThemeController::class, 'destroySubtheme'])->name('subthemes.destroy');
 
     // Applications routes
     Route::get('/admin/applications/approved', [ApplicationController::class, 'showApprovedDashboard'])->name('applications.approved.index');
@@ -135,7 +146,11 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::delete('/admin/projects/orphan-care/{id}/delete-photo', [ProjectController::class, 'orphanCareDeletePhoto'])->name('projects.orphan_care.delete_photo');
     Route::post('/admin/projects/orphan-care/{id}/update-address', [ProjectController::class, 'orphanCareUpdateAddress'])->name('projects.orphan_care.update_address');
     Route::post('/admin/projects/orphan-care/{id}/add-fund', [ProjectController::class, 'orphanCareAddFund'])->name('projects.orphan_care.add_fund');
-    Route::delete('/admin/projects/orphan-care/{id}/delete-fund/{index}', [ProjectController::class, 'orphanCareDeleteFund'])->name('projects.orphan_care.delete_fund');
+    Route::delete('/admin/projects/orphan-care/{id}/delete-fund/{fund_id}', [ProjectController::class, 'orphanCareDeleteFund'])->name('projects.orphan_care.delete_fund');
+    Route::post('/admin/projects/orphan-care/{id}/add-programme', [ProjectController::class, 'orphanCareAddProgramme'])->name('projects.orphan_care.add_programme');
+    Route::post('/admin/projects/orphan-care/{id}/update-programme/{programme_id}', [ProjectController::class, 'orphanCareUpdateProgramme'])->name('projects.orphan_care.update_programme');
+    Route::delete('/admin/projects/orphan-care/{id}/delete-programme/{programme_id}', [ProjectController::class, 'orphanCareDeleteProgramme'])->name('projects.orphan_care.delete_programme');
+    Route::post('/admin/projects/orphan-care/{id}/toggle-programme-tick', [ProjectController::class, 'orphanCareToggleProgrammeTick'])->name('projects.orphan_care.toggle_programme_tick');
     
     // Profile routes
     Route::get('/admin/profile', [ProfileController::class, 'edit'])->name('profile.edit');

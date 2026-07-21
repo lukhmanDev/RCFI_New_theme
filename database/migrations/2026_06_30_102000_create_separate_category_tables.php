@@ -106,7 +106,7 @@ return new class extends Migration
             $table->string('guardian_relation')->nullable();
             $table->string('health_status')->nullable();
             $table->string('house_name')->nullable();
-            $table->integer('income_source')->nullable();
+            $table->string('income_source')->nullable();
             $table->integer('male_members')->nullable();
             $table->string('marital_status')->nullable();
             $table->string('mobile')->nullable();

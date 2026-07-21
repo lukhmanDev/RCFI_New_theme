@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('mobile')->nullable();
-            $table->tinyInteger('role')->default(1);
+            $table->string('role', 50)->default('super_admin');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('designation')->nullable();

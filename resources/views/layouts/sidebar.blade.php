@@ -13,7 +13,7 @@
                 <span>Dashboard</span>
             </a>
         </li>
-        @if(Auth::user()->role == 1)
+        @if(Auth::user() && Auth::user()->isSuperAdmin())
         <li>
             <a href="{{ route('users') }}" class="{{ Route::currentRouteName() === 'users' ? 'active' : '' }}">
                 <i class="bx bxs-id-card"></i>
@@ -58,6 +58,12 @@
             <a href="{{ route('clusters.index') }}" class="{{ request()->routeIs('clusters.*') ? 'active' : '' }}">
                 <i class="bx bxs-group"></i>
                 <span>Clusters</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('themes.index') }}" class="{{ request()->routeIs('themes.*') ? 'active' : '' }}">
+                <i class="bx bxs-category"></i>
+                <span>Themes & Subthemes</span>
             </a>
         </li>
 

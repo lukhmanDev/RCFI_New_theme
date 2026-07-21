@@ -170,7 +170,7 @@
                             <td style="text-align: center; white-space: nowrap;">
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
-                                @if($appItem->status !== 'Approved' && Auth::user()->role == 2)
+                                @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending')
                                         <!-- Approve -->
                                         <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
@@ -218,7 +218,7 @@
             </div>
             
                                     <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; flex-wrap: wrap;">
-                @if(Auth::user()->role == 2)
+                @if(Auth::user()->canApproveApplications())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 @if(in_array(Auth::user()->role, [1, 2, 4]))
@@ -277,7 +277,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="house_name">House Name *</label>
                             <input type="text" class="form-control-dark" id="house_name" name="meta[house_name]" value="{{ old('meta.house_name') }}" required>
@@ -286,16 +286,20 @@
                             <label class="form-label" for="place">Place *</label>
                             <input type="text" class="form-control-dark" id="place" name="meta[place]" value="{{ old('meta.place') }}" required>
                         </div>
+                        <div>
+                            <label class="form-label" for="village">Village *</label>
+                            <input type="text" class="form-control-dark" id="village" name="meta[village]" value="{{ old('meta.village') }}" required>
+                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="panchayath">Panchayat *</label>
-                            <input type="text" class="form-control-dark" id="panchayath" name="meta[panchayath]" value="{{ old('meta.panchayath') }}" required>
-                        </div>
-                        <div>
                             <label class="form-label" for="post">P.O. *</label>
                             <input type="text" class="form-control-dark" id="post" name="meta[post]" value="{{ old('meta.post') }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="panchayath">Panchayath *</label>
+                            <input type="text" class="form-control-dark" id="panchayath" name="meta[panchayath]" value="{{ old('meta.panchayath') }}" required>
                         </div>
                         <div>
                             <label class="form-label" for="pin_code">Pin Code *</label>
@@ -553,7 +557,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_house_name">House Name *</label>
                             <input type="text" class="form-control-dark" id="edit_house_name" name="meta[house_name]" required>
@@ -562,16 +566,20 @@
                             <label class="form-label" for="edit_place">Place *</label>
                             <input type="text" class="form-control-dark" id="edit_place" name="meta[place]" required>
                         </div>
+                        <div>
+                            <label class="form-label" for="edit_village">Village *</label>
+                            <input type="text" class="form-control-dark" id="edit_village" name="meta[village]" required>
+                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_panchayath">Panchayat *</label>
-                            <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
-                        </div>
-                        <div>
                             <label class="form-label" for="edit_post">P.O. *</label>
                             <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_panchayath">Panchayath *</label>
+                            <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_pin_code">Pin Code *</label>
@@ -898,6 +906,7 @@
                 statusActionsContainer.innerHTML = statusHtml;
             }
             const meta = appItem.meta || {};
+            const getV = (k) => appItem[k] !== undefined && appItem[k] !== null && appItem[k] !== '' ? appItem[k] : (meta[k] !== undefined && meta[k] !== null && meta[k] !== '' ? meta[k] : null);
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
             
             let html = `
@@ -906,28 +915,28 @@
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Age / Gender:</td><td>${formatVal(meta.age)} / ${formatVal(meta.gender)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">House Name:</td><td>${formatVal(meta.house_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(meta.place)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayat / P.O.:</td><td>${formatVal(meta.panchayath)} / ${formatVal(meta.post)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(meta.pin_code)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile 1 / 2:</td><td>${formatVal(meta.contact_number_1)} / ${formatVal(meta.contact_number_2)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Education:</td><td>${formatVal(meta.education)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Married?</td><td>${formatVal(meta.married)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Children Count:</td><td>Total: ${formatVal(meta.num_children)} (M: ${formatVal(meta.num_male_children)} / F: ${formatVal(meta.num_female_children)})</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Name:</td><td>${formatVal(getV('applicant_name'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Age / Gender:</td><td>${formatVal(getV('age'))} / ${formatVal(getV('gender'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(getV('father_name'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(getV('mother_name'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">House Name:</td><td>${formatVal(getV('house_name'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(getV('place') || getV('location'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayat / P.O.:</td><td>${formatVal(getV('panchayath') || getV('panchayat'))} / ${formatVal(getV('post') || getV('post_office'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State:</td><td>${formatVal(getV('district'))} / ${formatVal(getV('state'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(getV('pin_code') || getV('pin'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile 1 / 2:</td><td>${formatVal(getV('contact_number_1') || getV('mobile_1') || getV('mobile'))} / ${formatVal(getV('contact_number_2') || getV('mobile_2'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Education:</td><td>${formatVal(getV('education'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Married?</td><td>${formatVal(getV('married'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Children Count:</td><td>Total: ${formatVal(getV('num_children') || getV('children_total'))} (M: ${formatVal(getV('num_male_children') || getV('children_male'))} / F: ${formatVal(getV('num_female_children') || getV('children_female'))})</td></tr>
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Income & Health Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Occupation?</td><td>${formatVal(meta.has_occupation)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Other Income:</td><td>${formatVal(meta.other_income)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Health Status:</td><td>${formatVal(meta.health_status)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Treatment Note:</td><td>${formatVal(meta.daily_treatment_explanation)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Occupation?</td><td>${formatVal(getV('has_occupation') || getV('occupation'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${getV('monthly_income') ? '₹' + Number(getV('monthly_income')).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Other Income:</td><td>${formatVal(getV('other_income') || getV('other_income_sources'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Health Status:</td><td>${formatVal(getV('health_status'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Treatment Note:</td><td>${formatVal(getV('daily_treatment_explanation') || getV('routine_treatment_explanation'))}</td></tr>
                         </table>
                     </div>
 
@@ -935,10 +944,10 @@
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Accommodation & Land</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Accommodation:</td><td>${formatVal(meta.accommodation_details)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Own Place?</td><td>${formatVal(meta.own_place)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">If So How Many:</td><td>${formatVal(meta.own_place_details)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Type of Land:</td><td>${formatVal(meta.land_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Accommodation:</td><td>${formatVal(getV('accommodation_details') || getV('residence_info'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Own Place?</td><td>${formatVal(getV('own_place') || getV('own_place_status'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">If So How Many:</td><td>${formatVal(getV('own_place_details') || getV('own_place_size'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Type of Land:</td><td>${formatVal(getV('land_type'))}</td></tr>
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Description</h4>

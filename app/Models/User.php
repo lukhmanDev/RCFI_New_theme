@@ -32,9 +32,110 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'role' => 'integer',
+        'role' => 'string',
         'is_suspended' => 'boolean',
     ];
+
+    public function getRoleAttribute($value)
+    {
+        $map = [
+            1 => 'super_admin',
+            '1' => 'super_admin',
+            'Super Admin' => 'super_admin',
+            2 => 'coo',
+            '2' => 'coo',
+            'COO' => 'coo',
+            3 => 'project_manager',
+            '3' => 'project_manager',
+            'Project Manager' => 'project_manager',
+            4 => 'hod',
+            '4' => 'hod',
+            'HOD' => 'hod',
+            5 => 'others',
+            '5' => 'others',
+            'Others' => 'others',
+            6 => 'engineer',
+            '6' => 'engineer',
+            'Engineer' => 'engineer',
+        ];
+
+        return $map[$value] ?? strtolower(str_replace(' ', '_', $value ?: 'others'));
+    }
+
+    public function setRoleAttribute($value)
+    {
+        $map = [
+            1 => 'super_admin',
+            '1' => 'super_admin',
+            'Super Admin' => 'super_admin',
+            2 => 'coo',
+            '2' => 'coo',
+            'COO' => 'coo',
+            3 => 'project_manager',
+            '3' => 'project_manager',
+            'Project Manager' => 'project_manager',
+            4 => 'hod',
+            '4' => 'hod',
+            'HOD' => 'hod',
+            5 => 'others',
+            '5' => 'others',
+            'Others' => 'others',
+            6 => 'engineer',
+            '6' => 'engineer',
+            'Engineer' => 'engineer',
+        ];
+
+        $this->attributes['role'] = $map[$value] ?? strtolower(str_replace(' ', '_', $value ?: 'others'));
+    }
+
+    public function getRoleNameAttribute(): string
+    {
+        $map = [
+            'super_admin' => 'Super Admin',
+            'coo' => 'COO',
+            'project_manager' => 'Project Manager',
+            'hod' => 'HOD',
+            'others' => 'Others',
+            'engineer' => 'Engineer',
+        ];
+
+        return $map[$this->role] ?? ucwords(str_replace('_', ' ', $this->role));
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return in_array($this->role, ['super_admin', 'Super Admin', '1', 1]);
+    }
+
+    public function isCoo(): bool
+    {
+        return in_array($this->role, ['coo', 'COO', '2', 2]);
+    }
+
+    public function isHod(): bool
+    {
+        return in_array($this->role, ['hod', 'HOD', '4', 4]);
+    }
+
+    public function isPm(): bool
+    {
+        return in_array($this->role, ['project_manager', 'Project Manager', '3', 3]);
+    }
+
+    public function isEngineer(): bool
+    {
+        return in_array($this->role, ['engineer', 'Engineer', '6', 6]);
+    }
+
+    public function hasAdminAccess(): bool
+    {
+        return in_array($this->role, ['super_admin', 'coo', 'hod', 'Super Admin', 'COO', 'HOD', 1, 2, 4, '1', '2', '4']);
+    }
+
+    public function canApproveApplications(): bool
+    {
+        return $this->isCoo();
+    }
 
     public function profile()
     {
@@ -59,7 +160,6 @@ class User extends Authenticatable
             \App\Models\HouseProject::class,
             \App\Models\DrinkingWaterGroupProject::class,
             \App\Models\DrinkingWaterIndividualProject::class,
-            \App\Models\OrphanCareProject::class,
             \App\Models\DifferentlyAbledProject::class,
             \App\Models\FamilyAidProject::class,
             \App\Models\GeneralProject::class,

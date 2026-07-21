@@ -162,57 +162,80 @@
     </style>
 
     <!-- Stage Navigation Tabs (Interactive Navigation) -->
-    <div class="stages-tabs">
-        @php
-            $maxStages = $project->type_of_project === 'Orphan Care' ? 3 : 6;
-        @endphp
-        @for($i = 1; $i <= $maxStages; $i++)
+    <div class="stages-tabs" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--panel-border); margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 0.5rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             @php
-                $isActive = $project->stage == $i;
-                $isCompleted = $project->stage > $i;
-                $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
-                
-                //   Stage 1 & Stage 2: always accessible
-                //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
-                //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
-                if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
-                    if ($i <= 2) {
-                        $isLocked = false;
-                    } elseif ($i == 3 || $i == 4) {
-                        $isLocked = empty($project->application_id);
-                    } else { // stage 5 or 6
-                        $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
-                    }
-                } else {
-                    if ($project->type_of_project === 'Orphan Care') {
-                        $isLocked = false;
-                    } else {
-                        $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
-                    }
-                }
-                if ($isLocked) {
-                    $class .= ' locked';
-                }
+                $maxStages = $project->type_of_project === 'Orphan Care' ? 3 : 6;
             @endphp
-            <div class="stage-tab {{ $class }}" id="tab-{{ $i }}" onclick="switchStage({{ $i }})">
-                @if($isLocked)
-                    <i class="bx bx-lock-alt" style="margin-right: 0.25rem;"></i>
-                @endif
-                Stage {{ $i }}
-            </div>
-        @endfor
+            @for($i = 1; $i <= $maxStages; $i++)
+                @php
+                    $isActive = $project->stage == $i;
+                    $isCompleted = $project->stage > $i;
+                    $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
+                    
+                    //   Stage 1 & Stage 2: always accessible
+                    //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
+                    //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
+                    if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
+                        if ($i <= 2) {
+                            $isLocked = false;
+                        } elseif ($i == 3 || $i == 4) {
+                            $isLocked = empty($project->application_id);
+                        } else { // stage 5 or 6
+                            $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
+                        }
+                    } else {
+                        if ($project->type_of_project === 'Orphan Care') {
+                            $isLocked = false;
+                        } else {
+                            $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
+                        }
+                    }
+                    if ($isLocked) {
+                        $class .= ' locked';
+                    }
+                @endphp
+                <div class="stage-tab {{ $class }}" id="tab-{{ $i }}" onclick="switchStage({{ $i }})">
+                    @if($isLocked)
+                        <i class="bx bx-lock-alt" style="margin-right: 0.25rem;"></i>
+                    @endif
+                    Stage {{ $i }}
+                </div>
+            @endfor
+        </div>
+        <div>
+            @php
+                $categorySlugs = [
+                    'Education Center' => 'education-center',
+                    'Cultural Center' => 'cultural-center',
+                    'Hospital or Clinics' => 'hospital-or-clinics',
+                    'Shops and Others' => 'shops-and-others',
+                    'House' => 'house',
+                    'Drinking Water - Group Level' => 'drinking-water-group-level',
+                    'Drinking Water - Individual Level' => 'drinking-water-individual-level',
+                    'Orphan Care' => 'orphan-care',
+                    'Differently Abled' => 'differently-abled',
+                    'Family Aid' => 'family-aid',
+                    'General' => 'general'
+                ];
+                $categorySlug = $categorySlugs[$project->type_of_project] ?? 'education-center';
+            @endphp
+            <a href="{{ route('projects.category', $categorySlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; padding: 0.65rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 700;">
+                <i class="bx bx-arrow-back"></i> Back to Project List
+            </a>
+        </div>
     </div>
 
     @php
         $authUser = auth()->user();
-        $isSuperAdmin = ($authUser && $authUser->role == 1);
+        $isSuperAdmin = ($authUser && $authUser->isSuperAdmin());
         $designationLower = strtolower($authUser->designation ?? '');
-        $isCoo = ($authUser && ($authUser->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
-        $isHod = ($authUser && ($authUser->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
-        $isPmOnly = ($authUser && ($authUser->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
-        $isEngineerOnly = ($authUser && ($authUser->role == 6 || strtolower($authUser->designation ?? '') === 'engineer'));
+        $isCoo = ($authUser && ($authUser->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
+        $isHod = ($authUser && ($authUser->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+        $isPmOnly = ($authUser && ($authUser->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
+        $isEngineerOnly = ($authUser && ($authUser->isEngineer() || strtolower($authUser->designation ?? '') === 'engineer'));
         
-        $isProjectManager = ($authUser && (in_array($authUser->role, [1, 2, 3, 4, 6]) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod'])));
+        $isProjectManager = ($authUser && ($authUser->isSuperAdmin() || $authUser->isCoo() || $authUser->isHod() || $authUser->isPm() || $authUser->isEngineer() || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod'])));
         
         $isLockedForEditing = ($project->status === 'Completed' || $project->status === 'Approved');
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
@@ -611,16 +634,16 @@
                                 </thead>
                                 <tbody>
                                     @php
-                                        $financials = $project->financial_data ?? [];
+                                        $financials = $project->funds;
                                     @endphp
                                     @forelse($financials as $index => $row)
                                         <tr style="border-bottom: 1px solid var(--panel-border); font-size: 0.9rem; transition: background 0.15s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
                                             <td style="padding: 0.75rem 1rem; color: var(--text-muted);">{{ $index + 1 }}</td>
-                                            <td style="padding: 0.75rem 1rem;">{{ !empty($row['date']) ? date('d-M-Y', strtotime($row['date'])) : 'N/A' }}</td>
-                                            <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹{{ number_format($row['amount'], 2) }}</td>
-                                            <td style="padding: 0.75rem 1rem;">{{ $row['agency'] ?? 'N/A' }}</td>
+                                            <td style="padding: 0.75rem 1rem;">{{ !empty($row->date) ? date('d-M-Y', strtotime($row->date)) : 'N/A' }}</td>
+                                            <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹{{ number_format($row->amount, 2) }}</td>
+                                            <td style="padding: 0.75rem 1rem;">{{ $row->agency ?? 'N/A' }}</td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
-                                                <form action="{{ route('projects.orphan_care.delete_fund', [$project->id, $index]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this row?')" style="display: inline;">
+                                                <form action="{{ route('projects.orphan_care.delete_fund', [$project->id, $row->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this row?')" style="display: inline;">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem;" title="Delete">
@@ -637,11 +660,11 @@
                                         </tr>
                                     @endforelse
                                 </tbody>
-                                @if(count($financials) > 0)
+                                @if($financials->count() > 0)
                                     <tfoot>
                                         <tr style="border-top: 2px solid var(--panel-border); font-weight: 700; font-size: 0.95rem;">
                                             <td colspan="2" style="padding: 0.75rem 1rem; color: var(--text-main); text-align: left;">Total</td>
-                                            <td style="padding: 0.75rem 1rem; text-align: right; color: var(--accent-cyan);">₹{{ number_format(array_sum(array_column($financials, 'amount')), 2) }}</td>
+                                            <td style="padding: 0.75rem 1rem; text-align: right; color: var(--accent-cyan);">₹{{ number_format($financials->sum('amount'), 2) }}</td>
                                             <td colspan="2" style="padding: 0.75rem 1rem;"></td>
                                         </tr>
                                     </tfoot>
@@ -970,10 +993,15 @@
             </div>
         </div>
 
-        <!-- ================= STAGE 3 PANEL (FILES) ================= -->
+        <!-- ================= STAGE 3 PANEL (FILES / PROGRAMMES) ================= -->
         <div class="stage-content-panel" id="stage-content-3">
-            <div class="detail-header-panel">
-                <h2>FILES</h2>
+            <div class="detail-header-panel" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>{{ $project->type_of_project === 'Orphan Care' ? 'PROGRAMME DETAILS' : 'FILES' }}</h2>
+                @if($project->type_of_project === 'Orphan Care' && $isProjectManager && !$isLockedForEditing)
+                    <button type="button" onclick="openAddProgrammeModal()" class="btn-custom" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                        <i class="bx bx-plus-circle" style="font-size: 1.1rem;"></i> Add Programme
+                    </button>
+                @endif
             </div>
             <div style="padding: 1.5rem;">
                 @if(empty($project->application_id))
@@ -1000,78 +1028,195 @@
                     </div>
                 @endif
 
-
-                <table class="stage-table">
-                    <thead>
-                        <tr>
-                            <th>Document Name</th>
-                            <th style="width: 250px;">Ticked At</th>
-                            <th style="width: 150px; text-align: center;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $docs = [
-                                'Land document', 
-                                'Possession certificate', 
-                                'Recommendation letter',
-                                'Committee minutes', 
-                                'Permit copy', 
-                                'Plan', 
-                                'Tender schedule sheet',
-                                'Site study', 
-                                'Quotations', 
-                                'Quotations approval form',
-                                'Work order letter',
-                                'Meeting minutes copy',
-                                'Agreement with contractor',
-                                'Agreement with committee',
-                                'Project summary form'
-                            ];
-                            $docRecord = $project->files_with_timestamps;
-                        @endphp
-                        @foreach($docs as $doc)
-                            @php
-                                $column = \App\Models\ProjectDocument::$docColumnMap[$doc] ?? null;
-                                $filePath = ($docRecord && $column) ? $docRecord->$column : null;
-                                $timeColumn = $column ? $column . '_ticked_at' : null;
-                                $tickedAtDate = ($docRecord && $timeColumn) ? $docRecord->$timeColumn : null;
-                                $tickedAt = $tickedAtDate ? $tickedAtDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
-                                
-                                if ($filePath === '0') {
-                                    $filePath = null;
-                                }
-                            @endphp
-                            <tr>
-                                <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $doc }}</td>
-                                <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
-                                    {{ $tickedAt ?? '-' }}
-                                </td>
-                                <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center;">
-                                    @if($isProjectManager && $hasApplication && !$isLockedForEditing)
-                                        <button type="button" onclick="toggleChecklistDocument(this, '{{ $doc }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
-                                            @if(!empty($filePath))
-                                                <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
-                                            @else
-                                                <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
-                                            @endif
-                                        </button>
-                                    @else
-                                        @if(!empty($filePath))
-                                            <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                                <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
+                @if($project->type_of_project === 'Orphan Care')
+                    @php
+                        $programmes = $project->programmes;
+                    @endphp
+                    @if($programmes->isEmpty())
+                        <div style="text-align: center; padding: 3rem 1.5rem; background: rgba(255,255,255,0.02); border: 1px dashed var(--panel-border); border-radius: 8px;">
+                            <i class="bx bx-calendar-event" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 0.75rem; display: block;"></i>
+                            <h3 style="color: var(--text-main); font-size: 1.1rem; margin: 0 0 0.5rem 0; font-weight: 600;">No Programmes Recorded</h3>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 1.25rem 0;">No programme records have been added to Stage 3 for this Orphan Care project yet.</p>
+                            @if($isProjectManager && !$isLockedForEditing)
+                                <button type="button" onclick="openAddProgrammeModal()" class="btn-custom" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 6px; cursor: pointer;">
+                                    <i class="bx bx-plus-circle"></i> Add First Programme
+                                </button>
+                            @endif
+                        </div>
+                    @else
+                        <div style="display: flex; flex-direction: column; gap: 2rem;">
+                            @foreach($programmes as $idx => $prog)
+                                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-radius: 10px; padding: 1.5rem; position: relative;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.85rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                            <span style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 20px;">
+                                                Programme #{{ $idx + 1 }}
                                             </span>
-                                        @else
-                                            <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                                <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
-                                            </span>
+                                            <h3 style="margin: 0; color: #0f172a; font-size: 1.15rem; font-weight: 700;">{{ $prog->programme_name ?? 'Untitled Programme' }}</h3>
+                                        </div>
+                                        @if($isProjectManager && !$isLockedForEditing)
+                                            <div style="display: flex; gap: 0.5rem;">
+                                                <button type="button" onclick="openEditProgrammeModal({{ $prog->id }}, {{ json_encode($prog) }})" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; background: transparent; color: #0284c7; border: 1px solid #0284c7; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                                    <i class="bx bx-edit"></i> Edit Programme
+                                                </button>
+                                                <form action="{{ route('projects.orphan_care.delete_programme', [$project->id, $prog->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this programme?');" style="display: inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                                        <i class="bx bx-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
                                         @endif
-                                    @endif
-                                </td>
+                                    </div>
+
+                                    <!-- Programme Meta Info Grid -->
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.02); padding: 0.85rem 1rem; border-radius: 8px;">
+                                        <div>
+                                            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Date</span>
+                                            <strong style="color: #0f172a; font-size: 0.95rem;">{{ !empty($prog->date) ? date('d-M-Y', strtotime($prog->date)) : '-' }}</strong>
+                                        </div>
+                                        <div>
+                                            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Place</span>
+                                            <strong style="color: #0f172a; font-size: 0.95rem;">{{ $prog->place ?? '-' }}</strong>
+                                        </div>
+                                    </div>
+
+                                    <!-- Separate Checklist Table for this Programme -->
+                                    <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--accent-cyan); margin: 0 0 0.85rem 0; font-weight: 700; letter-spacing: 0.05em;">CHECKLIST &amp; DOCUMENTS</h4>
+                                    <table class="stage-table" style="margin-bottom: 0;">
+                                        <thead>
+                                            <tr>
+                                                <th>Item Name</th>
+                                                <th style="width: 150px; text-align: center;">Tick Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @php
+                                                $items = [
+                                                    'present' => 'Present / Attendance',
+                                                    'photo' => 'Photo',
+                                                    'marklist' => 'Marklist',
+                                                    'thanks_letter' => 'Thanks Letter',
+                                                    'report_form' => 'Report Form',
+                                                    'other_document' => 'Other Document'
+                                                ];
+                                            @endphp
+                                            @foreach($items as $key => $label)
+                                                @php
+                                                    $isTicked = $prog->{$key . '_ticked'} ?? false;
+                                                @endphp
+                                                <tr>
+                                                    <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">
+                                                        {{ $label }}
+                                                        @if($key === 'present' && !empty($prog->present))
+                                                            <span style="display: block; font-size: 0.8rem; color: var(--text-muted); font-weight: normal; margin-top: 0.2rem;">
+                                                                Info: {{ $prog->present }}
+                                                            </span>
+                                                        @endif
+                                                    </td>
+                                                    <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center; align-items: center;">
+                                                        @if($isProjectManager && !$isLockedForEditing)
+                                                            <button type="button" onclick="toggleProgrammeChecklistTick(this, {{ $prog->id }}, '{{ $key }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                                                @if($isTicked)
+                                                                    <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
+                                                                @else
+                                                                    <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
+                                                                @endif
+                                                            </button>
+                                                        @else
+                                                            @if($isTicked)
+                                                                <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                                                    <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
+                                                                </span>
+                                                            @else
+                                                                <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                                                    <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
+                                                                </span>
+                                                            @endif
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                @else
+                    <table class="stage-table">
+                        <thead>
+                            <tr>
+                                <th>Document Name</th>
+                                <th style="width: 250px;">Ticked At</th>
+                                <th style="width: 150px; text-align: center;">Action</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @php
+                                $docs = [
+                                    'Land document', 
+                                    'Possession certificate', 
+                                    'Recommendation letter',
+                                    'Committee minutes', 
+                                    'Permit copy', 
+                                    'Plan', 
+                                    'Tender schedule sheet',
+                                    'Site study', 
+                                    'Quotations', 
+                                    'Quotations approval form',
+                                    'Work order letter',
+                                    'Meeting minutes copy',
+                                    'Agreement with contractor',
+                                    'Agreement with committee',
+                                    'Project summary form'
+                                ];
+                                $docRecord = $project->files_with_timestamps;
+                            @endphp
+                            @foreach($docs as $doc)
+                                @php
+                                    $column = \App\Models\ProjectDocument::$docColumnMap[$doc] ?? null;
+                                    $filePath = ($docRecord && $column) ? $docRecord->$column : null;
+                                    $timeColumn = $column ? $column . '_ticked_at' : null;
+                                    $tickedAtDate = ($docRecord && $timeColumn) ? $docRecord->$timeColumn : null;
+                                    $tickedAt = $tickedAtDate ? $tickedAtDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                                    
+                                    if ($filePath === '0') {
+                                        $filePath = null;
+                                    }
+                                @endphp
+                                <tr>
+                                    <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $doc }}</td>
+                                    <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
+                                        {{ $tickedAt ?? '-' }}
+                                    </td>
+                                    <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center;">
+                                        @if($isProjectManager && $hasApplication && !$isLockedForEditing)
+                                            <button type="button" onclick="toggleChecklistDocument(this, '{{ $doc }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                                @if(!empty($filePath))
+                                                    <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
+                                                @else
+                                                    <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
+                                                @endif
+                                            </button>
+                                        @else
+                                            @if(!empty($filePath))
+                                                <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                                    <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
+                                                </span>
+                                            @else
+                                                <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                                    <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
+                                                </span>
+                                            @endif
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
             </div>
         </div>
 
@@ -3174,6 +3319,209 @@
             </form>
         </div>
     </div>
+    <!-- Add Programme Modal -->
+    <div id="addProgrammeModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;">
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Add New Programme</h3>
+            <form action="{{ route('projects.orphan_care.add_programme', $project->id) }}" method="POST" style="margin: 0;">
+                @csrf
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Programme Name *</label>
+                        <input type="text" name="programme_name" required placeholder="e.g. Annual Student Meet 2026" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
+                        <input type="date" name="date" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
+                        <input type="text" name="place" placeholder="e.g. Main Auditorium" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Present / Attendance Info</label>
+                        <input type="text" name="present" placeholder="e.g. 45 Students Present" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                </div>
+
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; text-transform: uppercase; margin: 1.5rem 0 1rem 0; font-weight: 700; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.4rem;">Tick Checklist (Select Completed Items)</h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr; gap: 0.85rem; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" name="present_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Present / Attendance
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" name="photo_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Photo
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" name="marklist_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Marklist
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" name="thanks_letter_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Thanks Letter
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" name="report_form_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Report Form
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" name="other_document_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Other Document
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeAddProgrammeModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; cursor: pointer;">Add Programme</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Programme Modal -->
+    <div id="editProgrammeModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;">
+            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Edit Programme</h3>
+            <form id="editProgrammeForm" method="POST" style="margin: 0;">
+                @csrf
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Programme Name *</label>
+                        <input type="text" id="edit_prog_name" name="programme_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
+                        <input type="date" id="edit_prog_date" name="date" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
+                        <input type="text" id="edit_prog_place" name="place" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Present / Attendance Info</label>
+                        <input type="text" id="edit_prog_present" name="present" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                </div>
+
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; text-transform: uppercase; margin: 1.5rem 0 1rem 0; font-weight: 700; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.4rem;">Tick Checklist (Select Completed Items)</h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr; gap: 0.85rem; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" id="edit_prog_present_ticked" name="present_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Present / Attendance
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" id="edit_prog_photo_ticked" name="photo_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Photo
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" id="edit_prog_marklist_ticked" name="marklist_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Marklist
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" id="edit_prog_thanks_letter_ticked" name="thanks_letter_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Thanks Letter
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" id="edit_prog_report_form_ticked" name="report_form_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Report Form
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                        <input type="checkbox" id="edit_prog_other_document_ticked" name="other_document_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                        Other Document
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditProgrammeModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #0284c7, #0369a1); border: none; color: #ffffff; cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openAddProgrammeModal() {
+            const modal = document.getElementById('addProgrammeModal');
+            if (modal) modal.style.display = 'flex';
+        }
+        function closeAddProgrammeModal() {
+            const modal = document.getElementById('addProgrammeModal');
+            if (modal) modal.style.display = 'none';
+        }
+        function openEditProgrammeModal(idx, prog) {
+            const modal = document.getElementById('editProgrammeModal');
+            const form = document.getElementById('editProgrammeForm');
+            if (modal && form) {
+                form.action = `/admin/projects/orphan-care/{{ $project->id }}/update-programme/${idx}`;
+                document.getElementById('edit_prog_name').value = prog.programme_name || '';
+                document.getElementById('edit_prog_date').value = prog.date || '';
+                document.getElementById('edit_prog_place').value = prog.place || '';
+                document.getElementById('edit_prog_present').value = prog.present || '';
+
+                // Handle checkbox values
+                const fields = ['present', 'photo', 'marklist', 'thanks_letter', 'report_form', 'other_document'];
+                fields.forEach(f => {
+                    const checkbox = document.getElementById(`edit_prog_${f}_ticked`);
+                    if (checkbox) {
+                        checkbox.checked = !!(prog[f + '_ticked']);
+                    }
+                });
+
+                modal.style.display = 'flex';
+            }
+        }
+        function closeEditProgrammeModal() {
+            const modal = document.getElementById('editProgrammeModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function toggleProgrammeChecklistTick(btnElement, progIndex, field) {
+            const icon = btnElement.querySelector('i');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            try {
+                // Instantly scale/rotate slightly for feedback
+                btnElement.style.transform = 'scale(0.8)';
+                setTimeout(() => btnElement.style.transform = 'scale(1)', 150);
+
+                const response = await fetch(`/admin/projects/orphan-care/{{ $project->id }}/toggle-programme-tick`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        programme_id: progIndex,
+                        field: field
+                    })
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    if (result.is_ticked) {
+                        icon.className = 'bx bxs-checkbox-checked';
+                        icon.style.color = 'var(--accent-green)';
+                    } else {
+                        icon.className = 'bx bx-checkbox';
+                        icon.style.color = 'var(--text-muted)';
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast(result.message, 'success');
+                    }
+                } else {
+                    alert(result.error || 'Failed to toggle tick status.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while toggling status.');
+            }
+        }
+    </script>
 @endif
 
 @endsection

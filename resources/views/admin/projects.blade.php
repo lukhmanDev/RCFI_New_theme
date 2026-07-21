@@ -67,7 +67,7 @@
                             </td>
 
                             <!-- Name of Applicant -->
-                            <td style="font-weight: 600; color: #ffffff;">{{ $appItem->applicant_name }}</td>
+                            <td style="font-weight: 600; color: #1e293b;">{{ $appItem->applicant_name }}</td>
 
                             <!-- Amount Requested -->
                             <td class="col-amount" style="text-align: center;">

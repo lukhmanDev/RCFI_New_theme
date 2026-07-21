@@ -339,7 +339,7 @@
                             
                             <div class="form-group" style="margin: 0;">
                                 <label class="modern-label" for="designation">Designation</label>
-                                <input type="text" class="modern-input" id="designation" name="designation" value="{{ old('designation', $user->designation) }}" placeholder="e.g. Project Manager" @if(Auth::user()->role != 1) readonly @endif>
+                                <input type="text" class="modern-input" id="designation" name="designation" value="{{ old('designation', $user->designation) }}" placeholder="e.g. Project Manager" @if(!Auth::user()->isSuperAdmin()) readonly @endif>
                             </div>
                         </div>
 

@@ -198,7 +198,7 @@
 
     @php
         $authUser = auth()->user();
-        $isSuperAdmin = ($authUser && $authUser->role == 1);
+        $isSuperAdmin = ($authUser && $authUser->isSuperAdmin());
         $designationLower = strtolower($authUser->designation ?? '');
         $isCoo = ($authUser && ($authUser->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
         $isHod = ($authUser && ($authUser->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
@@ -548,11 +548,24 @@
                 @php
                     $metaData = [];
                     if ($application) {
-                        if (is_array($application->meta)) {
-                            $metaData = $application->meta;
-                        } elseif (is_string($application->meta)) {
-                            $metaData = json_decode($application->meta, true) ?? [];
+                        if (is_object($application)) {
+                            $metaData = method_exists($application, 'toArray') ? $application->toArray() : (array) $application;
+                            if (isset($application->meta)) {
+                                $metaArr = is_array($application->meta) ? $application->meta : (json_decode($application->meta, true) ?? []);
+                                $metaData = array_merge($metaData, $metaArr);
+                            }
+                            if (method_exists($application, 'address') && ($addrObj = $application->address()->first())) {
+                                $metaData = array_merge($metaData, array_filter($addrObj->toArray()));
+                            }
+                        } elseif (is_array($application)) {
+                            $metaData = $application;
                         }
+
+                        $metaData['mobile_1'] = $metaData['mobile_1'] ?? $metaData['contact_number_1'] ?? $metaData['mobile'] ?? null;
+                        $metaData['mobile_2'] = $metaData['mobile_2'] ?? $metaData['contact_number_2'] ?? null;
+                        $metaData['post_office'] = $metaData['post_office'] ?? $metaData['post'] ?? null;
+                        $metaData['panchayat'] = $metaData['panchayat'] ?? $metaData['panchayath'] ?? null;
+                        $metaData['pin_code'] = $metaData['pin_code'] ?? $metaData['pincode'] ?? $metaData['pin'] ?? null;
                     }
 
                     $formatVal = function($val) {

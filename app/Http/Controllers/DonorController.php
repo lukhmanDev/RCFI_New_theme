@@ -16,8 +16,8 @@ class DonorController extends Controller
 
     public function store(Request $request)
     {
-        if (auth()->user()->role != 1) {
-            abort(403, 'Unauthorized action. Only Super Admin can add partners.');
+        if (!auth()->user()->hasAdminAccess()) {
+            abort(403, 'Unauthorized action. Only administrators can add partners.');
         }
 
         $data = $request->validate([
@@ -48,8 +48,8 @@ class DonorController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (auth()->user()->role != 1) {
-            abort(403, 'Unauthorized action. Only Super Admin can edit partners.');
+        if (!auth()->user()->hasAdminAccess()) {
+            abort(403, 'Unauthorized action. Only administrators can edit partners.');
         }
 
         $donor = Donor::findOrFail($id);
@@ -87,8 +87,8 @@ class DonorController extends Controller
 
     public function destroy($id)
     {
-        if (auth()->user()->role != 1) {
-            abort(403, 'Unauthorized action. Only Super Admin can delete partners.');
+        if (!auth()->user()->hasAdminAccess()) {
+            abort(403, 'Unauthorized action. Only administrators can delete partners.');
         }
 
         $donor = Donor::findOrFail($id);

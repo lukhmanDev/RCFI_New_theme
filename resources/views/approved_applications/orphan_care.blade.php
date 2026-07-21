@@ -105,7 +105,7 @@
                                 @endif
                             </td>
                             <td style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
-                                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                                @if(Auth::user()->hasAdminAccess())
                                     @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
                                         <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }})" style="background-color: transparent; color: #f59e0b; border: 1px solid #f59e0b; padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-block; text-align: center; text-decoration: none; transition: all 0.2s;" title="Mark as Not Sponsored">
                                             Un-sponsor
@@ -146,7 +146,7 @@
             </div>
             
             <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; flex-wrap: wrap;">
-                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                @if(Auth::user()->hasAdminAccess())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 <button onclick="closeDetailsModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.6rem 1.5rem;">Close Details</button>
@@ -169,7 +169,7 @@
                 const sponsorUrl = `/admin/applications/orphan-care/${appItem.id}/toggle-sponsor`;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                @if(Auth::user()->role == 2)
+                @if(Auth::user()->hasAdminAccess())
                     if (!isProjectApproved) {
                         statusHtml += `
                             <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
@@ -182,7 +182,7 @@
                     }
                 @endif
 
-                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                @if(Auth::user()->hasAdminAccess())
                     statusHtml += `
                         <button type="button" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, ${appItem.id})" class="btn-custom" style="${appItem.sponsor_status === 'Sponsored' ? 'background: transparent; color: #f59e0b; border: 1px solid #f59e0b;' : 'background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: #ffffff;'} padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
                             ${appItem.sponsor_status === 'Sponsored' 
@@ -360,8 +360,9 @@
                 event.preventDefault();
                 event.stopPropagation();
             }
-            showCustomConfirm('Are you sure you want to change the sponsor status?', async function() {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const doToggle = async () => {
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
                 try {
                     const response = await fetch(`/admin/applications/orphan-care/${appId}/toggle-sponsor`, {
                         method: 'POST',
@@ -382,7 +383,13 @@
                     console.error(err);
                     alert('An error occurred while updating sponsor status.');
                 }
-            });
+            };
+
+            if (typeof showCustomConfirm === 'function') {
+                showCustomConfirm('Are you sure you want to change the sponsor status?', doToggle);
+            } else if (confirm('Are you sure you want to change the sponsor status?')) {
+                doToggle();
+            }
         }
     </script>
 

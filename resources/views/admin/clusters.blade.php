@@ -55,7 +55,7 @@
 
                             <!-- Cluster Name -->
                             <td>
-                                <div style="font-weight: 600; color: #ffffff;">{{ $cluster->name }}</div>
+                                <div style="font-weight: 700; color: #1e293b;">{{ $cluster->name }}</div>
                             </td>
 
                             <!-- Institution Name -->

@@ -1,8 +1,8 @@
 @php
     $authUser = auth()->user();
-    $isCoo = ($authUser && ($authUser->role == 2 || strtolower($authUser->designation ?? '') === 'coo'));
-    $isHod = ($authUser && ($authUser->role == 4 || strtolower($authUser->designation ?? '') === 'hod'));
-    $isSuperAdmin = ($authUser && $authUser->role == 1);
+    $isCoo = ($authUser && ($authUser->isCoo() || strtolower($authUser->designation ?? '') === 'coo'));
+    $isHod = ($authUser && ($authUser->isHod() || strtolower($authUser->designation ?? '') === 'hod'));
+    $isSuperAdmin = ($authUser && $authUser->isSuperAdmin());
     $canCreateProject = $isCoo || $isHod || $isSuperAdmin;
 @endphp
 @extends('layouts.admin')
@@ -294,9 +294,6 @@
                     <th>Project Name</th>
                     <th>Sponsor</th>
                     <th class="col-agency">Agency Project No</th>
-                    <th class="col-donor">Donor Name</th>
-                    <th class="col-manager">Project Manager</th>
-                    <th class="col-budget" style="text-align: right;">Available Budget</th>
                     <th class="col-remarks">Remarks</th>
                     <th style="text-align: center; width: 180px;">Action</th>
                 </tr>
@@ -311,15 +308,12 @@
                         <td>{{ $project->project_name ?? 'N/A' }}</td>
                         <td>{{ $project->sponsor ?? 'N/A' }}</td>
                         <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
-                        <td class="col-donor">{{ $project->donor ? $project->donor->name : 'N/A' }}</td>
-                        <td class="col-manager">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</td>
-                        <td class="col-budget" style="text-align: right;">₹{{ number_format($project->available_budget, 2) }}</td>
                         <td class="col-remarks" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             {{ $project->remarks ?? 'N/A' }}
                         </td>
                         <td style="text-align: center; white-space: nowrap;">
-                            @if(in_array(Auth::user()->role, [1, 2, 4]))
-                            <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nName: {{ $project->project_name ?? 'N/A' }}\nSponsor: {{ $project->sponsor ?? 'N/A' }}\nTheme: {{ $project->theme ?? 'N/A' }}\nSubtheme: {{ $project->subtheme ?? 'N/A' }}\nActivity: {{ $project->activity ?? 'N/A' }}\nSpec: {{ $project->project_spec ?? 'N/A' }}\nAgency No: {{ $project->agency_project_no }}\nDonor: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
+                            @if(Auth::user()->hasAdminAccess())
+                            <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nName: {{ $project->project_name ?? 'N/A' }}\nSponsor: {{ $project->sponsor ?? 'N/A' }}\nTheme: {{ $project->theme ?? 'N/A' }}\nSubtheme: {{ $project->subtheme ?? 'N/A' }}\nActivity: {{ $project->activity ?? 'N/A' }}\nSpec: {{ $project->project_spec ?? 'N/A' }}\nAgency No: {{ $project->agency_project_no }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
                                 <i class="bx bx-dots-horizontal-rounded"></i>
                             </button>
 
@@ -384,40 +378,6 @@
                     <input type="text" name="agency_project_no" id="agency_project_no" required placeholder="Enter agency project number">
                 </div>
 
-                <div class="form-group-custom">
-                    <label for="donor_id">Donor Name</label>
-                    <select name="donor_id" id="donor_id" required>
-                        <option value="">Select a donor</option>
-                        @foreach($donors as $donor)
-                            <option value="{{ $donor->id }}">{{ $donor->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="project_manager_id">Project Manager</label>
-                    <select name="project_manager_id" id="project_manager_id" required>
-                        <option value="">Select a manager</option>
-                        @foreach($managers as $manager)
-                            <option value="{{ $manager->id }}">{{ $manager->name }} ({{ $manager->designation ?? 'Staff' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="engineer_id">Engineer</label>
-                    <select name="engineer_id" id="engineer_id">
-                        <option value="">Select an engineer</option>
-                        @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="available_budget">Available Budget</label>
-                    <input type="number" step="0.01" name="available_budget" id="available_budget" required placeholder="Enter available budget">
-                </div>
                 <div class="form-group-custom">
                     <label for="add_theme">Theme</label>
                     <select name="theme" id="add_theme" required onchange="populateSubthemes('add_theme', 'add_subtheme')">
@@ -492,40 +452,6 @@
                 </div>
 
                 <div class="form-group-custom">
-                    <label for="edit_donor_id">Donor Name</label>
-                    <select name="donor_id" id="edit_donor_id" required>
-                        <option value="">Select a donor</option>
-                        @foreach($donors as $donor)
-                            <option value="{{ $donor->id }}">{{ $donor->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_project_manager_id">Project Manager</label>
-                    <select name="project_manager_id" id="edit_project_manager_id" required>
-                        <option value="">Select a manager</option>
-                        @foreach($managers as $manager)
-                            <option value="{{ $manager->id }}">{{ $manager->name }} ({{ $manager->designation ?? 'Staff' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_engineer_id">Engineer</label>
-                    <select name="engineer_id" id="edit_engineer_id">
-                        <option value="">Select an engineer</option>
-                        @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_available_budget">Available Budget</label>
-                    <input type="number" step="0.01" name="available_budget" id="edit_available_budget" required>
-                </div>
-                <div class="form-group-custom">
                     <label for="edit_theme">Theme</label>
                     <select name="theme" id="edit_theme" required onchange="populateSubthemes('edit_theme', 'edit_subtheme')">
                         <option value="">Select Theme</option>
@@ -583,10 +509,6 @@
         document.getElementById('edit_sponsor').value = project.sponsor || '';
         document.getElementById('edit_project_spec').value = project.project_spec || '';
         document.getElementById('edit_agency_project_no').value = project.agency_project_no || '';
-        document.getElementById('edit_donor_id').value = project.donor_id || '';
-        document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';
-        document.getElementById('edit_engineer_id').value = project.engineer_id || '';
-        document.getElementById('edit_available_budget').value = project.available_budget || '';
         document.getElementById('edit_remarks').value = project.remarks || '';
         const currentProj = (typeof project !== 'undefined' ? project : (typeof projectData !== 'undefined' ? projectData : {}));
         document.getElementById('edit_theme').value = currentProj.theme || '';

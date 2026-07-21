@@ -308,7 +308,7 @@
                             {{ $project->remarks ?? 'N/A' }}
                         </td>
                         <td style="text-align: center; white-space: nowrap;">
-                            @if(in_array(Auth::user()->role, [1, 2, 4]))
+                            @if(Auth::user()->hasAdminAccess())
                             <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nAgency No: {{ $project->agency_project_no }}\nDonor: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nEngineer: {{ $project->engineer ? $project->engineer->name : 'N/A' }}\nUnit: {{ $project->unit ?? 'RCFI' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
                                 <i class="bx bx-dots-horizontal-rounded"></i>
                             </button>

@@ -262,30 +262,37 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        $isCoo = ($user->role == 2 || strtolower($user->designation ?? '') === 'coo');
-        $isHod = ($user->role == 4 || strtolower($user->designation ?? '') === 'hod');
-        $isSuperAdmin = ($user->role == 1);
+        $isCoo = ($user->isCoo() || strtolower($user->designation ?? '') === 'coo');
+        $isHod = ($user->isHod() || strtolower($user->designation ?? '') === 'hod');
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
 
         if (!$isCoo && !$isHod && !$isSuperAdmin) {
             return redirect()->back()->with('error', 'Only HOD and COO are authorized to create projects.');
         }
+
+        $redirectCategory = $request->input('redirect_category');
+        $isOrphanCare = ($redirectCategory === 'orphan-care' || $request->input('type_of_project') === 'Orphan Care');
 
         $data = $request->validate([
             'project_name' => ['required', 'string', 'max:255'],
             'sponsor' => ['required', 'string', 'max:255'],
             'project_spec' => ['nullable', 'string'],
             'agency_project_no' => ['required', 'string', 'max:255'],
-            'donor_id' => ['required', 'exists:donors,id'],
-            'project_manager_id' => ['required', 'exists:users,id'],
+            'donor_id' => [$isOrphanCare ? 'nullable' : 'required', 'exists:donors,id'],
+            'project_manager_id' => [$isOrphanCare ? 'nullable' : 'required', 'exists:users,id'],
             'engineer_id' => ['nullable', 'exists:users,id'],
             'unit' => ['nullable', 'string', 'max:255'],
-            'available_budget' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
+            'available_budget' => [$isOrphanCare ? 'nullable' : 'required', 'numeric', 'min:0', 'max:9999999999999'],
             'type_of_project' => ['required', 'string'],
             'theme' => ['nullable', 'string', 'max:255'],
             'subtheme' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string'],
         ]);
+
+        if ($isOrphanCare) {
+            unset($data['donor_id'], $data['project_manager_id'], $data['engineer_id'], $data['available_budget']);
+        }
 
         $redirectCategory = $request->input('redirect_category');
         $config = $this->categories[$redirectCategory] ?? null;
@@ -334,26 +341,33 @@ class ProjectController extends Controller
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4]) && strtolower($user->designation ?? '') !== 'coo' && strtolower($user->designation ?? '') !== 'hod') {
+        if (!$user->hasAdminAccess() && strtolower($user->designation ?? '') !== 'coo' && strtolower($user->designation ?? '') !== 'hod') {
             return redirect()->back()->with('error', 'You are not authorized to edit projects.');
         }
+
+        $redirectCategory = $request->input('redirect_category');
+        $isOrphanCare = ($redirectCategory === 'orphan-care' || $request->input('type_of_project') === 'Orphan Care');
 
         $data = $request->validate([
             'project_name' => ['required', 'string', 'max:255'],
             'sponsor' => ['required', 'string', 'max:255'],
             'project_spec' => ['nullable', 'string'],
             'agency_project_no' => ['required', 'string', 'max:255'],
-            'donor_id' => ['required', 'exists:donors,id'],
-            'project_manager_id' => ['required', 'exists:users,id'],
+            'donor_id' => [$isOrphanCare ? 'nullable' : 'required', 'exists:donors,id'],
+            'project_manager_id' => [$isOrphanCare ? 'nullable' : 'required', 'exists:users,id'],
             'engineer_id' => ['nullable', 'exists:users,id'],
             'unit' => ['nullable', 'string', 'max:255'],
-            'available_budget' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
+            'available_budget' => [$isOrphanCare ? 'nullable' : 'required', 'numeric', 'min:0', 'max:9999999999999'],
             'type_of_project' => ['required', 'string'],
             'theme' => ['nullable', 'string', 'max:255'],
             'subtheme' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string'],
         ]);
+
+        if ($isOrphanCare) {
+            unset($data['donor_id'], $data['project_manager_id'], $data['engineer_id'], $data['available_budget']);
+        }
 
         $redirectCategory = $request->input('redirect_category');
         $config = $this->categories[$redirectCategory] ?? null;
@@ -389,7 +403,7 @@ class ProjectController extends Controller
     public function destroy(Request $request, $id)
     {
         $user = auth()->user();
-        if (!in_array($user->role, [1, 2, 4]) && strtolower($user->designation ?? '') !== 'coo' && strtolower($user->designation ?? '') !== 'hod') {
+        if (!$user->hasAdminAccess() && strtolower($user->designation ?? '') !== 'coo' && strtolower($user->designation ?? '') !== 'hod') {
             return redirect()->back()->with('error', 'You are not authorized to delete projects.');
         }
 
@@ -567,10 +581,10 @@ class ProjectController extends Controller
         }
 
         $designationLower = strtolower($user->designation ?? '');
-        $isCoo = ($user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
-        $isHod = ($user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
-        $isPm = ($user->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
-        $isSuperAdmin = ($user->role == 1);
+        $isCoo = ($user->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
+        $isHod = ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
+        $isPm = ($user->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
 
         $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
         
@@ -705,11 +719,11 @@ class ProjectController extends Controller
         }
 
         $designationLower = strtolower($user->designation ?? '');
-        $isCoo = ($user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
-        $isHod = ($user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
-        $isPm = ($user->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
-        $isEngineer = ($user->role == 6 || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
-        $isSuperAdmin = ($user->role == 1);
+        $isCoo = ($user->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
+        $isHod = ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
+        $isPm = ($user->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
+        $isEngineer = ($user->isEngineer() || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
 
         if ($action === 'reopen') {
             if (!$isSuperAdmin) {
@@ -1093,9 +1107,9 @@ class ProjectController extends Controller
         }
 
         $user = auth()->user();
-        $isCoo = ($user->role == 2 || strtolower($user->designation ?? '') === 'coo');
-        $isHod = ($user->role == 4 || strtolower($user->designation ?? '') === 'hod');
-        $isSuperAdmin = ($user->role == 1);
+        $isCoo = ($user->isCoo() || strtolower($user->designation ?? '') === 'coo');
+        $isHod = ($user->isHod() || strtolower($user->designation ?? '') === 'hod');
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
 
         if (!$isCoo && !$isHod && !$isSuperAdmin) {
             if ($request->wantsJson()) {
@@ -1742,7 +1756,7 @@ class ProjectController extends Controller
         if (!$user) {
             return false;
         }
-        return in_array($user->role, [1, 2, 3, 4, 6]) || 
+        return $user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || 
                in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']);
     }
 
@@ -1752,11 +1766,11 @@ class ProjectController extends Controller
             return $query;
         }
 
-        $isPm = ($user->role == 3 || strtolower($user->designation ?? '') === 'project manager');
-        $isEngineer = ($user->role == 6 || strtolower($user->designation ?? '') === 'engineer');
-        $isSuperAdmin = ($user->role == 1);
-        $isCoo = ($user->role == 2 || strtolower($user->designation ?? '') === 'coo');
-        $isHod = ($user->role == 4 || strtolower($user->designation ?? '') === 'hod');
+        $isPm = ($user->isPm() || strtolower($user->designation ?? '') === 'project manager');
+        $isEngineer = ($user->isEngineer() || strtolower($user->designation ?? '') === 'engineer');
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
+        $isCoo = ($user->isCoo() || strtolower($user->designation ?? '') === 'coo');
+        $isHod = ($user->isHod() || strtolower($user->designation ?? '') === 'hod');
 
         if ($isSuperAdmin || $isCoo || $isHod) {
             return $query;
@@ -1958,32 +1972,107 @@ class ProjectController extends Controller
             'agency' => 'required|string|max:255',
         ]);
 
-        $financials = $project->financial_data ?? [];
-        $financials[] = [
+        $project->funds()->create([
             'date' => $request->input('date'),
             'amount' => (float)$request->input('amount'),
             'agency' => $request->input('agency'),
-        ];
-
-        $project->financial_data = $financials;
-        $project->save();
+        ]);
 
         return redirect()->back()->with('success', 'Fund transfer record added successfully!');
     }
 
-    public function orphanCareDeleteFund(Request $request, $id, $index)
+    public function orphanCareDeleteFund(Request $request, $id, $fundId)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        $fund = $project->funds()->findOrFail($fundId);
+        $fund->delete();
+
+        return redirect()->back()->with('success', 'Fund transfer record deleted successfully!');
+    }
+
+    public function orphanCareAddProgramme(Request $request, $id)
     {
         $project = \App\Models\OrphanCareProject::findOrFail($id);
 
-        $financials = $project->financial_data ?? [];
-        if (isset($financials[$index])) {
-            array_splice($financials, $index, 1);
-            $project->financial_data = $financials;
-            $project->save();
+        $request->validate([
+            'programme_name' => 'required|string|max:255',
+            'date' => 'nullable|date',
+            'place' => 'nullable|string|max:255',
+        ]);
 
-            return redirect()->back()->with('success', 'Fund transfer record deleted successfully!');
+        $fileKeys = ['photo', 'marklist', 'thanks_letter', 'report_form', 'other_document'];
+        $tickStatuses = [];
+        foreach ($fileKeys as $fileKey) {
+            $tickStatuses[$fileKey . '_ticked'] = $request->has($fileKey . '_ticked');
         }
+        $tickStatuses['present_ticked'] = $request->has('present_ticked');
 
-        return redirect()->back()->with('error', 'Record not found.');
+        $project->programmes()->create(array_merge([
+            'programme_name' => $request->input('programme_name'),
+            'date' => $request->input('date'),
+            'place' => $request->input('place'),
+        ], $tickStatuses));
+
+        return redirect()->back()->with('success', 'Programme added successfully!');
+    }
+
+    public function orphanCareUpdateProgramme(Request $request, $id, $programme_id)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        $programme = $project->programmes()->findOrFail($programme_id);
+
+        $request->validate([
+            'programme_name' => 'required|string|max:255',
+            'date' => 'nullable|date',
+            'place' => 'nullable|string|max:255',
+        ]);
+
+        $fileKeys = ['photo', 'marklist', 'thanks_letter', 'report_form', 'other_document'];
+        $tickUpdates = [];
+
+        foreach ($fileKeys as $fileKey) {
+            $tickUpdates[$fileKey . '_ticked'] = $request->has($fileKey . '_ticked');
+        }
+        $tickUpdates['present_ticked'] = $request->has('present_ticked');
+
+        $programme->update(array_merge([
+            'programme_name' => $request->input('programme_name'),
+            'date' => $request->input('date'),
+            'place' => $request->input('place'),
+        ], $tickUpdates));
+
+        return redirect()->back()->with('success', 'Programme updated successfully!');
+    }
+
+    public function orphanCareDeleteProgramme(Request $request, $id, $programme_id)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        $programme = $project->programmes()->findOrFail($programme_id);
+        $programme->delete();
+
+        return redirect()->back()->with('success', 'Programme deleted successfully!');
+    }
+
+    public function orphanCareToggleProgrammeTick(Request $request, $id)
+    {
+        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        
+        $programmeId = $request->input('programme_id');
+        $field = $request->input('field');
+
+        $programme = $project->programmes()->findOrFail($programmeId);
+
+        $tickKey = $field . '_ticked';
+        $isTicked = !$programme->$tickKey;
+        
+        $programme->update([
+            $tickKey => $isTicked,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'is_ticked' => $isTicked,
+            'message' => $isTicked ? 'Item ticked successfully.' : 'Item unticked successfully.'
+        ]);
     }
 }

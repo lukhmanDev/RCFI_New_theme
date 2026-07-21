@@ -28,7 +28,7 @@
         </div>
     @endif
 
-    @if ($errors->any())
+    @if (isset($errors) && $errors->any())
         <div style="background-color: rgba(239, 68, 68, 0.05); border: 1px solid var(--accent-red); color: var(--accent-red); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             <ul style="list-style-position: inside; margin: 0; padding: 0;">
                 @foreach ($errors->all() as $error)
@@ -127,18 +127,18 @@
 
             <select id="roleFilter" onchange="filterStaffs()" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer; min-width: 145px;">
                 <option value="">All Roles</option>
-                <option value="Super Admin">Super Admin</option>
-                <option value="COO">COO</option>
-                <option value="Project Manager">Project Manager</option>
-                <option value="HOD">HOD</option>
-                <option value="Others">Others</option>
-                <option value="Engineer">Engineer</option>
+                <option value="super_admin">Super Admin</option>
+                <option value="coo">COO</option>
+                <option value="project_manager">Project Manager</option>
+                <option value="hod">HOD</option>
+                <option value="others">Others</option>
+                <option value="engineer">Engineer</option>
             </select>
 
             <select id="statusFilter" onchange="filterStaffs()" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer; min-width: 135px;">
                 <option value="">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Suspended">Suspended</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
             </select>
             
             <button onclick="clearFilters()" style="background: transparent; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1.2rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; transition: background 0.15s ease, border-color 0.15s ease;">
@@ -168,7 +168,7 @@
                     @forelse($users as $user)
                         @php
                             // Department Mapping logic
-                            $designationLower = strtolower($user->designation);
+                            $designationLower = strtolower($user->designation ?? '');
                             $dept = 'Admin';
                             if (strpos($designationLower, 'oper') !== false) {
                                 $dept = 'Operations';
@@ -176,43 +176,37 @@
                                 $dept = 'Finance';
                             } elseif (strpos($designationLower, 'proj') !== false) {
                                 $dept = 'Projects';
-                            } elseif ($user->role == 1 || $designationLower == 'super admin') {
+                            } elseif ($user->isSuperAdmin() || $designationLower == 'super admin') {
                                 $dept = 'IT';
-                            } elseif ($user->role == 2 || $designationLower == 'hod' || $designationLower == 'coo') {
+                            } elseif ($user->isHod() || $user->isCoo() || $designationLower == 'hod' || $designationLower == 'coo') {
                                 $dept = 'Operations';
                             }
 
                             // Role tag configuration
-                            $roleLabel = $rolesMap[$user->role] ?? 'User';
-                            $roleBadgeBg = 'rgba(59, 130, 246, 0.1)';
+                            $roleLabel = $user->role_name;
+                            $roleBadgeBg = 'rgba(59, 130, 246, 0.12)';
                             $roleBadgeColor = '#3b82f6';
-                            if ($user->role == 1) { // Super Admin
-                                $roleBadgeBg = 'rgba(139, 92, 246, 0.1)';
+                            if ($user->isSuperAdmin()) {
+                                $roleBadgeBg = 'rgba(139, 92, 246, 0.12)';
                                 $roleBadgeColor = '#8b5cf6';
-                                $roleLabel = 'ADMIN';
-                            } elseif ($user->role == 2) { // COO
-                                $roleBadgeBg = 'rgba(59, 130, 246, 0.1)';
+                            } elseif ($user->isCoo()) {
+                                $roleBadgeBg = 'rgba(59, 130, 246, 0.12)';
                                 $roleBadgeColor = '#2563eb';
-                                $roleLabel = 'COO';
-                            } elseif ($user->role == 3) { // Project Manager
-                                $roleBadgeBg = 'rgba(245, 158, 11, 0.1)';
+                            } elseif ($user->isPm()) {
+                                $roleBadgeBg = 'rgba(245, 158, 11, 0.12)';
                                 $roleBadgeColor = '#d97706';
-                                $roleLabel = 'PM';
-                            } elseif ($user->role == 4) { // HOD
-                                $roleBadgeBg = 'rgba(16, 185, 129, 0.1)';
+                            } elseif ($user->isHod()) {
+                                $roleBadgeBg = 'rgba(16, 185, 129, 0.12)';
                                 $roleBadgeColor = '#059669';
-                                $roleLabel = 'HOD';
-                            } elseif ($user->role == 6) { // Engineer
-                                $roleBadgeBg = 'rgba(236, 72, 153, 0.1)';
+                            } elseif ($user->isEngineer()) {
+                                $roleBadgeBg = 'rgba(236, 72, 153, 0.12)';
                                 $roleBadgeColor = '#db2777';
-                                $roleLabel = 'ENGINEER';
-                            } else { // Others / Default
-                                $roleBadgeBg = 'rgba(100, 116, 139, 0.1)';
+                            } else {
+                                $roleBadgeBg = 'rgba(100, 116, 139, 0.12)';
                                 $roleBadgeColor = '#475569';
-                                $roleLabel = 'USER';
                             }
                         @endphp
-                        <tr class="staff-row" data-status="{{ $user->is_suspended ? 'suspended' : 'active' }}" data-dept="{{ $dept }}" data-role="{{ $rolesMap[$user->role] ?? 'Others' }}" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
+                        <tr class="staff-row" data-status="{{ $user->is_suspended ? 'suspended' : 'active' }}" data-dept="{{ $dept }}" data-role="{{ $user->role }}" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
                             <!-- Serial Index -->
                             <td style="padding: 1rem 0.75rem; color: #64748b; font-weight: 600;">
                                 {{ sprintf('%02d', $loop->iteration) }}
@@ -234,7 +228,7 @@
                             <td class="staff-designation" style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $user->designation ?? 'N/A' }}</td>
                             <!-- Role badge -->
                             <td style="padding: 1rem 0.75rem; text-align: center;">
-                                <span class="staff-role" style="background-color: {{ $roleBadgeBg }}; color: {{ $roleBadgeColor }}; padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;">
+                                <span class="staff-role" style="background-color: {{ $roleBadgeBg }}; color: {{ $roleBadgeColor }}; padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; display: inline-block;">
                                     {{ $roleLabel }}
                                 </span>
                             </td>
@@ -243,18 +237,18 @@
                                 @if($user->is_suspended)
                                     <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle;">
                                         <span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block;"></span>
-                                        <span class="staff-status" style="color: #ef4444; font-weight: 700; font-size: 0.8rem;">Suspended</span>
+                                        <span class="staff-status" style="color: #dc2626; font-weight: 700; font-size: 0.8rem;">Suspended</span>
                                     </div>
                                 @else
                                     <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle;">
                                         <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
-                                        <span class="staff-status" style="color: #10b981; font-weight: 700; font-size: 0.8rem;">Active</span>
+                                        <span class="staff-status" style="color: #059669; font-weight: 700; font-size: 0.8rem;">Active</span>
                                     </div>
                                 @endif
                             </td>
                             <!-- Action button stack -->
                             <td style="padding: 1rem 0.75rem; text-align: center; white-space: nowrap;">
-                                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                                @if(Auth::user()->hasAdminAccess())
                                     <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
                                         <!-- View Details -->
                                         <button onclick="openViewModal({{ $user->id }})" style="background: transparent; border: 1px solid #e2e8f0; color: #475569; border-radius: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease;" title="View Details"><i class="bx bx-show"></i></button>
@@ -336,15 +330,16 @@
                 <!-- Role -->
                 <div style="margin-bottom: 1.25rem;">
                     <label class="form-label" for="role">User Role</label>
-                    <select class="form-select-dark" id="role" name="role" required @if(Auth::user()->role != 1) disabled @endif>
-                        <option value="2" {{ old('role') == '2' ? 'selected' : '' }}>COO</option>
-                        <option value="3" {{ old('role') == '3' ? 'selected' : '' }}>Project Manager</option>
-                        <option value="4" {{ old('role') == '4' ? 'selected' : '' }}>HOD</option>
-                        <option value="5" {{ (old('role') == '5' || Auth::user()->role != 1) ? 'selected' : '' }}>Others</option>
-                        <option value="6" {{ old('role') == '6' ? 'selected' : '' }}>Engineer</option>
+                    <select class="form-select-dark" id="role" name="role" required @if(!Auth::user()->isSuperAdmin()) disabled @endif>
+                        <option value="super_admin" {{ old('role') == 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                        <option value="coo" {{ old('role') == 'coo' ? 'selected' : '' }}>COO</option>
+                        <option value="project_manager" {{ old('role') == 'project_manager' ? 'selected' : '' }}>Project Manager</option>
+                        <option value="hod" {{ old('role') == 'hod' ? 'selected' : '' }}>HOD</option>
+                        <option value="others" {{ (old('role') == 'others' || !Auth::user()->isSuperAdmin()) ? 'selected' : '' }}>Others</option>
+                        <option value="engineer" {{ old('role') == 'engineer' ? 'selected' : '' }}>Engineer</option>
                     </select>
-                    @if(Auth::user()->role != 1)
-                        <input type="hidden" name="role" value="5">
+                    @if(!Auth::user()->isSuperAdmin())
+                        <input type="hidden" name="role" value="others">
                         <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem; display: block;">Only Super Admins can assign user roles. Defaults to 'Others'.</small>
                     @endif
                 </div>
@@ -398,26 +393,27 @@
                 <!-- Designation -->
                 <div style="margin-bottom: 1.25rem;">
                     <label class="form-label" for="edit_designation">Designation</label>
-                    <input type="text" class="form-control-dark" id="edit_designation" name="designation" placeholder="e.g. Operations HOD" @if(Auth::user()->role != 1) readonly @endif>
+                    <input type="text" class="form-control-dark" id="edit_designation" name="designation" placeholder="e.g. Operations HOD" @if(!Auth::user()->isSuperAdmin()) readonly @endif>
                 </div>
 
                 <!-- Role -->
                 <div style="margin-bottom: 1.25rem;">
                     <label class="form-label" for="edit_role">User Role</label>
-                    <select class="form-select-dark" id="edit_role" name="role" required @if(Auth::user()->role != 1) disabled @endif>
-                        <option value="2">COO</option>
-                        <option value="3">Project Manager</option>
-                        <option value="4">HOD</option>
-                        <option value="5">Others</option>
-                        <option value="6">Engineer</option>
+                    <select class="form-select-dark" id="edit_role" name="role" required @if(!Auth::user()->isSuperAdmin()) disabled @endif>
+                        <option value="super_admin">Super Admin</option>
+                        <option value="coo">COO</option>
+                        <option value="project_manager">Project Manager</option>
+                        <option value="hod">HOD</option>
+                        <option value="others">Others</option>
+                        <option value="engineer">Engineer</option>
                     </select>
-                    @if(Auth::user()->role != 1)
+                    @if(!Auth::user()->isSuperAdmin())
                         <input type="hidden" name="role" id="edit_role_hidden">
                         <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem; display: block;">Only Super Admins can change user roles.</small>
                     @endif
                 </div>
 
-                @if(Auth::user()->role != 1)
+                @if(!Auth::user()->isSuperAdmin())
                 <!-- Password (Optional) -->
                 <div style="margin-bottom: 2rem;">
                     <label class="form-label" for="edit_password">Password (Leave blank to keep current)</label>
@@ -608,14 +604,7 @@
                         document.getElementById('view_mobile').innerText = u.mobile || 'N/A';
                         document.getElementById('view_designation').innerText = u.designation || 'N/A';
                         
-                        let displayRole = 'User';
-                        if (u.role == 1) displayRole = 'Super Admin';
-                        else if (u.role == 2) displayRole = 'COO';
-                        else if (u.role == 3) displayRole = 'Project Manager';
-                        else if (u.role == 4) displayRole = 'HOD';
-                        else if (u.role == 5) displayRole = 'Others';
-                        else if (u.role == 6) displayRole = 'Engineer';
-                        
+                        let displayRole = data.role_name || u.role_name || u.role;
                         document.getElementById('view_role').innerText = displayRole;
                         document.getElementById('view_address').innerText = u.address || 'N/A';
                         
@@ -665,7 +654,7 @@
     </script>
 
     <!-- Automatically open add modal if validation error occurs on new user creation -->
-    @if ($errors->any())
+    @if (isset($errors) && $errors->any())
         <script>
             document.addEventListener("DOMContentLoaded", function() {
                 openModal();
