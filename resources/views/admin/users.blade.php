@@ -116,15 +116,6 @@
                 <i class="bx bx-search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.15rem;"></i>
             </div>
             
-            <select id="deptFilter" onchange="filterStaffs()" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer; min-width: 165px;">
-                <option value="">All Departments</option>
-                <option value="Operations">Operations</option>
-                <option value="Admin">Admin</option>
-                <option value="Finance">Finance</option>
-                <option value="Projects">Projects</option>
-                <option value="IT">IT</option>
-            </select>
-
             <select id="roleFilter" onchange="filterStaffs()" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer; min-width: 145px;">
                 <option value="">All Roles</option>
                 <option value="super_admin">Super Admin</option>
@@ -133,6 +124,7 @@
                 <option value="hod">HOD</option>
                 <option value="others">Others</option>
                 <option value="engineer">Engineer</option>
+                <option value="reception">Reception</option>
             </select>
 
             <select id="statusFilter" onchange="filterStaffs()" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer; min-width: 135px;">
@@ -157,7 +149,6 @@
                         <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Name</th>
                         <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Email</th>
                         <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Mobile</th>
-                        <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Department</th>
                         <th style="padding: 1rem 0.75rem; text-align: left; font-weight: 700; color: #1e293b;">Designation</th>
                         <th style="padding: 1rem 0.75rem; text-align: center; font-weight: 700; color: #1e293b; width: 110px;">Role</th>
                         <th style="padding: 1rem 0.75rem; text-align: center; font-weight: 700; color: #1e293b; width: 110px;">Status</th>
@@ -167,21 +158,6 @@
                 <tbody>
                     @forelse($users as $user)
                         @php
-                            // Department Mapping logic
-                            $designationLower = strtolower($user->designation ?? '');
-                            $dept = 'Admin';
-                            if (strpos($designationLower, 'oper') !== false) {
-                                $dept = 'Operations';
-                            } elseif (strpos($designationLower, 'finan') !== false) {
-                                $dept = 'Finance';
-                            } elseif (strpos($designationLower, 'proj') !== false) {
-                                $dept = 'Projects';
-                            } elseif ($user->isSuperAdmin() || $designationLower == 'super admin') {
-                                $dept = 'IT';
-                            } elseif ($user->isHod() || $user->isCoo() || $designationLower == 'hod' || $designationLower == 'coo') {
-                                $dept = 'Operations';
-                            }
-
                             // Role tag configuration
                             $roleLabel = $user->role_name;
                             $roleBadgeBg = 'rgba(59, 130, 246, 0.12)';
@@ -206,7 +182,7 @@
                                 $roleBadgeColor = '#475569';
                             }
                         @endphp
-                        <tr class="staff-row" data-status="{{ $user->is_suspended ? 'suspended' : 'active' }}" data-dept="{{ $dept }}" data-role="{{ $user->role }}" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
+                        <tr class="staff-row" data-status="{{ $user->is_suspended ? 'suspended' : 'active' }}" data-role="{{ $user->role }}" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;">
                             <!-- Serial Index -->
                             <td style="padding: 1rem 0.75rem; color: #64748b; font-weight: 600;">
                                 {{ sprintf('%02d', $loop->iteration) }}
@@ -222,8 +198,6 @@
                             <td class="staff-email" style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $user->email }}</td>
                             <!-- Mobile -->
                             <td style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $user->mobile ?? 'N/A' }}</td>
-                            <!-- Department -->
-                            <td class="staff-dept" style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $dept }}</td>
                             <!-- Designation -->
                             <td class="staff-designation" style="padding: 1rem 0.75rem; color: #475569; font-weight: 500;">{{ $user->designation ?? 'N/A' }}</td>
                             <!-- Role badge -->
@@ -235,17 +209,18 @@
                             <!-- Status badge -->
                             <td style="padding: 1rem 0.75rem; text-align: center; white-space: nowrap;">
                                 @if($user->is_suspended)
-                                    <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle;">
+                                    <div style="display: inline-flex; align-items: center; gap: 0.4rem; vertical-align: middle; justify-content: center;">
                                         <span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block;"></span>
-                                        <span class="staff-status" style="color: #dc2626; font-weight: 700; font-size: 0.8rem;">Suspended</span>
+                                        <span class="staff-status" style="color: #ef4444; font-weight: 700; font-size: 0.82rem;">Suspended</span>
                                     </div>
                                 @else
-                                    <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle;">
+                                    <div style="display: inline-flex; align-items: center; gap: 0.4rem; vertical-align: middle; justify-content: center;">
                                         <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
-                                        <span class="staff-status" style="color: #059669; font-weight: 700; font-size: 0.8rem;">Active</span>
+                                        <span class="staff-status" style="color: #10b981; font-weight: 700; font-size: 0.82rem;">Active</span>
                                     </div>
                                 @endif
                             </td>
+
                             <!-- Action button stack -->
                             <td style="padding: 1rem 0.75rem; text-align: center; white-space: nowrap;">
                                 @if(Auth::user()->hasAdminAccess())
@@ -337,6 +312,7 @@
                         <option value="hod" {{ old('role') == 'hod' ? 'selected' : '' }}>HOD</option>
                         <option value="others" {{ (old('role') == 'others' || !Auth::user()->isSuperAdmin()) ? 'selected' : '' }}>Others</option>
                         <option value="engineer" {{ old('role') == 'engineer' ? 'selected' : '' }}>Engineer</option>
+                        <option value="reception" {{ old('role') == 'reception' ? 'selected' : '' }}>Reception</option>
                     </select>
                     @if(!Auth::user()->isSuperAdmin())
                         <input type="hidden" name="role" value="others">
@@ -406,6 +382,7 @@
                         <option value="hod">HOD</option>
                         <option value="others">Others</option>
                         <option value="engineer">Engineer</option>
+                        <option value="reception">Reception</option>
                     </select>
                     @if(!Auth::user()->isSuperAdmin())
                         <input type="hidden" name="role" id="edit_role_hidden">
@@ -506,7 +483,6 @@
         // Client-side search and filters
         function filterStaffs() {
             const searchVal = document.getElementById('staffSearchInput').value.toLowerCase();
-            const deptVal = document.getElementById('deptFilter').value.toLowerCase();
             const roleVal = document.getElementById('roleFilter').value.toLowerCase();
             const statusVal = document.getElementById('statusFilter').value.toLowerCase();
 
@@ -516,16 +492,14 @@
                 const name = row.querySelector('.staff-name').innerText.toLowerCase();
                 const email = row.querySelector('.staff-email').innerText.toLowerCase();
                 const designation = row.querySelector('.staff-designation').innerText.toLowerCase();
-                const dept = (row.dataset.dept || '').toLowerCase();
                 const role = (row.dataset.role || '').toLowerCase();
                 const status = (row.dataset.status || '').toLowerCase();
 
                 const matchesSearch = name.includes(searchVal) || email.includes(searchVal) || designation.includes(searchVal);
-                const matchesDept = !deptVal || dept === deptVal;
                 const matchesRole = !roleVal || role === roleVal;
                 const matchesStatus = !statusVal || status === statusVal;
 
-                if (matchesSearch && matchesDept && matchesRole && matchesStatus) {
+                if (matchesSearch && matchesRole && matchesStatus) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
@@ -535,7 +509,6 @@
 
         function clearFilters() {
             document.getElementById('staffSearchInput').value = '';
-            document.getElementById('deptFilter').value = '';
             document.getElementById('roleFilter').value = '';
             document.getElementById('statusFilter').value = '';
             filterStaffs();

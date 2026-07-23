@@ -30,7 +30,6 @@ class CulturalCenterApplication extends Model
         'contact_number_1',
         'contact_number_2',
         'area',
-        'area_sqft',
         'benefited_households',
         'building_area_sq',
         'committee_name',

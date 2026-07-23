@@ -165,7 +165,21 @@
     <div class="stages-tabs" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--panel-border); margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 0.5rem;">
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             @php
-                $maxStages = $project->type_of_project === 'Orphan Care' ? 3 : 6;
+                $isSocialAidProject = in_array($project->type_of_project, ['Orphan Care', 'Differently Abled', 'Family Aid']);
+                $maxStages = $isSocialAidProject ? 3 : 6;
+                $projectRouteKeys = [
+                    'Orphan Care' => 'orphan_care',
+                    'Differently Abled' => 'differently_abled',
+                    'Family Aid' => 'family_aid',
+                ];
+                $projectRouteSlugs = [
+                    'Orphan Care' => 'orphan-care',
+                    'Differently Abled' => 'differently-abled',
+                    'Family Aid' => 'family-aid',
+                ];
+                $projectRouteKey = $projectRouteKeys[$project->type_of_project] ?? 'orphan_care';
+                $projectRouteSlug = $projectRouteSlugs[$project->type_of_project] ?? 'orphan-care';
+
             @endphp
             @for($i = 1; $i <= $maxStages; $i++)
                 @php
@@ -185,12 +199,13 @@
                             $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
                         }
                     } else {
-                        if ($project->type_of_project === 'Orphan Care') {
+                        if ($isSocialAidProject) {
                             $isLocked = false;
                         } else {
                             $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
                         }
                     }
+
                     if ($isLocked) {
                         $class .= ' locked';
                     }
@@ -203,28 +218,8 @@
                 </div>
             @endfor
         </div>
-        <div>
-            @php
-                $categorySlugs = [
-                    'Education Center' => 'education-center',
-                    'Cultural Center' => 'cultural-center',
-                    'Hospital or Clinics' => 'hospital-or-clinics',
-                    'Shops and Others' => 'shops-and-others',
-                    'House' => 'house',
-                    'Drinking Water - Group Level' => 'drinking-water-group-level',
-                    'Drinking Water - Individual Level' => 'drinking-water-individual-level',
-                    'Orphan Care' => 'orphan-care',
-                    'Differently Abled' => 'differently-abled',
-                    'Family Aid' => 'family-aid',
-                    'General' => 'general'
-                ];
-                $categorySlug = $categorySlugs[$project->type_of_project] ?? 'education-center';
-            @endphp
-            <a href="{{ route('projects.category', $categorySlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; padding: 0.65rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 700;">
-                <i class="bx bx-arrow-back"></i> Back to Project List
-            </a>
-        </div>
     </div>
+
 
     @php
         $authUser = auth()->user();
@@ -286,15 +281,15 @@
                     @endif
                 @endif
 
-                @if($project->type_of_project === 'Orphan Care' && $application)
+                @if($isSocialAidProject && $application)
                     <div style="display: grid; grid-template-columns: 280px 1fr; gap: 2rem; margin-bottom: 2.5rem; align-items: start;">
-                        <!-- Left Side: Student Photo Card -->
+                        <!-- Left Side: Beneficiary Photo Card -->
                         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;">
-                            <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin-top: 0; margin-bottom: 1.25rem; letter-spacing: 0.05em;">Student Photo</h4>
+                            <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin-top: 0; margin-bottom: 1.25rem; letter-spacing: 0.05em;">{{ $project->type_of_project === 'Orphan Care' ? 'Student Photo' : 'Beneficiary Photo' }}</h4>
                             
                             <div style="width: 180px; height: 180px; border-radius: 12px; border: 2px dashed var(--panel-border); margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: rgba(255,255,255,0.02);">
                                 @if($application->student_photo)
-                                    <img src="{{ asset($application->student_photo) }}" alt="Student Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                    <img src="{{ asset($application->student_photo) }}" alt="Photo" style="width: 100%; height: 100%; object-fit: cover;">
                                 @else
                                     <div style="text-align: center; color: var(--text-muted); padding: 1rem;">
                                         <i class="bx bx-image-add" style="font-size: 2.5rem; margin-bottom: 0.5rem; display: block; color: var(--accent-cyan);"></i>
@@ -303,7 +298,7 @@
                                 @endif
                             </div>
 
-                            <form action="{{ route('projects.orphan_care.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-top: 1rem;">
+                            <form action="{{ route('projects.' . $projectRouteKey . '.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-top: 1rem;">
                                 @csrf
                                 <button type="button" class="btn-custom" onclick="document.getElementById('student_photo_input').click()" style="width: 100%; margin-bottom: 0.5rem; justify-content: center; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem;">
                                     <i class="bx bx-upload"></i> {{ $application->student_photo ? 'Change Photo' : 'Upload Photo' }}
@@ -311,7 +306,7 @@
                                 <input type="file" name="student_photo" id="student_photo_input" accept="image/*" style="display: none;" onchange="this.form.submit()">
                             </form>
                             @if($application->student_photo)
-                                <form action="{{ route('projects.orphan_care.delete_photo', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this photo?')" style="margin-top: 0.5rem;">
+                                <form action="{{ route('projects.' . $projectRouteKey . '.delete_photo', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this photo?')" style="margin-top: 0.5rem;">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn-custom" style="width: 100%; background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); justify-content: center; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem;">
@@ -324,7 +319,7 @@
                         <!-- Right Side: Address details and editing -->
                         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;">
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
-                                <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Student Address</h4>
+                                <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">{{ $project->type_of_project === 'Orphan Care' ? 'Student Address' : 'Beneficiary Address' }}</h4>
                                 <button type="button" id="edit-address-btn" onclick="toggleAddressEdit()" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; border-radius: 6px;">
                                     <i class="bx bx-edit"></i> Edit Address
                                 </button>
@@ -344,7 +339,8 @@
                             </div>
 
                             <!-- Edit Address Form -->
-                            <form id="address-edit-form" action="{{ route('projects.orphan_care.update_address', $project->id) }}" method="POST" style="display: none;">
+                            <form id="address-edit-form" action="{{ route('projects.' . $projectRouteKey . '.update_address', $project->id) }}" method="POST" style="display: none;">
+
                                 @csrf
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                                     <div class="form-group-custom" style="margin-bottom: 0 !important;">
@@ -402,17 +398,15 @@
                     </script>
                 @endif
 
-                @if($project->type_of_project === 'Orphan Care' && $application)
+                @if($isSocialAidProject && $application)
                     <div class="details-grid">
-                        <div class="details-label">Student ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ 'APLRCFI' . (!empty($application->created_at) ? date('y', strtotime($application->created_at)) : '24') . 'OC' . str_pad($application->id, 5, '0', STR_PAD_LEFT) }}</div>
-                        <div class="details-label">Student Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->applicant_name ?? 'N/A' }}</div>
+                        <div class="details-label">Applicant ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ 'APLRCFI' . (!empty($application->created_at) ? date('y', strtotime($application->created_at)) : '24') . ($project->type_of_project === 'Orphan Care' ? 'OC' : ($project->type_of_project === 'Differently Abled' ? 'DA' : 'FA')) . str_pad($application->id, 5, '0', STR_PAD_LEFT) }}</div>
+                        <div class="details-label">Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->applicant_name ?? 'N/A' }}</div>
                         <div class="details-label">Gender</div><div class="details-colon">:</div><div class="details-value">{{ $application->gender ?? 'N/A' }}</div>
                         <div class="details-label">Date of Birth</div><div class="details-colon">:</div><div class="details-value">{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} (Age: {{ $application->age ?? 'N/A' }})</div>
                         <div class="details-label">Father's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->father_name ?? 'N/A' }}</div>
                         <div class="details-label">Mother's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->mother_name ?? 'N/A' }}</div>
                         <div class="details-label">Guardian</div><div class="details-colon">:</div><div class="details-value">{{ $application->guardian_name ?? 'N/A' }} (Relation: {{ $application->guardian_relation ?? 'N/A' }})</div>
-                        <div class="details-label">School Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->school_name ?? 'N/A' }} (Class: {{ $application->school_class ?? 'N/A' }})</div>
-                        <div class="details-label">Madrassa Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->madrassa_name ?? 'N/A' }} (Class: {{ $application->madrassa_class ?? 'N/A' }})</div>
                         <div class="details-label">Sponsor Status</div><div class="details-colon">:</div><div class="details-value" style="font-weight: 600; color: var(--accent-cyan);">{{ $application->sponsor_status ?? 'N/A' }}</div>
                         <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
                         <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
@@ -462,7 +456,8 @@
                     
 
                 @endphp
-                @if($project->type_of_project !== 'Orphan Care')
+                @if(!$isSocialAidProject)
+
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
                         
@@ -471,7 +466,7 @@
 
                     @php
                         $statusRecord = $project->projectStatus;
-                        $statusUpdatedAt = $statusRecord && $statusRecord->updated_at ? $statusRecord->updated_at->timezone('Asia/Kolkata') : null;
+                        $statusUpdatedAt = $statusRecord && $statusRecord->updated_at ? \Carbon\Carbon::parse($statusRecord->updated_at)->timezone('Asia/Kolkata') : null;
                     @endphp
 
                     {{-- Current phase badge & last updated time --}}
@@ -608,11 +603,11 @@
         <!-- ================= STAGE 2 PANEL (APPLICANT DETAIL / FINANCIAL DATA) ================= -->
         <div class="stage-content-panel" id="stage-content-2">
             <div class="detail-header-panel">
-                <h2>{{ $project->type_of_project === 'Orphan Care' ? 'FINANCIAL DATA' : 'APPLICANT DETAIL' }}</h2>
+                <h2>{{ $isSocialAidProject ? 'FINANCIAL DATA' : 'APPLICANT DETAIL' }}</h2>
             </div>
             <div style="padding: 1.5rem;">
-                @if($project->type_of_project === 'Orphan Care')
-                    <!-- Orphan Care Financial Data Table -->
+                @if($isSocialAidProject)
+                    <!-- Financial Data Table -->
                     <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 2rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Fund Transfers</h4>
@@ -634,7 +629,7 @@
                                 </thead>
                                 <tbody>
                                     @php
-                                        $financials = $project->funds;
+                                        $financials = $project->funds ?? collect();
                                     @endphp
                                     @forelse($financials as $index => $row)
                                         <tr style="border-bottom: 1px solid var(--panel-border); font-size: 0.9rem; transition: background 0.15s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
@@ -643,7 +638,7 @@
                                             <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹{{ number_format($row->amount, 2) }}</td>
                                             <td style="padding: 0.75rem 1rem;">{{ $row->agency ?? 'N/A' }}</td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
-                                                <form action="{{ route('projects.orphan_care.delete_fund', [$project->id, $row->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this row?')" style="display: inline;">
+                                                <form action="{{ route('projects.' . $projectRouteKey . '.delete_fund', [$project->id, $row->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this row?')" style="display: inline;">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem;" title="Delete">
@@ -679,7 +674,8 @@
                             <h3 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
                                 Add Fund Transfer Row
                             </h3>
-                            <form action="{{ route('projects.orphan_care.add_fund', $project->id) }}" method="POST">
+                            <form action="{{ route('projects.' . $projectRouteKey . '.add_fund', $project->id) }}" method="POST">
+
                                 @csrf
                                 <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.75rem;">
                                     <div class="form-group-custom" style="margin-bottom: 0 !important;">
@@ -996,8 +992,8 @@
         <!-- ================= STAGE 3 PANEL (FILES / PROGRAMMES) ================= -->
         <div class="stage-content-panel" id="stage-content-3">
             <div class="detail-header-panel" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>{{ $project->type_of_project === 'Orphan Care' ? 'PROGRAMME DETAILS' : 'FILES' }}</h2>
-                @if($project->type_of_project === 'Orphan Care' && $isProjectManager && !$isLockedForEditing)
+                <h2>{{ $isSocialAidProject ? 'PROGRAMME DETAILS' : 'FILES' }}</h2>
+                @if($isSocialAidProject && $isProjectManager && !$isLockedForEditing)
                     <button type="button" onclick="openAddProgrammeModal()" class="btn-custom" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
                         <i class="bx bx-plus-circle" style="font-size: 1.1rem;"></i> Add Programme
                     </button>
@@ -1028,122 +1024,94 @@
                     </div>
                 @endif
 
-                @if($project->type_of_project === 'Orphan Care')
+                @if($isSocialAidProject)
                     @php
-                        $programmes = $project->programmes;
+                        $programmes = $project->programmes ?? collect();
                     @endphp
-                    @if($programmes->isEmpty())
-                        <div style="text-align: center; padding: 3rem 1.5rem; background: rgba(255,255,255,0.02); border: 1px dashed var(--panel-border); border-radius: 8px;">
-                            <i class="bx bx-calendar-event" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 0.75rem; display: block;"></i>
-                            <h3 style="color: var(--text-main); font-size: 1.1rem; margin: 0 0 0.5rem 0; font-weight: 600;">No Programmes Recorded</h3>
-                            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 1.25rem 0;">No programme records have been added to Stage 3 for this Orphan Care project yet.</p>
-                            @if($isProjectManager && !$isLockedForEditing)
-                                <button type="button" onclick="openAddProgrammeModal()" class="btn-custom" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 6px; cursor: pointer;">
-                                    <i class="bx bx-plus-circle"></i> Add First Programme
-                                </button>
-                            @endif
-                        </div>
-                    @else
-                        <div style="display: flex; flex-direction: column; gap: 2rem;">
-                            @foreach($programmes as $idx => $prog)
-                                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-radius: 10px; padding: 1.5rem; position: relative;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.85rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
-                                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                            <span style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 20px;">
-                                                Programme #{{ $idx + 1 }}
-                                            </span>
-                                            <h3 style="margin: 0; color: #0f172a; font-size: 1.15rem; font-weight: 700;">{{ $prog->programme_name ?? 'Untitled Programme' }}</h3>
-                                        </div>
-                                        @if($isProjectManager && !$isLockedForEditing)
-                                            <div style="display: flex; gap: 0.5rem;">
-                                                <button type="button" onclick="openEditProgrammeModal({{ $prog->id }}, {{ json_encode($prog) }})" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; background: transparent; color: #0284c7; border: 1px solid #0284c7; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                                    <i class="bx bx-edit"></i> Edit Programme
-                                                </button>
-                                                <form action="{{ route('projects.orphan_care.delete_programme', [$project->id, $prog->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this programme?');" style="display: inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                                        <i class="bx bx-trash"></i> Delete
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        @endif
-                                    </div>
 
-                                    <!-- Programme Meta Info Grid -->
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.02); padding: 0.85rem 1rem; border-radius: 8px;">
-                                        <div>
-                                            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Date</span>
-                                            <strong style="color: #0f172a; font-size: 0.95rem;">{{ !empty($prog->date) ? date('d-M-Y', strtotime($prog->date)) : '-' }}</strong>
-                                        </div>
-                                        <div>
-                                            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block;">Place</span>
-                                            <strong style="color: #0f172a; font-size: 0.95rem;">{{ $prog->place ?? '-' }}</strong>
-                                        </div>
-                                    </div>
+                    <!-- Social Aid Programmes Table -->
+                    <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 2rem;">
+                        <div class="table-responsive-custom" style="overflow-x: auto;">
 
-                                    <!-- Separate Checklist Table for this Programme -->
-                                    <h4 style="font-size: 0.9rem; text-transform: uppercase; color: var(--accent-cyan); margin: 0 0 0.85rem 0; font-weight: 700; letter-spacing: 0.05em;">CHECKLIST &amp; DOCUMENTS</h4>
-                                    <table class="stage-table" style="margin-bottom: 0;">
-                                        <thead>
-                                            <tr>
-                                                <th>Item Name</th>
-                                                <th style="width: 150px; text-align: center;">Tick Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @php
-                                                $items = [
-                                                    'present' => 'Present / Attendance',
-                                                    'photo' => 'Photo',
-                                                    'marklist' => 'Marklist',
-                                                    'thanks_letter' => 'Thanks Letter',
-                                                    'report_form' => 'Report Form',
-                                                    'other_document' => 'Other Document'
-                                                ];
-                                            @endphp
-                                            @foreach($items as $key => $label)
+                            <table class="table-dark-custom" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid var(--panel-border); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
+                                        <th style="padding: 0.85rem 1rem; font-weight: 700; width: 70px; text-align: center; white-space: nowrap; vertical-align: middle;">Serial No</th>
+                                        <th style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; vertical-align: middle;">Programme Name</th>
+                                        <th style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; vertical-align: middle;">Date</th>
+                                        <th style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; vertical-align: middle;">Place</th>
+                                        <th style="padding: 0.85rem 1rem; font-weight: 700; text-align: center; white-space: nowrap; vertical-align: middle;">Checklist &amp; Documents</th>
+                                        <th style="padding: 0.85rem 1rem; font-weight: 700; text-align: center; width: 110px; white-space: nowrap; vertical-align: middle;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="social-aid-programmes-tbody">
+                                    @forelse($programmes as $idx => $prog)
+                                        <tr id="programme-row-{{ $prog->id }}" class="programme-table-row" style="border-bottom: 1px solid var(--panel-border); font-size: 0.875rem; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
+                                            <td class="serial-no-cell" style="padding: 0.85rem 1rem; text-align: center; font-weight: 600; color: var(--text-muted); vertical-align: middle;">{{ $idx + 1 }}</td>
+                                            <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--text-main); vertical-align: middle;">{{ $prog->programme_name ?? 'Untitled Programme' }}</td>
+                                            <td style="padding: 0.85rem 1rem; color: var(--text-main); white-space: nowrap; vertical-align: middle;">{{ !empty($prog->date) ? date('d-M-Y', strtotime($prog->date)) : '-' }}</td>
+                                            <td style="padding: 0.85rem 1rem; color: var(--text-main); vertical-align: middle;">{{ $prog->place ?? '-' }}</td>
+                                            <td style="padding: 0.85rem 1rem; text-align: center; vertical-align: middle;">
+
                                                 @php
-                                                    $isTicked = $prog->{$key . '_ticked'} ?? false;
+                                                    $items = [
+                                                        'present' => 'Present',
+                                                        'photo' => 'Photo',
+                                                        'marklist' => 'Marklist',
+                                                        'thanks_letter' => 'Thanks Letter',
+                                                        'report_form' => 'Report Form',
+                                                        'other_document' => 'Other Doc'
+                                                    ];
                                                 @endphp
-                                                <tr>
-                                                    <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">
-                                                        {{ $label }}
-                                                        @if($key === 'present' && !empty($prog->present))
-                                                            <span style="display: block; font-size: 0.8rem; color: var(--text-muted); font-weight: normal; margin-top: 0.2rem;">
-                                                                Info: {{ $prog->present }}
-                                                            </span>
-                                                        @endif
-                                                    </td>
-                                                    <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center; align-items: center;">
+                                                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 500px; margin: 0 auto;">
+                                                    @foreach($items as $key => $label)
+                                                        @php $isTicked = $prog->{$key . '_ticked'} ?? false; @endphp
                                                         @if($isProjectManager && !$isLockedForEditing)
-                                                            <button type="button" onclick="toggleProgrammeChecklistTick(this, {{ $prog->id }}, '{{ $key }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
-                                                                @if($isTicked)
-                                                                    <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
-                                                                @else
-                                                                    <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
-                                                                @endif
+                                                            <button type="button" onclick="toggleProgrammeChecklistTick(this, {{ $prog->id }}, '{{ $key }}')"
+                                                                title="{{ $label }}: {{ $isTicked ? 'Ticked (Click to untick)' : 'Not ticked (Click to tick)' }}"
+                                                                style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; outline: none;
+                                                                    {{ $isTicked ? 'background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #059669;' : 'background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #d97706;' }}">
+                                                                <i class="bx {{ $isTicked ? 'bxs-check-circle' : 'bx-circle' }}" style="font-size: 0.85rem;"></i>
+                                                                {{ $label }}
                                                             </button>
                                                         @else
-                                                            @if($isTicked)
-                                                                <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                                                    <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
-                                                                </span>
-                                                            @else
-                                                                <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                                                    <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
-                                                                </span>
-                                                            @endif
+                                                            <span style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+                                                                {{ $isTicked ? 'background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #059669;' : 'background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #d97706;' }}">
+                                                                <i class="bx {{ $isTicked ? 'bxs-check-circle' : 'bx-circle' }}" style="font-size: 0.85rem;"></i>
+                                                                {{ $label }}
+                                                            </span>
                                                         @endif
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @endforeach
+                                                    @endforeach
+                                                </div>
+                                            </td>
+                                            <td style="padding: 0.85rem 1rem; text-align: center; white-space: nowrap; vertical-align: middle;">
+                                                @if($isProjectManager && !$isLockedForEditing)
+                                                    <button type="button" onclick="openEditProgrammeModal(this)" data-prog="{{ json_encode($prog) }}" style="background: transparent; border: none; color: #0284c7; cursor: pointer; padding: 0.3rem; margin-right: 0.25rem; border-radius: 4px; transition: background 0.2s;" title="Edit Programme" onmouseover="this.style.background='rgba(2, 132, 199, 0.1)'" onmouseout="this.style.background='transparent'">
+                                                        <i class="bx bx-pencil" style="font-size: 1.15rem; vertical-align: middle;"></i>
+                                                    </button>
+
+                                                    <button type="button" onclick="handleDeleteProgramme(this, {{ $prog->id }}, '{{ route('projects.' . $projectRouteKey . '.delete_programme', [$project->id, $prog->id]) }}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.3rem; border-radius: 4px; transition: background 0.2s;" title="Delete Programme" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
+                                                        <i class="bx bx-trash" style="font-size: 1.15rem; vertical-align: middle;"></i>
+                                                    </button>
+                                                @else
+                                                    <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No Action</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr id="no-programmes-row">
+                                            <td colspan="6" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); font-style: italic;">
+                                                No programme records found. Click "Add Programme" to add one.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+
+                            </table>
                         </div>
-                    @endif
+
+                    </div>
+
                 @else
                     <table class="stage-table">
                         <thead>
@@ -1180,7 +1148,7 @@
                                     $filePath = ($docRecord && $column) ? $docRecord->$column : null;
                                     $timeColumn = $column ? $column . '_ticked_at' : null;
                                     $tickedAtDate = ($docRecord && $timeColumn) ? $docRecord->$timeColumn : null;
-                                    $tickedAt = $tickedAtDate ? $tickedAtDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                                    $tickedAt = $tickedAtDate ? \Carbon\Carbon::parse($tickedAtDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
                                     
                                     if ($filePath === '0') {
                                         $filePath = null;
@@ -1192,7 +1160,7 @@
                                         {{ $tickedAt ?? '-' }}
                                     </td>
                                     <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center;">
-                                        @if($isProjectManager && $hasApplication && !$isLockedForEditing)
+                                        @if($isProjectManager && !$isLockedForEditing)
                                             <button type="button" onclick="toggleChecklistDocument(this, '{{ $doc }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
                                                 @if(!empty($filePath))
                                                     <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
@@ -1990,12 +1958,12 @@
                     $compCert = $docRecord ? $docRecord->completion_certificate : null;
                     if ($compCert === '0') { $compCert = null; }
                     $compCertTimeDate = $docRecord ? $docRecord->completion_certificate_ticked_at : null;
-                    $compCertTime = $compCertTimeDate ? $compCertTimeDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                    $compCertTime = $compCertTimeDate ? \Carbon\Carbon::parse($compCertTimeDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
 
                     $measBook = $docRecord ? $docRecord->measurement_book : null;
                     if ($measBook === '0') { $measBook = null; }
                     $measBookTimeDate = $docRecord ? $docRecord->measurement_book_ticked_at : null;
-                    $measBookTime = $measBookTimeDate ? $measBookTimeDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                    $measBookTime = $measBookTimeDate ? \Carbon\Carbon::parse($measBookTimeDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
 
                     $locationMapLink = $docRecord ? $docRecord->location_map_link : null;
                     
@@ -2354,28 +2322,7 @@
 
     </div>
 
-    <!-- Back Button -->
-    <div style="margin-top: 1.5rem;">
-        @php
-            $categorySlugs = [
-                'Education Center' => 'education-center',
-                'Cultural Center' => 'cultural-center',
-                'Hospital or Clinics' => 'hospital-or-clinics',
-                'Shops and Others' => 'shops-and-others',
-                'House' => 'house',
-                'Drinking Water - Group Level' => 'drinking-water-group-level',
-                'Drinking Water - Individual Level' => 'drinking-water-individual-level',
-                'Orphan Care' => 'orphan-care',
-                'Differently Abled' => 'differently-abled',
-                'Family Aid' => 'family-aid',
-                'General' => 'general'
-            ];
-            $categorySlug = $categorySlugs[$project->type_of_project] ?? 'education-center';
-        @endphp
-        <a href="{{ route('projects.category', $categorySlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted);">
-            <i class="bx bx-arrow-back"></i> Back to Project List
-        </a>
-    </div>
+
 
     <!-- Switch Stage Script -->
     <script>
@@ -2722,7 +2669,8 @@
         function switchStage(stageNum) {
             let isLocked = false;
             const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
-            if (projectType === 'Orphan Care') {
+            if (['Orphan Care', 'Differently Abled', 'Family Aid'].includes(projectType)) {
+
                 isLocked = false;
             } else if (isSixStage) {
                 if (stageNum <= 2) {
@@ -2782,7 +2730,8 @@
                 const stageNum = Number(savedStage);
                 let isLocked = false;
                 const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
-                if (projectType === 'Orphan Care') {
+                if (['Orphan Care', 'Differently Abled', 'Family Aid'].includes(projectType)) {
+
                     isLocked = false;
                 } else if (isSixStage) {
                     if (stageNum <= 2) {
@@ -3320,10 +3269,18 @@
         </div>
     </div>
     <!-- Add Programme Modal -->
-    <div id="addProgrammeModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
-        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;">
-            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Add New Programme</h3>
-            <form action="{{ route('projects.orphan_care.add_programme', $project->id) }}" method="POST" style="margin: 0;">
+    <div id="addProgrammeModal" onclick="if(event.target === this) closeAddProgrammeModal()" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="color: var(--text-main); margin: 0; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Add New Programme</h3>
+                <button type="button" onclick="closeAddProgrammeModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0.2rem; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" onmouseover="this.style.color='var(--accent-red)'" onmouseout="this.style.color='var(--text-muted)'" title="Close Modal">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+            <form id="addProgrammeForm" action="{{ route('projects.' . $projectRouteKey . '.add_programme', $project->id) }}" method="POST" onsubmit="handleAddProgrammeSubmit(event)" style="margin: 0;">
+
+
+
                 @csrf
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div style="grid-column: span 2;">
@@ -3337,10 +3294,6 @@
                     <div>
                         <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
                         <input type="text" name="place" placeholder="e.g. Main Auditorium" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Present / Attendance Info</label>
-                        <input type="text" name="present" placeholder="e.g. 45 Students Present" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                     </div>
                 </div>
 
@@ -3382,10 +3335,17 @@
     </div>
 
     <!-- Edit Programme Modal -->
-    <div id="editProgrammeModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
-        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;">
-            <h3 style="color: var(--text-main); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Edit Programme</h3>
-            <form id="editProgrammeForm" method="POST" style="margin: 0;">
+    <div id="editProgrammeModal" onclick="if(event.target === this) closeEditProgrammeModal()" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="color: var(--text-main); margin: 0; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Edit Programme</h3>
+                <button type="button" onclick="closeEditProgrammeModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0.2rem; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" onmouseover="this.style.color='var(--accent-red)'" onmouseout="this.style.color='var(--text-muted)'" title="Close Modal">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+            <form id="editProgrammeForm" method="POST" onsubmit="handleEditProgrammeSubmit(event)" style="margin: 0;">
+
+
                 @csrf
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div style="grid-column: span 2;">
@@ -3399,10 +3359,6 @@
                     <div>
                         <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
                         <input type="text" id="edit_prog_place" name="place" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Present / Attendance Info</label>
-                        <input type="text" id="edit_prog_present" name="present" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                     </div>
                 </div>
 
@@ -3444,6 +3400,13 @@
     </div>
 
     <script>
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAddProgrammeModal();
+                closeEditProgrammeModal();
+            }
+        });
+
         function openAddProgrammeModal() {
             const modal = document.getElementById('addProgrammeModal');
             if (modal) modal.style.display = 'flex';
@@ -3452,32 +3415,223 @@
             const modal = document.getElementById('addProgrammeModal');
             if (modal) modal.style.display = 'none';
         }
-        function openEditProgrammeModal(idx, prog) {
-            const modal = document.getElementById('editProgrammeModal');
-            const form = document.getElementById('editProgrammeForm');
-            if (modal && form) {
-                form.action = `/admin/projects/orphan-care/{{ $project->id }}/update-programme/${idx}`;
-                document.getElementById('edit_prog_name').value = prog.programme_name || '';
-                document.getElementById('edit_prog_date').value = prog.date || '';
-                document.getElementById('edit_prog_place').value = prog.place || '';
-                document.getElementById('edit_prog_present').value = prog.present || '';
 
-                // Handle checkbox values
-                const fields = ['present', 'photo', 'marklist', 'thanks_letter', 'report_form', 'other_document'];
-                fields.forEach(f => {
-                    const checkbox = document.getElementById(`edit_prog_${f}_ticked`);
-                    if (checkbox) {
-                        checkbox.checked = !!(prog[f + '_ticked']);
-                    }
-                });
+        function openEditProgrammeModal(btnElement) {
+            const rawProg = btnElement.getAttribute('data-prog');
+            if (!rawProg) return;
+            try {
+                const prog = JSON.parse(rawProg);
+                const modal = document.getElementById('editProgrammeModal');
+                const form = document.getElementById('editProgrammeForm');
+                if (modal && form && prog) {
+                    form.action = `/admin/projects/{{ $projectRouteSlug }}/{{ $project->id }}/update-programme/${prog.id}`;
+                    document.getElementById('edit_prog_name').value = prog.programme_name || '';
+                    document.getElementById('edit_prog_date').value = prog.date || '';
+                    document.getElementById('edit_prog_place').value = prog.place || '';
 
-                modal.style.display = 'flex';
+                    // Handle checkbox values
+                    const fields = ['present', 'photo', 'marklist', 'thanks_letter', 'report_form', 'other_document'];
+                    fields.forEach(f => {
+                        const checkbox = document.getElementById(`edit_prog_${f}_ticked`);
+                        if (checkbox) {
+                            checkbox.checked = !!(prog[f + '_ticked']);
+                        }
+                    });
+
+                    modal.style.display = 'flex';
+                }
+            } catch (e) {
+                console.error('Error opening edit programme modal:', e);
             }
         }
+
         function closeEditProgrammeModal() {
             const modal = document.getElementById('editProgrammeModal');
             if (modal) modal.style.display = 'none';
         }
+
+        async function handleAddProgrammeSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Adding...';
+            }
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(`/admin/projects/{{ $projectRouteSlug }}/{{ $project->id }}/add-programme`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    closeAddProgrammeModal();
+                    form.reset();
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Programme added successfully!', 'success');
+                    }
+                    setTimeout(() => window.location.reload(), 300);
+                } else {
+                    alert(data.error || 'Failed to add programme.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Add Programme';
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while submitting.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Add Programme';
+                }
+            }
+        }
+
+        async function handleEditProgrammeSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Saving...';
+            }
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    closeEditProgrammeModal();
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Programme updated successfully!', 'success');
+                    }
+                    setTimeout(() => window.location.reload(), 300);
+                } else {
+                    alert(data.error || 'Failed to update programme.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Save Changes';
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while saving changes.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Save Changes';
+                }
+            }
+        }
+
+        // Laravel Reverb / Echo Realtime Broadcast Listener
+        if (typeof window.Echo !== 'undefined') {
+            window.Echo.channel('project.{{ $project->id }}')
+                .listen('.programme.updated', (e) => {
+                    if (typeof showToast === 'function') {
+                        showToast('Realtime update received', 'info');
+                    }
+                    window.location.reload();
+                });
+        }
+
+        async function handleDeleteProgramme(btnElement, progId, deleteUrl) {
+            if (!confirm('Are you sure you want to delete this programme? This action cannot be undone.')) {
+                return;
+            }
+
+            const row = btnElement.closest('tr');
+            if (row) {
+                row.style.opacity = '0.5';
+                row.style.pointerEvents = 'none';
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const response = await fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        _method: 'DELETE'
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    if (row) {
+                        row.style.transition = 'all 0.3s ease';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateX(20px)';
+                        setTimeout(() => {
+                            row.remove();
+                            updateProgrammeTableSerialNumbers();
+                        }, 300);
+                    }
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Programme deleted successfully!', 'success');
+                    }
+                } else {
+                    if (row) {
+                        row.style.opacity = '1';
+                        row.style.pointerEvents = 'auto';
+                    }
+                    alert(data.error || 'Failed to delete programme.');
+                }
+            } catch (err) {
+                console.error(err);
+                if (row) {
+                    row.style.opacity = '1';
+                    row.style.pointerEvents = 'auto';
+                }
+                alert('An error occurred while deleting programme.');
+            }
+        }
+
+        function updateProgrammeTableSerialNumbers() {
+            const tbody = document.getElementById('social-aid-programmes-tbody');
+            if (!tbody) return;
+            const rows = tbody.querySelectorAll('tr.programme-table-row');
+            if (rows.length === 0) {
+                tbody.innerHTML = `
+                    <tr id="no-programmes-row">
+                        <td colspan="6" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); font-style: italic;">
+                            No programme records found. Click "Add Programme" to add one.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            rows.forEach((r, idx) => {
+                const serialCell = r.querySelector('.serial-no-cell');
+                if (serialCell) {
+                    serialCell.innerText = idx + 1;
+                }
+            });
+        }
+
+
 
         async function toggleProgrammeChecklistTick(btnElement, progIndex, field) {
             const icon = btnElement.querySelector('i');
@@ -3485,10 +3639,11 @@
 
             try {
                 // Instantly scale/rotate slightly for feedback
-                btnElement.style.transform = 'scale(0.8)';
+                btnElement.style.transform = 'scale(0.9)';
                 setTimeout(() => btnElement.style.transform = 'scale(1)', 150);
 
-                const response = await fetch(`/admin/projects/orphan-care/{{ $project->id }}/toggle-programme-tick`, {
+                const response = await fetch(`/admin/projects/{{ $projectRouteSlug }}/{{ $project->id }}/toggle-programme-tick`, {
+
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3504,12 +3659,17 @@
                 const result = await response.json();
                 if (response.ok && result.success) {
                     if (result.is_ticked) {
-                        icon.className = 'bx bxs-checkbox-checked';
-                        icon.style.color = 'var(--accent-green)';
+                        if (icon) icon.className = 'bx bxs-check-circle';
+                        btnElement.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+                        btnElement.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                        btnElement.style.color = '#059669';
                     } else {
-                        icon.className = 'bx bx-checkbox';
-                        icon.style.color = 'var(--text-muted)';
+                        if (icon) icon.className = 'bx bx-circle';
+                        btnElement.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
+                        btnElement.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                        btnElement.style.color = '#d97706';
                     }
+
                     if (typeof showToast === 'function') {
                         showToast(result.message, 'success');
                     }
@@ -3518,7 +3678,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert('An error occurred while toggling status.');
+                alert('An error occurred while updating status.');
             }
         }
     </script>

@@ -116,4 +116,77 @@ class ApplicationAddressTest extends TestCase
             'pin_code' => '682001',
         ]);
     }
+
+    public function test_super_admin_can_create_orphan_care_application_with_address_and_mobile_numbers(): void
+    {
+        $admin = User::where('role', 1)->first();
+        if (!$admin) {
+            $admin = User::create([
+                'name' => 'Super Admin Test',
+                'email' => 'admin_test@rcfi.org',
+                'mobile' => '9999999999',
+                'role' => 1,
+                'password' => bcrypt('password'),
+                'designation' => 'Super Admin',
+            ]);
+        }
+
+        $response = $this->actingAs($admin)->post('/admin/applications', [
+            'category' => 'Orphan Care',
+            'applicant_name' => 'Orphan Test Applicant',
+            'status' => 'Pending',
+            'house_name' => 'Rose Villa',
+            'place' => 'Calicut',
+            'post_office' => 'Calicut PO',
+            'village' => 'East Village',
+            'panchayat' => 'Calicut GP',
+            'district' => 'Kozhikode',
+            'state' => 'Kerala',
+            'pin_code' => '673002',
+            'meta' => [
+                'mobile_1' => '9876543210',
+                'mobile_2' => '9123456789',
+                'father_name' => 'John Doe Sr',
+                'mother_name' => 'Jane Doe',
+                'gender' => 'Male',
+                'dob' => '2005-05-15',
+                'age' => '21',
+                'father_death_date' => '2018-01-01',
+                'father_death_cause' => 'Fever',
+                'mother_alive_status' => 'Yes',
+                'mother_remarried_status' => 'No',
+                'siblings_total' => 2,
+                'siblings_male' => 1,
+                'siblings_female' => 1,
+                'monthly_income' => 5000,
+                'monthly_expense' => 4000,
+                'house_type' => 'Rental',
+                'school_name' => 'City School',
+                'school_class' => '10',
+                'health_status' => 'Good',
+                'guardian_name' => 'Jane Doe',
+                'guardian_relation' => 'Mother',
+            ],
+            'redirect_category' => 'orphan-care',
+        ]);
+
+        $response->assertRedirect(route('applications.category', 'orphan-care'));
+
+        $app = \App\Models\OrphanCareApplication::where('applicant_name', 'Orphan Test Applicant')->first();
+        $this->assertNotNull($app);
+        $this->assertEquals('9876543210', $app->meta['mobile_1']);
+        $this->assertEquals('9123456789', $app->meta['mobile_2']);
+        $this->assertEquals('Rose Villa', $app->meta['house_name']);
+        $this->assertEquals('Calicut', $app->meta['place']);
+        $this->assertEquals('Kozhikode', $app->meta['district']);
+
+        $this->assertDatabaseHas('applicant_addresses', [
+            'addressable_type' => \App\Models\OrphanCareApplication::class,
+            'addressable_id' => $app->id,
+            'house_name' => 'Rose Villa',
+            'place' => 'Calicut',
+            'contact_number_1' => '9876543210',
+            'contact_number_2' => '9123456789',
+        ]);
+    }
 }

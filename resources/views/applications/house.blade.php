@@ -117,6 +117,7 @@
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
+                                $appItem->rejected_reason ?? '',
                                 $appItem->details ?? '',
                             ];
                             if (is_array($meta)) {
@@ -181,7 +182,7 @@
                                         </form>
 
                                         <!-- Reject -->
-                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                                             @csrf
                                             <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject">
                                                 <i class="bx bx-x"></i>
@@ -189,6 +190,17 @@
                                         </form>
 
                                     @endif
+                                @endif
+
+                                @if(Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess()))
+                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
@@ -221,7 +233,7 @@
                 @if(Auth::user()->canApproveApplications())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
-                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                @if(Auth::user()->hasAdminAccess())
                     <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
                         <i class="bx bx-pencil"></i> Edit
                     </button>
@@ -877,7 +889,7 @@
                                 <i class="bx bx-check"></i> Approve
                             </button>
                         </form>
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                 <i class="bx bx-x"></i> Reject
@@ -886,7 +898,7 @@
                     `;
                 } else if (appItem.status === 'Approved') {
                     statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                 <i class="bx bx-x"></i> Reject Application
@@ -965,6 +977,15 @@
                         </table>
                     </div>
                 </div>
+
+                ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                    <h5 style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Rejected Reason:</h5>
+                    <p style="color: #ffffff; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); min-height: 50px;">
+                        ${appItem.rejected_reason || meta.rejected_reason}
+                    </p>
+                </div>
+                ` : ''}
                 
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                     <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
@@ -978,7 +999,7 @@
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
-                let currentDetailsAppItem = null;
+        var currentDetailsAppItem = null;
 
         function editFromDetails() {
             if (currentDetailsAppItem) {
@@ -1015,7 +1036,11 @@
                 form.appendChild(redirectInput);
 
                     document.body.appendChild(form);
-                    form.submit();
+                    if (typeof handleFormSubmit === 'function') {
+                        handleFormSubmit({ target: form, preventDefault: () => {} });
+                    } else {
+                        form.submit();
+                    }
                 });
             }
         }

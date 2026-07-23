@@ -307,7 +307,7 @@
 
                     @php
                         $statusRecord = $project->projectStatus;
-                        $statusUpdatedAt = $statusRecord && $statusRecord->updated_at ? $statusRecord->updated_at->timezone('Asia/Kolkata') : null;
+                        $statusUpdatedAt = $statusRecord && $statusRecord->updated_at ? \Carbon\Carbon::parse($statusRecord->updated_at)->timezone('Asia/Kolkata') : null;
                     @endphp
 
                     {{-- Current phase badge & last updated time --}}
@@ -709,7 +709,7 @@
                                 $filePath = ($docRecord && $column) ? $docRecord->$column : null;
                                 $timeColumn = $column ? $column . '_ticked_at' : null;
                                 $tickedAtDate = ($docRecord && $timeColumn) ? $docRecord->$timeColumn : null;
-                                $tickedAt = $tickedAtDate ? $tickedAtDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                                $tickedAt = $tickedAtDate ? \Carbon\Carbon::parse($tickedAtDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
                                 
                                 if ($filePath === '0') {
                                     $filePath = null;
@@ -721,7 +721,7 @@
                                     {{ $tickedAt ?? '-' }}
                                 </td>
                                 <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center;">
-                                    @if($isProjectManager && $hasApplication && !$isLockedForEditing)
+                                    @if($isProjectManager && !$isLockedForEditing)
                                         <button type="button" onclick="toggleChecklistDocument(this, '{{ $doc }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
                                             @if(!empty($filePath))
                                                 <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
@@ -1518,12 +1518,12 @@
                     $compCert = $docRecord ? $docRecord->completion_certificate : null;
                     if ($compCert === '0') { $compCert = null; }
                     $compCertTimeDate = $docRecord ? $docRecord->completion_certificate_ticked_at : null;
-                    $compCertTime = $compCertTimeDate ? $compCertTimeDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                    $compCertTime = $compCertTimeDate ? \Carbon\Carbon::parse($compCertTimeDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
 
                     $measBook = $docRecord ? $docRecord->measurement_book : null;
                     if ($measBook === '0') { $measBook = null; }
                     $measBookTimeDate = $docRecord ? $docRecord->measurement_book_ticked_at : null;
-                    $measBookTime = $measBookTimeDate ? $measBookTimeDate->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                    $measBookTime = $measBookTimeDate ? \Carbon\Carbon::parse($measBookTimeDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
 
                     $locationMapLink = $docRecord ? $docRecord->location_map_link : null;
                     
@@ -1907,7 +1907,13 @@
 
     <!-- Switch Stage Script -->
     <script>
-        var allApplicationsData = @json($allApplications);
+        @php
+            $appsForJson = collect($allApplications ?? []);
+            if (!empty($application) && !$appsForJson->contains('id', $application->id)) {
+                $appsForJson->push($application);
+            }
+        @endphp
+        var allApplicationsData = @json($appsForJson);
 
         async function toggleChecklistDocument(button, docName) {
             const icon = button.querySelector('i');
@@ -2054,8 +2060,6 @@
             const app = allApplicationsData.find(a => a.id == selectedId);
             if (!app) return;
 
-            const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
-            
             let meta = {};
             if (app.meta) {
                 if (typeof app.meta === 'object') {
@@ -2069,67 +2073,78 @@
                 }
             }
 
-            const keys = Object.keys(meta).filter(k => k !== 'applicant_name' && k !== 'details');
-            const half = Math.ceil(keys.length / 2);
-            const col1Keys = keys.slice(0, half);
-            const col2Keys = keys.slice(half);
-
-            const formatKeyLabel = (key) => {
-                return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            const getVal = (keys) => {
+                if (!Array.isArray(keys)) keys = [keys];
+                for (let k of keys) {
+                    if (meta[k] !== undefined && meta[k] !== null && meta[k] !== '') return meta[k];
+                    if (app[k] !== undefined && app[k] !== null && app[k] !== '') return app[k];
+                }
+                return null;
             };
+            const formatVal = (val) => (val !== null && val !== undefined && val !== '') ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
 
-            let col1Rows = `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                    <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td>
-                    <td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Status:</td>
-                    <td>
-                        <span style="background-color: ${app.status === 'Approved' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}; color: ${app.status === 'Approved' ? 'var(--accent-green)' : '#f59e0b'}; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
-                            ${app.status}
-                        </span>
-                    </td>
-                </tr>
-            `;
+            const applicantName = formatVal(app.applicant_name || getVal(['applicant_name', 'name']));
+            const age = formatVal(getVal(['age']));
+            const gender = formatVal(getVal(['gender', 'sex']));
+            const fatherName = formatVal(getVal(['father_name']));
+            const motherName = formatVal(getVal(['mother_name']));
+            const location = formatVal(getVal(['location', 'place']));
+            const village = formatVal(getVal(['village']));
+            const post = formatVal(getVal(['post', 'post_office']));
+            const panchayath = formatVal(getVal(['panchayath', 'panchayat']));
+            const dist = getVal(['district']);
+            const st = getVal(['state']);
+            const districtState = (dist || st) ? `${formatVal(dist)} / ${formatVal(st)}` : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
+            const c1 = getVal(['contact_number_1', 'mobile_1', 'mobile']);
+            const c2 = getVal(['contact_number_2', 'mobile_2']);
+            const contact = (c1 || c2) ? `${formatVal(c1)} / ${formatVal(c2)}` : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
 
-            col1Keys.forEach(k => {
-                col1Rows += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                        <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">${formatKeyLabel(k)}:</td>
-                        <td>${formatVal(meta[k])}</td>
-                    </tr>
-                `;
-            });
+            const landOwnerName = formatVal(getVal(['land_owner_name']));
+            const landOwnerMobile = formatVal(getVal(['land_owner_mobile']));
+            const landOwnerPlace = formatVal(getVal(['land_owner_place', 'land_owner_address']));
+            const legalPermissions = formatVal(getVal(['legal_permissions']));
 
-            let col2Rows = '';
-            col2Keys.forEach(k => {
-                col2Rows += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                        <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">${formatKeyLabel(k)}:</td>
-                        <td>${formatVal(meta[k])}</td>
-                    </tr>
-                `;
-            });
-
-            const amountText = app.amount_requested ? '₹' + Number(app.amount_requested).toLocaleString() : 'N/A';
+            const wellType = formatVal(getVal(['well_type']));
+            const wellDepth = formatVal(getVal(['well_depth']));
+            const beneficiaries = formatVal(getVal(['num_benefited_people', 'beneficiaries']));
+            const budget = app.amount_requested ? '₹' + Number(app.amount_requested).toLocaleString() : 'N/A';
+            const appStatus = app.status || 'Pending';
 
             container.innerHTML = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <!-- Col 1 -->
                     <div>
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Application Details</h4>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Contact Info</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                            ${col1Rows}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">${applicantName}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Gender / Age:</td><td>${gender} / ${age} yrs</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father Name:</td><td>${fatherName}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Name:</td><td>${motherName}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>${location}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village / Post:</td><td>${village} / ${post}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>${panchayath}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>${districtState}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>${contact}</td></tr>
+                        </table>
+
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Land Owner Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Land Owner:</td><td>${landOwnerName}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Owner Mobile:</td><td>${landOwnerMobile}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place / Address:</td><td>${landOwnerPlace}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Permission:</td><td>${legalPermissions}</td></tr>
                         </table>
                     </div>
+
+                    <!-- Col 2 -->
                     <div>
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Additional Specifications</h4>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Project Specifications</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                            ${col2Rows || '<tr><td colspan="2" style="color: var(--text-muted); font-style: italic;">No additional metadata keys available.</td></tr>'}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                                <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td>
-                                <td style="color: var(--accent-green); font-weight: 600;">${amountText}</td>
-                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Well Type:</td><td>${wellType}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Well Depth:</td><td>${wellDepth}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Beneficiaries:</td><td>${beneficiaries}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">${budget}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">${appStatus}</td></tr>
                         </table>
                     </div>
                 </div>
@@ -2142,6 +2157,13 @@
                 </div>
             `;
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectElem = document.querySelector('select[name="application_id"]:not([disabled])') || document.querySelector('select[name="application_id"]');
+            if (selectElem && selectElem.value) {
+                updateRealtimeApplicationDetails(selectElem.value);
+            }
+        });
 
         // Track the current actual project stage from the database
         var activeProjectId = {{ $project->id }};

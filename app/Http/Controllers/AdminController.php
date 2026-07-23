@@ -63,19 +63,23 @@ class AdminController extends Controller
 
         $recentApplications = array_slice($recentList, 0, 3);
 
-        $role = auth()->user()->role;
-        
-        switch ($role) {
-            case 1:
-                return view('dashboard.admin', compact('userCount', 'donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount', 'recentApplications'));
-            case 2:
-                return view('dashboard.coo', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount'));
-            case 3:
-                return view('dashboard.project_manager', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount'));
-            case 4:
-                return view('dashboard.hod', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount'));
-            default:
-                return view('dashboard.others', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount'));
+        $user = auth()->user();
+        if ($user->isReception()) {
+            return view('dashboard.reception', compact('applicationsCount', 'pendingCount', 'recentApplications'));
         }
+        if ($user->isSuperAdmin()) {
+            return view('dashboard.admin', compact('userCount', 'donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount', 'recentApplications'));
+        }
+        if ($user->isCoo()) {
+            return view('dashboard.coo', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount'));
+        }
+        if ($user->isPm()) {
+            return view('dashboard.project_manager', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount'));
+        }
+        if ($user->isHod()) {
+            return view('dashboard.hod', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount'));
+        }
+
+        return view('dashboard.others', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount'));
     }
 }

@@ -50,10 +50,14 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'place' => 'Test Place',
         ]);
 
-        // 3. Super Admin attempts to approve -> Should fail / redirect back with error
+        // 3. Super Admin attempts to approve -> Should succeed
         $response = $this->actingAs($superAdmin)->post("/admin/applications/house/{$application->id}/approve");
-        $response->assertSessionHas('error', 'You are not authorized to approve applications.');
-        $this->assertEquals('Pending', $application->fresh()->status);
+        $this->assertEquals('Approved', $application->fresh()->status);
+
+        // Reset application to Pending for HOD test
+        $application = $application->fresh();
+        $application->status = 'Pending';
+        $application->save();
 
         // 4. HOD attempts to approve -> Should fail / redirect back with error
         $response = $this->actingAs($hod)->post("/admin/applications/house/{$application->id}/approve");
@@ -65,7 +69,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $this->assertEquals('Approved', $application->fresh()->status);
     }
 
-    public function test_only_coo_can_reject_applications(): void
+    public function test_only_coo_and_super_admin_can_reject_applications(): void
     {
         $superAdmin = User::create([
             'name' => 'Super Admin Test',
@@ -93,10 +97,16 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'place' => 'Test Place',
         ]);
 
-        // Super Admin attempts to reject -> Should fail
-        $response = $this->actingAs($superAdmin)->post("/admin/applications/house/{$application->id}/reject");
-        $response->assertSessionHas('error', 'You are not authorized to reject applications.');
-        $this->assertEquals('Pending', $application->fresh()->status);
+        // Super Admin attempts to reject -> Should succeed
+        $response = $this->actingAs($superAdmin)->post("/admin/applications/house/{$application->id}/reject", [
+            'remarks' => 'Super Admin Rejection.'
+        ]);
+        $this->assertEquals('Rejected', $application->fresh()->status);
+
+        // Reset application to Pending for COO test
+        $application->status = 'Pending';
+        $application->details = null;
+        $application->save();
 
         // COO attempts to reject -> Should succeed with rejection reason
         $response = $this->actingAs($coo)->post("/admin/applications/house/{$application->id}/reject", [
@@ -104,6 +114,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
         ]);
         $freshApp = $application->fresh();
         $this->assertEquals('Rejected', $freshApp->status);
+        $this->assertEquals('Incomplete documents provided.', $freshApp->rejected_reason);
         $this->assertStringContainsString('Rejection Reason: Incomplete documents provided.', $freshApp->details);
     }
 

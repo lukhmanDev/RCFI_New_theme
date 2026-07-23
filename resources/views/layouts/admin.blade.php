@@ -1384,15 +1384,15 @@
             const modal = document.getElementById('customConfirmModal');
             const remarksInput = document.getElementById('confirmRemarksInput');
             const remarks = remarksInput ? remarksInput.value : '';
+            const callback = activeConfirmCallback;
+            activeConfirmCallback = null;
             
             modal.classList.remove('show');
-            setTimeout(() => {
-                modal.style.display = 'none';
-                if (confirmed && activeConfirmCallback) {
-                    activeConfirmCallback(remarks);
-                }
-                activeConfirmCallback = null;
-            }, 200);
+            modal.style.display = 'none';
+
+            if (confirmed && callback) {
+                callback(remarks);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1414,6 +1414,54 @@
                 });
             }
         });
+
+        function confirmApplicationRejection(event, form) {
+            if (form.dataset && form.dataset.confirmed === 'true') {
+                delete form.dataset.confirmed;
+                return true;
+            }
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            showCustomConfirm('Are you sure you want to reject this application?', (remarks) => {
+                let remarksInput = form.querySelector('input[name="remarks"]');
+                if (!remarksInput) {
+                    remarksInput = document.createElement('input');
+                    remarksInput.type = 'hidden';
+                    remarksInput.name = 'remarks';
+                    form.appendChild(remarksInput);
+                }
+                remarksInput.value = remarks || '';
+                form.dataset.confirmed = 'true';
+                if (typeof handleFormSubmit === 'function') {
+                    handleFormSubmit({ target: form, preventDefault: () => {} });
+                } else {
+                    originalSubmit.call(form);
+                }
+            }, true);
+            return false;
+        }
+
+        function confirmApplicationDeletion(event, form) {
+            if (form.dataset && form.dataset.confirmed === 'true') {
+                delete form.dataset.confirmed;
+                return true;
+            }
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            showCustomConfirm('Are you sure you want to delete this application? This action cannot be undone.', () => {
+                form.dataset.confirmed = 'true';
+                if (typeof handleFormSubmit === 'function') {
+                    handleFormSubmit({ target: form, preventDefault: () => {} });
+                } else {
+                    originalSubmit.call(form);
+                }
+            });
+            return false;
+        }
 
         function initCustomConfirmForms() {
             document.querySelectorAll('form[onsubmit], form[data-confirm]').forEach(form => {
@@ -1636,14 +1684,41 @@
         // Intercept local form submissions
         async function handleFormSubmit(event) {
             const form = event.target;
-            if (form.getAttribute('data-no-pjax') !== null) {
+            const action = form.getAttribute('action') || window.location.href;
+            if (form.getAttribute('data-no-pjax') !== null || action.includes('logout')) {
                 return;
             }
             
-            event.preventDefault();
+            // Check if confirmation is required before proceeding with submit
+            if (!form.dataset.confirmed || form.dataset.confirmed !== 'true') {
+                const methodInput = form.querySelector('input[name="_method"]');
+                const isDeleteMethod = (methodInput && methodInput.value.toUpperCase() === 'DELETE') || ((form.getAttribute('method') || '').toUpperCase() === 'DELETE');
+                const onsubmitStr = form.getAttribute('onsubmit') || '';
+                const isDeleteAction = isDeleteMethod || onsubmitStr.includes('confirm') || form.dataset.confirm || action.includes('/destroy') || action.includes('/delete');
+
+                if (isDeleteAction) {
+                    if (event && event.preventDefault) event.preventDefault();
+                    if (event && event.stopPropagation) event.stopPropagation();
+                    let confirmMessage = "Are you sure you want to delete this item? This action cannot be undone.";
+                    const match = onsubmitStr.match(/confirm\(['"]([^)]+?)['"]\)/);
+                    if (match && match[1]) {
+                        confirmMessage = match[1];
+                    } else if (form.dataset.confirm) {
+                        confirmMessage = form.dataset.confirm;
+                    }
+
+                    showCustomConfirm(confirmMessage, function() {
+                        form.dataset.confirmed = 'true';
+                        handleFormSubmit({ target: form, preventDefault: () => {} });
+                    });
+                    return;
+                }
+            }
+            delete form.dataset.confirmed;
+            
+            if (event && event.preventDefault) event.preventDefault();
             showLoader();
             
-            const action = form.getAttribute('action') || window.location.href;
             const method = (form.getAttribute('method') || 'POST').toUpperCase();
             const formData = new FormData(form);
             
@@ -1658,6 +1733,10 @@
                 });
                 
                 const finalUrl = response.url || action;
+                if (finalUrl.includes('/login')) {
+                    window.location.href = finalUrl;
+                    return;
+                }
                 const html = await response.text();
                 
                 swapContent(html, finalUrl);
@@ -1793,31 +1872,43 @@
 
         // Laravel Reverb WebSockets Real-time connection client
         (function() {
-            const appKey = "{{ env('REVERB_APP_KEY', 'a8xsms5lc52lrzjloqxv') }}";
+            @if(env('REVERB_ENABLED', false) && env('BROADCAST_CONNECTION') === 'reverb' && env('REVERB_APP_KEY'))
+            const appKey = "{{ env('REVERB_APP_KEY') }}";
             const host = "{{ env('REVERB_HOST', 'localhost') }}";
             const port = {{ env('REVERB_PORT', 8080) }};
             const scheme = "{{ env('REVERB_SCHEME', 'http') }}";
             const currentUserId = {{ auth()->id() ?? 'null' }};
             
-            if (appKey && host) {
-                const pusher = new Pusher(appKey, {
-                    wsHost: host,
-                    wsPort: port,
-                    wssPort: port,
-                    forceTLS: scheme === 'https',
-                    enabledTransports: ["ws", "wss"],
-                    cluster: "mt1"
-                });
+            if (typeof Pusher !== 'undefined' && appKey && host) {
+                try {
+                    const pusher = new Pusher(appKey, {
+                        wsHost: host,
+                        wsPort: port,
+                        wssPort: port,
+                        forceTLS: scheme === 'https',
+                        enabledTransports: ["ws", "wss"],
+                        cluster: "mt1"
+                    });
 
-                const channel = pusher.subscribe('projects');
-                channel.bind('project.updated', function(data) {
-                    console.log('Realtime project.updated received:', data);
-                    if (typeof activeProjectId !== 'undefined' && data.projectId == activeProjectId && data.userId != currentUserId) {
-                        console.log('Triggering background reload for project ID:', data.projectId);
-                        reloadCurrentPageContent();
-                    }
-                });
+                    pusher.connection.bind('error', function(err) {
+                        if (err && err.error && err.error.data && err.error.data.code === 4004) {
+                            pusher.disconnect();
+                        }
+                    });
+
+                    const channel = pusher.subscribe('projects');
+                    channel.bind('project.updated', function(data) {
+                        console.log('Realtime project.updated received:', data);
+                        if (typeof activeProjectId !== 'undefined' && data.projectId == activeProjectId && data.userId != currentUserId) {
+                            console.log('Triggering background reload for project ID:', data.projectId);
+                            reloadCurrentPageContent();
+                        }
+                    });
+                } catch (e) {
+                    // Ignore offline websocket server errors
+                }
             }
+            @endif
         })();
 
         // ==========================================
@@ -1866,26 +1957,42 @@
                         }
                     }
 
-                    // 3. Format Status column to status dot
+                    // 3. Format Status column to status dot & text label
                     if (statusIndex !== -1) {
                         const cell = row.cells[statusIndex];
                         if (cell) {
-                            const statusSpan = cell.querySelector('span');
-                            const statusText = (statusSpan ? statusSpan.textContent : cell.textContent).trim();
+                            const staffStatusEl = cell.querySelector('.staff-status');
+                            let statusText = '';
+                            if (staffStatusEl) {
+                                statusText = staffStatusEl.textContent.trim();
+                            } else {
+                                const nonDotSpans = Array.from(cell.querySelectorAll('span')).filter(s => s.textContent.trim().length > 0);
+                                statusText = (nonDotSpans.length > 0 ? nonDotSpans[0].textContent : cell.textContent).trim();
+                            }
                             
                             let color = '#94a3b8';
-                            if (statusText === 'Approved' || statusText === 'Active') {
+                            const lowerStatus = statusText.toLowerCase();
+                            if (lowerStatus === 'approved') {
                                 color = '#10b981';
-                            } else if (statusText === 'Pending') {
+                                statusText = 'Approved';
+                            } else if (lowerStatus === 'active') {
+                                color = '#10b981';
+                                statusText = 'Active';
+                            } else if (lowerStatus === 'pending') {
                                 color = '#f59e0b';
-                            } else if (statusText === 'Rejected' || statusText === 'Suspended') {
+                                statusText = 'Pending';
+                            } else if (lowerStatus === 'rejected') {
                                 color = '#ef4444';
+                                statusText = 'Rejected';
+                            } else if (lowerStatus === 'suspended') {
+                                color = '#ef4444';
+                                statusText = 'Suspended';
                             }
 
                             cell.innerHTML = `
                                 <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle; justify-content: center; width: 100%;">
                                     <span style="width: 8px; height: 8px; background: ${color}; border-radius: 50%; display: inline-block;"></span>
-                                    <span style="color: ${color}; font-weight: 700; font-size: 0.82rem;">${statusText}</span>
+                                    <span style="color: ${color}; font-weight: 700; font-size: 0.82rem;">${statusText || 'Active'}</span>
                                 </div>
                             `;
                         }

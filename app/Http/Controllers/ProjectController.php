@@ -207,6 +207,10 @@ class ProjectController extends Controller
 
     public function index()
     {
+        if (auth()->user() && auth()->user()->isReception()) {
+            return redirect()->route('applications.index')->with('error', 'Unauthorized access.');
+        }
+
         $counts = [];
         $user = auth()->user();
         foreach ($this->categories as $slug => $config) {
@@ -223,6 +227,10 @@ class ProjectController extends Controller
 
     public function showCategory($slug)
     {
+        if (auth()->user() && auth()->user()->isReception()) {
+            return redirect()->route('applications.index')->with('error', 'Unauthorized access.');
+        }
+
         if (!array_key_exists($slug, $this->categories)) {
             abort(404);
         }
@@ -233,14 +241,16 @@ class ProjectController extends Controller
         $model = $config['model'];
 
         $user = auth()->user();
-        $projects = $this->scopeProjectsForUser($model::with(['donor', 'projectManager', 'engineer'])->orderBy('created_at', 'desc'), $user)->get();
+        $isOrphanCare = ($slug === 'orphan-care');
+        $relations = $isOrphanCare ? [] : ['donor', 'projectManager', 'engineer'];
+        $projects = $this->scopeProjectsForUser($model::with($relations)->orderBy('created_at', 'desc'), $user)->get();
 
         $donors = Donor::all();
-        $managers = User::where('role', 3)
+        $managers = User::whereIn('role', [3, '3', 'project_manager', 'Project Manager'])
             ->orWhere('designation', 'like', '%project manager%')
             ->get();
 
-        $engineers = User::where('role', 6)
+        $engineers = User::whereIn('role', [6, '6', 'engineer', 'Engineer'])
             ->orWhere('designation', 'like', '%engineer%')
             ->get();
 
@@ -262,10 +272,10 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        $isCoo = ($user->isCoo() || strtolower($user->designation ?? '') === 'coo');
-        $isHod = ($user->isHod() || strtolower($user->designation ?? '') === 'hod');
+        $designationLower = strtolower($user->designation ?? '');
+        $isCoo = ($user->isCoo() || $user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'coo'));
+        $isHod = ($user->isHod() || $user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'hod'));
         $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
-
         if (!$isCoo && !$isHod && !$isSuperAdmin) {
             return redirect()->back()->with('error', 'Only HOD and COO are authorized to create projects.');
         }
@@ -341,9 +351,6 @@ class ProjectController extends Controller
     public function update(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user->hasAdminAccess() && strtolower($user->designation ?? '') !== 'coo' && strtolower($user->designation ?? '') !== 'hod') {
-            return redirect()->back()->with('error', 'You are not authorized to edit projects.');
-        }
 
         $redirectCategory = $request->input('redirect_category');
         $isOrphanCare = ($redirectCategory === 'orphan-care' || $request->input('type_of_project') === 'Orphan Care');
@@ -385,6 +392,9 @@ class ProjectController extends Controller
         if ($config) {
             $model = $config['model'];
             $project = $model::findOrFail($id);
+            if (!$this->isPmOrEngineer($user, $project)) {
+                return redirect()->back()->with('error', 'You are not authorized to edit this project.');
+            }
             try {
                 $project->update($data);
             } catch (QueryException $e) {
@@ -434,6 +444,10 @@ class ProjectController extends Controller
 
     private function isProjectLocked($project)
     {
+        if (auth()->check() && auth()->user()->isSuperAdmin()) {
+            return false;
+        }
+
         $isSixStage = in_array($project->type_of_project, [
             'Education Center', 'Cultural Center', 'Hospital or Clinics', 
             'Shops and Others', 'House', 'Drinking Water - Group Level', 
@@ -511,7 +525,9 @@ class ProjectController extends Controller
             abort(404);
         }
 
-        $project->load(['donor', 'projectManager', 'engineer']);
+        $isOrphanCare = ($project instanceof \App\Models\OrphanCareProject || $project->type_of_project === 'Orphan Care');
+        $relations = $isOrphanCare ? [] : ['donor', 'projectManager', 'engineer'];
+        $project->load($relations);
 
         $appModel = str_replace('Project', 'Application', get_class($project));
         $application = null;
@@ -593,19 +609,12 @@ class ProjectController extends Controller
             $isStage4Approved = ($project->stage >= 5 || in_array($project->status, ['Approved', 'Completed']));
         }
 
-        if ($isStage4Approved) {
+        if ($isStage4Approved && !$isSuperAdmin) {
             return redirect()->back()->with('error', 'Once Stage 4 is approved, the assigned application cannot be changed.');
         }
 
-        if ($isSixStage) {
-            $isEngineer = ($user->role == 6 || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
-            if (!$isCoo && !$isHod && !$isPm && !$isEngineer && !$isSuperAdmin) {
-                return redirect()->back()->with('error', 'Only Project Manager, Engineer, HOD, and COO are authorized to assign or connect applications.');
-            }
-        } else {
-            if (!$isCoo && !$isHod && !$isSuperAdmin) {
-                return redirect()->back()->with('error', 'Only COO or HOD is authorized to assign applications.');
-            }
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only assigned Project Manager, Engineer, HOD, and COO are authorized to assign or connect applications.');
         }
 
         $request->validate([
@@ -878,9 +887,20 @@ class ProjectController extends Controller
         $config = $this->categories[$category];
         $model = $config['model'];
         $user = auth()->user();
-        $projects = $this->scopeProjectsForUser($model::with(['donor', 'projectManager']), $user)->get();
+        $isOrphanCare = ($category === 'orphan-care');
+        $relations = $isOrphanCare ? [] : ['donor', 'projectManager'];
+        $projects = $this->scopeProjectsForUser($model::with($relations), $user)->get();
 
-        $headers = [
+        $headers = $isOrphanCare ? [
+            'Project ID',
+            'Project Name',
+            'Sponsor',
+            'Agency Project No',
+            'Remarks',
+            'Stage',
+            'Status',
+            'Created At'
+        ] : [
             'Project ID',
             'Agency Project No',
             'Donor Name',
@@ -893,23 +913,36 @@ class ProjectController extends Controller
             'Created At'
         ];
 
-        $callback = function() use ($projects, $headers) {
+        $callback = function() use ($projects, $headers, $isOrphanCare) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $headers);
 
             foreach ($projects as $project) {
-                fputcsv($file, [
-                    $project->project_id,
-                    $project->agency_project_no ?? 'N/A',
-                    $project->donor ? $project->donor->name : 'N/A',
-                    $project->projectManager ? $project->projectManager->name : 'N/A',
-                    $project->available_budget,
-                    $project->type_of_project,
-                    $project->remarks ?? 'N/A',
-                    'Stage ' . $project->stage,
-                    $project->status,
-                    $project->created_at
-                ]);
+                if ($isOrphanCare) {
+                    fputcsv($file, [
+                        $project->project_id,
+                        $project->project_name ?? 'N/A',
+                        $project->sponsor ?? 'N/A',
+                        $project->agency_project_no ?? 'N/A',
+                        $project->remarks ?? 'N/A',
+                        'Stage ' . $project->stage,
+                        $project->status,
+                        $project->created_at
+                    ]);
+                } else {
+                    fputcsv($file, [
+                        $project->project_id,
+                        $project->agency_project_no ?? 'N/A',
+                        $project->donor ? $project->donor->name : 'N/A',
+                        $project->projectManager ? $project->projectManager->name : 'N/A',
+                        $project->available_budget,
+                        $project->type_of_project,
+                        $project->remarks ?? 'N/A',
+                        'Stage ' . $project->stage,
+                        $project->status,
+                        $project->created_at
+                    ]);
+                }
             }
 
             fclose($file);
@@ -934,8 +967,8 @@ class ProjectController extends Controller
         }
 
         $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to add files.');
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only assigned Project Manager, Engineer, HOD, and COO are authorized to add files.');
         }
         if ($this->isProjectLocked($project)) {
             return redirect()->back()->with('error', 'Project is finalized and locked.');
@@ -983,18 +1016,11 @@ class ProjectController extends Controller
         }
 
         $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
+        if (!$this->isPmOrEngineer($user, $project)) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => 'Only Project Manager and Engineer are authorized to toggle checklist.'], 403);
             }
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to toggle checklist.');
-        }
-
-        if (empty($project->application_id)) {
-            if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'error' => 'Please connect an application first.'], 400);
-            }
-            return redirect()->back()->with('error', 'Please connect an application first.');
         }
 
         if ($this->isProjectLocked($project)) {
@@ -1072,7 +1098,7 @@ class ProjectController extends Controller
         }
 
         $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
+        if (!$this->isPmOrEngineer($user, $project)) {
             return redirect()->back()->with('error', 'Only authorized staff are allowed to update map link.');
         }
 
@@ -1144,7 +1170,7 @@ class ProjectController extends Controller
         $statusRecord->status_custom = $custom;
         $statusRecord->save();
 
-        $updatedAt = $statusRecord->updated_at ? $statusRecord->updated_at->timezone('Asia/Kolkata') : now();
+        $updatedAt = $statusRecord->updated_at ? \Carbon\Carbon::parse($statusRecord->updated_at)->timezone('Asia/Kolkata') : now();
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -1162,14 +1188,14 @@ class ProjectController extends Controller
 
     public function addMaterial(Request $request, $id)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage materials.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage materials.');
         }
 
         if (empty($project->application_id)) {
@@ -1199,14 +1225,14 @@ class ProjectController extends Controller
 
     public function updateMaterial(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage materials.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage materials.');
         }
 
         $request->validate([
@@ -1234,14 +1260,14 @@ class ProjectController extends Controller
 
     public function deleteMaterial(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage materials.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage materials.');
         }
 
         $materials = $project->materials;
@@ -1261,14 +1287,14 @@ class ProjectController extends Controller
 
     public function addCommunityContribution(Request $request, $id)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage community contributions.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage community contributions.');
         }
 
         $request->validate([
@@ -1317,14 +1343,14 @@ class ProjectController extends Controller
 
     public function updateCommunityContribution(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage community contributions.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage community contributions.');
         }
 
         $request->validate([
@@ -1374,14 +1400,14 @@ class ProjectController extends Controller
 
     public function deleteCommunityContribution(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage community contributions.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage community contributions.');
         }
 
         $files = $project->files ?? [];
@@ -1423,14 +1449,14 @@ class ProjectController extends Controller
 
     public function addExpense(Request $request, $id)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage expenses.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage expenses.');
         }
 
         if (empty($project->application_id)) {
@@ -1466,14 +1492,14 @@ class ProjectController extends Controller
 
     public function updateExpense(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage expenses.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage expenses.');
         }
 
         $request->validate([
@@ -1507,14 +1533,14 @@ class ProjectController extends Controller
 
     public function deleteExpense(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage expenses.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage expenses.');
         }
 
         $expenses = $project->expenses;
@@ -1534,14 +1560,14 @@ class ProjectController extends Controller
 
     public function uploadPhoto(Request $request, $id)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to add photos.');
-        }
-
         $project = $this->getProjectInstance($request, $id, false);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to add photos.');
         }
 
         $request->validate([
@@ -1580,14 +1606,14 @@ class ProjectController extends Controller
 
     public function deletePhoto(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage photos.');
-        }
-
         $project = $this->getProjectInstance($request, $id, false);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage photos.');
         }
 
         $category = $request->input('category') ?? 'after';
@@ -1621,14 +1647,14 @@ class ProjectController extends Controller
 
     public function saveCompletionDetails(Request $request, $id)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage completion details.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage completion details.');
         }
 
         $request->validate([
@@ -1663,14 +1689,14 @@ class ProjectController extends Controller
 
     public function addContractor(Request $request, $id)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage contractor details.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage contractor details.');
         }
 
         if (empty($project->application_id)) {
@@ -1695,14 +1721,14 @@ class ProjectController extends Controller
 
     public function updateContractor(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage contractor details.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage contractor details.');
         }
 
         $data = $request->validate([
@@ -1727,14 +1753,14 @@ class ProjectController extends Controller
 
     public function deleteContractor(Request $request, $id, $index)
     {
-        $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage contractor details.');
-        }
-
         $project = $this->getProjectInstance($request, $id, true);
         if (!$project) {
             abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage contractor details.');
         }
 
         $files = $project->files ?? [];
@@ -1751,13 +1777,35 @@ class ProjectController extends Controller
         return redirect()->back()->with('error', 'Contractor not found.');
     }
 
-    private function isPmOrEngineer($user)
+    private function isPmOrEngineer($user, $project = null)
     {
         if (!$user) {
             return false;
         }
-        return $user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || 
-               in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']);
+
+        $designationLower = strtolower($user->designation ?? '');
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
+        $isCoo = ($user->isCoo() || $user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
+        $isHod = ($user->isHod() || $user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
+
+        if ($isSuperAdmin || $isCoo || $isHod) {
+            return true;
+        }
+
+        if ($project) {
+            if (isset($project->project_manager_id) && $project->project_manager_id == $user->id) {
+                return true;
+            }
+            if (isset($project->engineer_id) && $project->engineer_id == $user->id) {
+                return true;
+            }
+            return false;
+        }
+
+        $isPm = ($user->isPm() || $user->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
+        $isEngineer = ($user->isEngineer() || $user->role == 6 || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
+
+        return $isPm || $isEngineer;
     }
 
     private function scopeProjectsForUser($query, $user)
@@ -1776,19 +1824,30 @@ class ProjectController extends Controller
             return $query;
         }
 
+        $table = $query->getModel()->getTable();
+        $hasPm = \Illuminate\Support\Facades\Schema::hasColumn($table, 'project_manager_id');
+        $hasEng = \Illuminate\Support\Facades\Schema::hasColumn($table, 'engineer_id');
+
         if ($isPm && $isEngineer) {
-            return $query->where(function ($q) use ($user) {
-                $q->where('project_manager_id', $user->id)
-                  ->orWhere('engineer_id', $user->id);
-            });
+            if ($hasPm && $hasEng) {
+                return $query->where(function ($q) use ($user) {
+                    $q->where('project_manager_id', $user->id)
+                      ->orWhere('engineer_id', $user->id);
+                });
+            } elseif ($hasPm) {
+                return $query->where('project_manager_id', $user->id);
+            } elseif ($hasEng) {
+                return $query->where('engineer_id', $user->id);
+            }
+            return $query->whereRaw('1 = 0');
         }
 
         if ($isPm) {
-            return $query->where('project_manager_id', $user->id);
+            return $hasPm ? $query->where('project_manager_id', $user->id) : $query->whereRaw('1 = 0');
         }
 
         if ($isEngineer) {
-            return $query->where('engineer_id', $user->id);
+            return $hasEng ? $query->where('engineer_id', $user->id) : $query->whereRaw('1 = 0');
         }
 
         return $query;
@@ -1797,13 +1856,13 @@ class ProjectController extends Controller
     public function addInspection(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
-        }
-
         $project = $this->getProjectInstance($request, $id, false);
         if (!$project) {
             abort(404);
+        }
+
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
         }
 
         if ($this->isProjectLocked($project)) {
@@ -1830,13 +1889,13 @@ class ProjectController extends Controller
     public function updateInspection(Request $request, $id, $inspectionId)
     {
         $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
-        }
-
         $project = $this->getProjectInstance($request, $id, false);
         if (!$project) {
             abort(404);
+        }
+
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
         }
 
         if ($this->isProjectLocked($project)) {
@@ -1865,13 +1924,13 @@ class ProjectController extends Controller
     public function deleteInspection(Request $request, $id, $inspectionId)
     {
         $user = auth()->user();
-        if (!$this->isPmOrEngineer($user)) {
-            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
-        }
-
         $project = $this->getProjectInstance($request, $id, false);
         if (!$project) {
             abort(404);
+        }
+
+        if (!$this->isPmOrEngineer($user, $project)) {
+            return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage inspections.');
         }
 
         if ($this->isProjectLocked($project)) {
@@ -1884,13 +1943,34 @@ class ProjectController extends Controller
         return redirect()->route('projects.show', $id)->with('success', 'Inspection report deleted successfully!');
     }
 
-    public function orphanCareUploadPhoto(Request $request, $id)
+    private function getSocialAidProjectAndApp($id)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
-        if (!$project->application_id) {
+        $map = [
+            \App\Models\OrphanCareProject::class => \App\Models\OrphanCareApplication::class,
+            \App\Models\DifferentlyAbledProject::class => \App\Models\DifferentlyAbledApplication::class,
+            \App\Models\FamilyAidProject::class => \App\Models\FamilyAidApplication::class,
+        ];
+
+        foreach ($map as $pModel => $appModel) {
+            $project = $pModel::find($id);
+            if ($project) {
+                $application = $project->application_id ? $appModel::find($project->application_id) : null;
+                return [$project, $application];
+            }
+        }
+
+        return [null, null];
+    }
+
+    public function socialAidUploadPhoto(Request $request, $id)
+    {
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            abort(404);
+        }
+        if (!$application) {
             return redirect()->back()->with('error', 'No application is linked to this project.');
         }
-        $application = \App\Models\OrphanCareApplication::findOrFail($project->application_id);
 
         $request->validate([
             'student_photo' => 'required|image|max:5120',
@@ -1911,19 +1991,21 @@ class ProjectController extends Controller
             $application->student_photo = 'uploads/students/' . $application->id . '/' . $filename;
             $application->save();
 
-            return redirect()->back()->with('success', 'Student photo uploaded successfully!');
+            return redirect()->back()->with('success', 'Photo uploaded successfully!');
         }
 
-        return redirect()->back()->with('error', 'Student photo upload failed.');
+        return redirect()->back()->with('error', 'Photo upload failed.');
     }
 
-    public function orphanCareDeletePhoto(Request $request, $id)
+    public function socialAidDeletePhoto(Request $request, $id)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
-        if (!$project->application_id) {
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            abort(404);
+        }
+        if (!$application) {
             return redirect()->back()->with('error', 'No application is linked to this project.');
         }
-        $application = \App\Models\OrphanCareApplication::findOrFail($project->application_id);
 
         if ($application->student_photo) {
             $path = public_path($application->student_photo);
@@ -1933,19 +2015,21 @@ class ProjectController extends Controller
             $application->student_photo = null;
             $application->save();
 
-            return redirect()->back()->with('success', 'Student photo deleted successfully!');
+            return redirect()->back()->with('success', 'Photo deleted successfully!');
         }
 
         return redirect()->back()->with('error', 'No photo found to delete.');
     }
 
-    public function orphanCareUpdateAddress(Request $request, $id)
+    public function socialAidUpdateAddress(Request $request, $id)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
-        if (!$project->application_id) {
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            abort(404);
+        }
+        if (!$application) {
             return redirect()->back()->with('error', 'No application is linked to this project.');
         }
-        $application = \App\Models\OrphanCareApplication::findOrFail($project->application_id);
 
         $data = $request->validate([
             'house_name' => 'nullable|string|max:255',
@@ -1959,12 +2043,15 @@ class ProjectController extends Controller
 
         $application->update($data);
 
-        return redirect()->back()->with('success', 'Student address updated successfully!');
+        return redirect()->back()->with('success', 'Address updated successfully!');
     }
 
-    public function orphanCareAddFund(Request $request, $id)
+    public function socialAidAddFund(Request $request, $id)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            abort(404);
+        }
 
         $request->validate([
             'date' => 'required|date',
@@ -1981,18 +2068,25 @@ class ProjectController extends Controller
         return redirect()->back()->with('success', 'Fund transfer record added successfully!');
     }
 
-    public function orphanCareDeleteFund(Request $request, $id, $fundId)
+    public function socialAidDeleteFund(Request $request, $id, $fundId)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            abort(404);
+        }
+
         $fund = $project->funds()->findOrFail($fundId);
         $fund->delete();
 
         return redirect()->back()->with('success', 'Fund transfer record deleted successfully!');
     }
 
-    public function orphanCareAddProgramme(Request $request, $id)
+    public function socialAidAddProgramme(Request $request, $id)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            abort(404);
+        }
 
         $request->validate([
             'programme_name' => 'required|string|max:255',
@@ -2007,18 +2101,31 @@ class ProjectController extends Controller
         }
         $tickStatuses['present_ticked'] = $request->has('present_ticked');
 
-        $project->programmes()->create(array_merge([
+        $prog = $project->programmes()->create(array_merge([
             'programme_name' => $request->input('programme_name'),
             'date' => $request->input('date'),
             'place' => $request->input('place'),
         ], $tickStatuses));
 
+        if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Programme added successfully!',
+                'programme' => $prog,
+                'formatted_date' => !empty($prog->date) ? date('d-M-Y', strtotime($prog->date)) : '-'
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Programme added successfully!');
     }
 
-    public function orphanCareUpdateProgramme(Request $request, $id, $programme_id)
+    public function socialAidUpdateProgramme(Request $request, $id, $programme_id)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            abort(404);
+        }
+
         $programme = $project->programmes()->findOrFail($programme_id);
 
         $request->validate([
@@ -2041,21 +2148,46 @@ class ProjectController extends Controller
             'place' => $request->input('place'),
         ], $tickUpdates));
 
+        if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Programme updated successfully!',
+                'programme' => $programme->fresh(),
+                'formatted_date' => !empty($programme->date) ? date('d-M-Y', strtotime($programme->date)) : '-'
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Programme updated successfully!');
     }
 
-    public function orphanCareDeleteProgramme(Request $request, $id, $programme_id)
+
+    public function socialAidDeleteProgramme(Request $request, $id, $programme_id)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            abort(404);
+        }
+
         $programme = $project->programmes()->findOrFail($programme_id);
         $programme->delete();
+
+        if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Programme deleted successfully!'
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Programme deleted successfully!');
     }
 
-    public function orphanCareToggleProgrammeTick(Request $request, $id)
+
+    public function socialAidToggleProgrammeTick(Request $request, $id)
     {
-        $project = \App\Models\OrphanCareProject::findOrFail($id);
+        [$project, $application] = $this->getSocialAidProjectAndApp($id);
+        if (!$project) {
+            return response()->json(['success' => false, 'error' => 'Project not found.'], 404);
+        }
         
         $programmeId = $request->input('programme_id');
         $field = $request->input('field');
@@ -2075,4 +2207,15 @@ class ProjectController extends Controller
             'message' => $isTicked ? 'Item ticked successfully.' : 'Item unticked successfully.'
         ]);
     }
+
+    public function orphanCareUploadPhoto(Request $request, $id) { return $this->socialAidUploadPhoto($request, $id); }
+    public function orphanCareDeletePhoto(Request $request, $id) { return $this->socialAidDeletePhoto($request, $id); }
+    public function orphanCareUpdateAddress(Request $request, $id) { return $this->socialAidUpdateAddress($request, $id); }
+    public function orphanCareAddFund(Request $request, $id) { return $this->socialAidAddFund($request, $id); }
+    public function orphanCareDeleteFund(Request $request, $id, $fundId) { return $this->socialAidDeleteFund($request, $id, $fundId); }
+    public function orphanCareAddProgramme(Request $request, $id) { return $this->socialAidAddProgramme($request, $id); }
+    public function orphanCareUpdateProgramme(Request $request, $id, $programme_id) { return $this->socialAidUpdateProgramme($request, $id, $programme_id); }
+    public function orphanCareDeleteProgramme(Request $request, $id, $programme_id) { return $this->socialAidDeleteProgramme($request, $id, $programme_id); }
+    public function orphanCareToggleProgrammeTick(Request $request, $id) { return $this->socialAidToggleProgrammeTick($request, $id); }
 }
+

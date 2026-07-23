@@ -30,6 +30,21 @@ class OrphanCareProject extends Model
         });
     }
 
+    public function donor()
+    {
+        return $this->belongsTo(Donor::class, 'donor_id');
+    }
+
+    public function projectManager()
+    {
+        return $this->belongsTo(User::class, 'project_manager_id');
+    }
+
+    public function engineer()
+    {
+        return $this->belongsTo(User::class, 'engineer_id');
+    }
+
     public function programmes()
     {
         return $this->hasMany(OrphanCareProgramme::class, 'orphan_care_project_id');

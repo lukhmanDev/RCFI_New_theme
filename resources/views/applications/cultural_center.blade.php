@@ -116,6 +116,7 @@
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
+                                $appItem->rejected_reason ?? '',
                                 $appItem->details ?? '',
                             ];
                             if (is_array($meta)) {
@@ -177,14 +178,24 @@
                                         </form>
 
                                         <!-- Reject -->
-                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                                             @csrf
                                             <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject">
                                                 <i class="bx bx-x"></i>
                                             </button>
                                         </form>
-
                                     @endif
+                                @endif
+
+                                @if(Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess()))
+                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
@@ -217,7 +228,7 @@
                 @if(Auth::user()->canApproveApplications())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
-                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                @if(Auth::user()->hasAdminAccess())
                     <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
                         <i class="bx bx-pencil"></i> Edit
                     </button>
@@ -303,7 +314,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="contact_number_1">Contact Number 1 *</label>
                             <input type="text" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" required>
@@ -311,6 +322,10 @@
                         <div>
                             <label class="form-label" for="contact_number_2">Contact Number 2 *</label>
                             <input type="text" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="pin_code">Pin Code *</label>
+                            <input type="text" class="form-control-dark" id="pin_code" name="meta[pin_code]" value="{{ old('meta.pin_code') }}" required>
                         </div>
                     </div>
 
@@ -391,11 +406,11 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="education_center_nearby">Education Center Nearby *</label>
-                            <input type="text" class="form-control-dark" id="education_center_nearby" name="meta[education_center_nearby]" value="{{ old('meta.education_center_nearby') ?? old('meta.cultural_center_nearby') }}" required>
+                            <label class="form-label" for="cultural_center_nearby">Cultural Center Nearby *</label>
+                            <input type="text" class="form-control-dark" id="cultural_center_nearby" name="meta[cultural_center_nearby]" value="{{ old('meta.cultural_center_nearby') ?? old('meta.education_center_nearby') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="distance_cultural_centre">Distance to closest Education Center (KM) *</label>
+                            <label class="form-label" for="distance_cultural_centre">Distance to closest Cultural Center (KM) *</label>
                             <input type="number" step="0.1" class="form-control-dark" id="distance_cultural_centre" name="meta[distance_cultural_centre]" value="{{ old('meta.distance_cultural_centre') }}" required>
                         </div>
                     </div>
@@ -544,7 +559,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_contact_number_1">Contact Number 1 *</label>
                             <input type="text" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" required>
@@ -552,6 +567,10 @@
                         <div>
                             <label class="form-label" for="edit_contact_number_2">Contact Number 2 *</label>
                             <input type="text" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_pin_code">Pin Code *</label>
+                            <input type="text" class="form-control-dark" id="edit_pin_code" name="meta[pin_code]" required>
                         </div>
                     </div>
 
@@ -742,7 +761,7 @@
             if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = appItem.panchayat || ''; }
             if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = appItem.district || ''; }
             if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = appItem.state || ''; }
-            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = appItem.pin_code || ''; }
+            document.getElementById('edit_pin_code').value = meta.pin_code || meta.pin || appItem.pin_code || '';
             document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
             document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
             document.getElementById('edit_submitted_before').value = meta.submitted_before || '';
@@ -758,7 +777,7 @@
 
             document.getElementById('edit_site_has_building').value = meta.site_has_building || 'No';
             document.getElementById('edit_status_of_current_building').value = meta.status_of_current_building || '';
-            document.getElementById('edit_cultural_center_nearby').value = meta.cultural_center_nearby || '';
+            document.getElementById('edit_cultural_center_nearby').value = meta.cultural_center_nearby || meta.education_center_nearby || '';
             document.getElementById('edit_distance_cultural_centre').value = meta.distance_cultural_centre || '';
             document.getElementById('edit_benefited_households').value = meta.benefited_households || '';
 
@@ -796,7 +815,7 @@
                                 <i class="bx bx-check"></i> Approve
                             </button>
                         </form>
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                 <i class="bx bx-x"></i> Reject
@@ -805,7 +824,7 @@
                     `;
                 } else if (appItem.status === 'Approved') {
                     statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                 <i class="bx bx-x"></i> Reject Application
@@ -841,7 +860,7 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.village)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.post)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.panchayath)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin_code)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact 1 / 2:</td><td>${formatVal(meta.contact_number_1)} / ${formatVal(meta.contact_number_2)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Submitted Before?</td><td>${formatVal(meta.submitted_before)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">RCFI Support?</td><td>${formatVal(meta.received_support_before)}</td></tr>
@@ -864,7 +883,7 @@
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Has Building?</td><td>${formatVal(meta.site_has_building)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Building Status:</td><td>${formatVal(meta.status_of_current_building)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">CC Nearby?</td><td>${formatVal(meta.cultural_center_nearby)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">CC Nearby?</td><td>${formatVal(meta.cultural_center_nearby || meta.education_center_nearby)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Distance to CC (KM):</td><td>${formatVal(meta.distance_cultural_centre)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Benefited Households:</td><td>${formatVal(meta.benefited_households)}</td></tr>
                         </table>
@@ -882,6 +901,15 @@
                         </table>
                     </div>
                 </div>
+
+                ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                    <h5 style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Rejected Reason:</h5>
+                    <p style="color: #ffffff; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); min-height: 50px;">
+                        ${appItem.rejected_reason || meta.rejected_reason}
+                    </p>
+                </div>
+                ` : ''}
                 
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                     <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
@@ -895,7 +923,7 @@
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
-                let currentDetailsAppItem = null;
+        var currentDetailsAppItem = null;
 
         function editFromDetails() {
             if (currentDetailsAppItem) {
@@ -932,7 +960,11 @@
                 form.appendChild(redirectInput);
 
                     document.body.appendChild(form);
-                    form.submit();
+                    if (typeof handleFormSubmit === 'function') {
+                        handleFormSubmit({ target: form, preventDefault: () => {} });
+                    } else {
+                        form.submit();
+                    }
                 });
             }
         }

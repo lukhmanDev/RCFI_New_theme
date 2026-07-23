@@ -7,11 +7,40 @@
         </a>
     </div>
     <ul class="sidebar-menu">
+        <li class="sidebar-header">
+            <span>Main Menu</span>
+        </li>
         <li>
             <a href="{{ route('admin.home') }}" class="{{ Route::currentRouteName() === 'admin.home' ? 'active' : '' }}">
                 <i class="bx bxs-grid-alt"></i>
                 <span>Dashboard</span>
             </a>
+        </li>
+
+        <li>
+            <a href="{{ route('applications.index') }}" class="{{ (request()->routeIs('applications.*') && !request()->routeIs('applications.approved.*')) ? 'active' : '' }}">
+                <i class="bx bxs-file-doc"></i>
+                <span>Applications</span>
+            </a>
+        </li>
+
+        @if(!Auth::user() || !Auth::user()->isReception())
+        <li>
+            <a href="{{ route('applications.approved.index') }}" class="approved-link {{ request()->routeIs('applications.approved.*') ? 'active' : '' }}">
+                <i class="bx bxs-check-circle icon-approved"></i>
+                <span>Approved Applications</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('projects.index') }}" class="{{ request()->routeIs('projects.*') ? 'active' : '' }}">
+                <i class="bx bxs-briefcase"></i>
+                <span>Projects</span>
+            </a>
+        </li>
+
+        <li class="sidebar-header">
+            <span>Master Data</span>
         </li>
         @if(Auth::user() && Auth::user()->isSuperAdmin())
         <li>
@@ -25,27 +54,6 @@
             <a href="{{ route('donors.index') }}" class="{{ request()->routeIs('donors.*') ? 'active' : '' }}">
                 <i class="bx bxs-heart"></i>
                 <span>Donors</span>
-            </a>
-        </li>
-
-        <li>
-            <a href="{{ route('applications.index') }}" class="{{ (request()->routeIs('applications.*') && !request()->routeIs('applications.approved.*')) ? 'active' : '' }}">
-                <i class="bx bxs-file-doc"></i>
-                <span>Applications</span>
-            </a>
-        </li>
-
-        <li>
-            <a href="{{ route('applications.approved.index') }}" class="approved-link {{ request()->routeIs('applications.approved.*') ? 'active' : '' }}">
-                <i class="bx bxs-check-circle icon-approved"></i>
-                <span>Approved Applications</span>
-            </a>
-        </li>
-
-        <li>
-            <a href="{{ route('projects.index') }}" class="{{ request()->routeIs('projects.*') ? 'active' : '' }}">
-                <i class="bx bxs-briefcase"></i>
-                <span>Projects</span>
             </a>
         </li>
         <li>
@@ -66,21 +74,7 @@
                 <span>Themes & Subthemes</span>
             </a>
         </li>
-
-        {{-- NOTE: adjust route names below ('reports.index' / 'settings.index')
-             to whatever your actual named routes are for these pages. --}}
-        <!-- <li>
-            <a href="" class="{{ request()->routeIs('reports.*') ? 'active' : '' }}">
-                <i class="bx bxs-bar-chart-alt-2"></i>
-                <span>Reports</span>
-            </a>
-        </li>
-        <li>
-            <a href="" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                <i class="bx bxs-cog"></i>
-                <span>Settings</span>
-            </a>
-        </li> -->
+        @endif
     </ul>
 
     <!-- Relocated Sidebar Profile Section -->
@@ -98,7 +92,7 @@
             </div>
         </div>
 
-        <form action="{{ route('logout') }}" method="POST" id="logoutForm">
+        <form action="{{ route('logout') }}" method="POST" id="logoutForm" data-no-pjax>
             @csrf
             <button type="submit" class="sidebar-logout">
                 <i class="bx bx-log-out-circle"></i>
@@ -145,6 +139,23 @@
 
 
 
+    /* ============ Sidebar Section Headers ============ */
+    .sidebar-menu li.sidebar-header {
+        padding: 0.85rem 0.85rem 0.35rem 0.85rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        white-space: nowrap;
+        user-select: none;
+    }
+    .sidebar-menu li.sidebar-header:not(:first-child) {
+        margin-top: 0.6rem;
+        border-top: 1px dashed #e2e8f0;
+        padding-top: 0.95rem;
+    }
+
     /* ============ Collapsed state — proper centering ============ */
     .sidebar.collapsed .sidebar-menu li a {
         justify-content: center;
@@ -153,6 +164,23 @@
     }
     .sidebar.collapsed .sidebar-menu li a span { display: none; }
     .sidebar.collapsed .sidebar-menu li a i { width: auto; }
+
+    .sidebar.collapsed .sidebar-menu li.sidebar-header span,
+    body.sidebar-collapsed .sidebar-menu li.sidebar-header span {
+        display: none;
+    }
+    .sidebar.collapsed .sidebar-menu li.sidebar-header,
+    body.sidebar-collapsed .sidebar-menu li.sidebar-header {
+        padding: 0.25rem 0;
+        margin-top: 0.4rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    .sidebar.collapsed .sidebar-menu li.sidebar-header:first-child,
+    body.sidebar-collapsed .sidebar-menu li.sidebar-header:first-child {
+        border-top: none;
+        margin-top: 0;
+        padding-top: 0;
+    }
 
     /* ============ Footer / profile ============ */
     .sidebar-footer {

@@ -22,6 +22,7 @@ trait HasCategoryMeta
         $addressFields = ['house_name', 'place', 'post_office', 'post', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'pincode', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
         if (in_array($key, $addressFields) && !str_starts_with($key, 'locality_')) {
             $normalizedKey = match ($key) {
+                'location' => 'place',
                 'post' => 'post_office',
                 'panchayath' => 'panchayat',
                 'pin', 'pincode' => 'pin_code',
@@ -47,6 +48,22 @@ trait HasCategoryMeta
         foreach ($fields as $field) {
             $meta[$field] = $this->getAttribute($field);
         }
+        $meta['rejected_reason'] = $this->getAttribute('rejected_reason');
+
+        $aliases = [
+            'post' => 'post_office',
+            'panchayath' => 'panchayat',
+            'location' => 'place',
+            'mobile' => 'contact_number_1',
+            'mobile_1' => 'contact_number_1',
+            'mobile_2' => 'contact_number_2',
+        ];
+        foreach ($aliases as $aliasKey => $targetKey) {
+            if (!isset($meta[$aliasKey])) {
+                $meta[$aliasKey] = $meta[$targetKey] ?? ($this->attributes[$aliasKey] ?? null);
+            }
+        }
+
         return $meta;
     }
 
@@ -222,6 +239,11 @@ trait HasCategoryMeta
         return ($this->pendingAddressData['contact_number_1'] ?? null) ?? ($addr ? $addr->contact_number_1 : ($this->attributes['contact_number_1'] ?? ($this->attributes['mobile_1'] ?? ($this->attributes['mobile'] ?? null))));
     }
 
+    public function getMobile1Attribute()
+    {
+        return $this->getContactNumber1Attribute();
+    }
+
     public function setContactNumber1Attribute($value)
     {
         $this->setAddressField('contact_number_1', $value);
@@ -235,6 +257,16 @@ trait HasCategoryMeta
     public function setMobileAttribute($value)
     {
         $this->setAddressField('contact_number_1', $value);
+    }
+
+    public function getMobileAttribute()
+    {
+        return $this->getContactNumber1Attribute();
+    }
+
+    public function getMobile2Attribute()
+    {
+        return $this->getContactNumber2Attribute();
     }
 
     public function getContactNumber2Attribute()
@@ -251,6 +283,17 @@ trait HasCategoryMeta
     public function setMobile2Attribute($value)
     {
         $this->setAddressField('contact_number_2', $value);
+    }
+
+    public function getTownAttribute()
+    {
+        $addr = $this->getApplicantAddressObject();
+        return ($this->pendingAddressData['town'] ?? null) ?? ($addr ? ($addr->town ?? null) : ($this->attributes['town'] ?? null));
+    }
+
+    public function setTownAttribute($value)
+    {
+        $this->setAddressField('town', $value);
     }
 
     public function getAdditionalNoteAttribute()

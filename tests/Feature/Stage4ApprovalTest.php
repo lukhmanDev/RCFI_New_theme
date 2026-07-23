@@ -199,11 +199,11 @@ class Stage4ApprovalTest extends TestCase
         ]);
         $response->assertStatus(403);
 
-        // Admin edit action should also fail (return 403)
+        // Admin edit action should bypass locking (should redirect instead of 403 lock error)
         $response = $this->actingAs($admin)->post('/admin/projects/' . $project->id . '/approve?type=Education%20Center', [
             'action' => 'finalize_approval',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(302);
     }
 
     public function test_super_admin_can_reopen_completed_project(): void

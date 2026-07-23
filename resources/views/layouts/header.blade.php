@@ -73,7 +73,7 @@
 
             <div class="topbar-profile-dropdown" id="topbarProfileDropdown">
                 <a href="{{ route('profile.edit') }}"><i class="bx bx-user"></i> My Profile</a>
-                <form action="{{ route('logout') }}" method="POST">
+                <form action="{{ route('logout') }}" method="POST" data-no-pjax>
                     @csrf
                     <button type="submit"><i class="bx bx-log-out-circle"></i> Logout</button>
                 </form>

@@ -81,6 +81,21 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::post('/admin/applications/{category}/{id}/reject', [ApplicationController::class, 'rejectApplication'])->name('applications.reject');
     Route::post('/admin/applications/{id}/update-cluster', [ApplicationController::class, 'updateCluster'])->name('applications.update_cluster');
     Route::post('/admin/applications/orphan-care/{id}/toggle-sponsor', [ApplicationController::class, 'toggleSponsor'])->name('applications.toggle_sponsor');
+    Route::post('/admin/applications/differently-abled/{id}/toggle-sponsor', [ApplicationController::class, 'toggleSponsor'])->name('applications.differently_abled.toggle_sponsor');
+    Route::post('/admin/applications/family-aid/{id}/toggle-sponsor', [ApplicationController::class, 'toggleSponsor'])->name('applications.family_aid.toggle_sponsor');
+
+    foreach (['orphan-care' => 'orphan_care', 'differently-abled' => 'differently_abled', 'family-aid' => 'family_aid'] as $slug => $key) {
+        Route::post('/admin/projects/' . $slug . '/{id}/upload-photo', [ProjectController::class, 'socialAidUploadPhoto'])->name('projects.' . $key . '.upload_photo');
+        Route::delete('/admin/projects/' . $slug . '/{id}/delete-photo', [ProjectController::class, 'socialAidDeletePhoto'])->name('projects.' . $key . '.delete_photo');
+        Route::post('/admin/projects/' . $slug . '/{id}/update-address', [ProjectController::class, 'socialAidUpdateAddress'])->name('projects.' . $key . '.update_address');
+        Route::post('/admin/projects/' . $slug . '/{id}/add-fund', [ProjectController::class, 'socialAidAddFund'])->name('projects.' . $key . '.add_fund');
+        Route::delete('/admin/projects/' . $slug . '/{id}/delete-fund/{fund_id}', [ProjectController::class, 'socialAidDeleteFund'])->name('projects.' . $key . '.delete_fund');
+        Route::post('/admin/projects/' . $slug . '/{id}/add-programme', [ProjectController::class, 'socialAidAddProgramme'])->name('projects.' . $key . '.add_programme');
+        Route::post('/admin/projects/' . $slug . '/{id}/update-programme/{programme_id}', [ProjectController::class, 'socialAidUpdateProgramme'])->name('projects.' . $key . '.update_programme');
+        Route::delete('/admin/projects/' . $slug . '/{id}/delete-programme/{programme_id}', [ProjectController::class, 'socialAidDeleteProgramme'])->name('projects.' . $key . '.delete_programme');
+        Route::post('/admin/projects/' . $slug . '/{id}/toggle-programme-tick', [ProjectController::class, 'socialAidToggleProgrammeTick'])->name('projects.' . $key . '.toggle_programme_tick');
+    }
+
 
     // Projects routes
     Route::get('/admin/projects', [ProjectController::class, 'index'])->name('projects.index');
@@ -142,15 +157,6 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
         return redirect()->route('projects.show', $id);
     });
 
-    Route::post('/admin/projects/orphan-care/{id}/upload-photo', [ProjectController::class, 'orphanCareUploadPhoto'])->name('projects.orphan_care.upload_photo');
-    Route::delete('/admin/projects/orphan-care/{id}/delete-photo', [ProjectController::class, 'orphanCareDeletePhoto'])->name('projects.orphan_care.delete_photo');
-    Route::post('/admin/projects/orphan-care/{id}/update-address', [ProjectController::class, 'orphanCareUpdateAddress'])->name('projects.orphan_care.update_address');
-    Route::post('/admin/projects/orphan-care/{id}/add-fund', [ProjectController::class, 'orphanCareAddFund'])->name('projects.orphan_care.add_fund');
-    Route::delete('/admin/projects/orphan-care/{id}/delete-fund/{fund_id}', [ProjectController::class, 'orphanCareDeleteFund'])->name('projects.orphan_care.delete_fund');
-    Route::post('/admin/projects/orphan-care/{id}/add-programme', [ProjectController::class, 'orphanCareAddProgramme'])->name('projects.orphan_care.add_programme');
-    Route::post('/admin/projects/orphan-care/{id}/update-programme/{programme_id}', [ProjectController::class, 'orphanCareUpdateProgramme'])->name('projects.orphan_care.update_programme');
-    Route::delete('/admin/projects/orphan-care/{id}/delete-programme/{programme_id}', [ProjectController::class, 'orphanCareDeleteProgramme'])->name('projects.orphan_care.delete_programme');
-    Route::post('/admin/projects/orphan-care/{id}/toggle-programme-tick', [ProjectController::class, 'orphanCareToggleProgrammeTick'])->name('projects.orphan_care.toggle_programme_tick');
     
     // Profile routes
     Route::get('/admin/profile', [ProfileController::class, 'edit'])->name('profile.edit');

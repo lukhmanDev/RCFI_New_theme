@@ -11,6 +11,68 @@ class DifferentlyAbledApplication extends Model
 
     protected $table = 'differently_abled_applications';
     protected $guarded = [];
+    protected $attributes = [
+        'sponsor_status' => 'Not Sponsored',
+    ];
+
+    public function cluster()
+    {
+        return $this->belongsTo(Cluster::class, 'cluster_id');
+    }
+
+    public static function ensureProjectExists($application)
+    {
+        $projectExists = \App\Models\DifferentlyAbledProject::where('application_id', $application->id)->exists();
+        if (!$projectExists) {
+            \App\Models\DifferentlyAbledProject::create([
+                'application_id' => $application->id,
+                'project_name' => $application->applicant_name,
+                'agency_project_no' => $application->agency_number,
+                'type_of_project' => 'Differently Abled',
+                'sponsor' => 'Sponsored',
+                'stage' => 1,
+                'status' => 'Pending',
+            ]);
+        } else {
+            $project = \App\Models\DifferentlyAbledProject::where('application_id', $application->id)->first();
+            if ($project) {
+                $project->project_name = $application->applicant_name;
+                $project->agency_project_no = $application->agency_number;
+                $project->save();
+            }
+        }
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($application) {
+            if ($application->sponsor_status === 'Sponsored') {
+                self::ensureProjectExists($application);
+            }
+        });
+
+        static::updated(function ($application) {
+            if ($application->sponsor_status === 'Sponsored') {
+                self::ensureProjectExists($application);
+            } else {
+                $project = \App\Models\DifferentlyAbledProject::where('application_id', $application->id)->first();
+                if ($project) {
+                    $project->delete();
+                }
+            }
+        });
+
+        static::deleted(function ($application) {
+            $project = \App\Models\DifferentlyAbledProject::where('application_id', $application->id)->first();
+            if ($project) {
+                $project->delete();
+            }
+        });
+    }
+
+
 
     public $metaFields = [
         'applicant_name',

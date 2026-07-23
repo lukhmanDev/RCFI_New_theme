@@ -93,7 +93,9 @@
                     <!-- Column header row -->
                     <tr>
                         <th>Application ID</th>
+                        <th>Type</th>
                         <th>Name</th>
+                        <th>Institute / Org &amp; Unit</th>
                         <th>Place</th>
                         <th>Village</th>
                         <th>Panchayath</th>
@@ -107,14 +109,21 @@
                             $meta = $appItem->meta ?? [];
                             $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
                             $appId = 'APLRCFI' . $appYear . 'G' . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
+                            $appType = $appItem->application_type ?? $meta['application_type'] ?? 'Individual';
+                            $orgName = $appItem->organization_name ?? $meta['organization_name'] ?? '-';
+                            $unitVal = $appItem->unit ?? $meta['unit'] ?? '-';
                             
                             $searchTerms = [
                                 $appId,
+                                $appType,
                                 $appItem->applicant_name ?? '',
+                                $orgName,
+                                $unitVal,
                                 $appItem->place ?? '',
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
+                                $appItem->rejected_reason ?? '',
                                 $appItem->details ?? '',
                             ];
                             if (is_array($meta)) {
@@ -132,11 +141,31 @@
                                 {{ $appId }}
                             </td>
 
+                            <!-- Application Type -->
+                            <td>
+                                <span style="display: inline-block; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; {{ $appType === 'Group' ? 'background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);' : 'background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--panel-border);' }}">
+                                    {{ $appType }}
+                                </span>
+                            </td>
+
                             <!-- Name -->
                             <td style="font-weight: 600; color: #ffffff;">{{ $appItem->applicant_name }}</td>
 
+                            <!-- Institute / Org & Unit -->
+                            <td>
+                                @if($appType === 'Group' && $orgName !== '-')
+                                    <div style="font-weight: 600; color: #ffffff;">{{ $orgName }}</div>
+                                    @if($unitVal !== '-')
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">Unit: {{ $unitVal }}</div>
+                                    @endif
+                                @else
+                                    <span style="color: var(--text-muted); font-style: italic;">-</span>
+                                @endif
+                            </td>
+
                             <!-- Place -->
                             <td>{{ $appItem->place ?? 'N/A' }}</td>
+
 
                             <!-- Village -->
                             <td>{{ $appItem->village ?? $appItem->town ?? 'N/A' }}</td>
@@ -173,7 +202,7 @@
                                         </form>
 
                                         <!-- Reject -->
-                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                                             @csrf
                                             <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject">
                                                 <i class="bx bx-x"></i>
@@ -181,6 +210,17 @@
                                         </form>
 
                                     @endif
+                                @endif
+
+                                @if(Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess()))
+                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
@@ -213,7 +253,7 @@
                 @if(Auth::user()->canApproveApplications())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
-                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                @if(Auth::user()->hasAdminAccess())
                     <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
                         <i class="bx bx-pencil"></i> Edit
                     </button>
@@ -247,11 +287,37 @@
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">1. Personal Details of Applicant</h4>
                     
+                    <!-- Application Type: Individual or Group -->
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+                        <label class="form-label" style="margin-bottom: 0.5rem; display: block; font-weight: 700; color: var(--text-main);">Application Type *</label>
+                        <div style="display: flex; gap: 2rem; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer; font-weight: 600;">
+                                <input type="radio" name="meta[application_type]" value="Individual" id="add_app_type_individual" onchange="toggleGroupFields('add')" {{ old('meta.application_type', 'Individual') === 'Individual' ? 'checked' : '' }}> Individual
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer; font-weight: 600;">
+                                <input type="radio" name="meta[application_type]" value="Group" id="add_app_type_group" onchange="toggleGroupFields('add')" {{ old('meta.application_type') === 'Group' ? 'checked' : '' }}> Group
+                            </label>
+                        </div>
+
+                        <!-- Group Fields (Institute/Organization & Unit) -->
+                        <div id="add_group_fields" style="display: {{ old('meta.application_type') === 'Group' ? 'grid' : 'none' }}; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--panel-border);">
+                            <div>
+                                <label class="form-label" for="organization_name">Institute / Organization Name *</label>
+                                <input type="text" class="form-control-dark" id="organization_name" name="meta[organization_name]" value="{{ old('meta.organization_name') }}" placeholder="e.g. Al-Huda Educational Trust">
+                            </div>
+                            <div>
+                                <label class="form-label" for="unit">Unit *</label>
+                                <input type="text" class="form-control-dark" id="unit" name="meta[unit]" value="{{ old('meta.unit') }}" placeholder="e.g. Unit 4 / Malappuram">
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="applicant_name">Name *</label>
                             <input type="text" class="form-control-dark" id="applicant_name" name="applicant_name" value="{{ old('applicant_name') }}" required>
                         </div>
+
                         <div>
                             <label class="form-label" for="age">Age *</label>
                             <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" required>
@@ -463,11 +529,37 @@
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">1. Personal Details of Applicant</h4>
                     
+                    <!-- Application Type: Individual or Group -->
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+                        <label class="form-label" style="margin-bottom: 0.5rem; display: block; font-weight: 700; color: var(--text-main);">Application Type *</label>
+                        <div style="display: flex; gap: 2rem; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer; font-weight: 600;">
+                                <input type="radio" name="meta[application_type]" value="Individual" id="edit_app_type_individual" onchange="toggleGroupFields('edit')"> Individual
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer; font-weight: 600;">
+                                <input type="radio" name="meta[application_type]" value="Group" id="edit_app_type_group" onchange="toggleGroupFields('edit')"> Group
+                            </label>
+                        </div>
+
+                        <!-- Group Fields (Institute/Organization & Unit) -->
+                        <div id="edit_group_fields" style="display: none; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--panel-border);">
+                            <div>
+                                <label class="form-label" for="edit_organization_name">Institute / Organization Name *</label>
+                                <input type="text" class="form-control-dark" id="edit_organization_name" name="meta[organization_name]" placeholder="e.g. Al-Huda Educational Trust">
+                            </div>
+                            <div>
+                                <label class="form-label" for="edit_unit">Unit *</label>
+                                <input type="text" class="form-control-dark" id="edit_unit" name="meta[unit]" placeholder="e.g. Unit 4 / Malappuram">
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_applicant_name">Name *</label>
                             <input type="text" class="form-control-dark" id="edit_applicant_name" name="applicant_name" required>
                         </div>
+
                         <div>
                             <label class="form-label" for="edit_age">Age *</label>
                             <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" required>
@@ -657,9 +749,30 @@
 
     <!-- Modal Scripts -->
     <script>
+        function toggleGroupFields(mode) {
+            const isGroup = mode === 'add' 
+                ? (document.getElementById('add_app_type_group') && document.getElementById('add_app_type_group').checked)
+                : (document.getElementById('edit_app_type_group') && document.getElementById('edit_app_type_group').checked);
+
+            const fieldsDiv = document.getElementById(mode + '_group_fields');
+            const orgInput = document.getElementById(mode === 'add' ? 'organization_name' : 'edit_organization_name');
+            const unitInput = document.getElementById(mode === 'add' ? 'unit' : 'edit_unit');
+
+            if (fieldsDiv) {
+                fieldsDiv.style.display = isGroup ? 'grid' : 'none';
+            }
+            if (orgInput) {
+                orgInput.required = isGroup;
+            }
+            if (unitInput) {
+                unitInput.required = isGroup;
+            }
+        }
+
         // Add Application Modal Toggle
         function openModal() {
             document.getElementById('addAppModal').style.display = 'flex';
+            toggleGroupFields('add');
         }
 
         function closeModal() {
@@ -677,6 +790,17 @@
 
             // Meta fields mapping
             const meta = appItem.meta || {};
+
+            const appType = meta.application_type || appItem.application_type || 'Individual';
+            if (appType === 'Group') {
+                if (document.getElementById('edit_app_type_group')) document.getElementById('edit_app_type_group').checked = true;
+            } else {
+                if (document.getElementById('edit_app_type_individual')) document.getElementById('edit_app_type_individual').checked = true;
+            }
+            if (document.getElementById('edit_organization_name')) document.getElementById('edit_organization_name').value = meta.organization_name || appItem.organization_name || '';
+            if (document.getElementById('edit_unit')) document.getElementById('edit_unit').value = meta.unit || appItem.unit || '';
+            toggleGroupFields('edit');
+
             document.getElementById('edit_age').value = meta.age || '';
             document.getElementById('edit_address').value = meta.address || '';
             document.getElementById('edit_ward').value = meta.ward || '';
@@ -719,7 +843,7 @@
         }
 
         // View Details Modal Toggle
-                function openDetailsModal(appItem) {
+        function openDetailsModal(appItem) {
             currentDetailsAppItem = appItem;
             
             // Populate status actions in the modal footer dynamically
@@ -735,10 +859,10 @@
                         <form action="${approveUrl}" method="POST" style="display: inline-block;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-check"></i> Approve
+                                <i class="bx bx-check"></i> Approve Application
                             </button>
                         </form>
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                 <i class="bx bx-x"></i> Reject
@@ -747,7 +871,7 @@
                     `;
                 } else if (appItem.status === 'Approved') {
                     statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                 <i class="bx bx-x"></i> Reject Application
@@ -768,6 +892,9 @@
             }
             const meta = appItem.meta || {};
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
+            const appTypeVal = meta.application_type || appItem.application_type || 'Individual';
+            const orgNameVal = meta.organization_name || appItem.organization_name || '';
+            const unitVal = meta.unit || appItem.unit || '';
             
             let html = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
@@ -775,6 +902,11 @@
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Application Type:</td><td><span style="display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${appTypeVal === 'Group' ? 'background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);' : 'background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--panel-border);'}">${appTypeVal}</span></td></tr>
+                            ${appTypeVal === 'Group' ? `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Institute/Org Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(orgNameVal)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Unit:</td><td>${formatVal(unitVal)}</td></tr>
+                            ` : ''}
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Applicant Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Age / Sex:</td><td>${formatVal(meta.age)} yrs / ${formatVal(meta.sex)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mailing Address:</td><td>${formatVal(meta.address)}</td></tr>
@@ -808,6 +940,15 @@
                         </table>
                     </div>
                 </div>
+
+                ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                    <h5 style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Rejected Reason:</h5>
+                    <p style="color: #ffffff; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); min-height: 50px;">
+                        ${appItem.rejected_reason || meta.rejected_reason}
+                    </p>
+                </div>
+                ` : ''}
                 
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                     <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
@@ -821,7 +962,7 @@
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
-                let currentDetailsAppItem = null;
+        var currentDetailsAppItem = null;
 
         function editFromDetails() {
             if (currentDetailsAppItem) {
@@ -858,7 +999,11 @@
                 form.appendChild(redirectInput);
 
                     document.body.appendChild(form);
-                    form.submit();
+                    if (typeof handleFormSubmit === 'function') {
+                        handleFormSubmit({ target: form, preventDefault: () => {} });
+                    } else {
+                        form.submit();
+                    }
                 });
             }
         }

@@ -41,4 +41,15 @@ class DifferentlyAbledProject extends Model
     {
         return $this->belongsTo(User::class, 'engineer_id');
     }
+
+    public function programmes()
+    {
+        return $this->hasMany(DifferentlyAbledProgramme::class, 'differently_abled_project_id');
+    }
+
+    public function funds()
+    {
+        return $this->hasMany(DifferentlyAbledFund::class, 'differently_abled_project_id');
+    }
 }
+

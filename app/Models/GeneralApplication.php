@@ -14,7 +14,11 @@ class GeneralApplication extends Model
 
     public $metaFields = [
         'applicant_name',
+        'application_type',
+        'organization_name',
+        'unit',
         'amount_requested',
+
         'status',
         'contact_email',
         'additional_note',

@@ -36,22 +36,16 @@
             <table class="table-custom">
                 <thead>
                     <tr>
-                        <th colspan="7" style="text-align: center; border-right: 2px solid #2a3547; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.05em; background-color: rgba(0,0,0,0.15);">APPLICATION DETAILS</th>
-                        <th colspan="4" style="text-align: center; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.05em; background-color: rgba(0,0,0,0.15);">PROJECT DETAILS</th>
-                    </tr>
-                    <tr>
                         <th>Application ID</th>
                         <th>Name</th>
                         <th>Father Name</th>
                         <th>Gender</th>
                         <th>Age</th>
-                        <th>Disability</th>
-                        <th style="border-right: 2px solid #2a3547;">Panchayath</th>
-                        <th>Project ID</th>
-                        <th>Project Manager</th>
-                        <th>Donor</th>
-                        <th>Status</th>
-                        </tr>
+                        <th>Disability Type</th>
+                        <th>Panchayath</th>
+                        <th>Sponsor Status</th>
+                        <th style="text-align: center;">Action</th>
+                    </tr>
                 </thead>
                 <tbody>
                     @forelse($applications as $appItem)
@@ -89,70 +83,44 @@
                             }
                             $searchStr = strtolower(implode(' ', array_filter($searchTerms)));
                         @endphp
-                        <tr class="app-row" data-search="{{ $searchStr }}" data-place="{{ $appItem->place ?? '' }}">
+                        <tr class="app-row" data-search="{{ $searchStr }}" data-place="{{ $appItem->place ?? '' }}" onclick="openDetailsModal({{ json_encode($appItem) }})">
                             <td style="font-weight: 600; color: var(--accent-cyan);">{{ $appId }}</td>
                             <td>{{ $appItem->applicant_name }}</td>
                             <td>{{ $meta['father_name'] ?? '-' }}</td>
                             <td>{{ $meta['gender'] ?? '-' }}</td>
                             <td>{{ $meta['age'] ?? '-' }}</td>
                             <td>{{ $meta['disability_type'] ?? '-' }}</td>
-                            <td style="border-right: 2px solid #2a3547;">{{ $appItem->panchayat ?? $appItem->panchayath ?? '-' }}</td>
-                            <!-- Project ID & Status -->
+                            <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? '-' }}</td>
                             <td>
-                                @if($project)
-                                    <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project) }}" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;">
-                                        {{ $project->project_id ?? 'Assigned' }}
-                                    </a>
+                                @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
+                                    <span style="background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                        Sponsored
+                                    </span>
                                 @else
-                                    —
+                                    <span style="background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                        Not Sponsored
+                                    </span>
                                 @endif
                             </td>
-                            <td>{{ $project && $project->projectManager ? $project->projectManager->name : '—' }}</td>
-                            <td>{{ $project && $project->donor ? $project->donor->name : '—' }}</td>
-                            <td style=" vertical-align: middle;">
-                                @if($project && ($project->status === 'Completed' || !empty($project->project_phase)))
-                                    @php
-                                        $phaseVal = $project->status === 'Completed' ? 'Completed' : $project->project_phase;
-                                        $phaseLabel = $phaseVal === 'Other'
-                                            ? ($project->project_phase_custom ?: 'Other')
-                                            : $phaseVal;
-                                        $phaseColors = [
-                                            'Project Assigned'                      => ['bg' => 'rgba(99,102,241,0.18)',  'text' => '#a5b4fc'],
-                                            'Site identified'                       => ['bg' => 'rgba(59,130,246,0.18)',  'text' => '#60a5fa'],
-                                            'Documents verified'                    => ['bg' => 'rgba(14,165,233,0.18)',  'text' => '#38bdf8'],
-                                            'Drawing'                               => ['bg' => 'rgba(168,85,247,0.18)', 'text' => '#c084fc'],
-                                            'Tender'                                => ['bg' => 'rgba(245,158,11,0.18)', 'text' => '#fcd34d'],
-                                            'Agreement'                             => ['bg' => 'rgba(249,115,22,0.18)', 'text' => '#fb923c'],
-                                            'Foundation'                            => ['bg' => 'rgba(234,88,12,0.2)',   'text' => '#fdba74'],
-                                            'Column'                                => ['bg' => 'rgba(202,138,4,0.2)',   'text' => '#fde047'],
-                                            'Slab'                                  => ['bg' => 'rgba(132,204,22,0.18)', 'text' => '#bef264'],
-                                            'Mason work'                            => ['bg' => 'rgba(20,184,166,0.18)', 'text' => '#5eead4'],
-                                            'Plastering'                            => ['bg' => 'rgba(6,182,212,0.18)',  'text' => '#22d3ee'],
-                                            'Flooring, Painting, Joinery and MEP'  => ['bg' => 'rgba(16,185,129,0.18)', 'text' => '#6ee7b7'],
-                                            'Completed'                             => ['bg' => 'rgba(16,185,129,0.25)', 'text' => '#4ade80'],
-                                            'Inaugurated'                           => ['bg' => 'rgba(52,211,153,0.25)', 'text' => '#34d399'],
-                                            'Finance settled and Project phase off' => ['bg' => 'rgba(156,163,175,0.2)', 'text' => '#d1d5db'],
-                                        ];
-                                        $pColor = $phaseColors[$phaseVal] ?? ['bg' => 'rgba(6,182,212,0.15)', 'text' => 'var(--accent-cyan)'];
-                                    @endphp
-                                    <span title="{{ $phaseLabel }}" style="display:inline-flex;align-items:center;gap:0.3rem;background-color:{{ $pColor['bg'] }};color:{{ $pColor['text'] }};padding:0.25rem 0.75rem;border-radius:20px;font-size:0.72rem;font-weight:700;white-space:nowrap;margin:0 auto;">
-                                        <i class="bx bx-radio-circle-marked" style="font-size:0.9rem;flex-shrink:0;"></i>
-                                        {{ Str::limit($phaseLabel, 20) }}
-                                    </span>
-                                @elseif($project)
-                                    <span style="background-color:rgba(156,163,175,0.15);color:var(--text-muted);padding:0.25rem 0.6rem;border-radius:20px;font-size:0.7rem;font-weight:600;display:inline-flex;align-items:center;gap:0.25rem;border:1px solid rgba(255,255,255,0.05);">
-                                        <i class="bx bx-time-five" style="font-size:0.85rem;"></i> Not set
-                                    </span>
+                            <td style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+                                @if(Auth::user()->hasAdminAccess())
+                                    @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }})" style="background-color: transparent; color: #f59e0b; border: 1px solid #f59e0b; padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-block; text-align: center; text-decoration: none; transition: all 0.2s;" title="Mark as Not Sponsored">
+                                            Un-sponsor
+                                        </a>
+                                    @else
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }})" style="background-color: #10b981; color: #ffffff; border: none; padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-block; text-align: center; text-decoration: none; transition: background-color 0.2s;" title="Mark as Sponsored">
+                                            Sponsor
+                                        </a>
+                                    @endif
                                 @else
-                                    <span style="background-color:rgba(156,163,175,0.15);color:var(--text-muted);padding:0.25rem 0.6rem;border-radius:20px;font-size:0.7rem;font-weight:600;display:inline-flex;align-items:center;gap:0.25rem;border:1px solid rgba(255,255,255,0.05);">
-                                        <i class="bx bx-minus-circle" style="font-size:0.85rem;"></i> Not Started
-                                    </span>
+                                    <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No Action</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="12" style="text-align: center; padding: 2rem; color: var(--text-muted);">No approved applications registered in this category yet.</td>
+                            <td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-muted);">No approved applications registered in this category yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -176,7 +144,7 @@
             </div>
             
             <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; flex-wrap: wrap;">
-                @if(Auth::user()->canApproveApplications())
+                @if(Auth::user()->hasAdminAccess())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 <button onclick="closeDetailsModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.6rem 1.5rem;">Close Details</button>
@@ -186,7 +154,7 @@
 
     <!-- Script Block -->
     <script>
-        let currentDetailsAppItem = null;
+        var currentDetailsAppItem = null;
 
         function openDetailsModal(appItem, isProjectApproved = false) {
             currentDetailsAppItem = appItem;
@@ -198,16 +166,28 @@
                 const rejectUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/reject`;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                if (!isProjectApproved) {
-                statusHtml = `
-                                    <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
-                                        <input type="hidden" name="_token" value="${csrfToken}">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                            <i class="bx bx-x"></i> Reject Application
-                                        </button>
-                                    </form>
-                                `;
-            }
+                @if(Auth::user()->hasAdminAccess())
+                    if (!isProjectApproved) {
+                        statusHtml += `
+                            <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
+                                <input type="hidden" name="_token" value="${csrfToken}">
+                                <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                    <i class="bx bx-x"></i> Reject Application
+                                </button>
+                            </form>
+                        `;
+                    }
+                @endif
+
+                @if(Auth::user()->hasAdminAccess())
+                    statusHtml += `
+                        <button type="button" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, ${appItem.id})" class="btn-custom" style="${appItem.sponsor_status === 'Sponsored' ? 'background: transparent; color: #f59e0b; border: 1px solid #f59e0b;' : 'background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: #ffffff;'} padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
+                            ${appItem.sponsor_status === 'Sponsored' 
+                                ? '<i class="bx bx-x-circle"></i> Un-sponsor' 
+                                : '<i class="bx bx-check-circle"></i> Sponsor'}
+                        </button>
+                    `;
+                @endif
                 statusActionsContainer.innerHTML = statusHtml;
             }
 
@@ -217,11 +197,81 @@
             let html = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                     <div>
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Profile Details</h4>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant Profile</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Name:</td><td>\${formatVal(appItem.applicant_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Disability Type:</td><td>\${formatVal(meta.disability_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Applicant Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father Name:</td><td>${formatVal(meta.father_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Gender:</td><td>${formatVal(meta.gender)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Age:</td><td>${formatVal(meta.age)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Disability Type:</td><td>${formatVal(meta.disability_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Sponsor Status:</td><td>
+                                ${appItem.sponsor_status === 'Sponsored'
+                                    ? '<span style="background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Sponsored</span>'
+                                    : '<span style="background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Not Sponsored</span>'}
+                            </td></tr>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Cluster & Agency Details -->
+                <div style="margin-top: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
+                    <h4 style="color: var(--accent-green); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">
+                        Cluster &amp; Agency Number Details
+                    </h4>
+                    
+                    <div id="modal-cluster-container">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Assigned Cluster:</td>
+                                    <td id="modal-cluster-display-name" style="font-weight: 600; color: #ffffff;">
+                                        ${appItem.cluster ? `${appItem.cluster.name} (${appItem.cluster.code})` : '<span style="color: var(--text-muted); font-style: italic;">Not assigned</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Number:</td>
+                                    <td id="modal-agency-display-number" style="font-weight: 600; color: #ffffff;">
+                                        ${appItem.agency_number ? appItem.agency_number : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Sponsor Status:</td>
+                                    <td style="font-weight: 600; color: #ffffff;">
+                                        ${appItem.sponsor_status === 'Sponsored'
+                                            ? '<span style="background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Sponsored</span>'
+                                            : '<span style="background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Not Sponsored</span>'}
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <button onclick="toggleClusterEditForm()" class="btn-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                                <i class="bx bx-edit"></i> Edit
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="modal-cluster-edit-form" style="display: none;">
+                        <form id="save-cluster-form" onsubmit="submitClusterForm(event, ${appItem.id})">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Select Cluster *</label>
+                                    <select id="assign_cluster_id" name="cluster_id" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" required>
+                                        <option value="">-- Choose Cluster --</option>
+                                        @foreach($clusters as $cl)
+                                            <option value="{{ $cl->id }}" ${appItem.cluster_id == {{ $cl->id }} ? 'selected' : ''}>{{ $cl->name }} ({{ $cl->code }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Agency Number *</label>
+                                    <input type="text" id="assign_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" required value="${appItem.agency_number || ''}">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <button type="button" onclick="toggleClusterEditForm()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.4rem 1rem; font-size: 0.8rem; cursor: pointer;">Cancel</button>
+                                <button type="submit" class="btn-custom" style="padding: 0.4rem 1.2rem; font-size: 0.8rem; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; cursor: pointer;">Save Changes</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             `;
@@ -247,6 +297,99 @@
                     row.style.display = 'none';
                 }
             });
+        }
+
+        function toggleClusterEditForm() {
+            const displayDiv = document.getElementById('modal-cluster-container');
+            const editDiv = document.getElementById('modal-cluster-edit-form');
+            if (displayDiv.style.display === 'none') {
+                displayDiv.style.display = 'block';
+                editDiv.style.display = 'none';
+            } else {
+                displayDiv.style.display = 'none';
+                editDiv.style.display = 'block';
+            }
+        }
+
+        async function submitClusterForm(event, appId) {
+            event.preventDefault();
+            const form = event.target;
+            const clusterId = form.querySelector('[name="cluster_id"]').value;
+            const agencyNumber = form.querySelector('[name="agency_number"]').value;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            try {
+                const response = await fetch(`/admin/applications/${appId}/update-cluster`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        category: 'differently-abled',
+                        cluster_id: clusterId || null,
+                        agency_number: agencyNumber || null
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('modal-cluster-display-name').innerHTML = result.cluster 
+                        ? `${result.cluster.name} (${result.cluster.code})` 
+                        : '<span style="color: var(--text-muted); font-style: italic;">Not assigned</span>';
+                    document.getElementById('modal-agency-display-number').innerHTML = result.agency_number 
+                        ? result.agency_number 
+                        : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>';
+                    
+                    window.location.reload();
+                } else {
+                    alert(result.error || 'Failed to update Cluster and Agency Number.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while updating.');
+            }
+        }
+
+        async function handleToggleSponsor(event, appId) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            const doToggle = async () => {
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
+                try {
+                    const response = await fetch(`/admin/applications/differently-abled/${appId}/toggle-sponsor`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            category: 'differently-abled'
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        window.location.reload();
+                    } else {
+                        alert(result.error || 'Failed to update sponsor status.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('An error occurred while updating sponsor status.');
+                }
+            };
+
+            if (typeof showCustomConfirm === 'function') {
+                showCustomConfirm('Are you sure you want to change the sponsor status?', doToggle);
+            } else if (confirm('Are you sure you want to change the sponsor status?')) {
+                doToggle();
+            }
         }
     </script>
 

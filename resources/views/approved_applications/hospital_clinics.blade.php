@@ -180,7 +180,7 @@
 
     <!-- Script Block -->
     <script>
-        let currentDetailsAppItem = null;
+        var currentDetailsAppItem = null;
 
         function openDetailsModal(appItem, isProjectApproved = false) {
             currentDetailsAppItem = appItem;
@@ -194,7 +194,7 @@
 
                 if (!isProjectApproved) {
                 statusHtml = `
-                                    <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
+                                    <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                                         <input type="hidden" name="_token" value="${csrfToken}">
                                         <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                             <i class="bx bx-x"></i> Reject Application

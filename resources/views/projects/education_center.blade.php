@@ -389,7 +389,7 @@
                     <select name="project_manager_id" id="project_manager_id" required>
                         <option value="">Select a manager</option>
                         @foreach($managers as $manager)
-                            <option value="{{ $manager->id }}">{{ $manager->name }} ({{ $manager->designation ?? 'Staff' }})</option>
+                            <option value="{{ $manager->id }}">{{ $manager->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -399,17 +399,7 @@
                     <select name="engineer_id" id="engineer_id">
                         <option value="">Select an engineer</option>
                         @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="engineer_id">Engineer</label>
-                    <select name="engineer_id" id="engineer_id">
-                        <option value="">Select an engineer</option>
-                        @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
+                            <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -514,7 +504,7 @@
                     <select name="project_manager_id" id="edit_project_manager_id" required>
                         <option value="">Select a manager</option>
                         @foreach($managers as $manager)
-                            <option value="{{ $manager->id }}">{{ $manager->name }} ({{ $manager->designation ?? 'Staff' }})</option>
+                            <option value="{{ $manager->id }}">{{ $manager->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -524,17 +514,7 @@
                     <select name="engineer_id" id="edit_engineer_id">
                         <option value="">Select an engineer</option>
                         @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_engineer_id">Engineer</label>
-                    <select name="engineer_id" id="edit_engineer_id">
-                        <option value="">Select an engineer</option>
-                        @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
+                            <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -611,7 +591,6 @@
         document.getElementById('edit_agency_project_no').value = project.agency_project_no || '';
         document.getElementById('edit_donor_id').value = project.donor_id || '';
         document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';
-        document.getElementById('edit_engineer_id').value = project.engineer_id || '';
         document.getElementById('edit_engineer_id').value = project.engineer_id || '';
         document.getElementById('edit_unit').value = project.unit || 'RCFI';
         document.getElementById('edit_available_budget').value = project.available_budget || '';

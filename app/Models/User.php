@@ -57,6 +57,10 @@ class User extends Authenticatable
             6 => 'engineer',
             '6' => 'engineer',
             'Engineer' => 'engineer',
+            7 => 'reception',
+            '7' => 'reception',
+            'Reception' => 'reception',
+            'reception' => 'reception',
         ];
 
         return $map[$value] ?? strtolower(str_replace(' ', '_', $value ?: 'others'));
@@ -83,6 +87,10 @@ class User extends Authenticatable
             6 => 'engineer',
             '6' => 'engineer',
             'Engineer' => 'engineer',
+            7 => 'reception',
+            '7' => 'reception',
+            'Reception' => 'reception',
+            'reception' => 'reception',
         ];
 
         $this->attributes['role'] = $map[$value] ?? strtolower(str_replace(' ', '_', $value ?: 'others'));
@@ -97,6 +105,7 @@ class User extends Authenticatable
             'hod' => 'HOD',
             'others' => 'Others',
             'engineer' => 'Engineer',
+            'reception' => 'Reception',
         ];
 
         return $map[$this->role] ?? ucwords(str_replace('_', ' ', $this->role));
@@ -127,14 +136,19 @@ class User extends Authenticatable
         return in_array($this->role, ['engineer', 'Engineer', '6', 6]);
     }
 
+    public function isReception(): bool
+    {
+        return in_array($this->role, ['reception', 'Reception', '7', 7]);
+    }
+
     public function hasAdminAccess(): bool
     {
-        return in_array($this->role, ['super_admin', 'coo', 'hod', 'Super Admin', 'COO', 'HOD', 1, 2, 4, '1', '2', '4']);
+        return in_array($this->role, ['super_admin', 'coo', 'hod', 'reception', 'Super Admin', 'COO', 'HOD', 'Reception', 1, 2, 4, 7, '1', '2', '4', '7']);
     }
 
     public function canApproveApplications(): bool
     {
-        return $this->isCoo();
+        return $this->isCoo() || $this->isSuperAdmin();
     }
 
     public function profile()
@@ -163,15 +177,34 @@ class User extends Authenticatable
             \App\Models\DifferentlyAbledProject::class,
             \App\Models\FamilyAidProject::class,
             \App\Models\GeneralProject::class,
+            \App\Models\OrphanCareProject::class,
         ];
 
         $projects = collect();
 
         foreach ($projectModels as $modelClass) {
-            $categoryProjects = $modelClass::where('project_manager_id', $this->id)
-                ->orWhere('engineer_id', $this->id)
-                ->get();
-            
+            $instance = new $modelClass;
+            $table = $instance->getTable();
+
+            $hasPm = \Illuminate\Support\Facades\Schema::hasColumn($table, 'project_manager_id');
+            $hasEng = \Illuminate\Support\Facades\Schema::hasColumn($table, 'engineer_id');
+
+            if (!$hasPm && !$hasEng) {
+                continue;
+            }
+
+            $query = $modelClass::query();
+            if ($hasPm && $hasEng) {
+                $categoryProjects = $query->where(function ($q) {
+                    $q->where('project_manager_id', $this->id)
+                      ->orWhere('engineer_id', $this->id);
+                })->get();
+            } elseif ($hasPm) {
+                $categoryProjects = $query->where('project_manager_id', $this->id)->get();
+            } else {
+                $categoryProjects = $query->where('engineer_id', $this->id)->get();
+            }
+
             $projects = $projects->concat($categoryProjects);
         }
 

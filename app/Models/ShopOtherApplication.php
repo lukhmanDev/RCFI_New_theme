@@ -30,7 +30,6 @@ class ShopOtherApplication extends Model
         'contact_number_1',
         'contact_number_2',
         'area',
-        'area_sqft',
         'building_area_sq',
         'committee_name',
         'families_in_mahallu',

@@ -35,7 +35,7 @@ class UserController extends Controller
         ];
 
         if (auth()->user()->isSuperAdmin()) {
-            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,Super Admin,COO,Project Manager,HOD,Others,Engineer,1,2,3,4,5,6'];
+            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,1,2,3,4,5,6,7'];
         }
 
         $data = $request->validate($rules);
@@ -70,7 +70,7 @@ class UserController extends Controller
         ];
 
         if (auth()->user()->isSuperAdmin()) {
-            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,Super Admin,COO,Project Manager,HOD,Others,Engineer,1,2,3,4,5,6'];
+            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,1,2,3,4,5,6,7'];
         }
 
         $data = $request->validate($rules);
@@ -112,12 +112,15 @@ class UserController extends Controller
         $user = User::with('profile')->findOrFail($id);
         
         $projects = $user->assigned_projects->map(function ($project) use ($user) {
+            $pmId = $project->project_manager_id ?? null;
+            $engId = $project->engineer_id ?? null;
+
             $projectRole = 'Unknown';
-            if ($project->project_manager_id == $user->id && $project->engineer_id == $user->id) {
+            if ($pmId == $user->id && $engId == $user->id) {
                 $projectRole = 'PM & Engineer';
-            } elseif ($project->project_manager_id == $user->id) {
+            } elseif ($pmId == $user->id) {
                 $projectRole = 'Project Manager';
-            } elseif ($project->engineer_id == $user->id) {
+            } elseif ($engId == $user->id) {
                 $projectRole = 'Engineer';
             }
 

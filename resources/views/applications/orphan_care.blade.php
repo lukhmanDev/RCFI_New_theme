@@ -119,6 +119,7 @@
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
+                                $appItem->rejected_reason ?? '',
                                 $appItem->details ?? '',
                             ];
                             if (is_array($meta)) {
@@ -186,7 +187,7 @@
                                         </button>
 
                                         <!-- Reject -->
-                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                                        <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                                             @csrf
                                             <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject">
                                                 <i class="bx bx-x"></i>
@@ -194,6 +195,17 @@
                                         </form>
 
                                     @endif
+                                @endif
+
+                                @if(Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess()))
+                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
@@ -226,7 +238,7 @@
                 @if(Auth::user()->canApproveApplications())
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
-                @if(in_array(Auth::user()->role, [1, 2, 4]))
+                @if(Auth::user()->hasAdminAccess())
                     <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
                         <i class="bx bx-pencil"></i> Edit
                     </button>
@@ -452,18 +464,7 @@
                 <div style="margin-bottom: 2rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">4. Address & Contact Details</h4>
                     
-                                        @include('applications.address_form_fields', ['idPrefix' => '', 'app' => null])
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="mobile_1">Mobile 1 *</label>
-                            <input type="text" class="form-control-dark" id="mobile_1" name="meta[mobile_1]" value="{{ old('meta.mobile_1') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="mobile_2">Mobile 2</label>
-                            <input type="text" class="form-control-dark" id="mobile_2" name="meta[mobile_2]" value="{{ old('meta.mobile_2') }}">
-                        </div>
-                    </div>
+                    @include('applications.address_form_fields', ['idPrefix' => '', 'app' => null])
 
                     <div style="margin-bottom: 1rem;">
                         <label class="form-label" for="details">Additional Notes</label>
@@ -715,18 +716,7 @@
                 <div style="margin-bottom: 2rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">4. Address & Contact Details</h4>
                     
-                                        @include('applications.address_form_fields', ['idPrefix' => 'edit_', 'app' => null])
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_mobile_1">Mobile 1 *</label>
-                            <input type="text" class="form-control-dark" id="edit_mobile_1" name="meta[mobile_1]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_mobile_2">Mobile 2</label>
-                            <input type="text" class="form-control-dark" id="edit_mobile_2" name="meta[mobile_2]">
-                        </div>
-                    </div>
+                    @include('applications.address_form_fields', ['idPrefix' => 'edit_', 'app' => null])
 
                     <input type="hidden" name="status" id="edit_status">
 
@@ -863,16 +853,28 @@
             document.getElementById('edit_health_status').value = meta.health_status || '';
             document.getElementById('edit_sponsorship_details').value = meta.sponsorship_details || '';
 
-                        if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = appItem.house_name || ''; }
-            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = appItem.place || ''; }
-            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = appItem.post_office || ''; }
-            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = appItem.village || ''; }
-            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = appItem.panchayat || ''; }
-            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = appItem.district || ''; }
-            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = appItem.state || ''; }
-            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = appItem.pin_code || ''; }
-            document.getElementById('edit_mobile_1').value = meta.mobile_1 || '';
-            document.getElementById('edit_mobile_2').value = meta.mobile_2 || '';
+            const addr = appItem.address || {};
+            const houseName = meta.house_name || addr.house_name || appItem.house_name || '';
+            const placeName = meta.place || addr.place || appItem.place || '';
+            const postOffice = meta.post_office || addr.post_office || appItem.post_office || '';
+            const villageName = meta.village || addr.village || appItem.village || '';
+            const panchayatName = meta.panchayat || addr.panchayat || appItem.panchayat || '';
+            const districtName = meta.district || addr.district || appItem.district || '';
+            const stateName = meta.state || addr.state || appItem.state || '';
+            const pinCode = meta.pin_code || addr.pin_code || appItem.pin_code || '';
+            const mob1 = meta.mobile_1 || meta.mobile || addr.contact_number_1 || addr.mobile_1 || appItem.mobile_1 || '';
+            const mob2 = meta.mobile_2 || addr.contact_number_2 || addr.mobile_2 || appItem.mobile_2 || '';
+
+            if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = houseName; }
+            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = placeName; }
+            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = postOffice; }
+            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = villageName; }
+            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = panchayatName; }
+            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = districtName; }
+            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = stateName; }
+            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = pinCode; }
+            if (document.getElementById('edit_mobile_1')) { document.getElementById('edit_mobile_1').value = mob1; }
+            if (document.getElementById('edit_mobile_2')) { document.getElementById('edit_mobile_2').value = mob2; }
             document.getElementById('edit_cluster_id').value = appItem.cluster_id || '';
             document.getElementById('edit_agency_number').value = appItem.agency_number || '';
 
@@ -884,7 +886,7 @@
         }
 
         // View Details Modal Toggle
-                function openDetailsModal(appItem) {
+        function openDetailsModal(appItem) {
             currentDetailsAppItem = appItem;
             
             // Populate status actions in the modal footer dynamically
@@ -900,7 +902,7 @@
                         <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
                             <i class="bx bx-check"></i> Approve
                         </button>
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this application?');">
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                 <i class="bx bx-x"></i> Reject
@@ -908,31 +910,14 @@
                         </form>
                     `;
                 } else if (appItem.status === 'Approved') {
-                    const sponsorUrl = `/admin/applications/orphan-care/${appItem.id}/toggle-sponsor`;
                     statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to reject this approved application?');">
+                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
                                 <i class="bx bx-x"></i> Reject Application
                             </button>
                         </form>
                     `;
-                    @if(in_array(Auth::user()->role, [1, 2, 4]))
-                        statusHtml += `
-                            <form action="${sponsorUrl}" method="POST" style="display: inline-block;">
-                                <input type="hidden" name="_token" value="${csrfToken}">
-                                ${appItem.sponsor_status === 'Sponsored' ? `
-                                    <button type="submit" class="btn-custom" style="background: transparent; color: #f59e0b; border: 1px solid #f59e0b; padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
-                                        <i class="bx bx-x-circle"></i> Un-sponsor
-                                    </button>
-                                ` : `
-                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; border: none; cursor: pointer; color: #ffffff;">
-                                        <i class="bx bx-check-circle"></i> Sponsor
-                                    </button>
-                                `}
-                            </form>
-                        `;
-                    @endif
                 } else if (appItem.status === 'Rejected') {
                     statusHtml = `
                         <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
@@ -940,9 +925,22 @@
                         </button>
                     `;
                 }
+
                 statusActionsContainer.innerHTML = statusHtml;
             }
             const meta = appItem.meta || {};
+            const addr = appItem.address || {};
+            const houseName = meta.house_name || addr.house_name || appItem.house_name;
+            const placeName = meta.place || addr.place || appItem.place;
+            const villageName = meta.village || addr.village || appItem.village;
+            const postOffice = meta.post_office || addr.post_office || appItem.post_office;
+            const panchayatName = meta.panchayat || addr.panchayat || appItem.panchayat;
+            const districtName = meta.district || addr.district || appItem.district;
+            const stateName = meta.state || addr.state || appItem.state;
+            const pinCode = meta.pin_code || addr.pin_code || appItem.pin_code;
+            const mob1 = meta.mobile_1 || meta.mobile || addr.contact_number_1 || addr.mobile_1 || appItem.mobile_1;
+            const mob2 = meta.mobile_2 || addr.contact_number_2 || addr.mobile_2 || appItem.mobile_2;
+
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
             
             let html = `
@@ -987,14 +985,16 @@
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">House Name / Place:</td><td>${formatVal(meta.house_name)} / ${formatVal(meta.place)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Town / Post Office:</td><td>${formatVal(meta.town)} / ${formatVal(meta.post_office)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin_code)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile 1 / 2:</td><td>${formatVal(meta.mobile_1)} / ${formatVal(meta.mobile_2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">House Name / Place:</td><td>${formatVal(houseName)} / ${formatVal(placeName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village / P.O.:</td><td>${formatVal(villageName)} / ${formatVal(postOffice)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath / District:</td><td>${formatVal(panchayatName)} / ${formatVal(districtName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State / Pin Code:</td><td>${formatVal(stateName)} / ${formatVal(pinCode)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile 1 / Mobile 2:</td><td>${formatVal(mob1)} / ${formatVal(mob2)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
                         </table>
                     </div>
                 </div>
+      </div>
 
                 <!-- Cluster & Agency Details (Only visible if Approved) -->
                 ${appItem.status === 'Approved' ? `
@@ -1066,13 +1066,22 @@
                         ${appItem.details ? appItem.details : 'No additional notes provided.'}
                     </p>
                 </div>
+
+                ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                    <h5 style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Rejected Reason:</h5>
+                    <p style="color: #ffffff; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); min-height: 50px;">
+                        ${appItem.rejected_reason || meta.rejected_reason}
+                    </p>
+                </div>
+                ` : ''}
             `;
             
             document.getElementById('details_content').innerHTML = html;
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
-                let currentDetailsAppItem = null;
+        var currentDetailsAppItem = null;
 
         function editFromDetails() {
             if (currentDetailsAppItem) {
@@ -1109,7 +1118,11 @@
                 form.appendChild(redirectInput);
 
                     document.body.appendChild(form);
-                    form.submit();
+                    if (typeof handleFormSubmit === 'function') {
+                        handleFormSubmit({ target: form, preventDefault: () => {} });
+                    } else {
+                        form.submit();
+                    }
                 });
             }
         }
@@ -1133,9 +1146,41 @@
             });
         }
 
-        // Realtime calculation of siblings count
+        // Realtime calculation of siblings count and age from Date of Birth
         document.addEventListener("DOMContentLoaded", function() {
-            // Add Modal
+            // Age calculation helper
+            function calcAge(dobVal) {
+                if (!dobVal) return '';
+                const birthDate = new Date(dobVal);
+                if (isNaN(birthDate.getTime())) return '';
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                return age >= 0 ? age : 0;
+            }
+
+            function bindAgeCalculation(dobId, ageId) {
+                const dobInput = document.getElementById(dobId);
+                const ageInput = document.getElementById(ageId);
+                if (dobInput && ageInput) {
+                    const updateAge = function() {
+                        const calculated = calcAge(dobInput.value);
+                        if (calculated !== '') {
+                            ageInput.value = calculated;
+                        }
+                    };
+                    dobInput.addEventListener('input', updateAge);
+                    dobInput.addEventListener('change', updateAge);
+                }
+            }
+
+            bindAgeCalculation('dob', 'age');
+            bindAgeCalculation('edit_dob', 'edit_age');
+
+            // Add Modal Sibling Calculation
             const maleInput = document.getElementById('siblings_male');
             const femaleInput = document.getElementById('siblings_female');
             const totalInput = document.getElementById('siblings_total');
@@ -1151,7 +1196,7 @@
                 femaleInput.addEventListener('input', calculateTotal);
             }
 
-            // Edit Modal
+            // Edit Modal Sibling Calculation
             const editMaleInput = document.getElementById('edit_siblings_male');
             const editFemaleInput = document.getElementById('edit_siblings_female');
             const editTotalInput = document.getElementById('edit_siblings_total');

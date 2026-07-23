@@ -404,7 +404,7 @@
                     <select name="project_manager_id" id="project_manager_id" required>
                         <option value="">Select a manager</option>
                         @foreach($managers as $manager)
-                            <option value="{{ $manager->id }}">{{ $manager->name }} ({{ $manager->designation ?? 'Staff' }})</option>
+                            <option value="{{ $manager->id }}">{{ $manager->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -414,7 +414,7 @@
                     <select name="engineer_id" id="engineer_id">
                         <option value="">Select an engineer</option>
                         @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
+                            <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -511,7 +511,7 @@
                     <select name="project_manager_id" id="edit_project_manager_id" required>
                         <option value="">Select a manager</option>
                         @foreach($managers as $manager)
-                            <option value="{{ $manager->id }}">{{ $manager->name }} ({{ $manager->designation ?? 'Staff' }})</option>
+                            <option value="{{ $manager->id }}">{{ $manager->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -521,7 +521,7 @@
                     <select name="engineer_id" id="edit_engineer_id">
                         <option value="">Select an engineer</option>
                         @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }} ({{ $engineer->designation ?? 'Staff' }})</option>
+                            <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
                         @endforeach
                     </select>
                 </div>
