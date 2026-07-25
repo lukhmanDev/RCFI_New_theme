@@ -250,7 +250,7 @@
 </div>
 
 @if (session('success'))
-    <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+    <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
         {{ session('success') }}
     </div>
 @endif
@@ -317,10 +317,6 @@
                                 <i class="bx bx-dots-horizontal-rounded"></i>
                             </button>
 
-                            <button onclick="openEditModal({{ json_encode($project) }})" class="btn-action-icon btn-edit" title="Edit">
-                                <i class="bx bx-pencil"></i>
-                            </button>
-
                             <form action="{{ route('projects.destroy', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this project?');" style="display: inline-block;">
                                 @csrf
                                 @method('DELETE')
@@ -331,6 +327,10 @@
                                 </button>
                             </form>
                             @endif
+
+                            <button type="button" onclick="openAddProgrammeModal({{ json_encode($project) }})" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
+                                <i class="bx bx-plus-circle"></i>
+                            </button>
 
                             <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project) }}" class="btn-action-icon btn-view" title="Stage Details">
                                 <i class="bx bx-show-alt"></i>
@@ -576,7 +576,99 @@
         }
     }
 
+    function openAddProgrammeModal(project) {
+        const form = document.getElementById('addProgrammeForm');
+        form.action = `/admin/projects/orphan-care/${project.id}/add-programme`;
+
+        document.getElementById('prog_modal_student_name').textContent = project.project_name || 'N/A';
+        document.getElementById('prog_modal_agency_no').textContent = project.agency_project_no || 'N/A';
+
+        form.reset();
+
+        const modal = document.getElementById('addProgrammeModal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeAddProgrammeModal() {
+        const modal = document.getElementById('addProgrammeModal');
+        if (modal) modal.style.display = 'none';
+    }
+
 </script>
+
+<!-- Add Programme Modal -->
+<div class="modal-overlay" id="addProgrammeModal" style="display: none;" onclick="if(event.target === this) closeAddProgrammeModal()">
+    <div class="modal-content-custom" style="max-width: 600px; max-height: 90vh; overflow-y: auto; background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px;">
+        <div class="modal-header-custom" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0; color: var(--text-main); font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">ADD NEW PROGRAMME</h3>
+            <button type="button" onclick="closeAddProgrammeModal()" class="modal-close-btn" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+
+        <form id="addProgrammeForm" method="POST" action="">
+            @csrf
+            <!-- Student / Beneficiary Name & Agency Project No Banner -->
+            <div style="background-color: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem;">
+                <div>
+                    <span style="color: #475569; font-weight: 600;">Student / Beneficiary Name:</span>
+                    <span id="prog_modal_student_name" style="color: #0284c7; font-weight: 700; margin-left: 0.35rem;">-</span>
+                </div>
+                <div>
+                    <span style="color: #475569; font-weight: 600;">Agency Project No:</span>
+                    <span id="prog_modal_agency_no" style="color: #0f172a; font-weight: 700; margin-left: 0.35rem;">-</span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="grid-column: span 2;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Programme Name *</label>
+                    <input type="text" name="programme_name" required placeholder="e.g. Annual Student Meet 2026" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
+                    <input type="date" name="date" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
+                    <input type="text" name="place" placeholder="e.g. Main Auditorium" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+            </div>
+
+            <h4 style="color: var(--accent-cyan); font-size: 0.9rem; text-transform: uppercase; margin: 1.5rem 0 1rem 0; font-weight: 700; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.4rem;">TICK CHECKLIST (SELECT COMPLETED ITEMS)</h4>
+            
+            <div style="display: grid; grid-template-columns: 1fr; gap: 0.85rem; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+                <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                    <input type="checkbox" name="present_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                    Present / Attendance
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                    <input type="checkbox" name="photo_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                    Photo
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                    <input type="checkbox" name="marklist_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                    Marklist
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                    <input type="checkbox" name="thanks_letter_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                    Thanks Letter
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                    <input type="checkbox" name="report_form_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                    Report Form
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-main); font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0;">
+                    <input type="checkbox" name="other_document_ticked" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                    Other Document
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="button" onclick="closeAddProgrammeModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer; padding: 0.5rem 1.25rem;">Cancel</button>
+                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; cursor: pointer; padding: 0.5rem 1.25rem; font-weight: 600; border-radius: 6px;">Add Programme</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 
 @endsection

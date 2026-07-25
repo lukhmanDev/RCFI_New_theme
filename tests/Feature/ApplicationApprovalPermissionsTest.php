@@ -59,13 +59,8 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $application->status = 'Pending';
         $application->save();
 
-        // 4. HOD attempts to approve -> Should fail / redirect back with error
+        // 4. HOD attempts to approve -> Should succeed
         $response = $this->actingAs($hod)->post("/admin/applications/house/{$application->id}/approve");
-        $response->assertSessionHas('error', 'You are not authorized to approve applications.');
-        $this->assertEquals('Pending', $application->fresh()->status);
-
-        // 5. COO attempts to approve -> Should succeed
-        $response = $this->actingAs($coo)->post("/admin/applications/house/{$application->id}/approve");
         $this->assertEquals('Approved', $application->fresh()->status);
     }
 
@@ -312,6 +307,22 @@ class ApplicationApprovalPermissionsTest extends TestCase
 
         $response->assertSessionHas('success');
         $this->assertArrayNotHasKey('Land document', $project->fresh()->files ?? []);
+
+        // Super Admin attempts to toggle "Possession certificate" -> Should succeed
+        $superAdmin = User::where('role', 'super_admin')->first() ?: User::create([
+            'name' => 'Super Admin Toggle',
+            'email' => 'super_admin_toggle@rcfi.org',
+            'mobile' => '9888888800',
+            'role' => 1,
+            'password' => bcrypt('password'),
+            'designation' => 'Super Admin',
+        ]);
+
+        $responseSuper = $this->actingAs($superAdmin)->post("/admin/projects/{$project->id}/toggle-file", [
+            'document_name' => 'Possession certificate'
+        ]);
+        $responseSuper->assertSessionHas('success');
+        $this->assertEquals("1", $project->fresh()->files['Possession certificate'] ?? null);
     }
 
     public function test_only_pending_applications_can_be_deleted(): void
@@ -550,7 +561,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'place' => 'New Place',
             'post_office' => 'New PO',
         ]);
-        $response->assertSessionHas('success', 'Student address updated successfully!');
+        $response->assertSessionHas('success', 'Address updated successfully!');
         $this->assertEquals('New House', $app->fresh()->house_name);
         $this->assertEquals('New Place', $app->fresh()->place);
 
@@ -560,7 +571,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $response = $this->actingAs($coo)->post("/admin/projects/orphan-care/{$project->id}/upload-photo", [
             'student_photo' => $file
         ]);
-        $response->assertSessionHas('success', 'Student photo uploaded successfully!');
+        $response->assertSessionHas('success', 'Photo uploaded successfully!');
         
         $updatedApp = $app->fresh();
         $this->assertNotNull($updatedApp->student_photo);
@@ -568,7 +579,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
 
         $photoPath = public_path($updatedApp->student_photo);
         $response = $this->actingAs($coo)->delete("/admin/projects/orphan-care/{$project->id}/delete-photo");
-        $response->assertSessionHas('success', 'Student photo deleted successfully!');
+        $response->assertSessionHas('success', 'Photo deleted successfully!');
         $this->assertNull($app->fresh()->student_photo);
         $this->assertFileDoesNotExist($photoPath);
     }

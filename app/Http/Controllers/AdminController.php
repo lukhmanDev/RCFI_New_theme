@@ -26,6 +26,15 @@ class AdminController extends Controller
             'general' => \App\Models\GeneralApplication::class,
         ];
 
+        $user = auth()->user();
+        if ($user && $user->isSocialAid()) {
+            $applicationModels = [
+                'orphan-care' => \App\Models\OrphanCareApplication::class,
+                'differently-abled' => \App\Models\DifferentlyAbledApplication::class,
+                'family-aid' => \App\Models\FamilyAidApplication::class,
+            ];
+        }
+
         $applicationsCount = 0;
         $approvedCount = 0;
         $pendingCount = 0;
@@ -63,9 +72,11 @@ class AdminController extends Controller
 
         $recentApplications = array_slice($recentList, 0, 3);
 
-        $user = auth()->user();
         if ($user->isReception()) {
             return view('dashboard.reception', compact('applicationsCount', 'pendingCount', 'recentApplications'));
+        }
+        if ($user->isSocialAid()) {
+            return view('dashboard.social_aid', compact('donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount', 'recentApplications'));
         }
         if ($user->isSuperAdmin()) {
             return view('dashboard.admin', compact('userCount', 'donorsCount', 'applicationsCount', 'approvedCount', 'pendingCount', 'rejectedCount', 'recentApplications'));

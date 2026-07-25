@@ -61,6 +61,11 @@ class User extends Authenticatable
             '7' => 'reception',
             'Reception' => 'reception',
             'reception' => 'reception',
+            8 => 'social_aid',
+            '8' => 'social_aid',
+            'Social Aid' => 'social_aid',
+            'Social Aid Manager' => 'social_aid',
+            'social_aid' => 'social_aid',
         ];
 
         return $map[$value] ?? strtolower(str_replace(' ', '_', $value ?: 'others'));
@@ -91,6 +96,11 @@ class User extends Authenticatable
             '7' => 'reception',
             'Reception' => 'reception',
             'reception' => 'reception',
+            8 => 'social_aid',
+            '8' => 'social_aid',
+            'Social Aid' => 'social_aid',
+            'Social Aid Manager' => 'social_aid',
+            'social_aid' => 'social_aid',
         ];
 
         $this->attributes['role'] = $map[$value] ?? strtolower(str_replace(' ', '_', $value ?: 'others'));
@@ -106,6 +116,7 @@ class User extends Authenticatable
             'others' => 'Others',
             'engineer' => 'Engineer',
             'reception' => 'Reception',
+            'social_aid' => 'Social Aid Manager',
         ];
 
         return $map[$this->role] ?? ucwords(str_replace('_', ' ', $this->role));
@@ -141,14 +152,19 @@ class User extends Authenticatable
         return in_array($this->role, ['reception', 'Reception', '7', 7]);
     }
 
+    public function isSocialAid(): bool
+    {
+        return in_array($this->role, ['social_aid', 'Social Aid', 'Social Aid Manager', '8', 8]);
+    }
+
     public function hasAdminAccess(): bool
     {
-        return in_array($this->role, ['super_admin', 'coo', 'hod', 'reception', 'Super Admin', 'COO', 'HOD', 'Reception', 1, 2, 4, 7, '1', '2', '4', '7']);
+        return in_array($this->role, ['super_admin', 'coo', 'hod', 'reception', 'social_aid', 'Super Admin', 'COO', 'HOD', 'Reception', 'Social Aid', 1, 2, 4, 7, 8, '1', '2', '4', '7', '8']);
     }
 
     public function canApproveApplications(): bool
     {
-        return $this->isCoo() || $this->isSuperAdmin();
+        return $this->isCoo() || $this->isSuperAdmin() || $this->isHod() || $this->isSocialAid();
     }
 
     public function profile()

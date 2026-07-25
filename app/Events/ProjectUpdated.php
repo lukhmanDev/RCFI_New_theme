@@ -4,26 +4,30 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ProjectUpdated implements ShouldBroadcast
+class ProjectUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $projectId;
     public $category;
     public $userId;
+    public $action;
+    public $payload;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($projectId, $category, $userId)
+    public function __construct($projectId, $category = null, $userId = null, $action = 'updated', $payload = [])
     {
         $this->projectId = $projectId;
         $this->category = $category;
         $this->userId = $userId;
+        $this->action = $action;
+        $this->payload = $payload;
     }
 
     /**
@@ -35,6 +39,7 @@ class ProjectUpdated implements ShouldBroadcast
     {
         return [
             new Channel('projects'),
+            new Channel('project.' . $this->projectId),
         ];
     }
 

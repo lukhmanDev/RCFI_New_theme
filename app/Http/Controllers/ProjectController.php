@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Donor;
 use App\Models\User;
 use App\Models\Contractor;
+use App\Events\ProjectUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 
@@ -211,16 +212,25 @@ class ProjectController extends Controller
             return redirect()->route('applications.index')->with('error', 'Unauthorized access.');
         }
 
-        $counts = [];
         $user = auth()->user();
-        foreach ($this->categories as $slug => $config) {
+        $categories = $this->categories;
+        $groupedCategories = $this->groupedCategories;
+
+        if ($user && $user->isSocialAid()) {
+            $socialAidSlugs = ['orphan-care', 'differently-abled', 'family-aid'];
+            $categories = array_filter($categories, fn($key) => in_array($key, $socialAidSlugs), ARRAY_FILTER_USE_KEY);
+            $groupedCategories = array_filter($groupedCategories, fn($key) => $key === 'Social Aid & Care', ARRAY_FILTER_USE_KEY);
+        }
+
+        $counts = [];
+        foreach ($categories as $slug => $config) {
             $model = $config['model'];
             $counts[$config['name']] = $this->scopeProjectsForUser($model::query(), $user)->count();
         }
 
         return view('admin.projects_dashboard', [
-            'categories' => $this->categories,
-            'groupedCategories' => $this->groupedCategories,
+            'categories' => $categories,
+            'groupedCategories' => $groupedCategories,
             'counts' => $counts
         ]);
     }
@@ -229,6 +239,10 @@ class ProjectController extends Controller
     {
         if (auth()->user() && auth()->user()->isReception()) {
             return redirect()->route('applications.index')->with('error', 'Unauthorized access.');
+        }
+
+        if (auth()->user() && auth()->user()->isSocialAid() && !in_array($slug, ['orphan-care', 'differently-abled', 'family-aid'])) {
+            return redirect()->route('projects.category', 'orphan-care')->with('error', 'Social Aid Manager can only access Social Aid projects.');
         }
 
         if (!array_key_exists($slug, $this->categories)) {
@@ -275,7 +289,7 @@ class ProjectController extends Controller
         $designationLower = strtolower($user->designation ?? '');
         $isCoo = ($user->isCoo() || $user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'coo'));
         $isHod = ($user->isHod() || $user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'hod'));
-        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin');
         if (!$isCoo && !$isHod && !$isSuperAdmin) {
             return redirect()->back()->with('error', 'Only HOD and COO are authorized to create projects.');
         }
@@ -451,7 +465,7 @@ class ProjectController extends Controller
         $isSixStage = in_array($project->type_of_project, [
             'Education Center', 'Cultural Center', 'Hospital or Clinics', 
             'Shops and Others', 'House', 'Drinking Water - Group Level', 
-            'Drinking Water - Individual Level'
+            'Drinking Water - Individual Level', 'General'
         ]);
 
         if ($project->status === 'Completed') {
@@ -550,7 +564,7 @@ class ProjectController extends Controller
             if ($project->application_id) {
                 $application = $appModel::find($project->application_id);
             }
-            if (!$application && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
+            if (!$application && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'])) {
                 $application = $appModel::find($project->id) ?? $appModel::first();
             }
         }
@@ -584,7 +598,10 @@ class ProjectController extends Controller
             }
         }
 
-        return view($viewName, compact('project', 'application', 'allApplications', 'allContractors'));
+        return response()->view($viewName, compact('project', 'application', 'allApplications', 'allContractors'))
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sat, 01 Jan 1990 00:00:00 GMT');
     }
 
     public function assignApplication(Request $request, $id)
@@ -600,16 +617,16 @@ class ProjectController extends Controller
         $isCoo = ($user->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
         $isHod = ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
         $isPm = ($user->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
-        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin');
 
-        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
+        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']);
         
         $isStage4Approved = false;
         if ($isSixStage) {
             $isStage4Approved = ($project->stage >= 5 || in_array($project->status, ['Approved', 'Completed']));
         }
 
-        if ($isStage4Approved && !$isSuperAdmin) {
+        if ($isStage4Approved && !$isSuperAdmin && $project->type_of_project !== 'General') {
             return redirect()->back()->with('error', 'Once Stage 4 is approved, the assigned application cannot be changed.');
         }
 
@@ -732,7 +749,7 @@ class ProjectController extends Controller
         $isHod = ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
         $isPm = ($user->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
         $isEngineer = ($user->isEngineer() || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
-        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin');
 
         if ($action === 'reopen') {
             if (!$isSuperAdmin) {
@@ -753,7 +770,7 @@ class ProjectController extends Controller
             return redirect()->route('projects.show', $project->id)->with('success', 'Project reopened successfully.');
         }
 
-        if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
+        if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'])) {
             $currentStage = $project->stage;
 
             if ($currentStage == 3 && $action === 'submit_corrections') {
@@ -777,7 +794,7 @@ class ProjectController extends Controller
                 }
 
                 if ($action === 'approve') {
-                    if (!$isCoo && !$isHod && !$isSuperAdmin) {
+                    if ($project->type_of_project !== 'General' && !$isCoo && !$isHod && !$isSuperAdmin) {
                         return redirect()->back()->with('error', 'Only COO or HOD is authorized to approve Stage 4.');
                     }
                     $project->stage = 5;
@@ -787,7 +804,7 @@ class ProjectController extends Controller
                 }
 
                 if ($action === 'reject') {
-                    if (!$isCoo && !$isHod && !$isSuperAdmin) {
+                    if ($project->type_of_project !== 'General' && !$isCoo && !$isHod && !$isSuperAdmin) {
                         return redirect()->back()->with('error', 'Only COO or HOD is authorized to reject Stage 4.');
                     }
                     $project->stage = 3;
@@ -817,10 +834,8 @@ class ProjectController extends Controller
                 return redirect()->back()->with('error', 'Invalid action for Stage 5.');
             }
 
-
-
             if ($currentStage == 6 && $action === 'finalize_approval') {
-                if (!$isCoo && !$isSuperAdmin) {
+                if ($project->type_of_project !== 'General' && !$isCoo && !$isSuperAdmin) {
                     return redirect()->back()->with('error', 'Only COO is authorized to perform final approval.');
                 }
 
@@ -1135,7 +1150,7 @@ class ProjectController extends Controller
         $user = auth()->user();
         $isCoo = ($user->isCoo() || strtolower($user->designation ?? '') === 'coo');
         $isHod = ($user->isHod() || strtolower($user->designation ?? '') === 'hod');
-        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin');
 
         if (!$isCoo && !$isHod && !$isSuperAdmin) {
             if ($request->wantsJson()) {
@@ -1304,12 +1319,8 @@ class ProjectController extends Controller
 
         $files = $project->files ?? [];
         $commContribs = $files['community_contributions'] ?? [];
-        if (empty($commContribs)) {
-            $compDetails = $files['completion_details'] ?? [];
-            $commContribs = [
-                ['item' => 'Community Contribution', 'amount' => $compDetails['community_contribution'] ?? 0],
-                ['item' => 'Other', 'amount' => $compDetails['any_other'] ?? 0]
-            ];
+        if (!is_array($commContribs)) {
+            $commContribs = [];
         }
 
         $commContribs[] = [
@@ -1319,20 +1330,13 @@ class ProjectController extends Controller
 
         $files['community_contributions'] = $commContribs;
         
-        // Synced compatibility values for completion_details
+        // Sync total sum to completion_details
         $compDetails = $files['completion_details'] ?? [];
-        $compDetails['community_contribution'] = 0.0;
-        $compDetails['any_other'] = 0.0;
+        $commTotalSum = 0.0;
         foreach ($commContribs as $c) {
-            if ($c['item'] === 'Community Contribution') {
-                $compDetails['community_contribution'] += $c['amount'];
-            } else if ($c['item'] === 'Other') {
-                $compDetails['any_other'] += $c['amount'];
-            } else {
-                // If it is any other row, let's add it to community_contribution or other? Let's add it to community_contribution by default or keep completion_details updated
-                $compDetails['community_contribution'] += $c['amount'];
-            }
+            $commTotalSum += floatval($c['amount'] ?? 0);
         }
+        $compDetails['community_contribution'] = $commTotalSum;
         $files['completion_details'] = $compDetails;
 
         $project->files = $files;
@@ -1360,12 +1364,8 @@ class ProjectController extends Controller
 
         $files = $project->files ?? [];
         $commContribs = $files['community_contributions'] ?? [];
-        if (empty($commContribs)) {
-            $compDetails = $files['completion_details'] ?? [];
-            $commContribs = [
-                ['item' => 'Community Contribution', 'amount' => $compDetails['community_contribution'] ?? 0],
-                ['item' => 'Other', 'amount' => $compDetails['any_other'] ?? 0]
-            ];
+        if (!is_array($commContribs)) {
+            $commContribs = [];
         }
 
         if (isset($commContribs[$index])) {
@@ -1374,19 +1374,13 @@ class ProjectController extends Controller
                 'amount' => (float)$request->input('amount')
             ];
             
-            // Synced compatibility values for completion_details
+            // Sync total sum to completion_details
             $compDetails = $files['completion_details'] ?? [];
-            $compDetails['community_contribution'] = 0.0;
-            $compDetails['any_other'] = 0.0;
+            $commTotalSum = 0.0;
             foreach ($commContribs as $c) {
-                if ($c['item'] === 'Community Contribution') {
-                    $compDetails['community_contribution'] += $c['amount'];
-                } else if ($c['item'] === 'Other') {
-                    $compDetails['any_other'] += $c['amount'];
-                } else {
-                    $compDetails['community_contribution'] += $c['amount'];
-                }
+                $commTotalSum += floatval($c['amount'] ?? 0);
             }
+            $compDetails['community_contribution'] = $commTotalSum;
             $files['completion_details'] = $compDetails;
             
             $files['community_contributions'] = $commContribs;
@@ -1412,30 +1406,20 @@ class ProjectController extends Controller
 
         $files = $project->files ?? [];
         $commContribs = $files['community_contributions'] ?? [];
-        if (empty($commContribs)) {
-            $compDetails = $files['completion_details'] ?? [];
-            $commContribs = [
-                ['item' => 'Community Contribution', 'amount' => $compDetails['community_contribution'] ?? 0],
-                ['item' => 'Other', 'amount' => $compDetails['any_other'] ?? 0]
-            ];
+        if (!is_array($commContribs)) {
+            $commContribs = [];
         }
 
         if (isset($commContribs[$index])) {
             array_splice($commContribs, $index, 1);
             
-            // Synced compatibility values for completion_details
+            // Sync total sum to completion_details
             $compDetails = $files['completion_details'] ?? [];
-            $compDetails['community_contribution'] = 0.0;
-            $compDetails['any_other'] = 0.0;
+            $commTotalSum = 0.0;
             foreach ($commContribs as $c) {
-                if ($c['item'] === 'Community Contribution') {
-                    $compDetails['community_contribution'] += $c['amount'];
-                } else if ($c['item'] === 'Other') {
-                    $compDetails['any_other'] += $c['amount'];
-                } else {
-                    $compDetails['community_contribution'] += $c['amount'];
-                }
+                $commTotalSum += floatval($c['amount'] ?? 0);
             }
+            $compDetails['community_contribution'] = $commTotalSum;
             $files['completion_details'] = $compDetails;
             
             $files['community_contributions'] = $commContribs;
@@ -1571,14 +1555,32 @@ class ProjectController extends Controller
         }
 
         $request->validate([
-            'photo' => 'required|image|max:10240', // 10MB max
+            'photo' => 'required|file|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:10240', // 10MB max
             'category' => 'nullable|string|in:before,starting,inbetween,after,banner,stone,inauguration'
         ]);
 
+        if ($project->type_of_project === 'General') {
+            $files = $project->files ?? [];
+            $totalGeneralPhotos = count(array_unique(array_merge(
+                $files['photos_after'] ?? ($files['photos'] ?? []),
+                $files['photos_before'] ?? [],
+                $files['photos_inbetween'] ?? [],
+                $files['photos_inauguration'] ?? []
+            )));
+            if ($totalGeneralPhotos >= 3) {
+                return redirect()->back()->with('error', 'Maximum limit reached. General projects can have a maximum of 3 photos.');
+            }
+        }
+
         if ($request->hasFile('photo')) {
             $uploadedFile = $request->file('photo');
-            $filename = 'photo_' . time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
-            $uploadedFile->move(public_path('uploads/projects/' . $project->id), $filename);
+            $ext = strtolower($uploadedFile->getClientOriginalExtension());
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'])) {
+                $ext = 'jpg';
+            }
+            $filename = 'photo_' . time() . '_' . uniqid() . '.' . $ext;
+            $targetPath = public_path('uploads/projects/' . $project->id . '/' . $filename);
+            $this->compressAndSaveImage($uploadedFile, $targetPath, 2 * 1024 * 1024);
             
             $files = $project->files ?? [];
             $category = $request->input('category') ?? 'after';
@@ -1598,7 +1600,36 @@ class ProjectController extends Controller
             $project->files = $files;
             $project->save();
 
+            $photoIndex = count($photos) - 1;
+            $deleteUrl = route('projects.delete_photo', [$project->id, $photoIndex]) . '?category=' . $category;
+
+            try {
+                ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'upload_photo', [
+                    'category' => $category,
+                    'photo_url' => asset(end($photos)),
+                    'photo_index' => $photoIndex,
+                    'delete_url' => $deleteUrl,
+                    'total_photos' => count($photos)
+                ]);
+            } catch (\Exception $e) {}
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Photo uploaded successfully!',
+                    'category' => $category,
+                    'photo_url' => asset(end($photos)),
+                    'photo_index' => $photoIndex,
+                    'delete_url' => $deleteUrl,
+                    'total_photos' => count($photos)
+                ]);
+            }
+
             return redirect()->route('projects.show', $id)->with('success', 'Photo uploaded successfully!');
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => 'Photo upload failed.'], 400);
         }
 
         return redirect()->back()->with('error', 'Photo upload failed.');
@@ -1613,6 +1644,9 @@ class ProjectController extends Controller
 
         $user = auth()->user();
         if (!$this->isPmOrEngineer($user, $project)) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Only Project Manager and Engineer are authorized to manage photos.'], 403);
+            }
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage photos.');
         }
 
@@ -1639,7 +1673,30 @@ class ProjectController extends Controller
             
             $project->files = $files;
             $project->save();
+
+            try {
+                ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'delete_photo', [
+                    'category' => $category,
+                    'photo_index' => $index,
+                    'total_photos' => count($photos)
+                ]);
+            } catch (\Exception $e) {}
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Photo deleted successfully!',
+                    'category' => $category,
+                    'photo_index' => $index,
+                    'total_photos' => count($photos)
+                ]);
+            }
+
             return redirect()->route('projects.show', $id)->with('success', 'Photo deleted successfully!');
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => 'Photo not found.'], 404);
         }
 
         return redirect()->back()->with('error', 'Photo not found.');
@@ -1654,6 +1711,9 @@ class ProjectController extends Controller
 
         $user = auth()->user();
         if (!$this->isPmOrEngineer($user, $project)) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Only Project Manager and Engineer are authorized to manage completion details.'], 403);
+            }
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage completion details.');
         }
 
@@ -1683,6 +1743,14 @@ class ProjectController extends Controller
         
         $project->files = $files;
         $project->save();
+
+        try {
+            ProjectUpdated::dispatch($project->id, 'financials', auth()->id(), 'save_completion_details', $files['completion_details']);
+        } catch (\Exception $e) {}
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Completion details saved successfully!']);
+        }
 
         return redirect()->route('projects.show', $id)->with('success', 'Completion details saved successfully!');
     }
@@ -1784,11 +1852,14 @@ class ProjectController extends Controller
         }
 
         $designationLower = strtolower($user->designation ?? '');
-        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
-        $isCoo = ($user->isCoo() || $user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
-        $isHod = ($user->isHod() || $user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin' || str_contains($designationLower, 'admin'));
+        $isCoo = ($user->isCoo() || $user->role == 2 || $user->role === 'coo' || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
+        $isHod = ($user->isHod() || $user->role == 4 || $user->role === 'hod' || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
+        $isPm = ($user->isPm() || $user->role == 3 || $user->role === 'project_manager' || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
+        $isEngineer = ($user->isEngineer() || $user->role == 6 || $user->role === 'engineer' || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
+        $isSocialAid = ($user->isSocialAid() || $user->role == 8 || $user->role === 'social_aid' || str_contains($designationLower, 'social aid'));
 
-        if ($isSuperAdmin || $isCoo || $isHod) {
+        if ($isSuperAdmin || $isCoo || $isHod || $isPm || $isEngineer || $isSocialAid) {
             return true;
         }
 
@@ -1799,13 +1870,9 @@ class ProjectController extends Controller
             if (isset($project->engineer_id) && $project->engineer_id == $user->id) {
                 return true;
             }
-            return false;
         }
 
-        $isPm = ($user->isPm() || $user->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
-        $isEngineer = ($user->isEngineer() || $user->role == 6 || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
-
-        return $isPm || $isEngineer;
+        return false;
     }
 
     private function scopeProjectsForUser($query, $user)
@@ -1816,12 +1883,21 @@ class ProjectController extends Controller
 
         $isPm = ($user->isPm() || strtolower($user->designation ?? '') === 'project manager');
         $isEngineer = ($user->isEngineer() || strtolower($user->designation ?? '') === 'engineer');
-        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1);
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin');
         $isCoo = ($user->isCoo() || strtolower($user->designation ?? '') === 'coo');
         $isHod = ($user->isHod() || strtolower($user->designation ?? '') === 'hod');
 
         if ($isSuperAdmin || $isCoo || $isHod) {
             return $query;
+        }
+
+        if ($user->isSocialAid()) {
+            $table = $query->getModel()->getTable();
+            $isSocialAidTable = in_array($table, ['orphan_care_projects', 'differently_abled_projects', 'family_aid_projects']);
+            if ($isSocialAidTable) {
+                return $query;
+            }
+            return $query->whereRaw('1 = 0');
         }
 
         $table = $query->getModel()->getTable();
@@ -1973,7 +2049,7 @@ class ProjectController extends Controller
         }
 
         $request->validate([
-            'student_photo' => 'required|image|max:5120',
+            'student_photo' => 'required|file|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:10240',
         ]);
 
         if ($request->hasFile('student_photo')) {
@@ -1985,8 +2061,13 @@ class ProjectController extends Controller
             }
 
             $uploadedFile = $request->file('student_photo');
-            $filename = 'student_' . time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
-            $uploadedFile->move(public_path('uploads/students/' . $application->id), $filename);
+            $ext = strtolower($uploadedFile->getClientOriginalExtension());
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'])) {
+                $ext = 'jpg';
+            }
+            $filename = 'student_' . time() . '_' . uniqid() . '.' . $ext;
+            $targetPath = public_path('uploads/students/' . $application->id . '/' . $filename);
+            $this->compressAndSaveImage($uploadedFile, $targetPath, 2 * 1024 * 1024);
 
             $application->student_photo = 'uploads/students/' . $application->id . '/' . $filename;
             $application->save();
@@ -2094,7 +2175,7 @@ class ProjectController extends Controller
             'place' => 'nullable|string|max:255',
         ]);
 
-        $fileKeys = ['photo', 'marklist', 'thanks_letter', 'report_form', 'other_document'];
+        $fileKeys = ['photo', 'marklist', 'thanks_letter', 'report_form', 'medical_certificate', 'other_document'];
         $tickStatuses = [];
         foreach ($fileKeys as $fileKey) {
             $tickStatuses[$fileKey . '_ticked'] = $request->has($fileKey . '_ticked');
@@ -2134,7 +2215,7 @@ class ProjectController extends Controller
             'place' => 'nullable|string|max:255',
         ]);
 
-        $fileKeys = ['photo', 'marklist', 'thanks_letter', 'report_form', 'other_document'];
+        $fileKeys = ['photo', 'marklist', 'thanks_letter', 'report_form', 'medical_certificate', 'other_document'];
         $tickUpdates = [];
 
         foreach ($fileKeys as $fileKey) {
@@ -2217,5 +2298,93 @@ class ProjectController extends Controller
     public function orphanCareUpdateProgramme(Request $request, $id, $programme_id) { return $this->socialAidUpdateProgramme($request, $id, $programme_id); }
     public function orphanCareDeleteProgramme(Request $request, $id, $programme_id) { return $this->socialAidDeleteProgramme($request, $id, $programme_id); }
     public function orphanCareToggleProgrammeTick(Request $request, $id) { return $this->socialAidToggleProgrammeTick($request, $id); }
+
+    /**
+     * Compress and save uploaded image if size exceeds 2 MB (or has large dimensions).
+     */
+    private function compressAndSaveImage($file, $destinationPath, $maxSizeBytes = 2097152)
+    {
+        $dir = dirname($destinationPath);
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $tempPath = $file->getRealPath();
+        $fileSize = filesize($tempPath);
+
+        // If file is already <= 2 MB, move directly for instantaneous speed (under 10ms)
+        if ($fileSize <= $maxSizeBytes) {
+            return $file->move($dir, basename($destinationPath));
+        }
+
+        $imageInfo = @getimagesize($tempPath);
+        if (!$imageInfo) {
+            return $file->move($dir, basename($destinationPath));
+        }
+
+        $mime = $imageInfo['mime'] ?? '';
+        $width = $imageInfo[0] ?? 0;
+        $height = $imageInfo[1] ?? 0;
+
+        $srcImage = null;
+        switch ($mime) {
+            case 'image/jpeg':
+                $srcImage = @imagecreatefromjpeg($tempPath);
+                break;
+            case 'image/png':
+                $srcImage = @imagecreatefrompng($tempPath);
+                break;
+            case 'image/webp':
+                $srcImage = @imagecreatefromwebp($tempPath);
+                break;
+            case 'image/avif':
+                $srcImage = function_exists('imagecreatefromavif') ? @imagecreatefromavif($tempPath) : null;
+                break;
+            case 'image/gif':
+                $srcImage = @imagecreatefromgif($tempPath);
+                break;
+        }
+
+        if (!$srcImage) {
+            return $file->move($dir, basename($destinationPath));
+        }
+
+        $maxWidth = 1600;
+        $maxHeight = 1600;
+        $newWidth = $width;
+        $newHeight = $height;
+
+        if ($newWidth > $maxWidth || $newHeight > $maxHeight) {
+            $ratio = min($maxWidth / $newWidth, $maxHeight / $newHeight);
+            $newWidth = (int)round($newWidth * $ratio);
+            $newHeight = (int)round($newHeight * $ratio);
+        }
+
+        $destImage = imagecreatetruecolor($newWidth, $newHeight);
+
+        if ($mime === 'image/png' || $mime === 'image/webp') {
+            imagealphablending($destImage, false);
+            imagesavealpha($destImage, true);
+            $transparent = imagecolorallocatealpha($destImage, 255, 255, 255, 127);
+            imagefilledrectangle($destImage, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        imagecopyresampled($destImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        if ($mime === 'image/png') {
+            @imagepng($destImage, $destinationPath, 3);
+        } elseif ($mime === 'image/webp') {
+            @imagewebp($destImage, $destinationPath, 75);
+        } elseif ($mime === 'image/avif' && function_exists('imageavif')) {
+            @imageavif($destImage, $destinationPath, 70);
+        } else {
+            @imagejpeg($destImage, $destinationPath, 75);
+        }
+
+        imagedestroy($srcImage);
+        imagedestroy($destImage);
+
+        return true;
+    }
 }
 

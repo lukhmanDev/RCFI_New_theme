@@ -35,7 +35,7 @@ class UserController extends Controller
         ];
 
         if (auth()->user()->isSuperAdmin()) {
-            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,1,2,3,4,5,6,7'];
+            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,social_aid,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,Social Aid,Social Aid Manager,1,2,3,4,5,6,7,8'];
         }
 
         $data = $request->validate($rules);
@@ -70,7 +70,7 @@ class UserController extends Controller
         ];
 
         if (auth()->user()->isSuperAdmin()) {
-            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,1,2,3,4,5,6,7'];
+            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,social_aid,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,Social Aid,Social Aid Manager,1,2,3,4,5,6,7,8'];
         }
 
         $data = $request->validate($rules);
@@ -139,7 +139,10 @@ class UserController extends Controller
             3 => 'Project Manager',
             4 => 'HOD',
             5 => 'Others',
-            6 => 'Engineer'
+            6 => 'Engineer',
+            7 => 'Reception',
+            8 => 'Social Aid Manager',
+            'social_aid' => 'Social Aid Manager',
         ];
 
         return response()->json([

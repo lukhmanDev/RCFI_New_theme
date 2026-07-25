@@ -14,6 +14,7 @@ class OrphanCareProgramme extends Model
         'marklist_ticked' => 'boolean',
         'thanks_letter_ticked' => 'boolean',
         'report_form_ticked' => 'boolean',
+        'medical_certificate_ticked' => 'boolean',
         'other_document_ticked' => 'boolean',
     ];
 

@@ -101,6 +101,13 @@ class ApplicationController extends Controller
 
         $categories = $this->categories;
         $groupedCategories = $this->groupedCategories;
+
+        if (auth()->user() && auth()->user()->isSocialAid()) {
+            $socialAidSlugs = ['orphan-care', 'differently-abled', 'family-aid'];
+            $categories = array_filter($categories, fn($key) => in_array($key, $socialAidSlugs), ARRAY_FILTER_USE_KEY);
+            $groupedCategories = array_filter($groupedCategories, fn($key) => $key === 'Social Aid & Care', ARRAY_FILTER_USE_KEY);
+        }
+
         return view('admin.applications', compact('categories', 'groupedCategories', 'counts', 'pendingCounts', 'approvedProjectCounts', 'totalProjectCounts'));
     }
 
@@ -108,6 +115,10 @@ class ApplicationController extends Controller
     {
         if (!array_key_exists($slug, $this->categories)) {
             abort(404);
+        }
+
+        if (auth()->user() && auth()->user()->isSocialAid() && !in_array($slug, ['orphan-care', 'differently-abled', 'family-aid'])) {
+            return redirect()->route('applications.category', 'orphan-care')->with('error', 'Social Aid Manager can only access Social Aid categories.');
         }
 
         $config = $this->categories[$slug];
@@ -711,6 +722,13 @@ class ApplicationController extends Controller
 
         $categories = $this->categories;
         $groupedCategories = $this->groupedCategories;
+
+        if (auth()->user() && auth()->user()->isSocialAid()) {
+            $socialAidSlugs = ['orphan-care', 'differently-abled', 'family-aid'];
+            $categories = array_filter($categories, fn($key) => in_array($key, $socialAidSlugs), ARRAY_FILTER_USE_KEY);
+            $groupedCategories = array_filter($groupedCategories, fn($key) => $key === 'Social Aid & Care', ARRAY_FILTER_USE_KEY);
+        }
+
         return view('approved_applications.index', compact('categories', 'groupedCategories', 'approvedCounts'));
     }
 
@@ -722,6 +740,10 @@ class ApplicationController extends Controller
 
         if (!array_key_exists($category, $this->categories)) {
             abort(404);
+        }
+
+        if (auth()->user() && auth()->user()->isSocialAid() && !in_array($category, ['orphan-care', 'differently-abled', 'family-aid'])) {
+            return redirect()->route('applications.approved.category', 'orphan-care')->with('error', 'Social Aid Manager can only access Social Aid categories.');
         }
 
         $config = $this->categories[$category];
@@ -781,7 +803,7 @@ class ApplicationController extends Controller
         $designationLower = strtolower($user->designation ?? '');
         $isPm = ($user->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager');
         $isEngineer = ($user->role == 6 || str_contains($designationLower, 'engineer') || $designationLower === 'engineer');
-        $isSuperAdmin = ($user->role == 1);
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin');
         $isCoo = ($user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
         $isHod = ($user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
 

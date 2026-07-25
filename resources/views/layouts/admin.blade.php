@@ -1872,14 +1872,19 @@
 
         // Laravel Reverb WebSockets Real-time connection client
         (function() {
-            @if(env('REVERB_ENABLED', false) && env('BROADCAST_CONNECTION') === 'reverb' && env('REVERB_APP_KEY'))
-            const appKey = "{{ env('REVERB_APP_KEY') }}";
-            const host = "{{ env('REVERB_HOST', 'localhost') }}";
-            const port = {{ env('REVERB_PORT', 8080) }};
-            const scheme = "{{ env('REVERB_SCHEME', 'http') }}";
+            @php
+                $reverbKey = env('REVERB_APP_KEY', 'rcfireverba7392a8b');
+                $reverbHost = env('REVERB_HOST', '127.0.0.1');
+                $reverbPort = env('REVERB_PORT', 8080);
+                $reverbScheme = env('REVERB_SCHEME', 'http');
+            @endphp
+            const appKey = "{{ $reverbKey }}";
+            const host = "{{ $reverbHost }}";
+            const port = {{ $reverbPort }};
+            const scheme = "{{ $reverbScheme }}";
             const currentUserId = {{ auth()->id() ?? 'null' }};
             
-            if (typeof Pusher !== 'undefined' && appKey && host) {
+            if (typeof Pusher !== 'undefined' && appKey) {
                 try {
                     const pusher = new Pusher(appKey, {
                         wsHost: host,
@@ -1896,19 +1901,17 @@
                         }
                     });
 
+                    window.echoPusher = pusher;
+
                     const channel = pusher.subscribe('projects');
                     channel.bind('project.updated', function(data) {
                         console.log('Realtime project.updated received:', data);
-                        if (typeof activeProjectId !== 'undefined' && data.projectId == activeProjectId && data.userId != currentUserId) {
-                            console.log('Triggering background reload for project ID:', data.projectId);
-                            reloadCurrentPageContent();
-                        }
+                        window.dispatchEvent(new CustomEvent('reverb:project.updated', { detail: data }));
                     });
                 } catch (e) {
                     // Ignore offline websocket server errors
                 }
             }
-            @endif
         })();
 
         // ==========================================

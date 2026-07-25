@@ -198,16 +198,15 @@
 
     @php
         $authUser = auth()->user();
-        $isSuperAdmin = ($authUser && $authUser->isSuperAdmin());
+        $isSuperAdmin = ($authUser && ($authUser->isSuperAdmin() || $authUser->role == 1 || $authUser->role === 'super_admin'));
         $designationLower = strtolower($authUser->designation ?? '');
         $isCoo = ($authUser && ($authUser->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
         $isHod = ($authUser && ($authUser->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
         $isPmOnly = ($authUser && ($authUser->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
         $isEngineerOnly = ($authUser && ($authUser->role == 6 || strtolower($authUser->designation ?? '') === 'engineer'));
         
-        $isProjectManager = ($authUser && (in_array($authUser->role, [1, 2, 3, 4, 6]) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod'])));
-        
-        $isLockedForEditing = ($project->status === 'Completed');
+        $isProjectManager = ($authUser && ($isSuperAdmin || $isCoo || $isHod || $isPmOnly || $isEngineerOnly || in_array($authUser->role, [1, 2, 3, 4, 6, 'super_admin', 'coo', 'project_manager', 'hod', 'engineer']) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod', 'super admin', 'admin'])));
+        $isLockedForEditing = ($project->status === 'Completed' && !$isSuperAdmin);
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
         $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
         $isStage4Approved = false;
@@ -668,7 +667,7 @@
                             <form action="{{ route('projects.approve', $project->id) }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="action" value="submit_corrections">
-                                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer;">
+                                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px;">
                                     Submit Corrections & Proceed to Stage 4
                                 </button>
                             </form>
@@ -827,7 +826,7 @@
                                 <form action="{{ route('projects.approve', $project->id) }}" method="POST">
                                     @csrf
                                     <input type="hidden" name="action" value="submit">
-                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer;">
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px;">
                                         <i class="bx bx-send"></i> Submit for HOD/COO Approval
                                     </button>
                                 </form>
@@ -1475,33 +1474,7 @@
                     </table>
                 </div>
 
-                @if($project->stage == 5 && $project->status !== 'Completed')
-                    <div style="margin-top: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
-                        <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">Promote to Stage 6</h4>
-                        @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
-                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-                                Once all expenses have been logged and the evaluation is complete, you can promote this project to Stage 6 (Completion Stage).
-                            </p>
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0;">
-                                @csrf
-                                <input type="hidden" name="action" value="promote_to_stage6">
-                                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer;">
-                                    <i class="bx bx-right-arrow-alt"></i> Complete Stage 5 & Move to Stage 6
-                                </button>
-                            </form>
-                        @else
-                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                <i class="bx bx-time-five"></i> Awaiting Project Manager or Engineer to complete Stage 5 and promote to Stage 6.
-                            </div>
-                        @endif
-                    </div>
-                @elseif($project->stage >= 6)
-                    <div style="margin-top: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
-                        <div style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                            <i class="bx bx-check-circle"></i> Stage 5 Completed — project promoted to Stage 6.
-                        </div>
-                    </div>
-                @endif
+                
             </div>
         </div>
 
@@ -1529,63 +1502,16 @@
                     
                     $pFiles = $project->files ?? [];
                     $beforePhotos = $pFiles['photos_before'] ?? [];
+                    $startingPhotos = $pFiles['photos_starting'] ?? [];
                     $inbetweenPhotos = $pFiles['photos_inbetween'] ?? [];
                     $afterPhotos = $pFiles['photos_after'] ?? ($pFiles['photos'] ?? []);
+                    $bannerPhotos = $pFiles['photos_banner'] ?? [];
+                    $stonePhotos = $pFiles['photos_stone'] ?? [];
                     $inaugurationPhotos = $pFiles['photos_inauguration'] ?? [];
                     $compDetails = $pFiles['completion_details'] ?? [];
                 @endphp
 
-                @if($project->status === 'Completed')
-                    <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
-                        <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; text-transform: uppercase;">✓ Project Completed & Finalized</h4>
-                        @php
-                            $cooStatus = $project->projectStatus;
-                            $cooApprovedAt = $cooStatus ? $cooStatus->coo_approved_at : null;
-                            $cooApprover = $cooStatus && $cooStatus->approver ? $cooStatus->approver->name : 'COO';
-                            $cooRemarks = $cooStatus ? $cooStatus->coo_remarks : null;
-                            $cooApprovedAtStr = $cooApprovedAt ? \Carbon\Carbon::parse($cooApprovedAt)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : 'N/A';
-                        @endphp
-                        <div style="font-size: 0.9rem; color: var(--text-main);">
-                            <p style="margin: 0.25rem 0;"><strong>Approved By:</strong> {{ $cooApprover }}</p>
-                            <p style="margin: 0.25rem 0;"><strong>Approved At:</strong> {{ $cooApprovedAtStr }}</p>
-                            <p style="margin: 0.25rem 0;"><strong>COO Remarks:</strong> {{ $cooRemarks ?: 'No remarks provided.' }}</p>
-                        </div>
-
-                        @if($isSuperAdmin)
-                            <div style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
-                                <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="action" value="reopen">
-                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #eb3b5a, #d81b60); border: none; color: white; cursor: pointer; font-weight: 700; padding: 0.5rem 1.5rem;">
-                                        Reopen Project
-                                    </button>
-                                </form>
-                            </div>
-                        @endif
-                    </div>
-                @elseif($project->stage == 6)
-                    <div style="margin-bottom: 2rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
-                        <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">COO Final Approval</h4>
-                        @if($isCoo || $isSuperAdmin)
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
-                                @csrf
-                                <input type="hidden" name="action" value="finalize_approval">
-                                <div style="width: 100%; max-width: 500px;">
-                                    <label for="remarks" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Approval Remarks:</label>
-                                    <textarea name="remarks" id="remarks" rows="3" placeholder="Enter final approval remarks…" style="width: 100%; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical;" required></textarea>
-                                </div>
-                                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); border-color: #27ae60; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.6rem 1.8rem;">
-                                    ✓ Finalize Project Approval & Complete
-                                </button>
-                            </form>
-                        @else
-                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                <i class="bx bx-time-five"></i> Pending COO Final Approval
-                            </div>
-                        @endif
-                    </div>
-                @endif
-
+                
                 <!-- Completion Documents (Stage 6 Upload/Reference) -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Completion Documents</h3>
@@ -1742,31 +1668,108 @@
                     @endif
                 </div>
 
+                <style>
+    .photo-gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+        align-items: stretch;
+    }
+    .photo-card {
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 380px;
+    }
+    .photo-card-header {
+        color: var(--text-main);
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid var(--panel-border);
+        padding-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 42px;
+    }
+    .photo-card-title {
+        line-height: 1.2;
+        padding-right: 0.5rem;
+    }
+    .photo-list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        flex-grow: 1;
+        max-height: 260px;
+        overflow-y: auto;
+        padding-right: 0.25rem;
+    }
+    .photo-empty-state {
+        text-align: center;
+        color: var(--text-muted);
+        font-style: italic;
+        padding: 1.5rem 1rem;
+        border: 1px dashed rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        font-size: 0.8rem;
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    @media (max-width: 1400px) {
+        .photo-gallery-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    @media (max-width: 992px) {
+        .photo-gallery-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @media (max-width: 576px) {
+        .photo-gallery-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
                 <!-- Photo Gallery -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
                     <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
                         <h3 style="color: var(--text-main); font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Project Photos</h3>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
+                    <div class="photo-gallery-grid">
                         @php
                             $columns = [
-                                'before' => ['title' => 'Before', 'photos' => $beforePhotos],
-                                'inbetween' => ['title' => 'In between', 'photos' => $inbetweenPhotos],
-                                'after' => ['title' => 'After Completion', 'photos' => $afterPhotos],
-                                'inauguration' => ['title' => 'Inauguration', 'photos' => $inaugurationPhotos],
+                                'before' => ['title' => 'Before Implementation', 'photos' => $beforePhotos],
+                                'starting' => ['title' => 'Starting', 'photos' => $startingPhotos],
+                                'inbetween' => ['title' => 'In Between Project Implementation', 'photos' => $inbetweenPhotos],
+                                'after' => ['title' => 'Final Photo', 'photos' => $afterPhotos],
+                                'banner' => ['title' => 'Photo of Banner', 'photos' => $bannerPhotos],
+                                'stone' => ['title' => 'Photo of Stone', 'photos' => $stonePhotos],
+                                'inauguration' => ['title' => 'Photo of Inauguration', 'photos' => $inaugurationPhotos],
                             ];
                         @endphp
 
                         @foreach($columns as $key => $colData)
-                            <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column;">
-                                <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin-top: 0; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                                    <span>{{ $colData['title'] }}</span>
-                                    <span style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted);">{{ count($colData['photos']) }}</span>
+                            <div class="photo-card" data-category="{{ $key }}">
+                                <h4 class="photo-card-header">
+                                    <span class="photo-card-title">{{ $colData['title'] }}</span>
+                                    <span style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted); flex-shrink: 0;">{{ count($colData['photos']) }}</span>
                                 </h4>
 
                                 @if($isProjectManager)
-                                    <form action="{{ route('projects.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                                    <form action="{{ route('projects.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
                                         @csrf
                                         <input type="hidden" name="category" value="{{ $key }}">
                                         <input type="file" name="photo" accept="image/*" required style="font-size: 0.75rem; color: var(--text-muted); width: 100%;">
@@ -1776,9 +1779,9 @@
                                     </form>
                                 @endif
 
-                                <div style="display: flex; flex-direction: column; gap: 0.75rem; flex-grow: 1; max-height: 400px; overflow-y: auto; padding-right: 0.25rem;">
+                                <div class="photo-list-container">
                                     @if(empty($colData['photos']))
-                                        <div style="text-align: center; color: var(--text-muted); font-style: italic; padding: 1.5rem; border: 1px dashed rgba(255,255,255,0.05); border-radius: 6px; font-size: 0.8rem;">
+                                        <div class="photo-empty-state">
                                             No {{ strtolower($colData['title']) }} photos yet.
                                         </div>
                                     @else
@@ -1812,56 +1815,117 @@
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Financial & Handover Details</h3>
 
+                    @php
+                        $pFilesData = $project->files ?? [];
+                        $allExpenses = $pFilesData['expenses'] ?? ($project->expenses ?? []);
+                        if (!is_array($allExpenses)) { $allExpenses = []; }
+                        
+                        $s5AllocatedSpent = 0;
+                        $s5CommSpent = 0;
+                        foreach ($allExpenses as $exp) {
+                            if (isset($exp['material_index'])) {
+                                $s5AllocatedSpent += floatval($exp['amount'] ?? 0);
+                            }
+                            if (isset($exp['comm_index'])) {
+                                $s5CommSpent += floatval($exp['amount'] ?? 0);
+                            }
+                        }
+                        
+                        $finTotalGrands = ($s5AllocatedSpent > 0) ? $s5AllocatedSpent : ($totalAmount ?? $project->available_budget ?? 0);
+                        $finCommContrib = ($s5CommSpent > 0) ? $s5CommSpent : ($commTotal ?? 0);
+                    @endphp
+
                     @if($isProjectManager && $project->status !== 'Completed')
                         <form action="{{ route('projects.save_completion_details', $project->id) }}" method="POST" style="margin: 0;">
                             @csrf
+                            <input type="hidden" name="total_amount" id="fin_total_amount" value="{{ $finTotalGrands }}">
+                            <input type="hidden" name="community_contribution" id="fin_community_contribution" value="{{ $finCommContrib }}">
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Total Project Cost (₹)</label>
-                                    <input type="number" name="total_project_cost" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('total_project_cost', $compDetails['total_project_cost'] ?? $project->available_budget) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
+                                        Total Grands (₹)
+                                        <span style="font-size: 0.75rem; color: var(--accent-cyan); margin-left: 0.3rem;">(auto)</span>
+                                    </label>
+                                    <input type="text" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;" value="{{ number_format($finTotalGrands, 2) }}">
                                 </div>
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Total Amount (₹)</label>
-                                    <input type="number" name="total_amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('total_amount', $compDetails['total_amount'] ?? $project->available_budget) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
+                                        Community Contribution (₹)
+                                        <span style="font-size: 0.75rem; color: var(--accent-cyan); margin-left: 0.3rem;">(auto)</span>
+                                    </label>
+                                    <input type="text" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;" value="{{ number_format($finCommContrib, 2) }}">
                                 </div>
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Amount Paid by Donor (₹)</label>
-                                    <input type="number" name="amount_paid_by_donor" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('amount_paid_by_donor', $compDetails['amount_paid_by_donor'] ?? 0) }}">
-                                </div>
-                                <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Community Contribution (₹)</label>
-                                    <input type="number" name="community_contribution" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('community_contribution', $compDetails['community_contribution'] ?? 0) }}">
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Leverage (₹)</label>
+                                    <input type="number" name="amount_paid_by_donor" id="fin_amount_paid_by_donor" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('amount_paid_by_donor', $compDetails['amount_paid_by_donor'] ?? 0) }}">
                                 </div>
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Any Other (₹)</label>
-                                    <input type="number" name="any_other" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('any_other', $compDetails['any_other'] ?? 0) }}">
+                                    <input type="number" name="any_other" id="fin_any_other" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('any_other', $compDetails['any_other'] ?? 0) }}">
                                 </div>
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Deductions (₹)</label>
-                                    <input type="number" name="deductions" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('deductions', $compDetails['deductions'] ?? 0) }}">
+                                    <input type="number" name="deductions" id="fin_deductions" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('deductions', $compDetails['deductions'] ?? 0) }}">
+                                </div>
+                                <div>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
+                                        Total Project Cost (₹)
+                                        <span style="font-size: 0.75rem; color: #10b981; margin-left: 0.3rem;">(auto)</span>
+                                    </label>
+                                    <input type="number" name="total_project_cost" id="fin_total_project_cost" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid rgba(16,185,129,0.4); background-color: rgba(16,185,129,0.05); color: #10b981; cursor: not-allowed; font-weight: 700; font-size: 1rem;" value="{{ old('total_project_cost', $compDetails['total_project_cost'] ?? $project->available_budget) }}">
                                 </div>
                             </div>
                             <button type="submit" class="btn-custom" style="padding: 0.5rem 1.5rem; cursor: pointer;">Save Details</button>
                         </form>
+
+                        <script>
+                        (function() {
+                            function recalcSubFinancialTotal() {
+                                var totalAmount = parseFloat(document.getElementById('fin_total_amount')?.value) || 0;
+                                var comm = parseFloat(document.getElementById('fin_community_contribution')?.value) || 0;
+                                var donor = parseFloat(document.getElementById('fin_amount_paid_by_donor')?.value) || 0;
+                                var anyOther = parseFloat(document.getElementById('fin_any_other')?.value) || 0;
+                                var deductions = parseFloat(document.getElementById('fin_deductions')?.value) || 0;
+
+                                var total = totalAmount + comm + donor + anyOther - deductions;
+                                if (total < 0) total = 0;
+
+                                var elCost = document.getElementById('fin_total_project_cost');
+                                if (elCost) {
+                                    elCost.value = total.toFixed(2);
+                                }
+                            }
+
+                            ['fin_total_amount', 'fin_community_contribution', 'fin_amount_paid_by_donor', 'fin_any_other', 'fin_deductions'].forEach(function(id) {
+                                var el = document.getElementById(id);
+                                if (el) {
+                                    el.addEventListener('input', recalcSubFinancialTotal);
+                                    el.addEventListener('change', recalcSubFinancialTotal);
+                                }
+                            });
+
+                            recalcSubFinancialTotal();
+                        })();
+                        </script>
                     @else
                         <div class="details-grid">
-                            <div class="details-label">Total Project Cost</div><div class="details-colon">:</div>
-                            <div class="details-value">₹{{ number_format($compDetails['total_project_cost'] ?? $project->available_budget, 2) }}</div>
-
-                            <div class="details-label">Total Amount</div><div class="details-colon">:</div>
+                            <div class="details-label">Total Grands</div><div class="details-colon">:</div>
                             <div class="details-value">₹{{ number_format($compDetails['total_amount'] ?? $project->available_budget, 2) }}</div>
-
-                            <div class="details-label">Amount Paid by Donor</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['amount_paid_by_donor'] ?? 0, 2) }}</div>
 
                             <div class="details-label">Community Contribution</div><div class="details-colon">:</div>
                             <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['community_contribution'] ?? 0, 2) }}</div>
+
+                            <div class="details-label">Leverage</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['amount_paid_by_donor'] ?? 0, 2) }}</div>
 
                             <div class="details-label">Any Other</div><div class="details-colon">:</div>
                             <div class="details-value">₹{{ number_format($compDetails['any_other'] ?? 0, 2) }}</div>
 
                             <div class="details-label">Deductions</div><div class="details-colon">:</div>
                             <div class="details-value" style="color: var(--accent-red);">₹{{ number_format($compDetails['deductions'] ?? 0, 2) }}</div>
+
+                            <div class="details-label" style="font-weight: 700;">Total Project Cost</div><div class="details-colon">:</div>
+                            <div class="details-value" style="font-weight: 700; color: #10b981;">₹{{ number_format(($compDetails['total_amount'] ?? $project->available_budget) + ($compDetails['community_contribution'] ?? 0) + ($compDetails['amount_paid_by_donor'] ?? 0) + ($compDetails['any_other'] ?? 0) - ($compDetails['deductions'] ?? 0), 2) }}</div>
 
                             <div class="details-label">Completion Status</div><div class="details-colon">:</div>
                             <div class="details-value">
@@ -1878,7 +1942,83 @@
                 </div>
 
             </div>
-        </div>
+                        <!-- Final Approval & Stage Completion Section -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
+                    <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Final Approval & Stage Completion</h3>
+
+                    @if($project->status === 'Completed')
+                        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1.5rem; border-radius: 8px; display: flex; flex-direction: column; gap: 0.75rem;">
+                            <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; text-transform: uppercase;">✓ Project Completed & Finalized</h4>
+                            @php
+                                $cooStatus = $project->projectStatus;
+                                $cooApprovedAt = $cooStatus ? $cooStatus->coo_approved_at : null;
+                                $cooApprover = $cooStatus && $cooStatus->approver ? $cooStatus->approver->name : 'COO';
+                                $cooRemarks = $cooStatus ? $cooStatus->coo_remarks : null;
+                                $cooApprovedAtStr = $cooApprovedAt ? \Carbon\Carbon::parse($cooApprovedAt)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : 'N/A';
+                            @endphp
+                            <div style="font-size: 0.9rem; color: var(--text-main);">
+                                <p style="margin: 0.25rem 0;"><strong>Approved By:</strong> {{ $cooApprover }}</p>
+                                <p style="margin: 0.25rem 0;"><strong>Approved At:</strong> {{ $cooApprovedAtStr }}</p>
+                                <p style="margin: 0.25rem 0;"><strong>COO Remarks:</strong> {{ $cooRemarks ?: 'No remarks provided.' }}</p>
+                            </div>
+
+                            @if($isSuperAdmin)
+                                <div style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
+                                    <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="action" value="reopen">
+                                        <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #eb3b5a, #d81b60); border: none; color: white; cursor: pointer; font-weight: 700; padding: 0.5rem 1.5rem;">
+                                            Reopen Project
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
+                        </div>
+                    @elseif($project->stage == 6)
+                        <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
+                            <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">COO Final Approval</h4>
+                            @if($isCoo || $isSuperAdmin)
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
+                                    @csrf
+                                    <input type="hidden" name="action" value="finalize_approval">
+                                    <div style="width: 100%; max-width: 500px;">
+                                        <label for="remarks" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Approval Remarks:</label>
+                                        <textarea name="remarks" id="remarks" rows="3" placeholder="Enter final approval remarks…" style="width: 100%; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical;" required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.6rem 1.8rem; border-radius: 6px;">
+                                        ✓ Finalize Project Approval & Complete
+                                    </button>
+                                </form>
+                            @else
+                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                    <i class="bx bx-time-five"></i> Pending COO Final Approval
+                                </div>
+                            @endif
+                        </div>
+                    @elseif($project->stage == 5)
+                        <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
+                            <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; text-transform: uppercase;">Promote to Stage 6</h4>
+                            @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                                    Once all expenses have been logged and the evaluation is complete, you can promote this project to Stage 6 (Completion Stage).
+                                </p>
+                                <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0;">
+                                    @csrf
+                                    <input type="hidden" name="action" value="promote_to_stage6">
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px;">
+                                        <i class="bx bx-right-arrow-alt"></i> Complete Stage 5 & Move to Stage 6
+                                    </button>
+                                </form>
+                            @else
+                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
+                                    <i class="bx bx-time-five"></i> Awaiting Project Manager or Engineer to complete Stage 5 and promote to Stage 6.
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+
+</div>
 
     </div>
 
@@ -1905,6 +2045,53 @@
         </a>
     </div>
 
+                                                    <!-- Guaranteed Native Form Submit & Page Refresh Script -->
+    <script>
+        (function() {
+            const currentProjectId = "{{ $project->id }}";
+            const scrollKey = 'scroll_pos_' + currentProjectId;
+
+            window.addEventListener('beforeunload', function() {
+                sessionStorage.setItem(scrollKey, window.scrollY || window.pageYOffset || 0);
+            });
+
+            window.addEventListener('load', function() {
+                const savedScroll = sessionStorage.getItem(scrollKey);
+                if (savedScroll !== null) {
+                    window.scrollTo({
+                        top: parseInt(savedScroll, 10),
+                        behavior: 'instant'
+                    });
+                    sessionStorage.removeItem(scrollKey);
+                }
+            });
+
+            document.addEventListener('submit', function(e) {
+                const form = e.target;
+                if (!form) return;
+
+                const action = form.action || '';
+                if (action.includes('upload_photo') || action.includes('delete_photo') || action.includes('/photos/') || action.includes('upload_file') || action.includes('save_completion_details') || action.includes('update_map_link')) {
+                    sessionStorage.setItem(scrollKey, window.scrollY || window.pageYOffset || 0);
+
+                    if ((action.includes('delete_photo') || action.includes('/delete-photo')) && !confirm('Delete this photo?')) {
+                        e.preventDefault();
+                        return;
+                    }
+
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        setTimeout(function() {
+                            if (submitBtn) {
+                                submitBtn.disabled = true;
+                                submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Processing...';
+                            }
+                        }, 50);
+                    }
+                }
+            }, true);
+        })();
+    </script>
     <!-- Switch Stage Script -->
     <script>
         @php

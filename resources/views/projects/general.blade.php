@@ -250,7 +250,7 @@
 </div>
 
 @if (session('success'))
-    <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+    <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
         {{ session('success') }}
     </div>
 @endif
@@ -301,6 +301,7 @@
                     <th class="col-agency">Agency Project No</th>
                     <th class="col-donor">Donor Name</th>
                     <th class="col-manager">Project Manager</th>
+                    <th class="col-engineer">Engineer</th>
                     <th class="col-budget" style="text-align: right;">Available Budget</th>
                     <th class="col-remarks">Remarks</th>
                     <th style="text-align: center; width: 180px;">Action</th>
@@ -318,6 +319,7 @@
                         <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
                         <td class="col-donor">{{ $project->donor ? $project->donor->name : 'N/A' }}</td>
                         <td class="col-manager">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</td>
+                        <td class="col-engineer">{{ $project->engineer ? $project->engineer->name : 'N/A' }}</td>
                         <td class="col-budget" style="text-align: right;">₹{{ number_format($project->available_budget, 2) }}</td>
                         <td class="col-remarks" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             {{ $project->remarks ?? 'N/A' }}
@@ -412,7 +414,7 @@
                 <div class="form-group-custom">
                     <label for="engineer_id">Engineer</label>
                     <select name="engineer_id" id="engineer_id">
-                        <option value="">Select an engineer</option>
+                        <option value="">Select an engineer (Optional)</option>
                         @foreach($engineers as $engineer)
                             <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
                         @endforeach
@@ -519,7 +521,7 @@
                 <div class="form-group-custom">
                     <label for="edit_engineer_id">Engineer</label>
                     <select name="engineer_id" id="edit_engineer_id">
-                        <option value="">Select an engineer</option>
+                        <option value="">Select an engineer (Optional)</option>
                         @foreach($engineers as $engineer)
                             <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
                         @endforeach

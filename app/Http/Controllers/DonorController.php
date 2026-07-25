@@ -30,7 +30,7 @@ class DonorController extends Controller
             'support_initiated_at' => ['nullable', 'string', 'max:255'], // YYYY-MM or Date string
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'], // Max 2MB
+            'image' => ['nullable', 'file', 'mimes:jpeg,png,jpg,gif,svg,webp,avif', 'max:5120'], // Max 5MB
         ]);
 
         if ($request->hasFile('image')) {
@@ -64,7 +64,7 @@ class DonorController extends Controller
             'support_initiated_at' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'image' => ['nullable', 'file', 'mimes:jpeg,png,jpg,gif,svg,webp,avif', 'max:5120'],
         ]);
 
         if ($request->hasFile('image')) {

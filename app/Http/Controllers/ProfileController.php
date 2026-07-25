@@ -27,7 +27,7 @@ class ProfileController extends Controller
             'designation' => ['nullable', 'string', 'max:255'],
             'mobile' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:1000'],
-            'photo' => ['nullable', 'image', 'max:5120'], // Max 5MB
+            'photo' => ['nullable', 'file', 'mimes:jpeg,png,jpg,gif,svg,webp,avif', 'max:10240'], // Max 10MB
         ]);
 
         $user->name = $request->input('name');
@@ -43,15 +43,14 @@ class ProfileController extends Controller
 
         if ($request->hasFile('photo')) {
             $photoFile = $request->file('photo');
-            $filename = 'profile_' . $user->id . '_' . time() . '.' . $photoFile->getClientOriginalExtension();
-            
-            // Ensure directory exists
-            $destinationPath = public_path('uploads/profiles');
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
+            $ext = strtolower($photoFile->getClientOriginalExtension());
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'])) {
+                $ext = 'jpg';
             }
+            $filename = 'profile_' . $user->id . '_' . time() . '.' . $ext;
+            $targetPath = public_path('uploads/profiles/' . $filename);
             
-            $photoFile->move($destinationPath, $filename);
+            $this->compressAndSaveImage($photoFile, $targetPath, 2 * 1024 * 1024);
 
             // Delete old photo if exists
             if ($user->profile && $user->profile->photo) {
@@ -150,5 +149,100 @@ class ProfileController extends Controller
         }
 
         return redirect()->back()->with('success', $msg);
+    }
+
+    /**
+     * Compress and save uploaded image if size exceeds 2 MB (or has large dimensions).
+     */
+    private function compressAndSaveImage($file, $destinationPath, $maxSizeBytes = 2097152)
+    {
+        $tempPath = $file->getRealPath();
+        $fileSize = filesize($tempPath);
+
+        $dir = dirname($destinationPath);
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $imageInfo = @getimagesize($tempPath);
+        if (!$imageInfo) {
+            return $file->move($dir, basename($destinationPath));
+        }
+
+        $mime = $imageInfo['mime'] ?? '';
+        $width = $imageInfo[0] ?? 0;
+        $height = $imageInfo[1] ?? 0;
+
+        if ($fileSize <= $maxSizeBytes && $width <= 2000 && $height <= 2000) {
+            return $file->move($dir, basename($destinationPath));
+        }
+
+        $srcImage = null;
+        switch ($mime) {
+            case 'image/jpeg':
+                $srcImage = @imagecreatefromjpeg($tempPath);
+                break;
+            case 'image/png':
+                $srcImage = @imagecreatefrompng($tempPath);
+                break;
+            case 'image/webp':
+                $srcImage = @imagecreatefromwebp($tempPath);
+                break;
+            case 'image/avif':
+                $srcImage = function_exists('imagecreatefromavif') ? @imagecreatefromavif($tempPath) : null;
+                break;
+            case 'image/gif':
+                $srcImage = @imagecreatefromgif($tempPath);
+                break;
+        }
+
+        if (!$srcImage) {
+            return $file->move($dir, basename($destinationPath));
+        }
+
+        $maxWidth = 1920;
+        $maxHeight = 1920;
+        $newWidth = $width;
+        $newHeight = $height;
+
+        if ($newWidth > $maxWidth || $newHeight > $maxHeight) {
+            $ratio = min($maxWidth / $newWidth, $maxHeight / $newHeight);
+            $newWidth = (int)round($newWidth * $ratio);
+            $newHeight = (int)round($newHeight * $ratio);
+        }
+
+        $destImage = imagecreatetruecolor($newWidth, $newHeight);
+
+        if ($mime === 'image/png' || $mime === 'image/webp') {
+            imagealphablending($destImage, false);
+            imagesavealpha($destImage, true);
+            $transparent = imagecolorallocatealpha($destImage, 255, 255, 255, 127);
+            imagefilledrectangle($destImage, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        imagecopyresampled($destImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        if ($mime === 'image/png') {
+            @imagepng($destImage, $destinationPath, 6);
+        } elseif ($mime === 'image/webp') {
+            @imagewebp($destImage, $destinationPath, 80);
+        } elseif ($mime === 'image/avif' && function_exists('imageavif')) {
+            @imageavif($destImage, $destinationPath, 80);
+        } else {
+            @imagejpeg($destImage, $destinationPath, 80);
+        }
+
+        imagedestroy($srcImage);
+        imagedestroy($destImage);
+
+        if (file_exists($destinationPath) && filesize($destinationPath) > $maxSizeBytes) {
+            $secondSrc = @imagecreatefromjpeg($destinationPath);
+            if ($secondSrc) {
+                @imagejpeg($secondSrc, $destinationPath, 60);
+                imagedestroy($secondSrc);
+            }
+        }
+
+        return true;
     }
 }

@@ -14,7 +14,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -324,62 +324,9 @@
                         </div>
                     </div>
 
+                    <!-- Address & Contact Details -->
                     <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="address">Current Mailing Address *</label>
-                        <textarea class="form-control-dark" id="address" name="meta[address]" style="height: 50px;" required>{{ old('meta.address') }}</textarea>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="ward">Ward *</label>
-                            <input type="text" class="form-control-dark" id="ward" name="meta[ward]" value="{{ old('meta.ward') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="post">POST *</label>
-                            <input type="text" class="form-control-dark" id="post" name="meta[post]" value="{{ old('meta.post') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="village">Village *</label>
-                            <input type="text" class="form-control-dark" id="village" name="meta[village]" value="{{ old('meta.village') }}" required>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="panchayat_municipality_corporation">Panchayat/Municipality/Corporation *</label>
-                        <input type="text" class="form-control-dark" id="panchayat_municipality_corporation" name="meta[panchayat_municipality_corporation]" value="{{ old('meta.panchayat_municipality_corporation') }}" required>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="block">Block *</label>
-                            <input type="text" class="form-control-dark" id="block" name="meta[block]" value="{{ old('meta.block') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="district">District *</label>
-                            <input type="text" class="form-control-dark" id="district" name="meta[district]" value="{{ old('meta.district') }}" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="state">State *</label>
-                            <input type="text" class="form-control-dark" id="state" name="meta[state]" value="{{ old('meta.state') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="pin">Pin Code *</label>
-                            <input type="text" class="form-control-dark" id="pin" name="meta[pin]" value="{{ old('meta.pin') }}" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="contact_number_1">Contact Number 1 *</label>
-                            <input type="text" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="contact_number_2">Contact Number 2 *</label>
-                            <input type="text" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}" required>
-                        </div>
+                        @include('applications.address_form_fields', ['idPrefix' => '', 'app' => null])
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: center;">
@@ -566,62 +513,9 @@
                         </div>
                     </div>
 
+                    <!-- Address & Contact Details -->
                     <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="edit_address">Current Mailing Address *</label>
-                        <textarea class="form-control-dark" id="edit_address" name="meta[address]" style="height: 50px;" required></textarea>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_ward">Ward *</label>
-                            <input type="text" class="form-control-dark" id="edit_ward" name="meta[ward]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_post">POST *</label>
-                            <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_village">Village *</label>
-                            <input type="text" class="form-control-dark" id="edit_village" name="meta[village]" required>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="edit_panchayat_municipality_corporation">Panchayat/Municipality/Corporation *</label>
-                        <input type="text" class="form-control-dark" id="edit_panchayat_municipality_corporation" name="meta[panchayat_municipality_corporation]" required>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_block">Block *</label>
-                            <input type="text" class="form-control-dark" id="edit_block" name="meta[block]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_district">District *</label>
-                            <input type="text" class="form-control-dark" id="edit_district" name="meta[district]" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_state">State *</label>
-                            <input type="text" class="form-control-dark" id="edit_state" name="meta[state]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_pin">Pin Code *</label>
-                            <input type="text" class="form-control-dark" id="edit_pin" name="meta[pin]" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_contact_number_1">Contact Number 1 *</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_contact_number_2">Contact Number 2 *</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]" required>
-                        </div>
+                        @include('applications.address_form_fields', ['idPrefix' => 'edit_', 'app' => null])
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: center;">
@@ -767,6 +661,67 @@
             if (unitInput) {
                 unitInput.required = isGroup;
             }
+
+            // Target fields: Age, Sex of Applicant, Status of Applicant, Education Level, Average Monthly Income, Monthly Income
+            const prefix = mode === 'add' ? '' : 'edit_';
+
+            const ageInput = document.getElementById(prefix + 'age');
+            const statusSelect = document.getElementById(prefix + 'status_of_applicant');
+            const eduInput = document.getElementById(prefix + 'education');
+            const avgIncomeInput = document.getElementById(prefix + 'average_monthly_income');
+            const monthIncomeInput = document.getElementById(prefix + 'monthly_income_detail');
+
+            let sexRadios = [];
+            if (mode === 'add') {
+                sexRadios = Array.from(document.querySelectorAll('input[name="meta[sex]"]'));
+            } else {
+                const male = document.getElementById('edit_sex_male');
+                const female = document.getElementById('edit_sex_female');
+                if (male) sexRadios.push(male);
+                if (female) sexRadios.push(female);
+            }
+
+            const textInputs = [ageInput, eduInput, avgIncomeInput, monthIncomeInput];
+            textInputs.forEach(input => {
+                if (input) {
+                    input.readOnly = isGroup;
+                    input.required = !isGroup;
+                    if (isGroup) {
+                        input.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                        input.style.cursor = 'not-allowed';
+                        input.style.opacity = '0.6';
+                    } else {
+                        input.style.backgroundColor = '';
+                        input.style.cursor = '';
+                        input.style.opacity = '1';
+                    }
+                }
+            });
+
+            if (statusSelect) {
+                statusSelect.disabled = isGroup;
+                statusSelect.required = !isGroup;
+                if (isGroup) {
+                    statusSelect.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                    statusSelect.style.cursor = 'not-allowed';
+                    statusSelect.style.opacity = '0.6';
+                } else {
+                    statusSelect.style.backgroundColor = '';
+                    statusSelect.style.cursor = '';
+                    statusSelect.style.opacity = '1';
+                }
+            }
+
+            sexRadios.forEach(radio => {
+                if (radio) {
+                    radio.disabled = isGroup;
+                    radio.required = !isGroup;
+                    if (radio.parentElement) {
+                        radio.parentElement.style.cursor = isGroup ? 'not-allowed' : 'pointer';
+                        radio.parentElement.style.opacity = isGroup ? '0.6' : '1';
+                    }
+                }
+            });
         }
 
         // Add Application Modal Toggle
@@ -802,17 +757,28 @@
             toggleGroupFields('edit');
 
             document.getElementById('edit_age').value = meta.age || '';
-            document.getElementById('edit_address').value = meta.address || '';
-            document.getElementById('edit_ward').value = meta.ward || '';
-            document.getElementById('edit_post').value = meta.post || '';
-            document.getElementById('edit_village').value = meta.village || '';
-            document.getElementById('edit_panchayat_municipality_corporation').value = meta.panchayat_municipality_corporation || '';
-            document.getElementById('edit_block').value = meta.block || '';
-            document.getElementById('edit_district').value = meta.district || '';
-            document.getElementById('edit_state').value = meta.state || '';
-            document.getElementById('edit_pin').value = meta.pin || '';
-            document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
-            document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
+            const addr = appItem.address || {};
+            const houseName = meta.house_name || addr.house_name || appItem.house_name || '';
+            const placeName = meta.place || addr.place || appItem.place || meta.address || '';
+            const villageName = meta.village || addr.village || appItem.village || '';
+            const postOffice = meta.post_office || meta.post || addr.post_office || appItem.post_office || '';
+            const panchayatName = meta.panchayat || addr.panchayat || appItem.panchayat || meta.panchayat_municipality_corporation || '';
+            const districtName = meta.district || addr.district || appItem.district || '';
+            const stateName = meta.state || addr.state || appItem.state || '';
+            const pinCode = meta.pin_code || meta.pincode || meta.pin || addr.pin_code || appItem.pin_code || '';
+            const mob1 = meta.mobile_1 || meta.mobile || meta.contact_number_1 || addr.contact_number_1 || addr.mobile_1 || appItem.mobile_1 || '';
+            const mob2 = meta.mobile_2 || meta.contact_number_2 || addr.contact_number_2 || addr.mobile_2 || appItem.mobile_2 || '';
+
+            if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = houseName; }
+            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = placeName; }
+            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = villageName; }
+            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = postOffice; }
+            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = panchayatName; }
+            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = districtName; }
+            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = stateName; }
+            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = pinCode; }
+            if (document.getElementById('edit_mobile_1')) { document.getElementById('edit_mobile_1').value = mob1; }
+            if (document.getElementById('edit_mobile_2')) { document.getElementById('edit_mobile_2').value = mob2; }
             
             // Radio mapping
             if (meta.sex === 'Male') {
@@ -891,6 +857,18 @@
                 statusActionsContainer.innerHTML = statusHtml;
             }
             const meta = appItem.meta || {};
+            const addr = appItem.address || {};
+            const houseName = meta.house_name || addr.house_name || appItem.house_name || '';
+            const placeName = meta.place || addr.place || appItem.place || meta.address || '';
+            const villageName = meta.village || addr.village || appItem.village || '';
+            const postOffice = meta.post_office || meta.post || addr.post_office || appItem.post_office || '';
+            const panchayatName = meta.panchayat || addr.panchayat || appItem.panchayat || meta.panchayat_municipality_corporation || '';
+            const districtName = meta.district || addr.district || appItem.district || '';
+            const stateName = meta.state || addr.state || appItem.state || '';
+            const pinCode = meta.pin_code || meta.pincode || meta.pin || addr.pin_code || appItem.pin_code || '';
+            const mob1 = meta.mobile_1 || meta.mobile || meta.contact_number_1 || addr.contact_number_1 || addr.mobile_1 || appItem.mobile_1 || '';
+            const mob2 = meta.mobile_2 || meta.contact_number_2 || addr.contact_number_2 || addr.mobile_2 || appItem.mobile_2 || '';
+
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
             const appTypeVal = meta.application_type || appItem.application_type || 'Individual';
             const orgNameVal = meta.organization_name || appItem.organization_name || '';
@@ -909,12 +887,11 @@
                             ` : ''}
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Applicant Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Age / Sex:</td><td>${formatVal(meta.age)} yrs / ${formatVal(meta.sex)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mailing Address:</td><td>${formatVal(meta.address)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Ward / Village / Post:</td><td>${formatVal(meta.ward)} / ${formatVal(meta.village)} / ${formatVal(meta.post)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayat/Mun/Corp:</td><td>${formatVal(meta.panchayat_municipality_corporation)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Block / District / State:</td><td>${formatVal(meta.block)} / ${formatVal(meta.district)} / ${formatVal(meta.state)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(meta.pin)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact 1 / 2:</td><td>${formatVal(meta.contact_number_1)} / ${formatVal(meta.contact_number_2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">House Name / Place:</td><td>${formatVal(houseName)} / ${formatVal(placeName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village / P.O.:</td><td>${formatVal(villageName)} / ${formatVal(postOffice)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath / District:</td><td>${formatVal(panchayatName)} / ${formatVal(districtName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State / Pin Code:</td><td>${formatVal(stateName)} / ${formatVal(pinCode)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile 1 / Mobile 2:</td><td>${formatVal(mob1)} / ${formatVal(mob2)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Status of Applicant:</td><td>${formatVal(meta.status_of_applicant)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Education Level:</td><td>${formatVal(meta.education)}</td></tr>
                         </table>
