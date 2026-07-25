@@ -893,8 +893,8 @@
             const statusActionsContainer = document.getElementById('modal_status_actions');
             if (statusActionsContainer) {
                 let statusHtml = '';
-                const approveUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/approve`;
-                const rejectUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/reject`;
+                const approveUrl = `{{ url('admin/applications') }}/{{ $categorySlug }}/${appItem.id}/approve`;
+                const rejectUrl = `{{ url('admin/applications') }}/{{ $categorySlug }}/${appItem.id}/reject`;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                 if (appItem.status === 'Pending') {
@@ -1221,7 +1221,7 @@
         @endif
         function openApproveModal(appId, clusterId = '', agencyNumber = '') {
             const form = document.getElementById('approveAppForm');
-            form.action = `/admin/applications/orphan-care/${appId}/approve`;
+            form.action = "{{ url('admin/applications/orphan-care') }}/" + appId + "/approve";
             
             document.getElementById('approve_cluster_id').value = clusterId || '';
             document.getElementById('approve_agency_number').value = agencyNumber || '';
@@ -1253,7 +1253,7 @@
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             try {
-                const response = await fetch(`/admin/applications/${appId}/update-cluster`, {
+                const response = await fetch("{{ url('admin/applications') }}/" + appId + "/update-cluster", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

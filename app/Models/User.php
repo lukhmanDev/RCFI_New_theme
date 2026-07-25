@@ -164,7 +164,13 @@ class User extends Authenticatable
 
     public function canApproveApplications(): bool
     {
-        return $this->isCoo() || $this->isSuperAdmin() || $this->isHod() || $this->isSocialAid();
+        $designationLower = strtolower($this->designation ?? '');
+        $isDesigCoo = ($designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
+        $isDesigHod = ($designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
+        $isDesigSocialAid = (str_contains($designationLower, 'social aid') || str_contains($designationLower, 'social_aid'));
+        $isDesigSuperAdmin = ($designationLower === 'super admin' || str_contains($designationLower, 'super_admin'));
+
+        return $this->isCoo() || $this->isSuperAdmin() || $this->isHod() || $this->isSocialAid() || $isDesigCoo || $isDesigHod || $isDesigSocialAid || $isDesigSuperAdmin;
     }
 
     public function profile()

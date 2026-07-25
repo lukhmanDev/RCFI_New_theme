@@ -36,98 +36,117 @@
     </div>
 
     <!-- Stats Grid -->
-    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
         <!-- Card 1: Registered Users -->
-        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 145px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02), 0 2px 4px -1px rgba(15, 23, 42, 0.01); transition: transform 0.2s, box-shadow 0.2s;">
+        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); transition: transform 0.2s;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <span style="color: #64748b; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Total Registered Users</span>
-                    <h2 style="color: #1e293b; font-size: 1.85rem; font-weight: 700; margin-top: 0.4rem; margin-bottom: 0;">{{ $userCount }}</h2>
+                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Registered Users</span>
+                    <h2 style="color: #1e293b; font-size: 1.75rem; font-weight: 700; margin-top: 0.3rem; margin-bottom: 0;">{{ $userCount }}</h2>
                 </div>
-                <div style="background: #eff6ff; color: #3b82f6; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
+                <div style="background: #eff6ff; color: #3b82f6; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
                     <i class="bx bx-group"></i>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; border-top: 1px dashed #f1f5f9; padding-top: 0.75rem;">
-                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.82rem; font-weight: 600; color: #10b981;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; border-top: 1px dashed #f1f5f9; padding-top: 0.65rem;">
+                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #10b981;">
                     <span>↑ 100%</span>
-                    <span style="color: #94a3b8; font-weight: 500;">from last month</span>
                 </div>
-                <div style="width: 70px; height: 25px;">
-                    <svg width="70" height="25" viewBox="0 0 70 25">
-                        <path d="M0,20 Q10,18 20,10 T40,15 T60,5 T70,2" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+                <div style="width: 60px; height: 20px;">
+                    <svg width="60" height="20" viewBox="0 0 60 20">
+                        <path d="M0,18 Q10,16 20,8 T40,12 T60,2" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
             </div>
         </div>
         
-        <!-- Card 2: Registered Partners -->
-        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 145px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02), 0 2px 4px -1px rgba(15, 23, 42, 0.01); transition: transform 0.2s, box-shadow 0.2s;">
+        <!-- Card 2: Total Applications -->
+        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); transition: transform 0.2s;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <span style="color: #64748b; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Registered Partners</span>
-                    <h2 style="color: #1e293b; font-size: 1.85rem; font-weight: 700; margin-top: 0.4rem; margin-bottom: 0;">{{ $donorsCount }}</h2>
+                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Total Applications</span>
+                    <h2 style="color: #1e293b; font-size: 1.75rem; font-weight: 700; margin-top: 0.3rem; margin-bottom: 0;">{{ $applicationsCount }}</h2>
                 </div>
-                <div style="background: #f5f3ff; color: #8b5cf6; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
-                    <i class="bx bx-buildings"></i>
+                <div style="background: #eef2ff; color: #6366f1; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                    <i class="bx bx-file"></i>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; border-top: 1px dashed #f1f5f9; padding-top: 0.75rem;">
-                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.82rem; font-weight: 600; color: #64748b;">
-                    <span>— 0%</span>
-                    <span style="color: #94a3b8; font-weight: 500;">from last month</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; border-top: 1px dashed #f1f5f9; padding-top: 0.65rem;">
+                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #6366f1;">
+                    <span>All Time</span>
                 </div>
-                <div style="width: 70px; height: 25px;">
-                    <svg width="70" height="25" viewBox="0 0 70 25">
-                        <path d="M0,15 L10,15 L20,15 L30,15 L40,15 L50,15 L60,15 L70,15" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"/>
+                <div style="width: 60px; height: 20px;">
+                    <svg width="60" height="20" viewBox="0 0 60 20">
+                        <path d="M0,18 Q10,14 20,10 T40,12 T60,2" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
             </div>
         </div>
 
-        <!-- Card 3: Total Applications -->
-        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 145px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02), 0 2px 4px -1px rgba(15, 23, 42, 0.01); transition: transform 0.2s, box-shadow 0.2s;">
+        <!-- Card 3: Today Applications -->
+        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); transition: transform 0.2s;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <span style="color: #64748b; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Total Applications</span>
-                    <h2 style="color: #1e293b; font-size: 1.85rem; font-weight: 700; margin-top: 0.4rem; margin-bottom: 0;">{{ $applicationsCount }}</h2>
+                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Today Applications</span>
+                    <h2 style="color: #0ea5e9; font-size: 1.75rem; font-weight: 700; margin-top: 0.3rem; margin-bottom: 0;">{{ $todayCount }}</h2>
                 </div>
-                <div style="background: #ecfdf5; color: #10b981; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
-                    <i class="bx bx-file"></i>
+                <div style="background: #e0f2fe; color: #0ea5e9; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                    <i class="bx bx-calendar-event"></i>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; border-top: 1px dashed #f1f5f9; padding-top: 0.75rem;">
-                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.82rem; font-weight: 600; color: #10b981;">
-                    <span>↑ 28.6%</span>
-                    <span style="color: #94a3b8; font-weight: 500;">from last month</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; border-top: 1px dashed #f1f5f9; padding-top: 0.65rem;">
+                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #0ea5e9;">
+                    <span>Today</span>
                 </div>
-                <div style="width: 70px; height: 25px;">
-                    <svg width="70" height="25" viewBox="0 0 70 25">
-                        <path d="M0,22 Q10,20 20,15 T40,18 T60,8 T70,5" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+                <div style="width: 60px; height: 20px;">
+                    <svg width="60" height="20" viewBox="0 0 60 20">
+                        <path d="M0,15 Q15,8 30,14 T60,4" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
             </div>
         </div>
 
         <!-- Card 4: Approved Applications -->
-        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 145px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02), 0 2px 4px -1px rgba(15, 23, 42, 0.01); transition: transform 0.2s, box-shadow 0.2s;">
+        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); transition: transform 0.2s;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <span style="color: #64748b; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Approved Applications</span>
-                    <h2 style="color: #1e293b; font-size: 1.85rem; font-weight: 700; margin-top: 0.4rem; margin-bottom: 0;">{{ $approvedCount }}</h2>
+                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Approved</span>
+                    <h2 style="color: #10b981; font-size: 1.75rem; font-weight: 700; margin-top: 0.3rem; margin-bottom: 0;">{{ $approvedCount }}</h2>
                 </div>
-                <div style="background: #fff7ed; color: #f97316; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
+                <div style="background: #ecfdf5; color: #10b981; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
                     <i class="bx bx-check-circle"></i>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; border-top: 1px dashed #f1f5f9; padding-top: 0.75rem;">
-                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.82rem; font-weight: 600; color: #10b981;">
-                    <span>↑ 20%</span>
-                    <span style="color: #94a3b8; font-weight: 500;">from last month</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; border-top: 1px dashed #f1f5f9; padding-top: 0.65rem;">
+                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #10b981;">
+                    <span>Verified</span>
                 </div>
-                <div style="width: 70px; height: 25px;">
-                    <svg width="70" height="25" viewBox="0 0 70 25">
-                        <path d="M0,20 Q15,10 30,12 T60,5 T70,2" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+                <div style="width: 60px; height: 20px;">
+                    <svg width="60" height="20" viewBox="0 0 60 20">
+                        <path d="M0,18 Q15,10 30,12 T60,2" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 5: Rejected Applications -->
+        <div class="stat-card-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); transition: transform 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Rejected</span>
+                    <h2 style="color: #ef4444; font-size: 1.75rem; font-weight: 700; margin-top: 0.3rem; margin-bottom: 0;">{{ $rejectedCount }}</h2>
+                </div>
+                <div style="background: #fef2f2; color: #ef4444; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                    <i class="bx bx-x-circle"></i>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; border-top: 1px dashed #f1f5f9; padding-top: 0.65rem;">
+                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #ef4444;">
+                    <span>Closed</span>
+                </div>
+                <div style="width: 60px; height: 20px;">
+                    <svg width="60" height="20" viewBox="0 0 60 20">
+                        <path d="M0,10 L20,12 L40,15 L60,18" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
             </div>
@@ -135,63 +154,88 @@
     </div>
 
     <!-- Charts Section -->
-    <div class="dashboard-grid two-cols" style="display: grid; gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="dashboard-grid two-cols" style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
         <!-- Left Panel: Applications Overview -->
-        <div class="panel-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h3 style="color: #1e293b; font-size: 1rem; font-weight: 700; margin: 0;">Applications Overview</h3>
-                <select style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; color: #475569; padding: 0.4rem 0.8rem; font-size: 0.82rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer;">
-                    <option>This Month</option>
-                    <option>Last Month</option>
-                    <option>This Year</option>
-                </select>
+        <div class="panel-premium" style="background: #ffffff; border: 1px solid #eaecf0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <h3 style="color: #101828; font-size: 1.1rem; font-weight: 700; margin: 0; letter-spacing: -0.01em;">Applications Overview</h3>
+                <div style="position: relative;">
+                    <select id="overviewFilterSelect" onchange="updateOverviewChartPeriod(this.value)" style="appearance: none; background: #ffffff; border: 1px solid #d0d5dd; border-radius: 8px; padding: 0.45rem 2.25rem 0.45rem 0.85rem; font-size: 0.85rem; font-weight: 600; color: #344054; cursor: pointer; outline: none; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);">
+                        <option value="this_month" selected>This Month</option>
+                        <option value="last_7_days">Last 7 Days</option>
+                        <option value="last_30_days">Last 30 Days</option>
+                        <option value="this_year">This Year</option>
+                    </select>
+                    <i class="bx bx-chevron-down" style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: #667085; font-size: 1.1rem;"></i>
+                </div>
             </div>
-            <div style="height: 300px; position: relative;">
+            <div style="height: 280px; position: relative; width: 100%;">
                 <canvas id="applicationsOverviewChart"></canvas>
             </div>
         </div>
 
         <!-- Right Panel: Applications by Status -->
-        <div class="panel-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); display: flex; flex-direction: column;">
-            <h3 style="color: #1e293b; font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem;">Applications by Status</h3>
-            <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
-                <div style="position: relative; width: 140px; height: 140px; flex-shrink: 0; margin: 0 auto;">
+        <div class="panel-premium" style="background: #ffffff; border: 1px solid #eaecf0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); display: flex; flex-direction: column;">
+            <h3 style="color: #101828; font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 1.25rem; letter-spacing: -0.01em;">Applications by Status</h3>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex: 1;">
+                <!-- Left: Donut Chart with Center Text -->
+                <div style="position: relative; width: 160px; height: 160px; flex-shrink: 0;">
                     <canvas id="applicationsStatusChart"></canvas>
                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
-                        <span id="doughnut-center-total" style="font-size: 1.6rem; font-weight: 700; color: #1e293b; display: block; line-height: 1;">{{ $applicationsCount }}</span>
-                        <span style="font-size: 0.72rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;">Total</span>
+                        <span style="font-size: 1.85rem; font-weight: 800; color: #101828; display: block; line-height: 1;">{{ $applicationsCount }}</span>
+                        <span style="font-size: 0.78rem; color: #667085; font-weight: 600; margin-top: 2px; display: block;">Total</span>
                     </div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 0.75rem; flex: 1;">
-                    <!-- Legend Item: Approved -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; color: #475569; font-weight: 500;">
-                            <span style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
-                            <span>Approved</span>
+
+                <!-- Right: Status Breakdown Legend List -->
+                @php
+                    $totalApps = max(1, $applicationsCount);
+                    $approvedPct = round(($approvedCount / $totalApps) * 100, 1);
+                    $pendingPct = round(($pendingCount / $totalApps) * 100, 1);
+                    $underReviewPct = round(($underReviewCount / $totalApps) * 100, 1);
+                    $rejectedPct = round(($rejectedCount / $totalApps) * 100, 1);
+                @endphp
+                <div style="display: flex; flex-direction: column; gap: 0.85rem; flex-grow: 1; padding-left: 0.5rem;">
+                    <!-- Approved -->
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="width: 12px; height: 12px; background: #22c55e; border-radius: 4px; display: inline-block;"></span>
+                            <span style="font-size: 0.88rem; font-weight: 600; color: #344054;">Approved</span>
                         </div>
-                        <div style="color: #1e293b; font-weight: 700;">
-                            {{ $approvedCount }} <span style="color: #94a3b8; font-weight: 500; font-size: 0.78rem;">({{ $applicationsCount > 0 ? round(($approvedCount / $applicationsCount) * 100, 1) : 0 }}%)</span>
-                        </div>
+                        <span style="font-size: 0.88rem; font-weight: 700; color: #344054;">
+                            {{ $approvedCount }} <span style="font-size: 0.82rem; font-weight: 500; color: #667085;">({{ $approvedPct }}%)</span>
+                        </span>
                     </div>
-                    <!-- Legend Item: Pending -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; color: #475569; font-weight: 500;">
-                            <span style="width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; display: inline-block;"></span>
-                            <span>Pending</span>
+                    <!-- Pending -->
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="width: 12px; height: 12px; background: #3b82f6; border-radius: 4px; display: inline-block;"></span>
+                            <span style="font-size: 0.88rem; font-weight: 600; color: #344054;">Pending</span>
                         </div>
-                        <div style="color: #1e293b; font-weight: 700;">
-                            {{ $pendingCount }} <span style="color: #94a3b8; font-weight: 500; font-size: 0.78rem;">({{ $applicationsCount > 0 ? round(($pendingCount / $applicationsCount) * 100, 1) : 0 }}%)</span>
-                        </div>
+                        <span style="font-size: 0.88rem; font-weight: 700; color: #344054;">
+                            {{ $pendingCount }} <span style="font-size: 0.82rem; font-weight: 500; color: #667085;">({{ $pendingPct }}%)</span>
+                        </span>
                     </div>
-                    <!-- Legend Item: Rejected -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; color: #475569; font-weight: 500;">
-                            <span style="width: 10px; height: 10px; background: #94a3b8; border-radius: 50%; display: inline-block;"></span>
-                            <span>Rejected</span>
+                    <!-- Under Review -->
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="width: 12px; height: 12px; background: #f97316; border-radius: 4px; display: inline-block;"></span>
+                            <span style="font-size: 0.88rem; font-weight: 600; color: #344054;">Under Review</span>
                         </div>
-                        <div style="color: #1e293b; font-weight: 700;">
-                            {{ $rejectedCount }} <span style="color: #94a3b8; font-weight: 500; font-size: 0.78rem;">({{ $applicationsCount > 0 ? round(($rejectedCount / $applicationsCount) * 100, 1) : 0 }}%)</span>
+                        <span style="font-size: 0.88rem; font-weight: 700; color: #344054;">
+                            {{ $underReviewCount }} <span style="font-size: 0.82rem; font-weight: 500; color: #667085;">({{ $underReviewPct }}%)</span>
+                        </span>
+                    </div>
+                    <!-- Rejected -->
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="width: 12px; height: 12px; background: #94a3b8; border-radius: 4px; display: inline-block;"></span>
+                            <span style="font-size: 0.88rem; font-weight: 600; color: #344054;">Rejected</span>
                         </div>
+                        <span style="font-size: 0.88rem; font-weight: 700; color: #344054;">
+                            {{ $rejectedCount }} <span style="font-size: 0.82rem; font-weight: 500; color: #667085;">({{ $rejectedPct }}%)</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -199,99 +243,284 @@
     </div>
 
     <!-- Bottom Row Section -->
-    <div class="dashboard-grid two-cols" style="display: grid; gap: 1.5rem;">
+    <div class="dashboard-grid two-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
         <!-- Left Panel: Recent Applications -->
         <div class="panel-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); display: flex; flex-direction: column; justify-content: space-between;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h3 style="color: #1e293b; font-size: 1rem; font-weight: 700; margin: 0;">Recent Applications</h3>
-                <a href="{{ route('applications.index') }}" style="color: #4f46e5; text-decoration: none; font-size: 0.85rem; font-weight: 700; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.4rem 0.8rem; background: transparent; transition: background 0.15s ease;">View All</a>
+                <h3 style="color: #1e293b; font-size: 1rem; font-weight: 700; margin: 0;">Recent Submissions</h3>
+                <a href="{{ route('applications.index') }}" style="color: #6366f1; font-size: 0.85rem; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+                    View All <i class="bx bx-right-arrow-alt" style="font-size: 1.1rem;"></i>
+                </a>
             </div>
-            
+
             <div style="display: flex; flex-direction: column; gap: 1rem;">
-                @forelse($recentApplications as $app)
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9;">
-                        <div style="display: flex; align-items: center; gap: 0.85rem; min-width: 0;">
-                            @php
-                                $badgeBg = '#eff6ff'; $badgeColor = '#3b82f6';
-                                if ($app['status'] === 'Approved') { $badgeBg = '#ecfdf5'; $badgeColor = '#10b981'; }
-                                elseif ($app['status'] === 'Rejected') { $badgeBg = '#fef2f2'; $badgeColor = '#ef4444'; }
-                            @endphp
-                            <div style="background: {{ $badgeBg }}; color: {{ $badgeColor }}; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
-                                <i class="bx bx-file"></i>
+                @forelse($recentApplications as $recent)
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; transition: background 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 0.85rem;">
+                            <div style="width: 40px; height: 40px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; color: #6366f1; font-size: 1.1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <i class="bx bx-file-blank"></i>
                             </div>
-                            <div style="min-width: 0;">
-                                <h4 style="color: #1e293b; font-size: 0.88rem; font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $app['category_name'] }} Application #RCFI-2025-00{{ $app['id'] }}</h4>
-                                <p style="color: #64748b; font-size: 0.78rem; margin: 0.15rem 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $app['applicant_name'] }}</p>
+                            <div>
+                                <h4 style="color: #1e293b; font-size: 0.9rem; font-weight: 600; margin: 0; line-height: 1.2;">{{ $recent['applicant_name'] }}</h4>
+                                <span style="color: #64748b; font-size: 0.78rem; font-weight: 500;">{{ $recent['category_name'] }} • {{ $recent['created_at'] ? $recent['created_at']->diffForHumans() : 'Recently' }}</span>
                             </div>
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; flex-shrink: 0;">
-                            <span style="display: inline-block; padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; background: {{ $badgeBg }}; color: {{ $badgeColor }};">
-                                {{ $app['status'] }}
-                            </span>
-                            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">
-                                {{ $app['created_at'] ? $app['created_at']->format('M d, Y h:i A') : 'N/A' }}
-                            </span>
+                        <div>
+                            @if($recent['status'] === 'Approved')
+                                <span style="background: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <i class="bx bx-check-circle"></i> Approved
+                                </span>
+                            @elseif($recent['status'] === 'Rejected')
+                                <span style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <i class="bx bx-x-circle"></i> Rejected
+                                </span>
+                            @else
+                                <span style="background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                    <i class="bx bx-time-five"></i> Pending
+                                </span>
+                            @endif
                         </div>
                     </div>
                 @empty
-                    <div style="text-align: center; padding: 2rem 0; color: #94a3b8; font-size: 0.88rem; font-weight: 500;">
-                        No applications found in database.
+                    <div style="text-align: center; padding: 2rem 1rem; color: #94a3b8; font-size: 0.88rem;">
+                        No applications submitted yet.
                     </div>
                 @endforelse
             </div>
         </div>
 
         <!-- Right Panel: Quick Actions -->
-        <div class="panel-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); display: flex; flex-direction: column;">
-            <h3 style="color: #1e293b; font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem;">Quick Actions</h3>
-            
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; flex: 1;">
-                <!-- Action 1: Add New Application -->
-                <a href="{{ route('applications.index') }}" class="quick-action-card" style="display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; text-decoration: none; color: inherit; background: #ffffff; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;">
-                    <div style="background: #f5f3ff; color: #8b5cf6; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                        <i class="bx bx-file-blank"></i>
-                    </div>
-                    <div style="margin-top: 1.25rem;">
-                        <h4 style="color: #1e293b; font-size: 0.84rem; font-weight: 700; margin: 0;">Add New Application</h4>
-                        <p style="color: #94a3b8; font-size: 0.72rem; margin: 0.15rem 0 0; font-weight: 500;">Create a new application</p>
-                    </div>
-                </a>
+        <div class="panel-premium" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.02); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h3 style="color: #1e293b; font-size: 1rem; font-weight: 700; margin-top: 0; margin-bottom: 1.25rem;">Quick Management</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                    <a href="{{ route('applications.index') }}" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;" onmouseover="this.style.borderColor='#6366f1'; this.style.background='#eef2ff';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';">
+                        <div style="width: 42px; height: 42px; border-radius: 10px; background: #e0e7ff; color: #4338ca; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                            <i class="bx bx-list-ul"></i>
+                        </div>
+                        <span style="color: #1e293b; font-size: 0.85rem; font-weight: 600; text-align: center;">All Applications</span>
+                    </a>
 
-                <!-- Action 2: Add New Staff -->
-                <a href="{{ route('users') }}" class="quick-action-card" style="display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; text-decoration: none; color: inherit; background: #ffffff; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;">
-                    <div style="background: #eff6ff; color: #3b82f6; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                        <i class="bx bx-user-plus"></i>
-                    </div>
-                    <div style="margin-top: 1.25rem;">
-                        <h4 style="color: #1e293b; font-size: 0.84rem; font-weight: 700; margin: 0;">Add New Staff</h4>
-                        <p style="color: #94a3b8; font-size: 0.72rem; margin: 0.15rem 0 0; font-weight: 500;">Register a new staff member</p>
-                    </div>
-                </a>
+                    <a href="{{ route('applications.approved.index') }}" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;" onmouseover="this.style.borderColor='#10b981'; this.style.background='#ecfdf5';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';">
+                        <div style="width: 42px; height: 42px; border-radius: 10px; background: #d1fae5; color: #047857; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                            <i class="bx bx-check-shield"></i>
+                        </div>
+                        <span style="color: #1e293b; font-size: 0.85rem; font-weight: 600; text-align: center;">Approved Lists</span>
+                    </a>
 
-                <!-- Action 3: Add New Project -->
-                <a href="{{ route('projects.index') }}" class="quick-action-card" style="display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; text-decoration: none; color: inherit; background: #ffffff; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;">
-                    <div style="background: #ecfdf5; color: #10b981; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                        <i class="bx bx-briefcase-alt-2"></i>
-                    </div>
-                    <div style="margin-top: 1.25rem;">
-                        <h4 style="color: #1e293b; font-size: 0.84rem; font-weight: 700; margin: 0;">Add New Project</h4>
-                        <p style="color: #94a3b8; font-size: 0.72rem; margin: 0.15rem 0 0; font-weight: 500;">Create a new project</p>
-                    </div>
-                </a>
+                    <a href="{{ route('users') }}" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'; this.style.background='#eff6ff';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';">
+                        <div style="width: 42px; height: 42px; border-radius: 10px; background: #dbeafe; color: #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                            <i class="bx bx-user-check"></i>
+                        </div>
+                        <span style="color: #1e293b; font-size: 0.85rem; font-weight: 600; text-align: center;">User Roles</span>
+                    </a>
 
-                <!-- Action 4: Generate Report -->
-                <a href="{{ route('applications.index') }}" class="quick-action-card" style="display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; text-decoration: none; color: inherit; background: #ffffff; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;">
-                    <div style="background: #fff7ed; color: #f97316; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                        <i class="bx bx-bar-chart-alt-2"></i>
-                    </div>
-                    <div style="margin-top: 1.25rem;">
-                        <h4 style="color: #1e293b; font-size: 0.84rem; font-weight: 700; margin: 0;">Generate Report</h4>
-                        <p style="color: #94a3b8; font-size: 0.72rem; margin: 0.15rem 0 0; font-weight: 500;">Download reports</p>
-                    </div>
-                </a>
+                    <a href="{{ route('donors.index') }}" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;" onmouseover="this.style.borderColor='#8b5cf6'; this.style.background='#f5f3ff';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';">
+                        <div style="width: 42px; height: 42px; border-radius: 10px; background: #ede9fe; color: #6d28d9; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                            <i class="bx bx-building"></i>
+                        </div>
+                        <span style="color: #1e293b; font-size: 0.85rem; font-weight: 600; text-align: center;">Partners</span>
+                    </a>
+                </div>
+            </div>
+
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; color: #64748b;">
+                <span>System Status</span>
+                <span style="display: inline-flex; align-items: center; gap: 0.35rem; color: #10b981; font-weight: 600;">
+                    <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block;"></span> Active &amp; Synced
+                </span>
             </div>
         </div>
     </div>
+
+</div>
+
+<!-- Load Chart.js with JS fallback execution -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    if (typeof Chart === 'undefined') {
+        document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"><\/script>');
+    }
+</script>
+
+<script>
+    const chartPeriodData = {!! json_encode($chartPeriodData ?? [
+        'this_month' => ['labels' => ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31'], 'data' => [3, 11, 13, 10, 13, 20]],
+        'last_7_days' => ['labels' => ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'], 'data' => [4, 8, 12, 15, 10, 18, 22]],
+        'last_30_days' => ['labels' => ['W1', 'W2', 'W3', 'W4', 'W5'], 'data' => [5, 12, 18, 25, 30]],
+        'this_year' => ['labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], 'data' => [10, 25, 40, 65, 80, 100]],
+    ]) !!};
+
+    let overviewChartInstance = null;
+
+    function updateOverviewChartPeriod(periodKey) {
+        if (!overviewChartInstance || !chartPeriodData[periodKey]) return;
+        const period = chartPeriodData[periodKey];
+        overviewChartInstance.data.labels = period.labels;
+        overviewChartInstance.data.datasets[0].data = period.data;
+        overviewChartInstance.update('active');
+    }
+
+    function renderAdminDashboardCharts() {
+        if (typeof Chart === 'undefined') {
+            setTimeout(renderAdminDashboardCharts, 100);
+            return;
+        }
+
+        const fontFamily = getComputedStyle(document.body).fontFamily || 'Inter, sans-serif';
+        Chart.defaults.font.family = fontFamily;
+        Chart.defaults.color = '#64748b';
+
+        // 1. Smooth Purple Area Line Chart: Applications Overview
+        const overviewCanvas = document.getElementById('applicationsOverviewChart');
+        if (overviewCanvas) {
+            const ctx = overviewCanvas.getContext('2d');
+            
+            // Create gradient for fill under line
+            const purpleGradient = ctx.createLinearGradient(0, 0, 0, 260);
+            purpleGradient.addColorStop(0, 'rgba(124, 58, 237, 0.22)');
+            purpleGradient.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
+
+            const initialPeriod = chartPeriodData['this_month'] || {
+                labels: {!! json_encode($chartLabels ?? ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31']) !!},
+                data: {!! json_encode($chartAllData ?? [3, 11, 13, 10, 13, 20]) !!}
+            };
+
+            overviewChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: initialPeriod.labels,
+                    datasets: [{
+                        label: 'Applications',
+                        data: initialPeriod.data,
+                        borderColor: '#7c3aed',
+                        backgroundColor: purpleGradient,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#7c3aed',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2.5,
+                        pointHoverBackgroundColor: '#7c3aed',
+                        pointHoverBorderColor: '#ffffff',
+                        pointHoverBorderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#ffffff',
+                            titleColor: '#101828',
+                            titleFont: { size: 13, weight: '700' },
+                            bodyColor: '#475569',
+                            bodyFont: { size: 12, weight: '600' },
+                            borderColor: '#eaecf0',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 6,
+                            usePointStyle: true,
+                            displayColors: true,
+                            boxWidth: 8,
+                            boxHeight: 8,
+                            borderRadius: 10,
+                            shadowColor: 'rgba(16, 24, 40, 0.1)',
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const label = tooltipItems[0].label;
+                                    return label.includes('20') ? label : label + ', 2025';
+                                },
+                                label: function(context) {
+                                    return 'Applications: ' + context.formattedValue;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11, weight: '500' }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f1f5f9',
+                                strokeDashArray: [4, 4]
+                            },
+                            border: { dash: [4, 4] },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11, weight: '500' },
+                                stepSize: 5
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Doughnut Chart: Applications Status Breakdown
+        const statusCanvas = document.getElementById('applicationsStatusChart');
+        if (statusCanvas) {
+            new Chart(statusCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Approved', 'Pending', 'Under Review', 'Rejected'],
+                    datasets: [{
+                        data: [
+                            {{ $approvedCount }},
+                            {{ $pendingCount }},
+                            {{ $underReviewCount }},
+                            {{ $rejectedCount }}
+                        ],
+                        backgroundColor: [
+                            '#22c55e', // Green for Approved
+                            '#3b82f6', // Blue for Pending
+                            '#f97316', // Orange for Under Review
+                            '#94a3b8'  // Gray for Rejected
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '74%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 10,
+                            borderRadius: 8
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderAdminDashboardCharts);
+    } else {
+        renderAdminDashboardCharts();
+    }
+</script>
+
+@endsection
 
 <style>
     @keyframes wave {
@@ -312,84 +541,3 @@
         border-color: #cbd5e1 !important;
     }
 </style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const fontFamily = getComputedStyle(document.body).fontFamily || 'Inter, sans-serif';
-        Chart.defaults.font.family = fontFamily;
-        Chart.defaults.color = '#64748b';
-
-        // Line Chart: Applications Overview
-        new Chart(document.getElementById('applicationsOverviewChart'), {
-            type: 'line',
-            data: {
-                labels: ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31'],
-                datasets: [{
-                    label: 'Applications',
-                    data: [3, 8, 7, 12, 6, 15],
-                    borderColor: '#6366f1',
-                    backgroundColor: function(context) {
-                        const chart = context.chart;
-                        const {ctx, chartArea} = chart;
-                        if (!chartArea) return null;
-                        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
-                        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.00)');
-                        return gradient;
-                    },
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: '#6366f1',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#f1f5f9' },
-                        border: { dash: [4, 4] }
-                    }
-                }
-            }
-        });
-
-        // Doughnut Chart: Applications by Status
-        new Chart(document.getElementById('applicationsStatusChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Approved', 'Pending', 'Rejected'],
-                datasets: [{
-                    data: [{{ $approvedCount }}, {{ $pendingCount }}, {{ $rejectedCount }}],
-                    backgroundColor: ['#10b981', '#3b82f6', '#94a3b8'],
-                    borderWidth: 2,
-                    borderColor: '#ffffff',
-                    hoverOffset: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '72%',
-                plugins: {
-                    legend: { display: false }
-                }
-            }
-        });
-    });
-</script>
-
-@endsection

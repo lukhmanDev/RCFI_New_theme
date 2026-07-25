@@ -1182,7 +1182,7 @@
 
         function openApproveModal(appId, clusterId = '', agencyNumber = '') {
             const form = document.getElementById('approveAppForm');
-            form.action = `/admin/applications/{{ $categorySlug }}/${appId}/approve`;
+            form.action = "{{ url('admin/applications') }}/{{ $categorySlug }}/" + appId + "/approve";
             
             document.getElementById('approve_cluster_id').value = clusterId || '';
             document.getElementById('approve_agency_number').value = agencyNumber || '';
@@ -1214,7 +1214,7 @@
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             try {
-                const response = await fetch(`/admin/applications/${appId}/update-cluster`, {
+                const response = await fetch("{{ url('admin/applications') }}/" + appId + "/update-cluster", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

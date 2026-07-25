@@ -165,8 +165,8 @@
             const statusActionsContainer = document.getElementById('modal_status_actions');
             if (statusActionsContainer) {
                 let statusHtml = '';
-                const rejectUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/reject`;
-                const sponsorUrl = `/admin/applications/orphan-care/${appItem.id}/toggle-sponsor`;
+                const rejectUrl = `{{ url('admin/applications') }}/{{ $categorySlug }}/${appItem.id}/reject`;
+                const sponsorUrl = `{{ url('admin/applications/orphan-care') }}/${appItem.id}/toggle-sponsor`;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                 @if(Auth::user()->hasAdminAccess())
@@ -321,7 +321,7 @@
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             try {
-                const response = await fetch(`/admin/applications/${appId}/update-cluster`, {
+                const response = await fetch("{{ url('admin/applications') }}/" + appId + "/update-cluster", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -364,7 +364,7 @@
                 const csrfMeta = document.querySelector('meta[name="csrf-token"]');
                 const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
                 try {
-                    const response = await fetch(`/admin/applications/orphan-care/${appId}/toggle-sponsor`, {
+                    const response = await fetch("{{ url('admin/applications/orphan-care') }}/" + appId + "/toggle-sponsor", {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

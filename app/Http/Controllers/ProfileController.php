@@ -80,7 +80,7 @@ class ProfileController extends Controller
         // Send actual email using the VerificationCodeMail mailable
         Mail::to($user->email)->send(new VerificationCodeMail($code));
 
-        return redirect()->back()->with('success', 'Verification code generated! An email with the verification code has been sent to ' . $user->email . '. (For testing: ' . $code . ')');
+        return redirect()->back()->with('success', 'Verification code generated! An email with the verification code has been sent to ' . $user->email . '.');
     }
 
     public function verifyEmail(Request $request)
@@ -143,9 +143,9 @@ class ProfileController extends Controller
 
         $msg = 'Credentials updated successfully!';
         if ($emailChanged) {
-            $msg .= ' A verification code has been sent to your new email: ' . $newEmail . '. (For testing: ' . $code . ')';
+            $msg .= ' A verification code has been sent to your new email: ' . $newEmail . '.';
         } else {
-            $msg .= ' A verification code has been sent to your email to verify the password change. (For testing: ' . $code . ')';
+            $msg .= ' A verification code has been sent to your email to verify the password change.';
         }
 
         return redirect()->back()->with('success', $msg);

@@ -8,7 +8,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <!-- Navigation Tabs -->
         <div style="display: flex; gap: 0.5rem; background-color: #ffffff; padding: 0.35rem; border-radius: 10px; border: 1px solid var(--panel-border, #e2e8f0); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <button id="tab-btn-themes" onclick="switchTab('themes')" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff;">
+            <button id="tab-btn-themes" onclick="switchTab('themes')" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff;">
                 <i class="bx bxs-category"></i>
                 <span>Themes</span>
                 <span id="badge-count-themes" style="background: rgba(255,255,255,0.25); color: #ffffff; font-size: 0.75rem; padding: 0.15rem 0.55rem; border-radius: 12px; font-weight: 700;">{{ count($themes) }}</span>
@@ -374,7 +374,7 @@
                 themesPanel.style.display = 'block';
                 subthemesPanel.style.display = 'none';
 
-                themesBtn.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
+                themesBtn.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
                 themesBtn.style.color = '#ffffff';
                 document.getElementById('badge-count-themes').style.background = 'rgba(255,255,255,0.25)';
                 document.getElementById('badge-count-themes').style.color = '#ffffff';
@@ -395,8 +395,8 @@
 
                 themesBtn.style.background = 'transparent';
                 themesBtn.style.color = '#64748b';
-                document.getElementById('badge-count-themes').style.background = 'rgba(2,132,199,0.12)';
-                document.getElementById('badge-count-themes').style.color = '#0284c7';
+                document.getElementById('badge-count-themes').style.background = 'rgba(99,102,241,0.12)';
+                document.getElementById('badge-count-themes').style.color = '#4338ca';
                 window.location.hash = 'subthemes';
             }
         }
