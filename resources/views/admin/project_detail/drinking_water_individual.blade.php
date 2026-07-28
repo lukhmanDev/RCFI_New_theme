@@ -161,6 +161,76 @@
         }
     </style>
 
+    <script>
+        function switchStage(stageNum) {
+            const activeProjectStage = {{ $project->stage ?? 1 }};
+            const isProjectApproved = "{{ ($project->status === 'Approved' || $project->status === 'Completed') ? '1' : '0' }}";
+            const hasApplication = "{{ empty($project->application_id) ? '0' : '1' }}";
+            const projectType = "{{ $project->type_of_project ?? '' }}";
+
+            let isLocked = false;
+            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'].includes(projectType);
+            if (['Orphan Care', 'Differently Abled', 'Family Aid'].includes(projectType)) {
+                isLocked = false;
+            } else if (isSixStage) {
+                if (stageNum <= 3) {
+                    isLocked = false;
+                } else {
+                    isLocked = (activeProjectStage < 4 && isProjectApproved !== '1');
+                }
+            } else {
+                if (stageNum !== 1 && isProjectApproved !== '1') {
+                    isLocked = true;
+                }
+            }
+
+            if (isLocked) {
+                const msg = "Access Locked: This stage is not yet unlocked.";
+                if (typeof showToast === 'function') {
+                    showToast(msg, "danger");
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
+            try {
+                sessionStorage.setItem('current_project_stage_{{ $project->id ?? 0 }}', stageNum);
+            } catch(e) {}
+
+            const tabs = document.querySelectorAll('.stage-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            const clickedTab = document.getElementById('tab-' + stageNum);
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+
+            const panels = document.querySelectorAll('.stage-content-panel');
+            panels.forEach(panel => panel.style.display = 'none');
+
+            const targetPanel = document.getElementById('stage-content-' + stageNum);
+            if (targetPanel) {
+                targetPanel.style.display = 'block';
+            }
+        }
+        window.switchStage = switchStage;
+        function restoreActiveStage() {
+            try {
+                const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id ?? 0 }}');
+                if (savedStage) {
+                    switchStage(parseInt(savedStage, 10));
+                }
+            } catch(e) {}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreActiveStage);
+        } else {
+            restoreActiveStage();
+        }
+
+    </script>
+
     <!-- Stage Navigation Tabs (Interactive Navigation) -->
     <div class="stages-tabs">
         @for($i = 1; $i <= 6; $i++)
@@ -572,61 +642,66 @@
                     };
                 @endphp
 
-                <div id="realtime-application-details-container">
+                                <div id="realtime-application-details-container">
                     @if($application)
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                             <!-- Col 1 -->
                             <div>
-                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Committee</h4>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">{!! $formatVal($application->applicant_name) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>{!! $formatVal($metaData['committee_name'] ?? $metaData['mahallu_name'] ?? $metaData['place'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>{!! $formatVal($metaData['reg_number'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>{!! $formatVal($metaData['year'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['location'] ?? $metaData['place'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['village'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>{!! $formatVal($metaData['post'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>{!! $formatVal($metaData['panchayath'] ?? $metaData['panchayat'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? $metaData['contact1'] ?? $metaData['mobile'] ?? null) !!} / {!! $formatVal($metaData['contact_number_2'] ?? $metaData['contact2'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>{!! $formatVal($metaData['submitted_before'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>{!! $formatVal($metaData['received_support_before'] ?? null) !!}</td></tr>
+                                    @if(!empty($metaData['committee_name']) || !empty($metaData['mahallu_name']))
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>{!! $formatVal($metaData['committee_name'] ?? $metaData['mahallu_name'] ?? null) !!}</td></tr>
+                                    @endif
+                                    @if(!empty($metaData['father_name']))
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father Name:</td><td>{!! $formatVal($metaData['father_name']) !!}</td></tr>
+                                    @endif
+                                    @if(!empty($metaData['mother_name']))
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Name:</td><td>{!! $formatVal($metaData['mother_name']) !!}</td></tr>
+                                    @endif
+                                    @if(!empty($metaData['fathers_father']))
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Father:</td><td>{!! $formatVal($metaData['fathers_father']) !!}</td></tr>
+                                    @endif
+                                    @if(!empty($metaData['gender']) || !empty($metaData['age']) || !empty($metaData['dob']))
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Gender / Age / DOB:</td><td>{!! $formatVal($metaData['gender'] ?? null) !!} {!! !empty($metaData['age']) ? '/ ' . $metaData['age'] . ' yrs' : '' !!} {!! !empty($metaData['dob']) ? '/ ' . $metaData['dob'] : '' !!}</td></tr>
+                                    @endif
+                                    @if(!empty($metaData['aadhar_number']))
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhaar Number:</td><td>{!! $formatVal($metaData['aadhar_number']) !!}</td></tr>
+                                    @endif
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location / Address:</td><td>{!! $formatVal($metaData['location'] ?? $metaData['place'] ?? null) !!} {!! !empty($metaData['address']) ? '/ ' . $metaData['address'] : '' !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village / Post / Panch:</td><td>{!! $formatVal($metaData['village'] ?? null) !!} / {!! $formatVal($metaData['post'] ?? null) !!} / {!! $formatVal($metaData['panchayath'] ?? $metaData['panchayat'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State / Pin:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!} {!! !empty($metaData['pin']) ? '/ ' . $metaData['pin'] : '' !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? $metaData['contact1'] ?? $metaData['mobile'] ?? null) !!} {!! !empty($metaData['contact_number_2']) ? '/ ' . $metaData['contact_number_2'] : '' !!}</td></tr>
                                 </table>
 
-                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Beneficiary Details Summary</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td>{!! $formatVal($metaData['mahallu_name'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['locality_location'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['locality_village'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['locality_district'] ?? null) !!} / {!! $formatVal($metaData['locality_state'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td>{!! $formatVal($metaData['families_in_mahallu'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Requirement:</td><td>{!! $formatVal($metaData['requirement'] ?? null) !!}</td></tr>
+                                    @if(!empty($metaData['male_adults']) || !empty($metaData['male_children']))
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Male Adults / Children:</td><td>Adults: {!! $formatVal($metaData['male_adults'] ?? null) !!} / Children: {!! $formatVal($metaData['male_children'] ?? null) !!}</td></tr>
+                                    @endif
+                                    @if(!empty($metaData['female_adults']) || !empty($metaData['female_children']))
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Female Adults / Children:</td><td>Adults: {!! $formatVal($metaData['female_adults'] ?? null) !!} / Children: {!! $formatVal($metaData['female_children'] ?? null) !!}</td></tr>
+                                    @endif
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Total Benefited People:</td><td style="font-weight: 600; color: var(--text-main);">{!! $formatVal($metaData['num_benefited_people'] ?? $metaData['families_in_mahallu'] ?? null) !!} {!! !empty($metaData['num_benefited_people']) || !empty($metaData['families_in_mahallu']) ? 'people / families' : '' !!}</td></tr>
                                 </table>
                             </div>
 
                             <!-- Col 2 -->
                             <div>
-                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Current Status & Students</h4>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Owner of the Proposed Land</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Has Building?</td><td>{!! $formatVal($metaData['site_has_building'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Status:</td><td>{!! $formatVal($metaData['status_of_current_building'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Boys Count:</td><td>{!! $formatVal($metaData['students_boys'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Girls Count:</td><td>{!! $formatVal($metaData['students_girls'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Center Nearby?</td><td>{!! $formatVal($metaData['education_center_nearby'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Distance to CC (KM):</td><td>{!! $formatVal($metaData['distance_cultural_centre'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Syllabus:</td><td>{!! $formatVal($metaData['syllabus'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Land Owner:</td><td style="font-weight: 600; color: var(--text-main);">{!! $formatVal($metaData['land_owner_name'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Owner Address:</td><td>{!! $formatVal($metaData['land_owner_address'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place / Post / Panch:</td><td>{!! $formatVal($metaData['land_owner_place'] ?? null) !!} / {!! $formatVal($metaData['land_owner_post'] ?? null) !!} / {!! $formatVal($metaData['land_owner_panchayath'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / Mobile:</td><td>{!! $formatVal($metaData['land_owner_district'] ?? null) !!} / {!! $formatVal($metaData['land_owner_mobile'] ?? null) !!}</td></tr>
                                 </table>
 
-                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Details</h4>
+                                <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Project & Well Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: var(--text-main);">{!! $formatVal($metaData['project_type'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Building Area (Sq):</td><td>{!! $formatVal($metaData['building_area_sq'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td>{!! $formatVal($metaData['land_area_sq'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td>{!! $formatVal($metaData['num_classrooms'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Students:</td><td>{!! $formatVal($metaData['num_students'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">{{ $application->amount_requested ? '₹' . number_format($application->amount_requested) : 'N/A' }}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td>{!! $formatVal($metaData['legal_approvals_status'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Area / Zone:</td><td>{!! $formatVal($metaData['area'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Well Type:</td><td style="font-weight: 600; color: var(--text-main);">{!! $formatVal($metaData['well_type'] ?? $metaData['project_type'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Expected Depth:</td><td>{!! !empty($metaData['well_depth']) ? $metaData['well_depth'] . ' ft' : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>' !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Permissions:</td><td>{!! $formatVal($metaData['legal_permissions'] ?? $metaData['legal_approvals_status'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Estimated Cost:</td><td style="color: var(--accent-green); font-weight: 600;">{{ $application->amount_requested ? '₹' . number_format($application->amount_requested) : 'N/A' }}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">{{ $application->status }}</td></tr>
                                 </table>
                             </div>
@@ -1545,37 +1620,27 @@
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                 <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Completion Certificate</span>
-                                @if($compCertTime)
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $compCertTime }}</span>
-                                @endif
+                                <span style="font-size: 0.75rem; color: var(--text-muted);" id="ticked-at-Completion_Certificate">
+                                    @if($compCertTime)
+                                        Ticked at: {{ $compCertTime }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if(!empty($compCert) && $compCert !== "1")
-                                    <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                        <i class="bx bx-show"></i> View Certificate
-                                    </a>
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Completion Certificate">
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
-                                                <i class="bx bx-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    @endif
+                                @if($isProjectManager && !$isLockedForEditing)
+                                    <button type="button" onclick="toggleChecklistDocument(this, 'Completion Certificate')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                        <i class="bx {{ !empty($compCert) ? 'bxs-checkbox-checked' : 'bx-checkbox' }}" style="font-size: 1.8rem; color: {{ !empty($compCert) ? 'var(--accent-green)' : 'var(--text-muted)' }}; transition: color 0.2s;"></i>
+                                    </button>
                                 @else
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Completion Certificate">
-                                            <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                            <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                                <i class="bx bx-upload"></i> Upload
-                                            </button>
-                                        </form>
+                                    @if(!empty($compCert))
+                                        <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                            <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Ticked
+                                        </span>
                                     @else
                                         <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending Upload
+                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Unticked
                                         </span>
                                     @endif
                                 @endif
@@ -1586,37 +1651,27 @@
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
                             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                 <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Consumption sheet for payment</span>
-                                @if($measBookTime)
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $measBookTime }}</span>
-                                @endif
+                                <span style="font-size: 0.75rem; color: var(--text-muted);" id="ticked-at-Consumption_sheet_for_payment">
+                                    @if($measBookTime)
+                                        Ticked at: {{ $measBookTime }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if(!empty($measBook) && $measBook !== "1")
-                                    <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                        <i class="bx bx-show"></i> View Sheet
-                                    </a>
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Consumption sheet for payment">
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
-                                                <i class="bx bx-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    @endif
+                                @if($isProjectManager && !$isLockedForEditing)
+                                    <button type="button" onclick="toggleChecklistDocument(this, 'Consumption sheet for payment')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                        <i class="bx {{ !empty($measBook) ? 'bxs-checkbox-checked' : 'bx-checkbox' }}" style="font-size: 1.8rem; color: {{ !empty($measBook) ? 'var(--accent-green)' : 'var(--text-muted)' }}; transition: color 0.2s;"></i>
+                                    </button>
                                 @else
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Consumption sheet for payment">
-                                            <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                            <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                                <i class="bx bx-upload"></i> Upload
-                                            </button>
-                                        </form>
+                                    @if(!empty($measBook))
+                                        <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                            <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Ticked
+                                        </span>
                                     @else
                                         <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending Upload
+                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Unticked
                                         </span>
                                     @endif
                                 @endif
@@ -2094,9 +2149,7 @@
 
                     const container = targetCard.querySelector('.photo-list-container');
                     if (container) {
-                        const emptyState = container.querySelector('.photo-empty-state');
-                        if (emptyState) emptyState.remove();
-
+                        container.innerHTML = '';
                         const photoDiv = document.createElement('div');
                         photoDiv.style.cssText = 'position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease;';
                         
@@ -2120,7 +2173,11 @@
                 }
             }
 
-            document.addEventListener('submit', async function(e) {
+            if (window.__photoSubmitHandler) {
+                document.removeEventListener('submit', window.__photoSubmitHandler, true);
+            }
+
+            window.__photoSubmitHandler = async function(e) {
                 const form = e.target;
                 if (!form || form.getAttribute('data-no-ajax') === 'true') return;
 
@@ -2129,6 +2186,8 @@
                 // A. AJAX PHOTO UPLOAD (Matches both upload-photo and upload_photo)
                 if (action.includes('upload-photo') || action.includes('upload_photo')) {
                     e.preventDefault();
+                    if (form.dataset.submitting === 'true') return;
+                    form.dataset.submitting = 'true';
 
                     const submitBtn = form.querySelector('button[type="submit"]');
                     const origBtnText = submitBtn ? submitBtn.innerHTML : '';
@@ -2168,17 +2227,17 @@
                         console.error('AJAX upload photo error:', err);
                         alert('Photo upload failed. Please try again.');
                     } finally {
+                        delete form.dataset.submitting;
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = origBtnText;
                         }
                     }
-                }
-
-                // B. AJAX PHOTO DELETE (Matches delete-photo, delete_photo, /photos/)
-                else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
+                } else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
                     e.preventDefault();
+                    if (form.dataset.submitting === 'true') return;
                     if (!confirm('Delete this photo?')) return;
+                    form.dataset.submitting = 'true';
 
                     const photoItem = form.closest('div[style*="position: relative"]');
                     const card = form.closest('.photo-card');
@@ -2227,9 +2286,13 @@
                     } catch (err) {
                         console.error('AJAX delete photo error:', err);
                         alert('Photo delete failed. Please try again.');
+                    } finally {
+                        delete form.dataset.submitting;
                     }
                 }
-            }, true);
+            };
+
+            document.addEventListener('submit', window.__photoSubmitHandler, true);
         })();
     </script>
     <!-- Switch Stage Script -->
@@ -2254,6 +2317,9 @@
                 performToggleChecklistDocument(button, docName);
             }
         }
+
+        window.toggleChecklistDocument = toggleChecklistDocument;
+        window.performToggleChecklistDocument = performToggleChecklistDocument;
 
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
@@ -2384,7 +2450,8 @@
                 return;
             }
 
-            const app = allApplicationsData.find(a => a.id == selectedId);
+            const apps = (typeof allApplicationsData !== 'undefined' && Array.isArray(allApplicationsData)) ? allApplicationsData : [];
+            const app = apps.find(a => a.id == selectedId);
             if (!app) return;
 
             let meta = {};
@@ -2505,7 +2572,10 @@
             if (isSixStage) {
                 if (stageNum <= 2) {
                     isLocked = false;
-                } else if (stageNum === 3 || stageNum === 4) {
+                }
+        window.switchStage = switchStage;
+        
+ else if (stageNum === 3 || stageNum === 4) {
                     isLocked = (hasApplication !== '1');
                 } else {
                     // Stage 5 or 6 unlocks when project stage >= 5 or approved

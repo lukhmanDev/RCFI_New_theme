@@ -209,9 +209,24 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    function renderCooDashboardCharts() {
+        if (typeof Chart === 'undefined') {
+            setTimeout(renderCooDashboardCharts, 50);
+            return;
+        }
+
+        const trendCanvas = document.getElementById('cooTrendChart');
+        const statusCanvas = document.getElementById('cooStatusChart');
+
+        if (!trendCanvas || !statusCanvas) return;
+
+        const existingTrend = Chart.getChart(trendCanvas);
+        if (existingTrend) existingTrend.destroy();
+
+        const existingStatus = Chart.getChart(statusCanvas);
+        if (existingStatus) existingStatus.destroy();
+
         const fontFamily = getComputedStyle(document.body).fontFamily || 'Inter, sans-serif';
         Chart.defaults.font.family = fontFamily;
         Chart.defaults.color = '#64748b';
@@ -220,7 +235,7 @@
         const applicationsTrend = @json($applicationsTrend);
         const partnersTrend = @json($partnersTrend);
 
-        new Chart(document.getElementById('cooTrendChart'), {
+        new Chart(trendCanvas, {
             type: 'line',
             data: {
                 labels: trendLabels,
@@ -263,7 +278,7 @@
             },
         });
 
-        new Chart(document.getElementById('cooStatusChart'), {
+        new Chart(statusCanvas, {
             type: 'doughnut',
             data: {
                 labels: ['Approved', 'Pending', 'Rejected'],
@@ -281,7 +296,14 @@
                 plugins: { legend: { display: false } },
             },
         });
-    });
+    }
+
+    setTimeout(renderCooDashboardCharts, 10);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderCooDashboardCharts);
+    }
+    window.addEventListener('pageshow', renderCooDashboardCharts);
+    document.addEventListener('pjax:complete', renderCooDashboardCharts);
 </script>
 
 @endsection

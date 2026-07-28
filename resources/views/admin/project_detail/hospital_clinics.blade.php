@@ -161,6 +161,76 @@
         }
     </style>
 
+    <script>
+        function switchStage(stageNum) {
+            const activeProjectStage = {{ $project->stage ?? 1 }};
+            const isProjectApproved = "{{ ($project->status === 'Approved' || $project->status === 'Completed') ? '1' : '0' }}";
+            const hasApplication = "{{ empty($project->application_id) ? '0' : '1' }}";
+            const projectType = "{{ $project->type_of_project ?? '' }}";
+
+            let isLocked = false;
+            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'].includes(projectType);
+            if (['Orphan Care', 'Differently Abled', 'Family Aid'].includes(projectType)) {
+                isLocked = false;
+            } else if (isSixStage) {
+                if (stageNum <= 3) {
+                    isLocked = false;
+                } else {
+                    isLocked = (activeProjectStage < 4 && isProjectApproved !== '1');
+                }
+            } else {
+                if (stageNum !== 1 && isProjectApproved !== '1') {
+                    isLocked = true;
+                }
+            }
+
+            if (isLocked) {
+                const msg = "Access Locked: This stage is not yet unlocked.";
+                if (typeof showToast === 'function') {
+                    showToast(msg, "danger");
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
+            try {
+                sessionStorage.setItem('current_project_stage_{{ $project->id ?? 0 }}', stageNum);
+            } catch(e) {}
+
+            const tabs = document.querySelectorAll('.stage-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            const clickedTab = document.getElementById('tab-' + stageNum);
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+
+            const panels = document.querySelectorAll('.stage-content-panel');
+            panels.forEach(panel => panel.style.display = 'none');
+
+            const targetPanel = document.getElementById('stage-content-' + stageNum);
+            if (targetPanel) {
+                targetPanel.style.display = 'block';
+            }
+        }
+        window.switchStage = switchStage;
+        function restoreActiveStage() {
+            try {
+                const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id ?? 0 }}');
+                if (savedStage) {
+                    switchStage(parseInt(savedStage, 10));
+                }
+            } catch(e) {}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreActiveStage);
+        } else {
+            restoreActiveStage();
+        }
+
+    </script>
+
     <!-- Stage Navigation Tabs (Interactive Navigation) -->
     <div class="stages-tabs">
         @for($i = 1; $i <= 6; $i++)
@@ -2106,9 +2176,7 @@
 
                     const container = targetCard.querySelector('.photo-list-container');
                     if (container) {
-                        const emptyState = container.querySelector('.photo-empty-state');
-                        if (emptyState) emptyState.remove();
-
+                        container.innerHTML = '';
                         const photoDiv = document.createElement('div');
                         photoDiv.style.cssText = 'position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease;';
                         
@@ -2132,7 +2200,11 @@
                 }
             }
 
-            document.addEventListener('submit', async function(e) {
+            if (window.__photoSubmitHandler) {
+                document.removeEventListener('submit', window.__photoSubmitHandler, true);
+            }
+
+            window.__photoSubmitHandler = async function(e) {
                 const form = e.target;
                 if (!form || form.getAttribute('data-no-ajax') === 'true') return;
 
@@ -2141,6 +2213,8 @@
                 // A. AJAX PHOTO UPLOAD (Matches both upload-photo and upload_photo)
                 if (action.includes('upload-photo') || action.includes('upload_photo')) {
                     e.preventDefault();
+                    if (form.dataset.submitting === 'true') return;
+                    form.dataset.submitting = 'true';
 
                     const submitBtn = form.querySelector('button[type="submit"]');
                     const origBtnText = submitBtn ? submitBtn.innerHTML : '';
@@ -2180,17 +2254,17 @@
                         console.error('AJAX upload photo error:', err);
                         alert('Photo upload failed. Please try again.');
                     } finally {
+                        delete form.dataset.submitting;
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = origBtnText;
                         }
                     }
-                }
-
-                // B. AJAX PHOTO DELETE (Matches delete-photo, delete_photo, /photos/)
-                else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
+                } else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
                     e.preventDefault();
+                    if (form.dataset.submitting === 'true') return;
                     if (!confirm('Delete this photo?')) return;
+                    form.dataset.submitting = 'true';
 
                     const photoItem = form.closest('div[style*="position: relative"]');
                     const card = form.closest('.photo-card');
@@ -2239,9 +2313,13 @@
                     } catch (err) {
                         console.error('AJAX delete photo error:', err);
                         alert('Photo delete failed. Please try again.');
+                    } finally {
+                        delete form.dataset.submitting;
                     }
                 }
-            }, true);
+            };
+
+            document.addEventListener('submit', window.__photoSubmitHandler, true);
         })();
     </script>
     <!-- Switch Stage Script -->
@@ -2266,6 +2344,9 @@
                 performToggleChecklistDocument(button, docName);
             }
         }
+
+        window.toggleChecklistDocument = toggleChecklistDocument;
+        window.performToggleChecklistDocument = performToggleChecklistDocument;
 
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
@@ -2396,7 +2477,8 @@
                 return;
             }
 
-            const app = allApplicationsData.find(a => a.id == selectedId);
+            const apps = (typeof allApplicationsData !== 'undefined' && Array.isArray(allApplicationsData)) ? allApplicationsData : [];
+            const app = apps.find(a => a.id == selectedId);
             if (!app) return;
 
             let meta = {};
@@ -2546,7 +2628,10 @@
             if (isSixStage) {
                 if (stageNum <= 2) {
                     isLocked = false;
-                } else if (stageNum === 3 || stageNum === 4) {
+                }
+        window.switchStage = switchStage;
+        
+ else if (stageNum === 3 || stageNum === 4) {
                     isLocked = (hasApplication !== '1');
                 } else {
                     // Stage 5 or 6 unlocks when project stage >= 5 or approved

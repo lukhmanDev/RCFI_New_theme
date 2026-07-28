@@ -333,7 +333,7 @@ class ProjectController extends Controller
 
         if ($config) {
             $model = $config['model'];
-            if (in_array($data['type_of_project'], ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
+            if (in_array($data['type_of_project'], ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'])) {
                 $data['stage'] = 4; // Start at Stage 4 — Stages 1-3 are informational only
             } else {
                 $data['stage'] = 6;
@@ -770,7 +770,76 @@ class ProjectController extends Controller
             return redirect()->route('projects.show', $project->id)->with('success', 'Project reopened successfully.');
         }
 
-        if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'])) {
+        if ($project->type_of_project === 'General') {
+            $currentStage = $project->stage;
+
+            if ($currentStage <= 3) {
+                if ($action === 'submit') {
+                    if (!$isPm && !$isEngineer && !$isSuperAdmin) {
+                        return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to submit projects for approval.');
+                    }
+                    $project->status = 'Pending Approval';
+                    $project->save();
+                    return redirect()->route('projects.show', $project->id)->with('success', 'Project submitted for HOD/COO approval.');
+                }
+
+                if ($action === 'approve') {
+                    if (!$isCoo && !$isHod && !$isSuperAdmin) {
+                        return redirect()->back()->with('error', 'Only COO or HOD is authorized to approve Stage 3.');
+                    }
+                    $project->stage = 4;
+                    $project->status = 'Approved';
+                    $project->save();
+                    return redirect()->route('projects.show', $project->id)->with('success', 'Stage 3 approved successfully! Project promoted to Stage 4 (Expenses).');
+                }
+
+                if ($action === 'reject') {
+                    if (!$isCoo && !$isHod && !$isSuperAdmin) {
+                        return redirect()->back()->with('error', 'Only COO or HOD is authorized to reject Stage 3.');
+                    }
+                    $project->stage = 2;
+                    $project->status = 'Rejected';
+                    if ($request->input('remarks')) {
+                        $project->remarks = $request->input('remarks');
+                    }
+                    $project->save();
+
+                    return redirect()->route('projects.show', $project->id)->with('success', 'Project rejected and returned to Stage 2.');
+                }
+            }
+
+            if ($currentStage == 4) {
+                if ($action === 'promote_to_stage6' || $action === 'promote_to_stage5') {
+                    if (!$isPm && !$isEngineer && !$isSuperAdmin) {
+                        return redirect()->back()->with('error', 'Only Project Manager or Engineer is authorized to promote project to Stage 5.');
+                    }
+                    $project->stage = 5;
+                    $project->save();
+                    return redirect()->route('projects.show', $project->id)->with('success', 'Project promoted to Stage 5 (Completion Stage) successfully!');
+                }
+            }
+
+            if ($currentStage >= 5 && $action === 'finalize_approval') {
+                $project->status = 'Completed';
+                $project->stage = 5;
+                $project->save();
+
+                $statusRecord = $project->projectStatus;
+                if (!$statusRecord) {
+                    $statusRecord = $project->projectStatus()->create([
+                        'user_id' => $user->id,
+                        'designation' => $user->designation ?? 'User'
+                    ]);
+                }
+                $statusRecord->coo_approved_at = now();
+                $statusRecord->coo_approver_id = $user->id;
+                $statusRecord->save();
+
+                return redirect()->route('projects.show', $project->id)->with('success', 'Project marked as Completed successfully.');
+            }
+        }
+
+        if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
             $currentStage = $project->stage;
 
             if ($currentStage == 3 && $action === 'submit_corrections') {
@@ -1022,7 +1091,7 @@ class ProjectController extends Controller
 
     public function toggleFile(Request $request, $id)
     {
-        $project = $this->getProjectInstance($request, $id, true);
+        $project = $this->getProjectInstance($request, $id, false);
         if (!$project) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => 'Project not found.'], 404);
@@ -1045,60 +1114,89 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Project is finalized and locked.');
         }
 
-        $request->validate([
-            'document_name' => 'required|string',
-        ]);
-
-        $docName = $request->input('document_name');
-        $column = \App\Models\ProjectDocument::$docColumnMap[$docName] ?? null;
-        if (!$column) {
+        $docName = $request->input('document_name') ?? $request->input('file_key') ?? $request->input('field');
+        if (!$docName) {
             if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'error' => 'Invalid document name.'], 400);
+                return response()->json(['success' => false, 'error' => 'Document name is required.'], 400);
             }
-            return redirect()->back()->with('error', 'Invalid document name.');
+            return redirect()->back()->with('error', 'Document name is required.');
         }
 
-        $docRecord = $project->projectDocument;
-        if (!$docRecord) {
-            $docRecord = $project->projectDocument()->create();
-        }
-
-        $currentVal = $docRecord->$column;
+        $column = \App\Models\ProjectDocument::$docColumnMap[$docName] ?? null;
         $ticked = false;
         $tickedAtStr = '';
+        $msg = '';
 
-        if ($currentVal && $currentVal !== '0') {
-            // Untick: delete physical file if custom file uploaded
-            if ($currentVal !== '1') {
-                $physicalPath = public_path($currentVal);
-                if (file_exists($physicalPath) && is_file($physicalPath)) {
-                    unlink($physicalPath);
+        if ($column && method_exists($project, 'projectDocument')) {
+            try {
+                $docRecord = $project->projectDocument;
+                if (!$docRecord) {
+                    $docRecord = $project->projectDocument()->create();
                 }
-            }
-            $docRecord->$column = '0';
-            $timeColumn = $column . '_ticked_at';
-            $docRecord->$timeColumn = null;
-            $ticked = false;
-            $msg = "$docName removed successfully.";
-        } else {
-            // Tick: set value to 1 and update ticked_at timestamp
-            $docRecord->$column = '1';
-            $timeColumn = $column . '_ticked_at';
-            $now = now();
-            $docRecord->$timeColumn = $now;
-            $ticked = true;
-            $tickedAtStr = $now->timezone('Asia/Kolkata')->format('d-M-Y h:i A');
-            $msg = "$docName ticked.";
+
+                $currentVal = $docRecord->$column;
+                if ($currentVal && $currentVal !== '0') {
+                    if ($currentVal !== '1') {
+                        $physicalPath = public_path($currentVal);
+                        if (file_exists($physicalPath) && is_file($physicalPath)) {
+                            @unlink($physicalPath);
+                        }
+                    }
+                    $docRecord->$column = '0';
+                    $timeColumn = $column . '_ticked_at';
+                    $docRecord->$timeColumn = null;
+                    $ticked = false;
+                    $msg = "$docName unticked.";
+                } else {
+                    $docRecord->$column = '1';
+                    $timeColumn = $column . '_ticked_at';
+                    $now = now();
+                    $docRecord->$timeColumn = $now;
+                    $ticked = true;
+                    $tickedAtStr = $now->timezone('Asia/Kolkata')->format('d-M-Y h:i A');
+                    $msg = "$docName ticked.";
+                }
+                $docRecord->save();
+            } catch (\Exception $e) {}
         }
 
-        $docRecord->save();
+        // Also save to $files['checklist'] for full fallback support
+        $files = $project->files ?? [];
+        $fileChecklist = $files['checklist'] ?? [];
+        $docKey = str_replace(' ', '_', strtolower($docName));
+
+        if (!$msg) {
+            $currentStatus = isset($fileChecklist[$docKey]) ? ($fileChecklist[$docKey]['ticked'] ?? false) : false;
+            $ticked = !$currentStatus;
+            $tickedAtStr = $ticked ? date('d-M-Y H:i') : '';
+            $msg = $ticked ? "$docName ticked." : "$docName unticked.";
+        }
+
+        $fileChecklist[$docKey] = [
+            'name' => $docName,
+            'ticked' => $ticked,
+            'ticked_at' => $tickedAtStr,
+            'ticked_by' => $ticked ? ($user->name ?? 'Admin') : null
+        ];
+        $files['checklist'] = $fileChecklist;
+        $project->files = $files;
+        $project->save();
+
+        try {
+            ProjectUpdated::dispatch($project->id, 'files', auth()->id(), 'toggle_file', [
+                'document_name' => $docName,
+                'ticked' => $ticked,
+                'ticked_at' => $tickedAtStr
+            ]);
+        } catch (\Exception $e) {}
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true, 
                 'message' => $msg, 
                 'ticked' => $ticked,
-                'ticked_at' => $tickedAtStr
+                'is_ticked' => $ticked,
+                'ticked_at' => $tickedAtStr ?: '-'
             ]);
         }
 
@@ -1213,7 +1311,7 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage materials.');
         }
 
-        if (empty($project->application_id)) {
+        if (empty($project->application_id) && $project->type_of_project !== 'General') {
             return redirect()->back()->with('error', 'Please connect an application first.');
         }
 
@@ -1443,7 +1541,7 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage expenses.');
         }
 
-        if (empty($project->application_id)) {
+        if (empty($project->application_id) && $project->type_of_project !== 'General') {
             return redirect()->back()->with('error', 'Please connect an application first.');
         }
 
@@ -1589,27 +1687,47 @@ class ProjectController extends Controller
             }
             $key = 'photos_' . $category;
             
-            $photos = $files[$key] ?? [];
-            $photos[] = 'uploads/projects/' . $project->id . '/' . $filename;
-            $files[$key] = $photos;
+            // Enforce maximum 1 photo per column (replace previous photo if present)
+            $existing = array_merge((array)($files[$key] ?? []), (array)($files[$category . '_photos'] ?? []));
+            foreach ($existing as $oldPhotoPath) {
+                if ($oldPhotoPath && file_exists(public_path($oldPhotoPath))) {
+                    @unlink(public_path($oldPhotoPath));
+                }
+            }
+
+            $newPhotoPath = 'uploads/projects/' . $project->id . '/' . $filename;
+            
+            // Single photo model: save single string filepath directly instead of array
+            $files[$key] = $newPhotoPath;
+            $files[$category . '_photos'] = $newPhotoPath;
             
             if ($category === 'after') {
-                $files['photos'] = $photos;
+                $files['photos'] = $newPhotoPath;
             }
             
+            // Sync direct model attributes for neat DB structure (photo_before, photos_before, etc.)
+            $colAttr1 = 'photo_' . $category;
+            $colAttr2 = 'photos_' . $category;
+            $colAttr3 = $category . '_photos';
+            try {
+                $project->$colAttr1 = $newPhotoPath;
+                $project->$colAttr2 = $newPhotoPath;
+                $project->$colAttr3 = $newPhotoPath;
+            } catch(\Exception $e) {}
+
             $project->files = $files;
             $project->save();
 
-            $photoIndex = count($photos) - 1;
-            $deleteUrl = route('projects.delete_photo', [$project->id, $photoIndex]) . '?category=' . $category;
+            $photoIndex = 0;
+            $deleteUrl = route('projects.delete_photo', [$project->id, 0]) . '?category=' . $category;
 
             try {
                 ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'upload_photo', [
                     'category' => $category,
-                    'photo_url' => asset(end($photos)),
-                    'photo_index' => $photoIndex,
+                    'photo_url' => asset($newPhotoPath),
+                    'photo_index' => 0,
                     'delete_url' => $deleteUrl,
-                    'total_photos' => count($photos)
+                    'total_photos' => 1
                 ]);
             } catch (\Exception $e) {}
 
@@ -1618,10 +1736,10 @@ class ProjectController extends Controller
                     'success' => true,
                     'message' => 'Photo uploaded successfully!',
                     'category' => $category,
-                    'photo_url' => asset(end($photos)),
-                    'photo_index' => $photoIndex,
+                    'photo_url' => asset($newPhotoPath),
+                    'photo_index' => 0,
                     'delete_url' => $deleteUrl,
-                    'total_photos' => count($photos)
+                    'total_photos' => 1
                 ]);
             }
 
@@ -1657,28 +1775,50 @@ class ProjectController extends Controller
         $key = 'photos_' . $category;
         
         $files = $project->files ?? [];
-        $photos = $files[$key] ?? [];
+        
+        // Single photo model: read single string path or fallback
+        $photoPath = null;
+        if (isset($files[$key])) {
+            $photoPath = is_array($files[$key]) ? ($files[$key][0] ?? null) : $files[$key];
+        } elseif (isset($files[$category . '_photos'])) {
+            $photoPath = is_array($files[$category . '_photos']) ? ($files[$category . '_photos'][0] ?? null) : $files[$category . '_photos'];
+        } elseif ($category === 'after' && isset($files['photos'])) {
+            $photoPath = is_array($files['photos']) ? ($files['photos'][0] ?? null) : $files['photos'];
+        }
 
-        if (isset($photos[$index])) {
-            $filepath = public_path($photos[$index]);
+        $colAttr1 = 'photo_' . $category;
+        $colAttr2 = 'photos_' . $category;
+        $colAttr3 = $category . '_photos';
+        if (!$photoPath) {
+            $photoPath = $project->$colAttr1 ?? ($project->$colAttr2 ?? ($project->$colAttr3 ?? null));
+        }
+
+        if ($photoPath) {
+            $filepath = public_path($photoPath);
             if (file_exists($filepath)) {
-                unlink($filepath);
+                @unlink($filepath);
             }
-            array_splice($photos, $index, 1);
-            $files[$key] = $photos;
-            
+
+            $files[$key] = null;
+            $files[$category . '_photos'] = null;
             if ($category === 'after') {
-                $files['photos'] = $photos;
+                $files['photos'] = null;
             }
-            
+
+            try {
+                $project->$colAttr1 = null;
+                $project->$colAttr2 = null;
+                $project->$colAttr3 = null;
+            } catch(\Exception $e) {}
+
             $project->files = $files;
             $project->save();
 
             try {
                 ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'delete_photo', [
                     'category' => $category,
-                    'photo_index' => $index,
-                    'total_photos' => count($photos)
+                    'photo_index' => 0,
+                    'total_photos' => 0
                 ]);
             } catch (\Exception $e) {}
 
@@ -1687,19 +1827,19 @@ class ProjectController extends Controller
                     'success' => true,
                     'message' => 'Photo deleted successfully!',
                     'category' => $category,
-                    'photo_index' => $index,
-                    'total_photos' => count($photos)
+                    'photo_index' => 0,
+                    'total_photos' => 0
                 ]);
             }
 
-            return redirect()->route('projects.show', $id)->with('success', 'Photo deleted successfully!');
+            return redirect()->back()->with('success', 'Photo deleted successfully!');
         }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => false, 'message' => 'Photo not found.'], 404);
         }
 
-        return redirect()->back()->with('error', 'Photo not found.');
+        return redirect()->back()->with('error', 'Photo not found or already deleted.');
     }
 
     public function saveCompletionDetails(Request $request, $id)
@@ -1767,7 +1907,7 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage contractor details.');
         }
 
-        if (empty($project->application_id)) {
+        if (empty($project->application_id) && $project->type_of_project !== 'General') {
             return redirect()->back()->with('error', 'Please connect an application first.');
         }
 
@@ -2140,11 +2280,22 @@ class ProjectController extends Controller
             'agency' => 'required|string|max:255',
         ]);
 
-        $project->funds()->create([
+        $fund = $project->funds()->create([
             'date' => $request->input('date'),
             'amount' => (float)$request->input('amount'),
             'agency' => $request->input('agency'),
         ]);
+
+        if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Fund transfer record added successfully!',
+                'fund' => $fund,
+                'formatted_date' => !empty($fund->date) ? date('d-M-Y', strtotime($fund->date)) : 'N/A',
+                'formatted_amount' => number_format($fund->amount, 2),
+                'total_amount' => number_format($project->funds()->sum('amount'), 2)
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Fund transfer record added successfully!');
     }
@@ -2159,6 +2310,14 @@ class ProjectController extends Controller
         $fund = $project->funds()->findOrFail($fundId);
         $fund->delete();
 
+        if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Fund transfer record deleted successfully!',
+                'total_amount' => number_format($project->funds()->sum('amount'), 2)
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Fund transfer record deleted successfully!');
     }
 
@@ -2169,11 +2328,33 @@ class ProjectController extends Controller
             abort(404);
         }
 
+        if ($request->isMethod('get')) {
+            return redirect()->back();
+        }
+
         $request->validate([
             'programme_name' => 'required|string|max:255',
             'date' => 'nullable|date',
             'place' => 'nullable|string|max:255',
         ]);
+
+        // Prevent rapid duplicate submissions within 5 seconds
+        $existingDuplicate = $project->programmes()
+            ->where('programme_name', $request->input('programme_name'))
+            ->where('created_at', '>=', now()->subSeconds(5))
+            ->first();
+
+        if ($existingDuplicate) {
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Programme added successfully!',
+                    'programme' => $existingDuplicate,
+                    'formatted_date' => !empty($existingDuplicate->date) ? date('d-M-Y', strtotime($existingDuplicate->date)) : '-'
+                ]);
+            }
+            return redirect()->back()->with('success', 'Programme added successfully!');
+        }
 
         $fileKeys = ['photo', 'marklist', 'thanks_letter', 'report_form', 'medical_certificate', 'other_document'];
         $tickStatuses = [];
@@ -2275,7 +2456,7 @@ class ProjectController extends Controller
 
         $programme = $project->programmes()->findOrFail($programmeId);
 
-        $tickKey = $field . '_ticked';
+        $tickKey = str_ends_with($field, '_ticked') ? $field : ($field . '_ticked');
         $isTicked = !$programme->$tickKey;
         
         $programme->update([

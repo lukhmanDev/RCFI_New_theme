@@ -160,6 +160,75 @@
             background-color: rgba(255,255,255,0.01);
         }
     </style>
+    <script>
+        function switchStage(stageNum) {
+            const activeProjectStage = {{ $project->stage ?? 1 }};
+            const isProjectApproved = "{{ ($project->status === 'Approved' || $project->status === 'Completed') ? '1' : '0' }}";
+            const hasApplication = "{{ empty($project->application_id) ? '0' : '1' }}";
+            const projectType = "{{ $project->type_of_project ?? '' }}";
+
+            let isLocked = false;
+            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'].includes(projectType);
+            if (['Orphan Care', 'Differently Abled', 'Family Aid'].includes(projectType)) {
+                isLocked = false;
+            } else if (isSixStage) {
+                if (stageNum <= 3) {
+                    isLocked = false;
+                } else {
+                    isLocked = (activeProjectStage < 4 && isProjectApproved !== '1');
+                }
+            } else {
+                if (stageNum !== 1 && isProjectApproved !== '1') {
+                    isLocked = true;
+                }
+            }
+
+            if (isLocked) {
+                const msg = "Access Locked: This stage is not yet unlocked.";
+                if (typeof showToast === 'function') {
+                    showToast(msg, "danger");
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
+            try {
+                sessionStorage.setItem('current_project_stage_{{ $project->id ?? 0 }}', stageNum);
+            } catch(e) {}
+
+            const tabs = document.querySelectorAll('.stage-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            const clickedTab = document.getElementById('tab-' + stageNum);
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+
+            const panels = document.querySelectorAll('.stage-content-panel');
+            panels.forEach(panel => panel.style.display = 'none');
+
+            const targetPanel = document.getElementById('stage-content-' + stageNum);
+            if (targetPanel) {
+                targetPanel.style.display = 'block';
+            }
+        }
+        window.switchStage = switchStage;
+        function restoreActiveStage() {
+            try {
+                const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id ?? 0 }}');
+                if (savedStage) {
+                    switchStage(parseInt(savedStage, 10));
+                }
+            } catch(e) {}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreActiveStage);
+        } else {
+            restoreActiveStage();
+        }
+
+    </script>
 
     <!-- Stage Navigation Tabs (Interactive Navigation) -->
     <div class="stages-tabs" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--panel-border); margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 0.5rem;">
@@ -190,7 +259,7 @@
                     //   Stage 1 & Stage 2: always accessible
                     //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
                     //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
-                    if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
+                    if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'])) {
                         if ($i <= 2) {
                             $isLocked = false;
                         } elseif ($i == 3 || $i == 4) {
@@ -235,7 +304,7 @@
         
         $isLockedForEditing = ($project->status === 'Completed' || $project->status === 'Approved');
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
-        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
+        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']);
         $isStage4Approved = false;
         if ($isSixStage) {
             $isStage4Approved = ($project->stage >= 5 || in_array($project->status, ['Approved', 'Completed']));
@@ -274,7 +343,7 @@
             </div>
             <div style="padding: 1.5rem;">
                 {{-- Stage 1: No approval required for construction or non-construction projects --}}
-                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                     @if($project->status === 'Approved')
                         <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
                             <i class="bx bx-check-circle"></i> Project Approved & Active
@@ -526,7 +595,7 @@
                 </div>
 
                 <!-- Connect Application Form -->
-                @if($canAssignApplication && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if($canAssignApplication && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @if(!empty($project->application_id))
@@ -628,54 +697,48 @@
                                         <th style="padding: 0.75rem 1rem; font-weight: 700; text-align: center; width: 100px;">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="fund-transfers-tbody">
                                     @php
                                         $financials = $project->funds ?? collect();
                                     @endphp
                                     @forelse($financials as $index => $row)
-                                        <tr style="border-bottom: 1px solid var(--panel-border); font-size: 0.9rem; transition: background 0.15s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
-                                            <td style="padding: 0.75rem 1rem; color: var(--text-muted);">{{ $index + 1 }}</td>
+                                        <tr id="fund-row-{{ $row->id }}" class="fund-table-row" style="border-bottom: 1px solid var(--panel-border); font-size: 0.9rem; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
+                                            <td class="fund-serial-no" style="padding: 0.75rem 1rem; color: var(--text-muted);">{{ $index + 1 }}</td>
                                             <td style="padding: 0.75rem 1rem;">{{ !empty($row->date) ? date('d-M-Y', strtotime($row->date)) : 'N/A' }}</td>
-                                            <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹{{ number_format($row->amount, 2) }}</td>
+                                            <td class="fund-amount-cell" data-amount="{{ $row->amount }}" style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹{{ number_format($row->amount, 2) }}</td>
                                             <td style="padding: 0.75rem 1rem;">{{ $row->agency ?? 'N/A' }}</td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
-                                                <form action="{{ route('projects.' . $projectRouteKey . '.delete_fund', [$project->id, $row->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this row?')" style="display: inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem;" title="Delete">
-                                                        <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" onclick="handleDeleteFund(this, {{ $row->id }}, '{{ route('projects.' . $projectRouteKey . '.delete_fund', [$project->id, $row->id]) }}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Row">
+                                                    <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     @empty
-                                        <tr>
+                                        <tr id="no-funds-row">
                                             <td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted); font-style: italic;">
                                                 No fund transfer records found. Click "Add New Row" to add one.
                                             </td>
                                         </tr>
                                     @endforelse
                                 </tbody>
-                                @if($financials->count() > 0)
-                                    <tfoot>
-                                        <tr style="border-top: 2px solid var(--panel-border); font-weight: 700; font-size: 0.95rem;">
-                                            <td colspan="2" style="padding: 0.75rem 1rem; color: var(--text-main); text-align: left;">Total</td>
-                                            <td style="padding: 0.75rem 1rem; text-align: right; color: var(--accent-cyan);">₹{{ number_format($financials->sum('amount'), 2) }}</td>
-                                            <td colspan="2" style="padding: 0.75rem 1rem;"></td>
-                                        </tr>
-                                    </tfoot>
-                                @endif
+                                <tfoot id="fund-transfers-tfoot" style="display: {{ $financials->count() > 0 ? 'table-footer-group' : 'none' }};">
+                                    <tr style="border-top: 2px solid var(--panel-border); font-weight: 700; font-size: 0.95rem;">
+                                        <td colspan="2" style="padding: 0.75rem 1rem; color: var(--text-main); text-align: left;">Total</td>
+                                        <td id="fund-total-amount" style="padding: 0.75rem 1rem; text-align: right; color: var(--accent-cyan);">₹{{ number_format($financials->sum('amount'), 2) }}</td>
+                                        <td colspan="2" style="padding: 0.75rem 1rem;"></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
 
                     <!-- Add Fund Row Modal -->
-                    <div id="addFundModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
+                    <div id="addFundModal" onclick="if(event.target === this) closeAddFundModal()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
                         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.75rem; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); box-sizing: border-box; position: relative;">
                             <h3 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
                                 Add Fund Transfer Row
                             </h3>
-                            <form action="{{ route('projects.' . $projectRouteKey . '.add_fund', $project->id) }}" method="POST">
+                            <form id="addFundForm" action="{{ route('projects.' . $projectRouteKey . '.add_fund', $project->id) }}" method="POST" onsubmit="handleAddFundSubmit(event); return false;">
 
                                 @csrf
                                 <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.75rem;">
@@ -715,6 +778,171 @@
                         function closeAddFundModal() {
                             document.getElementById('addFundModal').style.display = 'none';
                         }
+
+                        async function handleAddFundSubmit(e) {
+                            e.preventDefault();
+                            const form = e.target;
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            if (submitBtn) {
+                                if (submitBtn.disabled) return false;
+                                submitBtn.disabled = true;
+                                submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Adding...';
+                            }
+
+                            try {
+                                const formData = new FormData(form);
+                                const response = await fetch(form.action, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    body: formData
+                                });
+
+                                const data = await response.json();
+                                if (response.ok && data.success) {
+                                    closeAddFundModal();
+                                    form.reset();
+                                    if (typeof showToast === 'function') {
+                                        showToast(data.message || 'Fund transfer record added successfully!', 'success');
+                                    }
+                                    appendFundRowToTable(data.fund, data.formatted_date, data.formatted_amount, data.total_amount, '{{ route("projects." . $projectRouteKey . ".delete_fund", [$project->id, 0]) }}');
+                                } else {
+                                    alert(data.error || 'Failed to add fund record.');
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                alert('An error occurred while adding fund record.');
+                            } finally {
+                                if (submitBtn) {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = 'Add Row';
+                                }
+                            }
+                            return false;
+                        }
+
+                        function appendFundRowToTable(fund, formattedDate, formattedAmount, totalAmountFormatted, deleteBaseUrl) {
+                            const tbody = document.getElementById('fund-transfers-tbody');
+                            const tfoot = document.getElementById('fund-transfers-tfoot');
+                            const totalElem = document.getElementById('fund-total-amount');
+                            if (!tbody) return;
+
+                            const noRow = document.getElementById('no-funds-row');
+                            if (noRow) noRow.remove();
+
+                            const rowsCount = tbody.querySelectorAll('tr.fund-table-row').length;
+                            const deleteUrl = deleteBaseUrl.replace('/0', '/' + fund.id);
+
+                            const tr = document.createElement('tr');
+                            tr.id = `fund-row-${fund.id}`;
+                            tr.className = 'fund-table-row';
+                            tr.style.cssText = 'border-bottom: 1px solid var(--panel-border); font-size: 0.9rem; transition: all 0.3s ease; opacity: 0; transform: translateY(-10px);';
+                            tr.setAttribute('onmouseover', "this.style.backgroundColor='rgba(255,255,255,0.02)'");
+                            tr.setAttribute('onmouseout', "this.style.backgroundColor='transparent'");
+
+                            tr.innerHTML = `
+                                <td class="fund-serial-no" style="padding: 0.75rem 1rem; color: var(--text-muted);">${rowsCount + 1}</td>
+                                <td style="padding: 0.75rem 1rem;">${formattedDate}</td>
+                                <td class="fund-amount-cell" data-amount="${fund.amount}" style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹${formattedAmount}</td>
+                                <td style="padding: 0.75rem 1rem;">${fund.agency || 'N/A'}</td>
+                                <td style="padding: 0.75rem 1rem; text-align: center;">
+                                    <button type="button" onclick="handleDeleteFund(this, ${fund.id}, '${deleteUrl}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Row">
+                                        <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
+                                    </button>
+                                </td>
+                            `;
+
+                            tbody.appendChild(tr);
+                            requestAnimationFrame(() => {
+                                tr.style.opacity = '1';
+                                tr.style.transform = 'translateY(0)';
+                            });
+
+                            if (tfoot) tfoot.style.display = 'table-footer-group';
+                            if (totalElem) totalElem.innerText = `₹${totalAmountFormatted}`;
+                        }
+
+                        async function handleDeleteFund(btnElement, fundId, deleteUrl) {
+                            if (!confirm('Are you sure you want to delete this fund transfer record?')) return;
+
+                            const row = btnElement.closest('tr');
+                            if (row) {
+                                row.style.transition = 'all 0.3s ease';
+                                row.style.opacity = '0.4';
+                                row.style.pointerEvents = 'none';
+                            }
+
+                            try {
+                                const response = await fetch(deleteUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    body: JSON.stringify({ _method: 'DELETE' })
+                                });
+
+                                const data = await response.json();
+                                if (response.ok && data.success) {
+                                    if (row) {
+                                        row.style.transform = 'translateX(20px)';
+                                        row.style.opacity = '0';
+                                        setTimeout(() => {
+                                            row.remove();
+                                            updateFundTableSerialNumbersAndTotal(data.total_amount);
+                                        }, 300);
+                                    }
+                                    if (typeof showToast === 'function') {
+                                        showToast(data.message || 'Fund transfer record deleted successfully!', 'success');
+                                    }
+                                } else {
+                                    if (row) {
+                                        row.style.opacity = '1';
+                                        row.style.pointerEvents = 'auto';
+                                    }
+                                    alert(data.error || 'Failed to delete fund record.');
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                if (row) {
+                                    row.style.opacity = '1';
+                                    row.style.pointerEvents = 'auto';
+                                }
+                                alert('An error occurred while deleting fund record.');
+                            }
+                        }
+
+                        function updateFundTableSerialNumbersAndTotal(totalAmountFormatted) {
+                            const tbody = document.getElementById('fund-transfers-tbody');
+                            const tfoot = document.getElementById('fund-transfers-tfoot');
+                            const totalElem = document.getElementById('fund-total-amount');
+                            if (!tbody) return;
+
+                            const rows = tbody.querySelectorAll('tr.fund-table-row');
+                            if (rows.length === 0) {
+                                tbody.innerHTML = `
+                                    <tr id="no-funds-row">
+                                        <td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted); font-style: italic;">
+                                            No fund transfer records found. Click "Add New Row" to add one.
+                                        </td>
+                                    </tr>
+                                `;
+                                if (tfoot) tfoot.style.display = 'none';
+                                return;
+                            }
+
+                            rows.forEach((r, idx) => {
+                                const serialCell = r.querySelector('.fund-serial-no');
+                                if (serialCell) serialCell.innerText = idx + 1;
+                            });
+
+                            if (totalElem) totalElem.innerText = `₹${totalAmountFormatted}`;
+                        }
                     </script>
                 @else
                 @php
@@ -739,7 +967,7 @@
                 {{-- Stage 2: No approval required for construction or non-construction projects --}}
 
                 <!-- Connect Application Form inside Stage 2 for 6-stage projects (Show First) -->
-                @if($canAssignApplication && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']) && $project->status !== 'Completed')
+                @if($canAssignApplication && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']) && $project->status !== 'Completed')
                 <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @php
@@ -1072,21 +1300,21 @@
                                                         'other_document' => 'Other Doc'
                                                     ];
                                                 @endphp
-                                                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 500px; margin: 0 auto;">
+                                                <div style="display: flex; gap: 0.3rem; flex-wrap: nowrap; justify-content: center; align-items: center; white-space: nowrap; margin: 0 auto;">
                                                     @foreach($items as $key => $label)
                                                         @php $isTicked = $prog->{$key . '_ticked'} ?? false; @endphp
                                                         @if($isProjectManager && !$isLockedForEditing)
                                                             <button type="button" onclick="toggleProgrammeChecklistTick(this, {{ $prog->id }}, '{{ $key }}')"
                                                                 title="{{ $label }}: {{ $isTicked ? 'Ticked (Click to untick)' : 'Not ticked (Click to tick)' }}"
-                                                                style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; outline: none;
+                                                                style="display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.25rem 0.5rem; border-radius: 20px; font-size: 0.73rem; font-weight: 600; cursor: pointer; transition: all 0.2s; outline: none; white-space: nowrap; flex-shrink: 0;
                                                                     {{ $isTicked ? 'background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #059669;' : 'background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #d97706;' }}">
-                                                                <i class="bx {{ $isTicked ? 'bxs-check-circle' : 'bx-circle' }}" style="font-size: 0.85rem;"></i>
+                                                                <i class="bx {{ $isTicked ? 'bxs-check-circle' : 'bx-circle' }}" style="font-size: 0.8rem;"></i>
                                                                 {{ $label }}
                                                             </button>
                                                         @else
-                                                            <span style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+                                                            <span style="display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.25rem 0.5rem; border-radius: 20px; font-size: 0.73rem; font-weight: 600; white-space: nowrap; flex-shrink: 0;
                                                                 {{ $isTicked ? 'background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #059669;' : 'background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #d97706;' }}">
-                                                                <i class="bx {{ $isTicked ? 'bxs-check-circle' : 'bx-circle' }}" style="font-size: 0.85rem;"></i>
+                                                                <i class="bx {{ $isTicked ? 'bxs-check-circle' : 'bx-circle' }}" style="font-size: 0.8rem;"></i>
                                                                 {{ $label }}
                                                             </span>
                                                         @endif
@@ -1681,7 +1909,7 @@
 
 
                 <!-- Expenses Section -->
-                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Allocated Items & Spent Expenses</h3>
 
@@ -2527,9 +2755,7 @@
 
                     const container = targetCard.querySelector('.photo-list-container');
                     if (container) {
-                        const emptyState = container.querySelector('.photo-empty-state');
-                        if (emptyState) emptyState.remove();
-
+                        container.innerHTML = '';
                         const photoDiv = document.createElement('div');
                         photoDiv.style.cssText = 'position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease;';
                         
@@ -2553,7 +2779,11 @@
                 }
             }
 
-            document.addEventListener('submit', async function(e) {
+            if (window.__photoSubmitHandler) {
+                document.removeEventListener('submit', window.__photoSubmitHandler, true);
+            }
+
+            window.__photoSubmitHandler = async function(e) {
                 const form = e.target;
                 if (!form || form.getAttribute('data-no-ajax') === 'true') return;
 
@@ -2562,6 +2792,8 @@
                 // A. AJAX PHOTO UPLOAD (Matches both upload-photo and upload_photo)
                 if (action.includes('upload-photo') || action.includes('upload_photo')) {
                     e.preventDefault();
+                    if (form.dataset.submitting === 'true') return;
+                    form.dataset.submitting = 'true';
 
                     const submitBtn = form.querySelector('button[type="submit"]');
                     const origBtnText = submitBtn ? submitBtn.innerHTML : '';
@@ -2601,68 +2833,79 @@
                         console.error('AJAX upload photo error:', err);
                         alert('Photo upload failed. Please try again.');
                     } finally {
+                        delete form.dataset.submitting;
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = origBtnText;
                         }
                     }
-                }
-
-                // B. AJAX PHOTO DELETE (Matches delete-photo, delete_photo, /photos/)
-                else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
+                } else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
                     e.preventDefault();
-                    if (!confirm('Delete this photo?')) return;
+                    if (form.dataset.submitting === 'true') return;
 
-                    const photoItem = form.closest('div[style*="position: relative"]');
-                    const card = form.closest('.photo-card');
+                    const doDelete = async () => {
+                        form.dataset.submitting = 'true';
+                        const photoItem = form.closest('div[style*="position: relative"]');
+                        const card = form.closest('.photo-card');
 
-                    try {
-                        const response = await fetch(action, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            },
-                            body: new FormData(form)
-                        });
+                        try {
+                            const response = await fetch(action, {
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                body: new FormData(form)
+                            });
 
-                        const data = await response.json();
+                            const data = await response.json();
 
-                        if (data.success) {
-                            if (photoItem) {
-                                photoItem.style.transition = 'all 0.3s ease';
-                                photoItem.style.opacity = '0';
-                                photoItem.style.transform = 'scale(0.8)';
-                                setTimeout(() => {
-                                    photoItem.remove();
-                                    if (card) {
-                                        const badge = card.querySelector('.photo-card-header span:last-child');
-                                        if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
+                            if (data.success) {
+                                if (photoItem) {
+                                    photoItem.style.transition = 'all 0.3s ease';
+                                    photoItem.style.opacity = '0';
+                                    photoItem.style.transform = 'scale(0.8)';
+                                    setTimeout(() => {
+                                        photoItem.remove();
+                                        if (card) {
+                                            const badge = card.querySelector('.photo-card-header span:last-child');
+                                            if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
 
-                                        const container = card.querySelector('.photo-list-container');
-                                        if (container && (data.total_photos === 0 || container.children.length === 0)) {
-                                            const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
-                                            container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                                            const container = card.querySelector('.photo-list-container');
+                                            if (container && (data.total_photos === 0 || container.children.length === 0)) {
+                                                const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
+                                                container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                                            }
                                         }
-                                    }
-                                }, 300);
-                            }
-                            if (typeof showToast === 'function') {
-                                showToast(data.message || 'Photo deleted successfully!', 'success');
-                            }
-                        } else {
-                            if (typeof showToast === 'function') {
-                                showToast(data.message || 'Photo delete failed.', 'danger');
+                                    }, 300);
+                                }
+                                if (typeof showToast === 'function') {
+                                    showToast(data.message || 'Photo deleted successfully!', 'success');
+                                }
                             } else {
-                                alert(data.message || 'Photo delete failed.');
+                                if (typeof showToast === 'function') {
+                                    showToast(data.message || 'Photo delete failed.', 'danger');
+                                } else {
+                                    alert(data.message || 'Photo delete failed.');
+                                }
                             }
+                        } catch (err) {
+                            console.error('AJAX delete photo error:', err);
+                            alert('Photo delete failed. Please try again.');
+                        } finally {
+                            delete form.dataset.submitting;
                         }
-                    } catch (err) {
-                        console.error('AJAX delete photo error:', err);
-                        alert('Photo delete failed. Please try again.');
+                    };
+
+                    if (typeof showCustomConfirm === 'function') {
+                        showCustomConfirm('Delete this photo?', doDelete);
+                    } else if (confirm('Delete this photo?')) {
+                        doDelete();
                     }
                 }
-            }, true);
+            };
+
+            document.addEventListener('submit', window.__photoSubmitHandler, true);
         })();
     </script>
     <!-- Switch Stage Script -->
@@ -2681,6 +2924,9 @@
                 performToggleChecklistDocument(button, docName);
             }
         }
+
+        window.toggleChecklistDocument = toggleChecklistDocument;
+        window.performToggleChecklistDocument = performToggleChecklistDocument;
 
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
@@ -2811,7 +3057,8 @@
                 return;
             }
 
-            const app = allApplicationsData.find(a => a.id == selectedId);
+            const apps = (typeof allApplicationsData !== 'undefined' && Array.isArray(allApplicationsData)) ? allApplicationsData : [];
+            const app = apps.find(a => a.id == selectedId);
             if (!app) return;
 
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
@@ -3009,7 +3256,7 @@
 
         function switchStage(stageNum) {
             let isLocked = false;
-            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
+            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'].includes(projectType);
             if (['Orphan Care', 'Differently Abled', 'Family Aid'].includes(projectType)) {
 
                 isLocked = false;
@@ -3063,16 +3310,31 @@
                 targetPanel.style.display = 'block';
             }
         }
+        window.switchStage = switchStage;
+        function restoreActiveStage() {
+            try {
+                const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id ?? 0 }}');
+                if (savedStage) {
+                    switchStage(parseInt(savedStage, 10));
+                }
+            } catch(e) {}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreActiveStage);
+        } else {
+            restoreActiveStage();
+        }
+
 
         // Initialize display to show the stage panel
-        document.addEventListener('DOMContentLoaded', () => {
+        function initStageDisplay() {
             const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id }}');
+            let stageToLoad = 1;
             if (savedStage) {
                 const stageNum = Number(savedStage);
                 let isLocked = false;
-                const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
+                const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'].includes(projectType);
                 if (['Orphan Care', 'Differently Abled', 'Family Aid'].includes(projectType)) {
-
                     isLocked = false;
                 } else if (isSixStage) {
                     if (stageNum <= 2) {
@@ -3088,14 +3350,17 @@
                     }
                 }
                 if (!isLocked) {
-                    switchStage(stageNum);
-                } else {
-                    switchStage(1);
+                    stageToLoad = stageNum;
                 }
-            } else {
-                switchStage(1);
             }
-        });
+            switchStage(stageToLoad);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initStageDisplay);
+        } else {
+            initStageDisplay();
+        }
 
         // Material Management Modal Controls
         function openAddMaterialModal() {
@@ -3618,7 +3883,7 @@
                     <i class="bx bx-x"></i>
                 </button>
             </div>
-            <form id="addProgrammeForm" action="{{ route('projects.' . $projectRouteKey . '.add_programme', $project->id) }}" method="POST" onsubmit="handleAddProgrammeSubmit(event)" style="margin: 0;">
+            <form id="addProgrammeForm" action="{{ route('projects.' . $projectRouteKey . '.add_programme', $project->id) }}" method="POST" onsubmit="handleAddProgrammeSubmit(event); return false;" style="margin: 0;">
 
 
 
@@ -3748,14 +4013,15 @@
             }
         });
 
-        function openAddProgrammeModal() {
+        window.openAddProgrammeModal = function openAddProgrammeModal() {
             const modal = document.getElementById('addProgrammeModal');
             if (modal) modal.style.display = 'flex';
         }
         function closeAddProgrammeModal() {
-            const modal = document.getElementById('addProgrammeModal');
-            if (modal) modal.style.display = 'none';
-        }
+        const modal = document.getElementById("addProgrammeModal");
+        if (modal) modal.style.display = "none";
+    }
+    window.closeAddProgrammeModal = closeAddProgrammeModal;
 
         function openEditProgrammeModal(btnElement) {
             const rawProg = btnElement.getAttribute('data-prog');
@@ -3793,6 +4059,7 @@
 
         async function handleAddProgrammeSubmit(e) {
             e.preventDefault();
+            closeAddProgrammeModal();
             const form = e.target;
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
@@ -3894,6 +4161,7 @@
         }
 
         async function handleDeleteProgramme(btnElement, progId, deleteUrl) {
+    window.handleDeleteProgramme = handleDeleteProgramme;
             if (!confirm('Are you sure you want to delete this programme? This action cannot be undone.')) {
                 return;
             }
@@ -3975,6 +4243,7 @@
 
 
         async function toggleProgrammeChecklistTick(btnElement, progIndex, field) {
+            window.toggleProgrammeChecklistTick = toggleProgrammeChecklistTick;
             const icon = btnElement.querySelector('i');
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 

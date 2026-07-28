@@ -193,7 +193,6 @@
                     $totalApps = max(1, $applicationsCount);
                     $approvedPct = round(($approvedCount / $totalApps) * 100, 1);
                     $pendingPct = round(($pendingCount / $totalApps) * 100, 1);
-                    $underReviewPct = round(($underReviewCount / $totalApps) * 100, 1);
                     $rejectedPct = round(($rejectedCount / $totalApps) * 100, 1);
                 @endphp
                 <div style="display: flex; flex-direction: column; gap: 0.85rem; flex-grow: 1; padding-left: 0.5rem;">
@@ -215,16 +214,6 @@
                         </div>
                         <span style="font-size: 0.88rem; font-weight: 700; color: #344054;">
                             {{ $pendingCount }} <span style="font-size: 0.82rem; font-weight: 500; color: #667085;">({{ $pendingPct }}%)</span>
-                        </span>
-                    </div>
-                    <!-- Under Review -->
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 0.6rem;">
-                            <span style="width: 12px; height: 12px; background: #f97316; border-radius: 4px; display: inline-block;"></span>
-                            <span style="font-size: 0.88rem; font-weight: 600; color: #344054;">Under Review</span>
-                        </div>
-                        <span style="font-size: 0.88rem; font-weight: 700; color: #344054;">
-                            {{ $underReviewCount }} <span style="font-size: 0.82rem; font-weight: 500; color: #667085;">({{ $underReviewPct }}%)</span>
                         </span>
                     </div>
                     <!-- Rejected -->
@@ -335,14 +324,6 @@
 
 </div>
 
-<!-- Load Chart.js with JS fallback execution -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script>
-    if (typeof Chart === 'undefined') {
-        document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"><\/script>');
-    }
-</script>
-
 <script>
     const chartPeriodData = {!! json_encode($chartPeriodData ?? [
         'this_month' => ['labels' => ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31'], 'data' => [3, 11, 13, 10, 13, 20]],
@@ -352,6 +333,7 @@
     ]) !!};
 
     let overviewChartInstance = null;
+    let statusChartInstance = null;
 
     function updateOverviewChartPeriod(periodKey) {
         if (!overviewChartInstance || !chartPeriodData[periodKey]) return;
@@ -363,8 +345,32 @@
 
     function renderAdminDashboardCharts() {
         if (typeof Chart === 'undefined') {
-            setTimeout(renderAdminDashboardCharts, 100);
+            setTimeout(renderAdminDashboardCharts, 50);
             return;
+        }
+
+        const overviewCanvas = document.getElementById('applicationsOverviewChart');
+        const statusCanvas = document.getElementById('applicationsStatusChart');
+
+        if (!overviewCanvas || !statusCanvas) {
+            return;
+        }
+
+        // Clean up any previously attached Chart.js instances to avoid canvas reuse errors
+        const existingOverviewChart = Chart.getChart(overviewCanvas);
+        if (existingOverviewChart) {
+            existingOverviewChart.destroy();
+        } else if (overviewChartInstance) {
+            try { overviewChartInstance.destroy(); } catch (e) {}
+            overviewChartInstance = null;
+        }
+
+        const existingStatusChart = Chart.getChart(statusCanvas);
+        if (existingStatusChart) {
+            existingStatusChart.destroy();
+        } else if (statusChartInstance) {
+            try { statusChartInstance.destroy(); } catch (e) {}
+            statusChartInstance = null;
         }
 
         const fontFamily = getComputedStyle(document.body).fontFamily || 'Inter, sans-serif';
@@ -372,152 +378,146 @@
         Chart.defaults.color = '#64748b';
 
         // 1. Smooth Purple Area Line Chart: Applications Overview
-        const overviewCanvas = document.getElementById('applicationsOverviewChart');
-        if (overviewCanvas) {
-            const ctx = overviewCanvas.getContext('2d');
-            
-            // Create gradient for fill under line
-            const purpleGradient = ctx.createLinearGradient(0, 0, 0, 260);
-            purpleGradient.addColorStop(0, 'rgba(124, 58, 237, 0.22)');
-            purpleGradient.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
+        const ctx = overviewCanvas.getContext('2d');
+        
+        // Create gradient for fill under line
+        const purpleGradient = ctx.createLinearGradient(0, 0, 0, 260);
+        purpleGradient.addColorStop(0, 'rgba(124, 58, 237, 0.22)');
+        purpleGradient.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
 
-            const initialPeriod = chartPeriodData['this_month'] || {
-                labels: {!! json_encode($chartLabels ?? ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31']) !!},
-                data: {!! json_encode($chartAllData ?? [3, 11, 13, 10, 13, 20]) !!}
-            };
+        const initialPeriod = chartPeriodData['this_month'] || {
+            labels: {!! json_encode($chartLabels ?? ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31']) !!},
+            data: {!! json_encode($chartAllData ?? [3, 11, 13, 10, 13, 20]) !!}
+        };
 
-            overviewChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: initialPeriod.labels,
-                    datasets: [{
-                        label: 'Applications',
-                        data: initialPeriod.data,
-                        borderColor: '#7c3aed',
-                        backgroundColor: purpleGradient,
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 7,
-                        pointBackgroundColor: '#7c3aed',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2.5,
-                        pointHoverBackgroundColor: '#7c3aed',
-                        pointHoverBorderColor: '#ffffff',
-                        pointHoverBorderWidth: 3
-                    }]
+        overviewChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: initialPeriod.labels,
+                datasets: [{
+                    label: 'Applications',
+                    data: initialPeriod.data,
+                    borderColor: '#7c3aed',
+                    backgroundColor: purpleGradient,
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#7c3aed',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2.5,
+                    pointHoverBackgroundColor: '#7c3aed',
+                    pointHoverBorderColor: '#ffffff',
+                    pointHoverBorderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            enabled: true,
-                            backgroundColor: '#ffffff',
-                            titleColor: '#101828',
-                            titleFont: { size: 13, weight: '700' },
-                            bodyColor: '#475569',
-                            bodyFont: { size: 12, weight: '600' },
-                            borderColor: '#eaecf0',
-                            borderWidth: 1,
-                            padding: 12,
-                            boxPadding: 6,
-                            usePointStyle: true,
-                            displayColors: true,
-                            boxWidth: 8,
-                            boxHeight: 8,
-                            borderRadius: 10,
-                            shadowColor: 'rgba(16, 24, 40, 0.1)',
-                            callbacks: {
-                                title: function(tooltipItems) {
-                                    const label = tooltipItems[0].label;
-                                    return label.includes('20') ? label : label + ', 2025';
-                                },
-                                label: function(context) {
-                                    return 'Applications: ' + context.formattedValue;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { size: 11, weight: '500' }
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: '#f1f5f9',
-                                strokeDashArray: [4, 4]
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#ffffff',
+                        titleColor: '#101828',
+                        titleFont: { size: 13, weight: '700' },
+                        bodyColor: '#475569',
+                        bodyFont: { size: 12, weight: '600' },
+                        borderColor: '#eaecf0',
+                        borderWidth: 1,
+                        padding: 12,
+                        boxPadding: 6,
+                        usePointStyle: true,
+                        displayColors: true,
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        borderRadius: 10,
+                        shadowColor: 'rgba(16, 24, 40, 0.1)',
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                const label = tooltipItems[0].label;
+                                return label.includes('20') ? label : label + ', 2025';
                             },
-                            border: { dash: [4, 4] },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { size: 11, weight: '500' },
-                                stepSize: 5
+                            label: function(context) {
+                                return 'Applications: ' + context.formattedValue;
                             }
                         }
                     }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: { size: 11, weight: '500' }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f1f5f9',
+                            strokeDashArray: [4, 4]
+                        },
+                        border: { dash: [4, 4] },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: { size: 11, weight: '500' },
+                            stepSize: 5
+                        }
+                    }
                 }
-            });
-        }
+            }
+        });
 
         // 2. Doughnut Chart: Applications Status Breakdown
-        const statusCanvas = document.getElementById('applicationsStatusChart');
-        if (statusCanvas) {
-            new Chart(statusCanvas, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Approved', 'Pending', 'Under Review', 'Rejected'],
-                    datasets: [{
-                        data: [
-                            {{ $approvedCount }},
-                            {{ $pendingCount }},
-                            {{ $underReviewCount }},
-                            {{ $rejectedCount }}
-                        ],
-                        backgroundColor: [
-                            '#22c55e', // Green for Approved
-                            '#3b82f6', // Blue for Pending
-                            '#f97316', // Orange for Under Review
-                            '#94a3b8'  // Gray for Rejected
-                        ],
-                        borderWidth: 3,
-                        borderColor: '#ffffff',
-                        hoverOffset: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '74%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            padding: 10,
-                            borderRadius: 8
-                        }
+        statusChartInstance = new Chart(statusCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Approved', 'Pending', 'Rejected'],
+                datasets: [{
+                    data: [
+                        {{ $approvedCount }},
+                        {{ $pendingCount }},
+                        {{ $rejectedCount }}
+                    ],
+                    backgroundColor: [
+                        '#22c55e', // Green for Approved
+                        '#3b82f6', // Blue for Pending
+                        '#94a3b8'  // Gray for Rejected
+                    ],
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '74%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        padding: 10,
+                        borderRadius: 8
                     }
                 }
-            });
-        }
+            }
+        });
     }
 
+    // Trigger chart initialization for initial page load, PJAX updates, and back/forward cache restore
+    setTimeout(renderAdminDashboardCharts, 10);
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', renderAdminDashboardCharts);
-    } else {
-        renderAdminDashboardCharts();
     }
+    window.addEventListener('pageshow', renderAdminDashboardCharts);
+    document.addEventListener('pjax:complete', renderAdminDashboardCharts);
 </script>
 
 @endsection

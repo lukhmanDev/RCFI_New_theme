@@ -217,8 +217,10 @@
     }
 
     function closeModal() {
-        document.getElementById('addAppModal').style.display = 'none';
+        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
+        if (modal) modal.style.display = 'none';
     }
+    window.closeModal = closeModal;
 
     // Edit Application Modal Toggle
     function openEditModal(appItem) {
@@ -235,8 +237,10 @@
     }
 
     function closeEditModal() {
-        document.getElementById('editAppModal').style.display = 'none';
+        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
+        if (modal) modal.style.display = 'none';
     }
+    window.closeEditModal = closeEditModal;
 </script>
 
 <!-- Automatically open add modal if validation error occurs on creation -->

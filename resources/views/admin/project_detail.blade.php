@@ -161,6 +161,76 @@
         }
     </style>
 
+    <script>
+        function switchStage(stageNum) {
+            const activeProjectStage = {{ $project->stage ?? 1 }};
+            const isProjectApproved = "{{ ($project->status === 'Approved' || $project->status === 'Completed') ? '1' : '0' }}";
+            const hasApplication = "{{ empty($project->application_id) ? '0' : '1' }}";
+            const projectType = "{{ $project->type_of_project ?? '' }}";
+
+            let isLocked = false;
+            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'].includes(projectType);
+            if (['Orphan Care', 'Differently Abled', 'Family Aid'].includes(projectType)) {
+                isLocked = false;
+            } else if (isSixStage) {
+                if (stageNum <= 3) {
+                    isLocked = false;
+                } else {
+                    isLocked = (activeProjectStage < 4 && isProjectApproved !== '1');
+                }
+            } else {
+                if (stageNum !== 1 && isProjectApproved !== '1') {
+                    isLocked = true;
+                }
+            }
+
+            if (isLocked) {
+                const msg = "Access Locked: This stage is not yet unlocked.";
+                if (typeof showToast === 'function') {
+                    showToast(msg, "danger");
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
+            try {
+                sessionStorage.setItem('current_project_stage_{{ $project->id ?? 0 }}', stageNum);
+            } catch(e) {}
+
+            const tabs = document.querySelectorAll('.stage-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            const clickedTab = document.getElementById('tab-' + stageNum);
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+
+            const panels = document.querySelectorAll('.stage-content-panel');
+            panels.forEach(panel => panel.style.display = 'none');
+
+            const targetPanel = document.getElementById('stage-content-' + stageNum);
+            if (targetPanel) {
+                targetPanel.style.display = 'block';
+            }
+        }
+        window.switchStage = switchStage;
+        function restoreActiveStage() {
+            try {
+                const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id ?? 0 }}');
+                if (savedStage) {
+                    switchStage(parseInt(savedStage, 10));
+                }
+            } catch(e) {}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreActiveStage);
+        } else {
+            restoreActiveStage();
+        }
+
+    </script>
+
     <!-- Stage Navigation Tabs (Interactive Navigation) -->
     <div class="stages-tabs" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--panel-border); margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 0.5rem;">
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
@@ -173,7 +243,7 @@
                     //   Stage 1 & Stage 2: always accessible
                     //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
                     //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
-                    if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
+                    if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'])) {
                         if ($i <= 2) {
                             $isLocked = false;
                         } elseif ($i == 3 || $i == 4) {
@@ -211,7 +281,7 @@
         $isProjectManager = ($authUser && ($isSuperAdmin || $isCoo || $isHod || $isPmOnly || $isEngineerOnly || in_array($authUser->role, [1, 2, 3, 4, 6, 'super_admin', 'coo', 'project_manager', 'hod', 'engineer']) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod', 'super admin', 'admin'])));
         $isLockedForEditing = ($project->status === 'Completed' && !$isSuperAdmin);
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
-        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
+        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']);
         $isStage4Approved = false;
         if ($isSixStage) {
             $isStage4Approved = ($project->stage >= 5 || in_array($project->status, ['Approved', 'Completed']));
@@ -250,7 +320,7 @@
             </div>
             <div style="padding: 1.5rem;">
                 {{-- Stage 1: No approval required for construction or non-construction projects --}}
-                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                     @if($project->status === 'Approved')
                         <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
                             <i class="bx bx-check-circle"></i> Project Approved & Active
@@ -365,7 +435,7 @@
                 </div>
 
                 <!-- Connect Application Form -->
-                @if($canAssignApplication && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if($canAssignApplication && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @if(!empty($project->application_id))
@@ -467,7 +537,7 @@
                 {{-- Stage 2: No approval required for construction or non-construction projects --}}
 
                 <!-- Connect Application Form inside Stage 2 for 6-stage projects (Show First) -->
-                @if($canAssignApplication && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']) && $project->status !== 'Completed')
+                @if($canAssignApplication && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']) && $project->status !== 'Completed')
                 <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @php
@@ -1255,7 +1325,7 @@
 
 
                 <!-- Expenses Section -->
-                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Allocated Items & Spent Expenses</h3>
 
@@ -2046,9 +2116,7 @@
 
                     const container = targetCard.querySelector('.photo-list-container');
                     if (container) {
-                        const emptyState = container.querySelector('.photo-empty-state');
-                        if (emptyState) emptyState.remove();
-
+                        container.innerHTML = '';
                         const photoDiv = document.createElement('div');
                         photoDiv.style.cssText = 'position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease;';
                         
@@ -2072,7 +2140,11 @@
                 }
             }
 
-            document.addEventListener('submit', async function(e) {
+            if (window.__photoSubmitHandler) {
+                document.removeEventListener('submit', window.__photoSubmitHandler, true);
+            }
+
+            window.__photoSubmitHandler = async function(e) {
                 const form = e.target;
                 if (!form || form.getAttribute('data-no-ajax') === 'true') return;
 
@@ -2081,6 +2153,8 @@
                 // A. AJAX PHOTO UPLOAD (Matches both upload-photo and upload_photo)
                 if (action.includes('upload-photo') || action.includes('upload_photo')) {
                     e.preventDefault();
+                    if (form.dataset.submitting === 'true') return;
+                    form.dataset.submitting = 'true';
 
                     const submitBtn = form.querySelector('button[type="submit"]');
                     const origBtnText = submitBtn ? submitBtn.innerHTML : '';
@@ -2120,68 +2194,79 @@
                         console.error('AJAX upload photo error:', err);
                         alert('Photo upload failed. Please try again.');
                     } finally {
+                        delete form.dataset.submitting;
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = origBtnText;
                         }
                     }
-                }
-
-                // B. AJAX PHOTO DELETE (Matches delete-photo, delete_photo, /photos/)
-                else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
+                } else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
                     e.preventDefault();
-                    if (!confirm('Delete this photo?')) return;
+                    if (form.dataset.submitting === 'true') return;
 
-                    const photoItem = form.closest('div[style*="position: relative"]');
-                    const card = form.closest('.photo-card');
+                    const doDelete = async () => {
+                        form.dataset.submitting = 'true';
+                        const photoItem = form.closest('div[style*="position: relative"]');
+                        const card = form.closest('.photo-card');
 
-                    try {
-                        const response = await fetch(action, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            },
-                            body: new FormData(form)
-                        });
+                        try {
+                            const response = await fetch(action, {
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                body: new FormData(form)
+                            });
 
-                        const data = await response.json();
+                            const data = await response.json();
 
-                        if (data.success) {
-                            if (photoItem) {
-                                photoItem.style.transition = 'all 0.3s ease';
-                                photoItem.style.opacity = '0';
-                                photoItem.style.transform = 'scale(0.8)';
-                                setTimeout(() => {
-                                    photoItem.remove();
-                                    if (card) {
-                                        const badge = card.querySelector('.photo-card-header span:last-child');
-                                        if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
+                            if (data.success) {
+                                if (photoItem) {
+                                    photoItem.style.transition = 'all 0.3s ease';
+                                    photoItem.style.opacity = '0';
+                                    photoItem.style.transform = 'scale(0.8)';
+                                    setTimeout(() => {
+                                        photoItem.remove();
+                                        if (card) {
+                                            const badge = card.querySelector('.photo-card-header span:last-child');
+                                            if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
 
-                                        const container = card.querySelector('.photo-list-container');
-                                        if (container && (data.total_photos === 0 || container.children.length === 0)) {
-                                            const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
-                                            container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                                            const container = card.querySelector('.photo-list-container');
+                                            if (container && (data.total_photos === 0 || container.children.length === 0)) {
+                                                const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
+                                                container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                                            }
                                         }
-                                    }
-                                }, 300);
-                            }
-                            if (typeof showToast === 'function') {
-                                showToast(data.message || 'Photo deleted successfully!', 'success');
-                            }
-                        } else {
-                            if (typeof showToast === 'function') {
-                                showToast(data.message || 'Photo delete failed.', 'danger');
+                                    }, 300);
+                                }
+                                if (typeof showToast === 'function') {
+                                    showToast(data.message || 'Photo deleted successfully!', 'success');
+                                }
                             } else {
-                                alert(data.message || 'Photo delete failed.');
+                                if (typeof showToast === 'function') {
+                                    showToast(data.message || 'Photo delete failed.', 'danger');
+                                } else {
+                                    alert(data.message || 'Photo delete failed.');
+                                }
                             }
+                        } catch (err) {
+                            console.error('AJAX delete photo error:', err);
+                            alert('Photo delete failed. Please try again.');
+                        } finally {
+                            delete form.dataset.submitting;
                         }
-                    } catch (err) {
-                        console.error('AJAX delete photo error:', err);
-                        alert('Photo delete failed. Please try again.');
+                    };
+
+                    if (typeof showCustomConfirm === 'function') {
+                        showCustomConfirm('Delete this photo?', doDelete);
+                    } else if (confirm('Delete this photo?')) {
+                        doDelete();
                     }
                 }
-            }, true);
+            };
+
+            document.addEventListener('submit', window.__photoSubmitHandler, true);
         })();
     </script>
     <!-- Switch Stage Script -->
@@ -2206,6 +2291,9 @@
                 performToggleChecklistDocument(button, docName);
             }
         }
+
+        window.toggleChecklistDocument = toggleChecklistDocument;
+        window.performToggleChecklistDocument = performToggleChecklistDocument;
 
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
@@ -2336,7 +2424,8 @@
                 return;
             }
 
-            const app = allApplicationsData.find(a => a.id == selectedId);
+            const apps = (typeof allApplicationsData !== 'undefined' && Array.isArray(allApplicationsData)) ? allApplicationsData : [];
+            const app = apps.find(a => a.id == selectedId);
             if (!app) return;
 
             let meta = {};
@@ -2476,11 +2565,25 @@
 
         function switchStage(stageNum) {
             let isLocked = false;
-            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
+            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'].includes(projectType);
             if (isSixStage) {
                 if (stageNum <= 2) {
                     isLocked = false;
-                } else if (stageNum === 3 || stageNum === 4) {
+                }
+        window.switchStage = switchStage;
+        function restoreActiveStage() {
+            try {
+                const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id ?? 0 }}');
+                if (savedStage) {
+                    switchStage(parseInt(savedStage, 10));
+                }
+            } catch(e) {}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreActiveStage);
+        } else {
+            restoreActiveStage();
+        } else if (stageNum === 3 || stageNum === 4) {
                     isLocked = (hasApplication !== '1');
                 } else {
                     // Stage 5 or 6 unlocks when project stage >= 5 or approved
@@ -2534,7 +2637,7 @@
             if (savedStage) {
                 const stageNum = Number(savedStage);
                 let isLocked = false;
-                const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
+                const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'].includes(projectType);
                 if (isSixStage) {
                     if (stageNum <= 2) {
                         isLocked = false;

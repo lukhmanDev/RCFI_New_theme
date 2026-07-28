@@ -85,15 +85,15 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::post('/admin/applications/family-aid/{id}/toggle-sponsor', [ApplicationController::class, 'toggleSponsor'])->name('applications.family_aid.toggle_sponsor');
 
     foreach (['orphan-care' => 'orphan_care', 'differently-abled' => 'differently_abled', 'family-aid' => 'family_aid'] as $slug => $key) {
-        Route::post('/admin/projects/' . $slug . '/{id}/upload-photo', [ProjectController::class, 'socialAidUploadPhoto'])->name('projects.' . $key . '.upload_photo');
-        Route::delete('/admin/projects/' . $slug . '/{id}/delete-photo', [ProjectController::class, 'socialAidDeletePhoto'])->name('projects.' . $key . '.delete_photo');
-        Route::post('/admin/projects/' . $slug . '/{id}/update-address', [ProjectController::class, 'socialAidUpdateAddress'])->name('projects.' . $key . '.update_address');
-        Route::post('/admin/projects/' . $slug . '/{id}/add-fund', [ProjectController::class, 'socialAidAddFund'])->name('projects.' . $key . '.add_fund');
-        Route::delete('/admin/projects/' . $slug . '/{id}/delete-fund/{fund_id}', [ProjectController::class, 'socialAidDeleteFund'])->name('projects.' . $key . '.delete_fund');
-        Route::post('/admin/projects/' . $slug . '/{id}/add-programme', [ProjectController::class, 'socialAidAddProgramme'])->name('projects.' . $key . '.add_programme');
-        Route::post('/admin/projects/' . $slug . '/{id}/update-programme/{programme_id}', [ProjectController::class, 'socialAidUpdateProgramme'])->name('projects.' . $key . '.update_programme');
-        Route::delete('/admin/projects/' . $slug . '/{id}/delete-programme/{programme_id}', [ProjectController::class, 'socialAidDeleteProgramme'])->name('projects.' . $key . '.delete_programme');
-        Route::post('/admin/projects/' . $slug . '/{id}/toggle-programme-tick', [ProjectController::class, 'socialAidToggleProgrammeTick'])->name('projects.' . $key . '.toggle_programme_tick');
+        Route::match(['get', 'post'], '/admin/projects/' . $slug . '/{id}/upload-photo', [ProjectController::class, 'socialAidUploadPhoto'])->name('projects.' . $key . '.upload_photo');
+        Route::match(['get', 'delete'], '/admin/projects/' . $slug . '/{id}/delete-photo', [ProjectController::class, 'socialAidDeletePhoto'])->name('projects.' . $key . '.delete_photo');
+        Route::match(['get', 'post'], '/admin/projects/' . $slug . '/{id}/update-address', [ProjectController::class, 'socialAidUpdateAddress'])->name('projects.' . $key . '.update_address');
+        Route::match(['get', 'post'], '/admin/projects/' . $slug . '/{id}/add-fund', [ProjectController::class, 'socialAidAddFund'])->name('projects.' . $key . '.add_fund');
+        Route::match(['get', 'delete'], '/admin/projects/' . $slug . '/{id}/delete-fund/{fund_id}', [ProjectController::class, 'socialAidDeleteFund'])->name('projects.' . $key . '.delete_fund');
+        Route::match(['get', 'post'], '/admin/projects/' . $slug . '/{id}/add-programme', [ProjectController::class, 'socialAidAddProgramme'])->name('projects.' . $key . '.add_programme');
+        Route::match(['get', 'post'], '/admin/projects/' . $slug . '/{id}/update-programme/{programme_id}', [ProjectController::class, 'socialAidUpdateProgramme'])->name('projects.' . $key . '.update_programme');
+        Route::match(['get', 'delete'], '/admin/projects/' . $slug . '/{id}/delete-programme/{programme_id}', [ProjectController::class, 'socialAidDeleteProgramme'])->name('projects.' . $key . '.delete_programme');
+        Route::match(['get', 'post'], '/admin/projects/' . $slug . '/{id}/toggle-programme-tick', [ProjectController::class, 'socialAidToggleProgrammeTick'])->name('projects.' . $key . '.toggle_programme_tick');
     }
 
 
@@ -124,7 +124,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::delete('/admin/projects/{id}/community-contributions/{index}', [ProjectController::class, 'deleteCommunityContribution'])->name('projects.delete_community_contribution');
 
     Route::post('/admin/projects/{id}/upload-photo', [ProjectController::class, 'uploadPhoto'])->name('projects.upload_photo');
-    Route::delete('/admin/projects/{id}/delete-photo/{index}', [ProjectController::class, 'deletePhoto'])->name('projects.delete_photo');
+    Route::match(['get', 'post', 'delete'], '/admin/projects/{id}/delete-photo/{index}', [ProjectController::class, 'deletePhoto'])->name('projects.delete_photo');
+    Route::match(['get', 'post'], '/admin/projects/{id}/toggle-file', [ProjectController::class, 'toggleFile'])->name('projects.toggle_file');
     Route::post('/admin/projects/{id}/completion-details', [ProjectController::class, 'saveCompletionDetails'])->name('projects.save_completion_details');
     Route::post('/admin/projects/{id}/contractors', [ProjectController::class, 'addContractor'])->name('projects.add_contractor');
     Route::put('/admin/projects/{id}/contractors/{index}', [ProjectController::class, 'updateContractor'])->name('projects.update_contractor');

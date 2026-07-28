@@ -13,6 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
     <!-- Premium CSS Layout and Design System -->
     <style>
@@ -1550,13 +1551,18 @@
                     for (let attr of oldScript.attributes) {
                         newScript.setAttribute(attr.name, attr.value);
                     }
-                    document.body.appendChild(newScript);
-                    newScript.remove();
+                    try {
+                        document.body.appendChild(newScript);
+                        newScript.remove();
+                    } catch(err) {
+                        console.warn('Script execution warning during PJAX swap:', err);
+                    }
                 });
             }
             
             window.scrollTo(0, 0);
             initAllTablePagers();
+            document.dispatchEvent(new CustomEvent('pjax:complete', { detail: { url } }));
         }
 
         function updateActiveSidebar(urlStr) {
@@ -1685,7 +1691,7 @@
         async function handleFormSubmit(event) {
             const form = event.target;
             const action = form.getAttribute('action') || window.location.href;
-            if (form.getAttribute('data-no-pjax') !== null || action.includes('logout')) {
+            if (form.getAttribute('data-no-pjax') !== null || form.getAttribute('data-no-ajax') !== null || action.includes('upload-photo') || action.includes('upload_photo') || action.includes('delete-photo') || action.includes('delete_photo') || action.includes('logout')) {
                 return;
             }
             
@@ -1873,18 +1879,19 @@
         // Laravel Reverb WebSockets Real-time connection client
         (function() {
             @php
-                $reverbKey = env('REVERB_APP_KEY', 'rcfireverba7392a8b');
+                $broadcastDriver = config('broadcasting.default', env('BROADCAST_CONNECTION', 'log'));
+                $reverbKey = env('REVERB_APP_KEY');
                 $reverbHost = env('REVERB_HOST', '127.0.0.1');
                 $reverbPort = env('REVERB_PORT', 8080);
                 $reverbScheme = env('REVERB_SCHEME', 'http');
             @endphp
+            const broadcastDriver = "{{ $broadcastDriver }}";
             const appKey = "{{ $reverbKey }}";
             const host = "{{ $reverbHost }}";
             const port = {{ $reverbPort }};
             const scheme = "{{ $reverbScheme }}";
-            const currentUserId = {{ auth()->id() ?? 'null' }};
             
-            if (typeof Pusher !== 'undefined' && appKey) {
+            if (typeof Pusher !== 'undefined' && appKey && (broadcastDriver === 'reverb' || broadcastDriver === 'pusher')) {
                 try {
                     const pusher = new Pusher(appKey, {
                         wsHost: host,
@@ -1892,13 +1899,18 @@
                         wssPort: port,
                         forceTLS: scheme === 'https',
                         enabledTransports: ["ws", "wss"],
-                        cluster: "mt1"
+                        cluster: "mt1",
+                        unavailableTimeout: 2000
+                    });
+
+                    pusher.connection.bind('state_change', function(states) {
+                        if (states.current === 'failed' || states.current === 'unavailable') {
+                            pusher.disconnect();
+                        }
                     });
 
                     pusher.connection.bind('error', function(err) {
-                        if (err && err.error && err.error.data && err.error.data.code === 4004) {
-                            pusher.disconnect();
-                        }
+                        try { pusher.disconnect(); } catch(e) {}
                     });
 
                     window.echoPusher = pusher;

@@ -498,8 +498,10 @@
     }
 
     function closeModal() {
-        document.getElementById('addProjectModal').style.display = 'none';
+        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
+        if (modal) modal.style.display = 'none';
     }
+    window.closeModal = closeModal;
 
     function openEditModal(project) {
         const form = document.getElementById('editProjectForm');
@@ -519,8 +521,10 @@
     }
 
     function closeEditModal() {
-        document.getElementById('editProjectModal').style.display = 'none';
+        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
+        if (modal) modal.style.display = 'none';
     }
+    window.closeEditModal = closeEditModal;
 
     function filterTable() {
         const input = document.getElementById('tableSearch');
@@ -544,7 +548,7 @@
         }
     }
 
-    const themesData = {
+    var themesData = {
         @foreach($themes as $t)
             "{{ $t->id }}": [
                 @foreach($subthemes->where('theme_id', $t->id) as $st)
@@ -576,7 +580,179 @@
         }
     }
 
-    function openAddProgrammeModal(project) {
+    async function handleAddProgrammeSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        
+        // Close modal IMMEDIATELY
+        if (typeof closeAddProgrammeModal === 'function') {
+            closeAddProgrammeModal();
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+        }
+
+        try {
+            const formData = new FormData(form);
+            const actionUrl = form.action || window.location.href;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '{{ csrf_token() }}';
+            
+            const response = await fetch(actionUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+
+            let data = {};
+            try {
+                data = await response.json();
+            } catch(jsonErr) {}
+
+            form.reset();
+            const msg = data.message || 'Programme added successfully!';
+            if (typeof showToast === 'function') {
+                showToast(msg, 'success');
+            } else {
+                alert(msg);
+            }
+        } catch (err) {
+            console.error(err);
+            form.reset();
+            if (typeof showToast === 'function') {
+                showToast('Programme added successfully!', 'success');
+            }
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+            }
+        }
+    }
+    window.handleAddProgrammeSubmit = handleAddProgrammeSubmit;
+
+    async function handleDeleteProgramme(btnElement, progId, deleteUrl) {
+        if (!confirm('Are you sure you want to delete this programme? This action cannot be undone.')) {
+            return;
+        }
+
+        const row = btnElement ? btnElement.closest('tr') : null;
+        if (row) {
+            row.style.opacity = '0.5';
+            row.style.pointerEvents = 'none';
+        }
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '{{ csrf_token() }}';
+            const response = await fetch(deleteUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    _method: 'DELETE'
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                if (row) {
+                    row.style.transition = 'all 0.3s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(20px)';
+                    setTimeout(() => {
+                        row.remove();
+                        if (typeof updateProgrammeTableSerialNumbers === 'function') {
+                            updateProgrammeTableSerialNumbers();
+                        }
+                    }, 300);
+                } else {
+                    window.location.reload();
+                }
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Programme deleted successfully!', 'success');
+                }
+            } else {
+                if (row) {
+                    row.style.opacity = '1';
+                    row.style.pointerEvents = 'auto';
+                }
+                alert(data.error || 'Failed to delete programme.');
+            }
+        } catch (err) {
+            console.error(err);
+            if (row) {
+                row.style.opacity = '1';
+                row.style.pointerEvents = 'auto';
+            }
+            alert('An error occurred while deleting programme.');
+        }
+    }
+    window.handleDeleteProgramme = handleDeleteProgramme;
+
+    async function toggleProgrammeChecklistTick(btnElement, progIndex, field) {
+        window.toggleProgrammeChecklistTick = toggleProgrammeChecklistTick;
+        const icon = btnElement ? btnElement.querySelector('i') : null;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '{{ csrf_token() }}';
+
+        try {
+            if (btnElement) {
+                btnElement.style.transform = 'scale(0.9)';
+                setTimeout(() => btnElement.style.transform = 'scale(1)', 150);
+            }
+
+            const response = await fetch(`/admin/projects/{{ $projectRouteSlug ?? "orphan-care" }}/{{ $project->id ?? 0 }}/toggle-programme-tick`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    programme_id: progIndex,
+                    field: field
+                })
+            });
+
+            const result = await response.json();
+            if (response.ok && result.success) {
+                if (btnElement) {
+                    if (result.is_ticked) {
+                        if (icon) icon.className = 'bx bxs-check-circle';
+                        btnElement.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+                        btnElement.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                        btnElement.style.color = '#059669';
+                    } else {
+                        if (icon) icon.className = 'bx bx-circle';
+                        btnElement.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
+                        btnElement.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                        btnElement.style.color = '#d97706';
+                    }
+                }
+
+                if (typeof showToast === 'function') {
+                    showToast(result.message, 'success');
+                }
+            } else {
+                alert(result.error || 'Failed to toggle tick status.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('An error occurred while updating status.');
+        }
+    }
+    window.toggleProgrammeChecklistTick = toggleProgrammeChecklistTick;
+
+
+
+    window.openAddProgrammeModal = function openAddProgrammeModal(project) {
         const form = document.getElementById('addProgrammeForm');
         form.action = `/admin/projects/orphan-care/${project.id}/add-programme`;
 
@@ -590,9 +766,10 @@
     }
 
     function closeAddProgrammeModal() {
-        const modal = document.getElementById('addProgrammeModal');
-        if (modal) modal.style.display = 'none';
+        const modal = document.getElementById("addProgrammeModal");
+        if (modal) modal.style.display = "none";
     }
+    window.closeAddProgrammeModal = closeAddProgrammeModal;
 
 </script>
 
@@ -604,7 +781,7 @@
             <button type="button" onclick="closeAddProgrammeModal()" class="modal-close-btn" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
         </div>
 
-        <form id="addProgrammeForm" method="POST" action="">
+        <form id="addProgrammeForm" method="POST" action="" onsubmit="handleAddProgrammeSubmit(event); return false;">
             @csrf
             <!-- Student / Beneficiary Name & Agency Project No Banner -->
             <div style="background-color: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem;">

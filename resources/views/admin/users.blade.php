@@ -93,19 +93,6 @@
             </div>
         </div>
 
-        <!-- New This Month -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 1.15rem; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.01); min-height: 105px;">
-            <div style="background: #f5f3ff; color: #8b5cf6; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
-                <i class="bx bx-user-plus"></i>
-            </div>
-            <div>
-                <span style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block;">New This Month</span>
-                <h2 style="color: #1e293b; font-size: 1.65rem; font-weight: 700; margin: 0.15rem 0 0.15rem;">{{ $newThisMonth }}</h2>
-                <span style="color: #10b981; font-size: 0.76rem; font-weight: 600; display: flex; align-items: center; gap: 0.15rem;">
-                    <i class="bx bx-trending-up"></i> ↑ 25% <span style="color: #94a3b8; font-weight: 500;">from last month</span>
-                </span>
-            </div>
-        </div>
     </div>
 
     <!-- Filter and Search Bar -->
@@ -520,8 +507,10 @@
         }
 
         function closeModal() {
-            document.getElementById('addUserModal').style.display = 'none';
-        }
+        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeModal = closeModal;
 
         // Edit User Modal
         function openEditModal(user) {
@@ -546,8 +535,10 @@
         }
 
         function closeEditModal() {
-            document.getElementById('editUserModal').style.display = 'none';
-        }
+        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeEditModal = closeEditModal;
 
         // View Details Modal
         function openViewModal(userId) {

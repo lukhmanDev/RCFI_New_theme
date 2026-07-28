@@ -348,8 +348,10 @@
         }
 
         function closeModal() {
-            document.getElementById('addClusterModal').style.display = 'none';
-        }
+        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeModal = closeModal;
 
         function openEditModal(clusterItem) {
             const form = document.getElementById('editClusterForm');
@@ -373,8 +375,10 @@
         }
 
         function closeEditModal() {
-            document.getElementById('editClusterModal').style.display = 'none';
-        }
+        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeEditModal = closeEditModal;
     </script>
 
 @endsection

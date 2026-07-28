@@ -161,27 +161,77 @@
         }
     </style>
 
+    <script>
+        function switchStage(stageNum) {
+            const activeProjectStage = {{ $project->stage ?? 1 }};
+            const isProjectApproved = "{{ ($project->status === 'Approved' || $project->status === 'Completed') ? '1' : '0' }}";
+
+            let isLocked = false;
+            if (stageNum <= 3) {
+                isLocked = false;
+            } else {
+                isLocked = (activeProjectStage < 4 && isProjectApproved !== '1');
+            }
+
+            if (isLocked) {
+                const msg = "Access Locked: This stage is not yet unlocked.";
+                if (typeof showToast === 'function') {
+                    showToast(msg, "danger");
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
+            try {
+                sessionStorage.setItem('current_project_stage_{{ $project->id ?? 0 }}', stageNum);
+            } catch(e) {}
+
+            const tabs = document.querySelectorAll('.stage-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            const clickedTab = document.getElementById('tab-' + stageNum);
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+
+            const panels = document.querySelectorAll('.stage-content-panel');
+            panels.forEach(panel => panel.style.display = 'none');
+
+            const targetPanel = document.getElementById('stage-content-' + stageNum);
+            if (targetPanel) {
+                targetPanel.style.display = 'block';
+            }
+        }
+        window.switchStage = switchStage;
+        function restoreActiveStage() {
+            try {
+                const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id ?? 0 }}');
+                if (savedStage) {
+                    switchStage(parseInt(savedStage, 10));
+                }
+            } catch(e) {}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', restoreActiveStage);
+        } else {
+            restoreActiveStage();
+        }
+
+    </script>
+
     <!-- Stage Navigation Tabs (Interactive Navigation) -->
     <div class="stages-tabs">
-        @for($i = 1; $i <= 6; $i++)
+        @for($i = 1; $i <= 5; $i++)
             @php
                 $isActive = $project->stage == $i;
                 $isCompleted = $project->stage > $i;
                 $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
                 
-                //   Stage 1 & Stage 2: always accessible
-                //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
-                //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
-                if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'])) {
-                    if ($i <= 2) {
-                        $isLocked = false;
-                    } elseif ($i == 3 || $i == 4) {
-                        $isLocked = empty($project->application_id);
-                    } else { // stage 5 or 6
-                        $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
-                    }
-                } else {
-                    $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
+                if ($i <= 3) {
+                    $isLocked = false;
+                } else { // stage 4 or 5
+                    $isLocked = ($project->stage < 4 && $project->status !== 'Approved' && $project->status !== 'Completed');
                 }
                 if ($isLocked) {
                     $class .= ' locked';
@@ -208,17 +258,9 @@
         $isProjectManager = ($authUser && ($isSuperAdmin || $isCoo || $isHod || $isPmOnly || $isEngineerOnly || in_array($authUser->role, [1, 2, 3, 4, 6, 'super_admin', 'coo', 'project_manager', 'hod', 'engineer']) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod', 'super admin', 'admin'])));
         $isLockedForEditing = ($project->status === 'Completed' && !$isSuperAdmin);
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
-        $isSixStage = in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']);
-        $isStage4Approved = false;
-        if ($isSixStage) {
-            $isStage4Approved = ($project->stage >= 5 || in_array($project->status, ['Approved', 'Completed']));
-        }
-        
-        if ($isSixStage) {
-            $canAssignApplication = ($isPmOnly || $isEngineerOnly || $isHod || $isCoo || $isSuperAdmin) && !$isStage4Approved;
-        } else {
-            $canAssignApplication = ($isHod || $isCoo || $isSuperAdmin) && !$isLockedForEditing;
-        }
+        $isSixStage = false; // General project uses 5 stages
+        $isStage4Approved = ($project->stage >= 4 || in_array($project->status, ['Approved', 'Completed']));
+        $canAssignApplication = $isProjectManager && $project->status !== 'Completed';
         $hasApplication = !empty($project->application_id);
     @endphp
 
@@ -241,13 +283,13 @@
        
 
         <!-- ================= STAGE 1 PANEL ================= -->
-        <div class="stage-content-panel" id="stage-content-1">
+        <div class="stage-content-panel" id="stage-content-1" style="display: {{ ($project->stage == 1 || empty($project->stage)) ? 'block' : 'none' }};">
             <div class="detail-header-panel">
                 <h2>PROJECT DETAIL</h2>
             </div>
             <div style="padding: 1.5rem;">
                 {{-- Stage 1: No approval required for construction or non-construction projects --}}
-                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if(!in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                     @if($project->status === 'Approved')
                         <div style="margin-bottom: 1.5rem; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
                             <i class="bx bx-check-circle"></i> Project Approved & Active
@@ -365,7 +407,7 @@
                 </div>
 
                 <!-- Connect Application Form -->
-                @if($canAssignApplication && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if($canAssignApplication && !in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @if(!empty($project->application_id))
@@ -467,12 +509,12 @@
                 {{-- Stage 2: No approval required for construction or non-construction projects --}}
 
                 <!-- Connect Application Form inside Stage 2 for 6-stage projects (Show First) -->
-                @if($canAssignApplication && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']) && $project->status !== 'Completed')
+                @if($canAssignApplication && in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']) && $project->status !== 'Completed')
                 <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1rem;">Connect Application</h3>
                     @php
-                        // PM can change if stage < 6. HOD, COO, and Super Admin can change anytime.
-                        $userCanChange = ($isCoo || $isHod || $isSuperAdmin) || ($isPmOnly && $project->stage < 6);
+                        // PMs and authorized users can assign or change application when project is active
+                        $userCanChange = $isProjectManager && $project->status !== 'Completed';
                     @endphp
 
                     @if(!empty($project->application_id) && !$userCanChange)
@@ -649,149 +691,22 @@
             </div>
         </div>
 
-        <!-- ================= STAGE 3 PANEL (FILES) ================= -->
-        <div class="stage-content-panel" id="stage-content-3">
+        <!-- ================= STAGE 3 PANEL (PROJECT APPROVAL & FUNDS ALLOCATED) ================= -->
+        <div class="stage-content-panel" id="stage-content-3" style="display: {{ $project->stage == 3 ? 'block' : 'none' }};">
             <div class="detail-header-panel">
-                <h2>FILES</h2>
+                <h2>PROJECT APPROVAL & FUNDS ALLOCATED</h2>
             </div>
             <div style="padding: 1.5rem;">
                 @if(empty($project->application_id))
                     <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
-                        <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Checklist ticking is disabled. Please assign/connect an application in Stage 2 first.
+                        <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Approval actions are disabled. Please assign/connect an application in Stage 2 first.
                     </div>
                 @endif
 
-                @if($project->stage == 3 && $project->status === 'Rejected')
-                    <div style="margin-bottom: 1.5rem;">
-                        @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
-                            <form action="{{ route('projects.approve', $project->id) }}" method="POST">
-                                @csrf
-                                <input type="hidden" name="action" value="submit_corrections">
-                                <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px;">
-                                    Submit Corrections & Proceed to Stage 4
-                                </button>
-                            </form>
-                        @else
-                            <div style="background-color: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ff8a8a; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                <i class="bx bx-error-circle"></i> Rejected. Pending corrections from Project Manager/Engineer.
-                            </div>
-                        @endif
-                    </div>
-                @endif
-
-
-                <table class="stage-table">
-                    <thead>
-                        <tr>
-                            <th>Document Name</th>
-                            <th style="width: 250px;">Ticked At</th>
-                            <th style="width: 150px; text-align: center;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $docs = [
-                                'Land document', 
-                                'Possession certificate', 
-                                'Recommendation letter',
-                                'Committee minutes', 
-                                'Permit copy', 
-                                'Plan', 
-                                'Tender schedule sheet',
-                                'Site study', 
-                                'Quotations', 
-                                'Quotations approval form',
-                                'Work order letter',
-                                'Meeting minutes copy',
-                                'Agreement with contractor',
-                                'Agreement with committee',
-                                'Project summary form'
-                            ];
-                            $docRecord = $project->files_with_timestamps;
-                        @endphp
-                        @foreach($docs as $doc)
-                            @php
-                                $column = \App\Models\ProjectDocument::$docColumnMap[$doc] ?? null;
-                                $filePath = ($docRecord && $column) ? $docRecord->$column : null;
-                                $timeColumn = $column ? $column . '_ticked_at' : null;
-                                $tickedAtDate = ($docRecord && $timeColumn) ? $docRecord->$timeColumn : null;
-                                $tickedAt = $tickedAtDate ? \Carbon\Carbon::parse($tickedAtDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
-                                
-                                if ($filePath === '0') {
-                                    $filePath = null;
-                                }
-                            @endphp
-                            <tr>
-                                <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $doc }}</td>
-                                <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
-                                    {{ $tickedAt ?? '-' }}
-                                </td>
-                                <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center;">
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <button type="button" onclick="toggleChecklistDocument(this, '{{ $doc }}')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
-                                            @if(!empty($filePath))
-                                                <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
-                                            @else
-                                                <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
-                                            @endif
-                                        </button>
-                                    @else
-                                        @if(!empty($filePath))
-                                            <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                                <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
-                                            </span>
-                                        @else
-                                            <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                                <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
-                                            </span>
-                                        @endif
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ================= STAGE 4 PANEL (FUNDS ALLOCATED) ================= -->
-        <div class="stage-content-panel" id="stage-content-4">
-            <div class="detail-header-panel">
-                <h2>FUNDS ALLOCATED</h2>
-            </div>
-            <div style="padding: 1.5rem;">
-                @if(empty($project->application_id))
-                    <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
-                        <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Budget allocation editing is disabled. Please assign/connect an application in Stage 2 first.
-                    </div>
-                @endif
-
-                @php
-                    $materials = $project->materials;
-                    if (empty($materials)) {
-                        $materials = [];
-                    }
-                    $totalAmount = 0;
-                    foreach($materials as $item) {
-                        $totalAmount += $item['amount'];
-                    }
-
-                    $pFiles = $project->files ?? [];
-                    $commContribs = $pFiles['community_contributions'] ?? [];
-                    if (empty($commContribs)) {
-                        $commContribs = [];
-                    }
-                    $commTotal = 0;
-                    foreach ($commContribs as $c) {
-                        $commTotal += $c['amount'];
-                    }
-                    $grandTotal = $totalAmount + $commTotal;
-                @endphp
-
-                @if($project->stage <= 4 && $project->status !== 'Approved' && $project->status !== 'Completed')
+                @if($project->stage <= 3 && $project->status !== 'Approved' && $project->status !== 'Completed')
                     <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
 
-                        {{-- COO / HOD: Always see Approve & Reject at Stage 4 --}}
+                        {{-- COO / HOD: Always see Approve & Reject at Stage 3 --}}
                         @if($isCoo || $isHod || $isSuperAdmin)
                             <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; width: 100%; max-width: 700px; background: rgba(255,255,255,0.02); padding: 1.25rem; border: 1px solid var(--panel-border); border-radius: 8px;">
                                 <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; width: 100%; text-transform: uppercase;">
@@ -811,7 +726,7 @@
                                     @csrf
                                     <input type="hidden" name="action" value="approve">
                                     <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); border-color: #27ae60; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.55rem 1.5rem;">
-                                        <i class="bx bx-check-circle"></i> Approve Project
+                                        <i class="bx bx-check-circle"></i> Approve Project &amp; Proceed to Stage 4
                                     </button>
                                 </form>
 
@@ -854,6 +769,68 @@
                     </div>
                 @endif
 
+                @php
+                    $materials = $project->materials;
+                    if (empty($materials)) {
+                        $materials = [];
+                    }
+                    $totalAmount = 0;
+                    foreach($materials as $item) {
+                        $totalAmount += $item['amount'];
+                    }
+
+                    $pFiles = $project->files ?? [];
+                    $commContribs = $pFiles['community_contributions'] ?? [];
+                    if (empty($commContribs)) {
+                        $commContribs = [];
+                    }
+                    $commTotal = 0;
+                    foreach ($commContribs as $c) {
+                        $commTotal += $c['amount'];
+                    }
+                    $grandTotal = $totalAmount + $commTotal;
+
+                    // Expenses calculation variables
+                    $stage5Materials = $materials;
+                    $totalAllocatedAmount = $totalAmount;
+
+                    $expenses = $project->expenses;
+                    if (empty($expenses)) {
+                        $expenses = [];
+                    }
+                    $totalExpensesAmount = 0;
+                    foreach ($expenses as $item) {
+                        if (!isset($item['comm_index'])) {
+                            $totalExpensesAmount += $item['amount'];
+                        }
+                    }
+
+                    $stage5TotalBudget = (float)$totalAllocatedAmount;
+                    $stage5SpentAmount = (float)$totalExpensesAmount;
+                    $stage5BalanceAmount = $stage5TotalBudget - $stage5SpentAmount;
+                    
+                    $stage5SpentPercentage = $stage5TotalBudget > 0 ? min(100, ($stage5SpentAmount / $stage5TotalBudget) * 100) : 0;
+                    $stage5BalancePercentage = 100 - $stage5SpentPercentage;
+                    
+                    $stage5Circumference = 314.16;
+                    $stage5SpentDashoffset = $stage5Circumference - ($stage5Circumference * ($stage5SpentPercentage / 100));
+
+                    $stage5CommContribs = $commContribs;
+                    $stage5CommTotal = $commTotal;
+
+                    $stage5CommSpent = 0;
+                    foreach ($expenses as $exp) {
+                        if (isset($exp['comm_index'])) {
+                            $stage5CommSpent += $exp['amount'];
+                        }
+                    }
+                    $stage5CommBalance = $stage5CommTotal - $stage5CommSpent;
+                    $stage5CommSpentPercentage = $stage5CommTotal > 0 ? min(100, ($stage5CommSpent / $stage5CommTotal) * 100) : 0;
+                    $stage5CommBalancePercentage = 100 - $stage5CommSpentPercentage;
+                    $stage5CommCircumference = 314.16;
+                    $stage5CommSpentDashoffset = $stage5CommCircumference - ($stage5CommCircumference * ($stage5CommSpentPercentage / 100));
+                @endphp
+
                 <!-- Real-time Budget Metrics Bar -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
                     <!-- Project Budget Card -->
@@ -875,12 +852,8 @@
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-                        <span style="color: var(--text-muted);">Search:</span>
-                        <input type="text" placeholder="Search budget..." class="form-control-dark" style="width: 160px; padding: 0.35rem 0.75rem; border-radius: 4px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
-                    </div>
-                    @if($isProjectManager && $hasApplication && !$isLockedForEditing)
+                <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                    @if($isProjectManager && !$isLockedForEditing)
                         <button onclick="openAddMaterialModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                             <i class="bx bx-plus"></i> Add Item
                         </button>
@@ -942,7 +915,7 @@
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Community Contribution</h3>
-                    @if($isProjectManager && $hasApplication && !$isLockedForEditing)
+                    @if($isProjectManager && !$isLockedForEditing)
                         <button onclick="openAddCommContribModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                             <i class="bx bx-plus"></i> Add Item
                         </button>
@@ -998,7 +971,7 @@
                 <!-- Contractor Details Section -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Contractor Details</h3>
-                    @if($isProjectManager && $hasApplication && !$isLockedForEditing)
+                    @if($isProjectManager && !$isLockedForEditing)
                         <button onclick="openAddContractorModal()" class="btn-custom" style="background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
                             <i class="bx bx-plus"></i> Add Contractor
                         </button>
@@ -1054,19 +1027,14 @@
                             </div>
                         @endforeach
                     </div>
-                @else
-                    <div style="background: rgba(255, 255, 255, 0.01); border: 1px dashed var(--panel-border); padding: 2rem; border-radius: 8px; text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-                        <i class="bx bx-info-circle" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: var(--text-muted);"></i>
-                        No contractor details added to this project yet.
-                    </div>
                 @endif
             </div>
         </div>
 
-        <!-- ================= STAGE 5 PANEL (EVALUATION & INSPECTION) ================= -->
-        <div class="stage-content-panel" id="stage-content-5">
+        <!-- ================= STAGE 4 PANEL (ALLOCATED ITEMS & EXPENSES) ================= -->
+        <div class="stage-content-panel" id="stage-content-4" style="display: {{ $project->stage == 4 ? 'block' : 'none' }};">
             <div class="detail-header-panel">
-                <h2>EVALUATION & INSPECTION</h2>
+                <h2>ALLOCATED ITEMS & EXPENSES</h2>
             </div>
             <div style="padding: 1.5rem;">
                 @if(empty($project->application_id))
@@ -1075,63 +1043,6 @@
                     </div>
                 @endif
 
-
-
-                @php
-                    $stage5Materials = $project->materials;
-                    if (empty($stage5Materials)) {
-                        $stage5Materials = [];
-                    }
-                    $totalAllocatedAmount = 0;
-                    foreach ($stage5Materials as $item) {
-                        $totalAllocatedAmount += $item['amount'];
-                    }
-
-                    $expenses = $project->expenses;
-                    if (empty($expenses)) {
-                        $expenses = [];
-                    }
-                    $totalExpensesAmount = 0;
-                    foreach ($expenses as $item) {
-                        if (!isset($item['comm_index'])) {
-                            $totalExpensesAmount += $item['amount'];
-                        }
-                    }
-
-                    $stage5TotalBudget = (float)$totalAllocatedAmount;
-                    $stage5SpentAmount = (float)$totalExpensesAmount;
-                    $stage5BalanceAmount = $stage5TotalBudget - $stage5SpentAmount;
-                    
-                    $stage5SpentPercentage = $stage5TotalBudget > 0 ? min(100, ($stage5SpentAmount / $stage5TotalBudget) * 100) : 0;
-                    $stage5BalancePercentage = 100 - $stage5SpentPercentage;
-                    
-                    // SVG Circumference is 2 * pi * 50 = 314.16
-                    $stage5Circumference = 314.16;
-                    $stage5SpentDashoffset = $stage5Circumference - ($stage5Circumference * ($stage5SpentPercentage / 100));
-
-                    // Community Contributions
-                    $stage5CommContribs = $project->files['community_contributions'] ?? [];
-                    if (empty($stage5CommContribs)) {
-                        $stage5CommContribs = [];
-                    }
-                    $stage5CommTotal = 0;
-                    foreach ($stage5CommContribs as $c) {
-                        $stage5CommTotal += $c['amount'];
-                    }
-
-                    // Community Contribution Expenses
-                    $stage5CommSpent = 0;
-                    foreach ($expenses as $exp) {
-                        if (isset($exp['comm_index'])) {
-                            $stage5CommSpent += $exp['amount'];
-                        }
-                    }
-                    $stage5CommBalance = $stage5CommTotal - $stage5CommSpent;
-                    $stage5CommSpentPercentage = $stage5CommTotal > 0 ? min(100, ($stage5CommSpent / $stage5CommTotal) * 100) : 0;
-                    $stage5CommBalancePercentage = 100 - $stage5CommSpentPercentage;
-                    $stage5CommCircumference = 314.16;
-                    $stage5CommSpentDashoffset = $stage5CommCircumference - ($stage5CommCircumference * ($stage5CommSpentPercentage / 100));
-                @endphp
 
 
 
@@ -1237,8 +1148,9 @@
                 </div>
 
 
+
                 <!-- Expenses Section -->
-                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level']))
+                @if(in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General']))
                 <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem; margin-bottom: 2rem;">
                     <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Allocated Items & Spent Expenses</h3>
 
@@ -1482,11 +1394,22 @@
                 </div>
 
                 
+                @if(($project->stage == 4 || $project->status === 'Approved') && $project->stage < 5)
+                    <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
+                        <form action="{{ route('projects.approve', $project->id) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="action" value="promote_to_stage6">
+                            <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                <i class="bx bx-right-arrow-alt"></i> Proceed to Stage 5 (Completion Stage)
+                            </button>
+                        </form>
+                    </div>
+                @endif
             </div>
         </div>
 
-        <!-- ================= STAGE 6 PANEL (COMPLETION) ================= -->
-        <div class="stage-content-panel" id="stage-content-6">
+        <!-- ================= STAGE 5 PANEL (COMPLETION) ================= -->
+        <div class="stage-content-panel" id="stage-content-5" style="display: {{ $project->stage >= 5 ? 'block' : 'none' }};">
             <div class="detail-header-panel">
                 <h2>COMPLETION STAGE</h2>
             </div>
@@ -1519,166 +1442,53 @@
                 @endphp
 
                 
-                <!-- Completion Documents (Stage 6 Upload/Reference) -->
+                <!-- Completion Location -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-                    <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Completion Documents</h3>
+                    <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;"> Location Details</h3>
 
-                    @if($project->status === 'Completed')
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-weight: 600;">Completion Certificate:</span>
-                                @if(!empty($compCert))
-                                    <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); text-decoration: none;">View Certificate</a>
-                                @else
-                                    <span style="color: var(--accent-red); font-weight: 600;">Pending</span>
-                                @endif
-                            </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-weight: 600;">Measurement Book:</span>
-                                @if(!empty($measBook))
-                                    <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); text-decoration: none;">View Book</a>
-                                @else
-                                    <span style="color: var(--accent-red); font-weight: 600;">Pending</span>
-                                @endif
-                            </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <span style="font-weight: 600;">Location Map Link:</span>
-                                @if(!empty($locationMapLink))
-                                    <a href="{{ $locationMapLink }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); text-decoration: none;">
-                                        <i class="bx bx-map-alt"></i> Open Map
-                                    </a>
-                                @else
-                                    <span style="color: var(--text-muted); font-style: italic;">Not added</span>
-                                @endif
-                            </div>
+                    <!-- Location Map Link row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Location Map Link</span>
+                            @if(!empty($locationMapLink))
+                                <span style="font-size: 0.75rem; color: var(--text-muted); overflow-wrap: anywhere; word-break: break-all; max-width: 400px; display: inline-block;">Current: <a href="{{ $locationMapLink }}" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">{{ $locationMapLink }}</a></span>
+                            @else
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Not added yet</span>
+                            @endif
                         </div>
-                    @else
-                        <!-- Completion Certificate row -->
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Completion Certificate</span>
-                                @if($compCertTime)
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $compCertTime }}</span>
-                                @endif
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if(!empty($compCert) && $compCert !== "1")
-                                    <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                        <i class="bx bx-show"></i> View Certificate
-                                    </a>
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Completion Certificate">
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
-                                                <i class="bx bx-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    @endif
-                                @else
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Completion Certificate">
-                                            <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                            <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                                <i class="bx bx-upload"></i> Upload
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending Upload
-                                        </span>
-                                    @endif
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Measurement Book row -->
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Measurement Book</span>
-                                @if($measBookTime)
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $measBookTime }}</span>
-                                @endif
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if(!empty($measBook) && $measBook !== "1")
-                                    <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                        <i class="bx bx-show"></i> View Book
-                                    </a>
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Measurement Book">
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
-                                                <i class="bx bx-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    @endif
-                                @else
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Measurement Book">
-                                            <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                            <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                                <i class="bx bx-upload"></i> Upload
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending Upload
-                                        </span>
-                                    @endif
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Location Map Link row -->
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--panel-border);">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Location Map Link</span>
-                                @if(!empty($locationMapLink))
-                                    <span style="font-size: 0.75rem; color: var(--text-muted); overflow-wrap: anywhere; word-break: break-all; max-width: 400px; display: inline-block;">Current: <a href="{{ $locationMapLink }}" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">{{ $locationMapLink }}</a></span>
-                                @else
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Not added yet</span>
-                                @endif
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if(!empty($locationMapLink))
-                                    <a href="{{ $locationMapLink }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                        <i class="bx bx-map-alt"></i> Open Map
-                                    </a>
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                            @csrf
-                                            <input type="hidden" name="location_map_link" value="">
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete Link">
-                                                <i class="bx bx-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    @endif
-                                @endif
-                                
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            @if(!empty($locationMapLink))
+                                <a href="{{ $locationMapLink }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
+                                    <i class="bx bx-map-alt"></i> Open Map
+                                </a>
                                 @if($isProjectManager && !$isLockedForEditing)
-                                    <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
                                         @csrf
-                                        <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
-                                        <button type="submit" class="btn-custom" style="padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                            <i class="bx bx-save"></i> Save Link
+                                        <input type="hidden" name="location_map_link" value="">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete Link">
+                                            <i class="bx bx-trash"></i> Delete
                                         </button>
                                     </form>
                                 @endif
-                            </div>
+                            @endif
+                            
+                            @if($isProjectManager && !$isLockedForEditing)
+                                <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    @csrf
+                                    <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
+                                    <button type="submit" class="btn-custom" style="padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                        <i class="bx bx-save"></i> Save Link
+                                    </button>
+                                </form>
+                            @endif
                         </div>
-                    @endif
+                    </div>
                 </div>
 
                 <style>
     .photo-gallery-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 1.25rem;
         align-items: stretch;
     }
@@ -1716,7 +1526,7 @@
         flex-direction: column;
         gap: 0.75rem;
         flex-grow: 1;
-        max-height: 260px;
+        max-height: 600px;
         overflow-y: auto;
         padding-right: 0.25rem;
     }
@@ -1758,13 +1568,9 @@
                     <div class="photo-gallery-grid">
                         @php
                             $columns = [
-                                'before' => ['title' => 'Before Implementation', 'photos' => $beforePhotos],
-                                'starting' => ['title' => 'Starting', 'photos' => $startingPhotos],
-                                'inbetween' => ['title' => 'In Between Project Implementation', 'photos' => $inbetweenPhotos],
-                                'after' => ['title' => 'Final Photo', 'photos' => $afterPhotos],
-                                'banner' => ['title' => 'Photo of Banner', 'photos' => $bannerPhotos],
-                                'stone' => ['title' => 'Photo of Stone', 'photos' => $stonePhotos],
-                                'inauguration' => ['title' => 'Photo of Inauguration', 'photos' => $inaugurationPhotos],
+                                'before' => ['title' => 'Photo 1', 'photos' => $beforePhotos],
+                                'inbetween' => ['title' => 'Photo 2', 'photos' => $inbetweenPhotos],
+                                'after' => ['title' => 'Photo 3', 'photos' => $afterPhotos],
                             ];
                         @endphp
 
@@ -1789,13 +1595,13 @@
                                 <div class="photo-list-container">
                                     @if(empty($colData['photos']))
                                         <div class="photo-empty-state">
-                                            No {{ strtolower($colData['title']) }} photos yet.
+                                            No {{ strtolower($colData['title']) }} uploaded yet.
                                         </div>
                                     @else
                                         @foreach($colData['photos'] as $idx => $photoPath)
                                             <div style="position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s ease;">
                                                 <a href="{{ asset($photoPath) }}" target="_blank" style="display: block; line-height: 0;">
-                                                    <img src="{{ asset($photoPath) }}" style="width: 100%; height: 120px; object-fit: cover; display: block;" alt="{{ $colData['title'] }} photo {{ $idx + 1 }}">
+                                                    <img src="{{ asset($photoPath) }}" style="width: 100%; max-height: 280px; object-fit: contain; background: rgba(0, 0, 0, 0.3); display: block;" alt="{{ $colData['title'] }} photo {{ $idx + 1 }}">
                                                 </a>
                                                 @if($isProjectManager)
                                                     <form action="{{ route('projects.delete_photo', [$project->id, $idx]) }}?category={{ $key }}" method="POST" style="position: absolute; top: 0.3rem; right: 0.3rem; margin: 0;" onsubmit="return confirm('Delete this photo?');">
@@ -1816,10 +1622,10 @@
                             </div>
                         @endforeach
                     </div>
-                </div>
 
-                <!-- Financial & Completion Details -->
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px;">
+
+                <!-- Financial & Handover Details -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; margin-top: 2.5rem;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Financial & Handover Details</h3>
 
                     @php
@@ -1840,6 +1646,7 @@
                         
                         $finTotalGrands = ($s5AllocatedSpent > 0) ? $s5AllocatedSpent : ($totalAmount ?? $project->available_budget ?? 0);
                         $finCommContrib = ($s5CommSpent > 0) ? $s5CommSpent : ($commTotal ?? 0);
+                        $compDetails = $pFilesData['completion_details'] ?? [];
                     @endphp
 
                     @if($isProjectManager && $project->status !== 'Completed')
@@ -1847,7 +1654,7 @@
                             @csrf
                             <input type="hidden" name="total_amount" id="fin_total_amount" value="{{ $finTotalGrands }}">
                             <input type="hidden" name="community_contribution" id="fin_community_contribution" value="{{ $finCommContrib }}">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
                                         Total Grands (₹)
@@ -1947,9 +1754,6 @@
                         </div>
                     @endif
                 </div>
-
-            </div>
-                        <!-- Final Approval & Stage Completion Section -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-top: 2rem;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Final Approval & Stage Completion</h3>
 
@@ -1981,75 +1785,54 @@
                                 </div>
                             @endif
                         </div>
-                    @elseif($project->stage == 6)
+                    @elseif($project->stage == 5 || $project->stage == 6)
                         <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
-                            <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">COO Final Approval</h4>
-                            @if($isCoo || $isSuperAdmin)
+                            <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">Final Approval & Completion</h4>
+                            @if($isCoo || $isHod || $isSuperAdmin || $isPmOnly || $isEngineerOnly)
                                 <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
                                     @csrf
                                     <input type="hidden" name="action" value="finalize_approval">
                                     <div style="width: 100%; max-width: 500px;">
-                                        <label for="remarks" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Approval Remarks:</label>
-                                        <textarea name="remarks" id="remarks" rows="3" placeholder="Enter final approval remarks…" style="width: 100%; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical;" required></textarea>
+                                        <label for="remarks" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Approval Remarks (Optional):</label>
+                                        <textarea name="remarks" id="remarks" rows="3" placeholder="Enter final approval remarks…" style="width: 100%; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical;"></textarea>
                                     </div>
-                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.6rem 1.8rem; border-radius: 6px;">
-                                        ✓ Finalize Project Approval & Complete
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.6rem 1.8rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                        <i class="bx bx-check-circle"></i> Finalize Project Approval & Complete
                                     </button>
                                 </form>
                             @else
                                 <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                    <i class="bx bx-time-five"></i> Pending COO Final Approval
-                                </div>
-                            @endif
-                        </div>
-                    @elseif($project->stage == 5)
-                        <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
-                            <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; text-transform: uppercase;">Promote to Stage 6</h4>
-                            @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
-                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-                                    Once all expenses have been logged and the evaluation is complete, you can promote this project to Stage 6 (Completion Stage).
-                                </p>
-                                <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0;">
-                                    @csrf
-                                    <input type="hidden" name="action" value="promote_to_stage6">
-                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px;">
-                                        <i class="bx bx-right-arrow-alt"></i> Complete Stage 5 & Move to Stage 6
-                                    </button>
-                                </form>
-                            @else
-                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                    <i class="bx bx-time-five"></i> Awaiting Project Manager or Engineer to complete Stage 5 and promote to Stage 6.
+                                    <i class="bx bx-time-five"></i> Pending Final Approval
                                 </div>
                             @endif
                         </div>
                     @endif
                 </div>
+            </div>
+        </div>
 
-</div>
-
-    </div>
-
-    <!-- Back Button -->
-    <div style="margin-top: 1.5rem;">
-        @php
-            $categorySlugs = [
-                'Education Center' => 'education-center',
-                'Cultural Center' => 'cultural-center',
-                'Hospital or Clinics' => 'hospital-or-clinics',
-                'Shops and Others' => 'shops-and-others',
-                'House' => 'house',
-                'Drinking Water - Group Level' => 'drinking-water-group-level',
-                'Drinking Water - Individual Level' => 'drinking-water-individual-level',
-                'Orphan Care' => 'orphan-care',
-                'Differently Abled' => 'differently-abled',
-                'Family Aid' => 'family-aid',
-                'General' => 'general'
-            ];
-            $categorySlug = $categorySlugs[$project->type_of_project] ?? 'education-center';
-        @endphp
-        <a href="{{ route('projects.category', $categorySlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted);">
-            <i class="bx bx-arrow-back"></i> Back to Project List
-        </a>
+        <!-- Back Button -->
+        <div style="padding: 1.25rem 1.5rem; border-top: 1px solid var(--panel-border); background: var(--panel-bg);">
+            @php
+                $categorySlugs = [
+                    'Education Center' => 'education-center',
+                    'Cultural Center' => 'cultural-center',
+                    'Hospital or Clinics' => 'hospital-or-clinics',
+                    'Shops and Others' => 'shops-and-others',
+                    'House' => 'house',
+                    'Drinking Water - Group Level' => 'drinking-water-group-level',
+                    'Drinking Water - Individual Level' => 'drinking-water-individual-level',
+                    'Orphan Care' => 'orphan-care',
+                    'Differently Abled' => 'differently-abled',
+                    'Family Aid' => 'family-aid',
+                    'General' => 'general'
+                ];
+                $categorySlug = $categorySlugs[$project->type_of_project] ?? 'education-center';
+            @endphp
+            <a href="{{ route('projects.category', $categorySlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="bx bx-arrow-back"></i> Back to Project List
+            </a>
+        </div>
     </div>
 
                                                                 <!-- Pure AJAX Photo Upload & Delete (Real-time DOM Update, No Page Refresh) -->
@@ -2106,15 +1889,13 @@
 
                     const container = targetCard.querySelector('.photo-list-container');
                     if (container) {
-                        const emptyState = container.querySelector('.photo-empty-state');
-                        if (emptyState) emptyState.remove();
-
+                        container.innerHTML = '';
                         const photoDiv = document.createElement('div');
                         photoDiv.style.cssText = 'position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease;';
                         
                         photoDiv.innerHTML = `
                             <a href="${photoUrl}" target="_blank" style="display: block; line-height: 0;">
-                                <img src="${photoUrl}" style="width: 100%; height: 120px; object-fit: cover; display: block;" alt="Photo ${totalPhotos}">
+                                <img src="${photoUrl}" style="width: 100%; max-height: 280px; object-fit: contain; background: rgba(0, 0, 0, 0.3); display: block;" alt="Photo ${totalPhotos}">
                             </a>
                             <form action="${deleteUrl}" method="POST" style="position: absolute; top: 0.3rem; right: 0.3rem; margin: 0;">
                                 <input type="hidden" name="_token" value="${csrfToken}">
@@ -2132,7 +1913,11 @@
                 }
             }
 
-            document.addEventListener('submit', async function(e) {
+            if (window.__photoSubmitHandler) {
+                document.removeEventListener('submit', window.__photoSubmitHandler, true);
+            }
+
+            window.__photoSubmitHandler = async function(e) {
                 const form = e.target;
                 if (!form || form.getAttribute('data-no-ajax') === 'true') return;
 
@@ -2141,6 +1926,8 @@
                 // A. AJAX PHOTO UPLOAD (Matches both upload-photo and upload_photo)
                 if (action.includes('upload-photo') || action.includes('upload_photo')) {
                     e.preventDefault();
+                    if (form.dataset.submitting === 'true') return;
+                    form.dataset.submitting = 'true';
 
                     const submitBtn = form.querySelector('button[type="submit"]');
                     const origBtnText = submitBtn ? submitBtn.innerHTML : '';
@@ -2180,17 +1967,17 @@
                         console.error('AJAX upload photo error:', err);
                         alert('Photo upload failed. Please try again.');
                     } finally {
+                        delete form.dataset.submitting;
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = origBtnText;
                         }
                     }
-                }
-
-                // B. AJAX PHOTO DELETE (Matches delete-photo, delete_photo, /photos/)
-                else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
+                } else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
                     e.preventDefault();
+                    if (form.dataset.submitting === 'true') return;
                     if (!confirm('Delete this photo?')) return;
+                    form.dataset.submitting = 'true';
 
                     const photoItem = form.closest('div[style*="position: relative"]');
                     const card = form.closest('.photo-card');
@@ -2239,9 +2026,13 @@
                     } catch (err) {
                         console.error('AJAX delete photo error:', err);
                         alert('Photo delete failed. Please try again.');
+                    } finally {
+                        delete form.dataset.submitting;
                     }
                 }
-            }, true);
+            };
+
+            document.addEventListener('submit', window.__photoSubmitHandler, true);
         })();
     </script>
     <!-- Switch Stage Script -->
@@ -2266,6 +2057,9 @@
                 performToggleChecklistDocument(button, docName);
             }
         }
+
+        window.toggleChecklistDocument = toggleChecklistDocument;
+        window.performToggleChecklistDocument = performToggleChecklistDocument;
 
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
@@ -2396,7 +2190,8 @@
                 return;
             }
 
-            const app = allApplicationsData.find(a => a.id == selectedId);
+            const apps = (typeof allApplicationsData !== 'undefined' && Array.isArray(allApplicationsData)) ? allApplicationsData : [];
+            const app = apps.find(a => a.id == selectedId);
             if (!app) return;
 
             let meta = {};
@@ -2536,26 +2331,14 @@
 
         function switchStage(stageNum) {
             let isLocked = false;
-            const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
-            if (isSixStage) {
-                if (stageNum <= 2) {
-                    isLocked = false;
-                } else if (stageNum === 3 || stageNum === 4) {
-                    isLocked = (hasApplication !== '1');
-                } else {
-                    // Stage 5 or 6 unlocks when project stage >= 5 or approved
-                    isLocked = (activeProjectStage < 5 && isProjectApproved !== '1');
-                }
+            if (stageNum <= 3) {
+                isLocked = false;
             } else {
-                if (stageNum !== 1 && isProjectApproved !== '1') {
-                    isLocked = true;
-                }
+                isLocked = (activeProjectStage < 4 && isProjectApproved !== '1');
             }
 
             if (isLocked) {
-                const msg = isSixStage 
-                    ? "Access Locked: This stage is not yet unlocked." 
-                    : "Access Locked: This stage is only accessible after COO approval.";
+                const msg = "Access Locked: This stage is not yet unlocked.";
                 if (typeof showToast === 'function') {
                     showToast(msg, "danger");
                 } else {
@@ -2587,119 +2370,217 @@
                 targetPanel.style.display = 'block';
             }
         }
+        window.switchStage = switchStage;
+        
+
 
         // Initialize display to show the stage panel
-        document.addEventListener('DOMContentLoaded', () => {
+        function initStageDisplay() {
             const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id }}');
+            let stageToLoad = {{ min($project->stage ?? 1, 5) }};
             if (savedStage) {
                 const stageNum = Number(savedStage);
                 let isLocked = false;
-                const isSixStage = ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level'].includes(projectType);
-                if (isSixStage) {
-                    if (stageNum <= 2) {
-                        isLocked = false;
-                    } else if (stageNum === 3 || stageNum === 4) {
-                        isLocked = (hasApplication !== '1');
-                    } else {
-                        isLocked = (activeProjectStage < 5 && isProjectApproved !== '1');
-                    }
+                if (stageNum <= 3) {
+                    isLocked = false;
                 } else {
-                    if (stageNum !== 1 && isProjectApproved !== '1') {
-                        isLocked = true;
-                    }
+                    isLocked = (activeProjectStage < 4 && isProjectApproved !== '1');
                 }
                 if (!isLocked) {
-                    switchStage(stageNum);
-                } else {
-                    switchStage(1);
+                    stageToLoad = stageNum;
                 }
-            } else {
-                switchStage(1);
             }
-        });
+            switchStage(stageToLoad);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initStageDisplay);
+        } else {
+            initStageDisplay();
+        }
 
         // Material Management Modal Controls
         function openAddMaterialModal() {
-            document.getElementById('addMaterialModal').style.display = 'flex';
+            switchStage(3);
+            const modal = document.getElementById('addMaterialModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeAddMaterialModal() {
-            document.getElementById('addMaterialModal').style.display = 'none';
+            const modal = document.getElementById('addMaterialModal');
+            if (modal) modal.style.display = 'none';
         }
         function openEditMaterialModal(index, name, amount) {
+            switchStage(3);
             const form = document.getElementById('editMaterialForm');
-            form.setAttribute('action', `/admin/projects/{{ $project->id }}/materials/${index}`);
-            document.getElementById('editMaterialName').value = name;
-            document.getElementById('editMaterialAmount').value = amount;
-            document.getElementById('editMaterialModal').style.display = 'flex';
+            if (form) form.setAttribute('action', `/admin/projects/{{ $project->id }}/materials/${index}`);
+            const elName = document.getElementById('editMaterialName');
+            if (elName) elName.value = name;
+            const elAmt = document.getElementById('editMaterialAmount');
+            if (elAmt) elAmt.value = amount;
+            const modal = document.getElementById('editMaterialModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeEditMaterialModal() {
-            document.getElementById('editMaterialModal').style.display = 'none';
+            const modal = document.getElementById('editMaterialModal');
+            if (modal) modal.style.display = 'none';
         }
 
         // Community Contribution Modal Controls
         function openAddCommContribModal() {
-            document.getElementById('addCommContribModal').style.display = 'flex';
+            switchStage(3);
+            const modal = document.getElementById('addCommContribModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeAddCommContribModal() {
-            document.getElementById('addCommContribModal').style.display = 'none';
+            const modal = document.getElementById('addCommContribModal');
+            if (modal) modal.style.display = 'none';
         }
         function openEditCommContribModal(index, item, amount) {
+            switchStage(3);
             const form = document.getElementById('editCommContribForm');
-            form.setAttribute('action', `/admin/projects/{{ $project->id }}/community-contributions/${index}`);
-            document.getElementById('editCommContribName').value = item;
-            document.getElementById('editCommContribAmount').value = amount;
-            document.getElementById('editCommContribModal').style.display = 'flex';
+            if (form) form.setAttribute('action', `/admin/projects/{{ $project->id }}/community-contributions/${index}`);
+            const elName = document.getElementById('editCommContribName');
+            if (elName) elName.value = item;
+            const elAmt = document.getElementById('editCommContribAmount');
+            if (elAmt) elAmt.value = amount;
+            const modal = document.getElementById('editCommContribModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeEditCommContribModal() {
-            document.getElementById('editCommContribModal').style.display = 'none';
+            const modal = document.getElementById('editCommContribModal');
+            if (modal) modal.style.display = 'none';
         }
 
         // Expense Management Modal Controls
         function openAddExpenseModal(materialIndex, materialName) {
-            document.getElementById('addExpenseFormMaterialIndex').value = materialIndex;
-            document.getElementById('addExpenseModalMaterialName').innerText = materialName;
-            document.getElementById('addExpenseModal').style.display = 'flex';
+            switchStage(4);
+            const elIdx = document.getElementById('addExpenseFormMaterialIndex');
+            if (elIdx) elIdx.value = materialIndex;
+            const elName = document.getElementById('addExpenseModalMaterialName');
+            if (elName) elName.innerText = materialName;
+            const modal = document.getElementById('addExpenseModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeAddExpenseModal() {
-            document.getElementById('addExpenseModal').style.display = 'none';
+            const modal = document.getElementById('addExpenseModal');
+            if (modal) modal.style.display = 'none';
         }
         function openEditExpenseModal(index, materialIndex, name, quantity, amount) {
+            switchStage(4);
             const form = document.getElementById('editExpenseForm');
-            form.setAttribute('action', `/admin/projects/{{ $project->id }}/expenses/${index}`);
-            document.getElementById('editExpenseFormMaterialIndex').value = materialIndex;
-            document.getElementById('editExpenseName').value = name;
-            document.getElementById('editExpenseQuantity').value = quantity;
-            document.getElementById('editExpenseAmount').value = amount;
-            document.getElementById('editExpenseModal').style.display = 'flex';
+            if (form) form.setAttribute('action', `/admin/projects/{{ $project->id }}/expenses/${index}`);
+            const elIdx = document.getElementById('editExpenseFormMaterialIndex');
+            if (elIdx) elIdx.value = materialIndex;
+            const elName = document.getElementById('editExpenseName');
+            if (elName) elName.value = name;
+            const elQty = document.getElementById('editExpenseQuantity');
+            if (elQty) elQty.value = quantity;
+            const elAmt = document.getElementById('editExpenseAmount');
+            if (elAmt) elAmt.value = amount;
+            const modal = document.getElementById('editExpenseModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeEditExpenseModal() {
-            document.getElementById('editExpenseModal').style.display = 'none';
+            const modal = document.getElementById('editExpenseModal');
+            if (modal) modal.style.display = 'none';
         }
 
         // Community Contribution Expense Management
         function openAddCommExpenseModal(commIndex, commName) {
-            document.getElementById('addCommExpenseFormIndex').value = commIndex;
-            document.getElementById('addCommExpenseModalName').innerText = commName;
-            document.getElementById('addCommExpenseModal').style.display = 'flex';
+            switchStage(4);
+            const elIdx = document.getElementById('addCommExpenseFormIndex');
+            if (elIdx) elIdx.value = commIndex;
+            const elName = document.getElementById('addCommExpenseModalName');
+            if (elName) elName.innerText = commName;
+            const modal = document.getElementById('addCommExpenseModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeAddCommExpenseModal() {
-            document.getElementById('addCommExpenseModal').style.display = 'none';
+            const modal = document.getElementById('addCommExpenseModal');
+            if (modal) modal.style.display = 'none';
         }
         function openEditCommExpenseModal(index, commIndex, name, quantity, amount) {
+            switchStage(4);
             const form = document.getElementById('editCommExpenseForm');
-            form.setAttribute('action', `/admin/projects/{{ $project->id }}/expenses/${index}`);
-            document.getElementById('editCommExpenseFormIndex').value = commIndex;
-            document.getElementById('editCommExpenseName').value = name;
-            document.getElementById('editCommExpenseQuantity').value = quantity;
-            document.getElementById('editCommExpenseAmount').value = amount;
-            document.getElementById('editCommExpenseModal').style.display = 'flex';
+            if (form) form.setAttribute('action', `/admin/projects/{{ $project->id }}/expenses/${index}`);
+            const elIdx = document.getElementById('editCommExpenseFormIndex');
+            if (elIdx) elIdx.value = commIndex;
+            const elName = document.getElementById('editCommExpenseName');
+            if (elName) elName.value = name;
+            const elQty = document.getElementById('editCommExpenseQuantity');
+            if (elQty) elQty.value = quantity;
+            const elAmt = document.getElementById('editCommExpenseAmount');
+            if (elAmt) elAmt.value = amount;
+            const modal = document.getElementById('editCommExpenseModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeEditCommExpenseModal() {
-            document.getElementById('editCommExpenseModal').style.display = 'none';
+            const modal = document.getElementById('editCommExpenseModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        // Contractor Modal Controls
+        function openAddContractorModal() {
+            switchStage(3);
+            const modal = document.getElementById('addContractorModal');
+            if (modal) modal.style.display = 'flex';
+        }
+        function closeAddContractorModal() {
+            const modal = document.getElementById('addContractorModal');
+            if (modal) modal.style.display = 'none';
+        }
+        function openEditContractorModal(index, contractorData) {
+            switchStage(3);
+            const form = document.getElementById('editContractorForm');
+            if (form) form.setAttribute('action', `/admin/projects/{{ $project->id }}/contractors/${index}`);
+            const select = document.getElementById('edit_contractor_select');
+            if (select && contractorData) {
+                select.value = contractorData.contractor_id || contractorData.id || '';
+                updateEditContractorDetails();
+            }
+            const modal = document.getElementById('editContractorModal');
+            if (modal) modal.style.display = 'flex';
+        }
+        function closeEditContractorModal() {
+            const modal = document.getElementById('editContractorModal');
+            if (modal) modal.style.display = 'none';
+        }
+        function updateAddContractorDetails() {
+            const select = document.getElementById('add_contractor_select');
+            if (!select) return;
+            const option = select.options[select.selectedIndex];
+            const card = document.getElementById('add_contractor_details_card');
+            if (select.value && card && option) {
+                const elCompany = document.getElementById('add_c_company');
+                if (elCompany) elCompany.innerText = option.getAttribute('data-company') || 'N/A';
+                const elPhone = document.getElementById('add_c_phone');
+                if (elPhone) elPhone.innerText = option.getAttribute('data-phone') || 'N/A';
+                const elAddr = document.getElementById('add_c_address');
+                if (elAddr) elAddr.innerText = option.getAttribute('data-address') || 'N/A';
+                card.style.display = 'block';
+            } else if (card) {
+                card.style.display = 'none';
+            }
+        }
+        function updateEditContractorDetails() {
+            const select = document.getElementById('edit_contractor_select');
+            if (!select) return;
+            const option = select.options[select.selectedIndex];
+            const card = document.getElementById('edit_contractor_details_card');
+            if (select.value && card && option) {
+                const elCompany = document.getElementById('edit_c_company');
+                if (elCompany) elCompany.innerText = option.getAttribute('data-company') || 'N/A';
+                const elPhone = document.getElementById('edit_c_phone');
+                if (elPhone) elPhone.innerText = option.getAttribute('data-phone') || 'N/A';
+                const elAddr = document.getElementById('edit_c_address');
+                if (elAddr) elAddr.innerText = option.getAttribute('data-address') || 'N/A';
+                card.style.display = 'block';
+            } else if (card) {
+                card.style.display = 'none';
+            }
         }
     </script>
 
-    @if($isProjectManager)
     <!-- Add Material Modal -->
     <div id="addMaterialModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
@@ -2925,95 +2806,36 @@
     </div>
 
     <script>
-        function openAddContractorModal() {
-            document.getElementById('addContractorModal').style.display = 'flex';
-        }
-        function closeAddContractorModal() {
-            document.getElementById('addContractorModal').style.display = 'none';
-        }
-        function openEditContractorModal(index, contractor) {
-            const form = document.getElementById('editContractorForm');
-            form.setAttribute('action', `/admin/projects/{{ $project->id }}/contractors/${index}`);
-            
-            const select = document.getElementById('edit_contractor_select');
-            
-            if (contractor.contractor_id) {
-                select.value = contractor.contractor_id;
-            } else {
-                // Try name matching for legacy contractor records
-                let matched = false;
-                for (let i = 0; i < select.options.length; i++) {
-                    const optName = select.options[i].text.split('(')[0].trim().toLowerCase();
-                    const targetName = (contractor.contractor_name || '').trim().toLowerCase();
-                    if (optName === targetName) {
-                        select.selectedIndex = i;
-                        matched = true;
-                        break;
-                    }
-                }
-                if (!matched) {
-                    select.value = '';
-                }
-            }
-            
-            document.getElementById('edit_contractor_type').value = contractor.type_of_contract || '';
-            document.getElementById('edit_contractor_purpose').value = contractor.purpose_of_contract || '';
-            
-            updateEditContractorDetails();
-            
-            document.getElementById('editContractorModal').style.display = 'flex';
-        }
-        function closeEditContractorModal() {
-            document.getElementById('editContractorModal').style.display = 'none';
-        }
-
-        function updateAddContractorDetails() {
-            const select = document.getElementById('add_contractor_select');
-            const card = document.getElementById('add_contractor_details_card');
-            const opt = select.options[select.selectedIndex];
-            if (opt && opt.value) {
-                document.getElementById('add_c_company').innerText = opt.getAttribute('data-company') || 'N/A';
-                document.getElementById('add_c_phone').innerText = opt.getAttribute('data-phone') || 'N/A';
-                document.getElementById('add_c_address').innerText = opt.getAttribute('data-address') || 'N/A';
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        }
-
-        function updateEditContractorDetails() {
-            const select = document.getElementById('edit_contractor_select');
-            const card = document.getElementById('edit_contractor_details_card');
-            const opt = select.options[select.selectedIndex];
-            if (opt && opt.value) {
-                document.getElementById('edit_c_company').innerText = opt.getAttribute('data-company') || 'N/A';
-                document.getElementById('edit_c_phone').innerText = opt.getAttribute('data-phone') || 'N/A';
-                document.getElementById('edit_c_address').innerText = opt.getAttribute('data-address') || 'N/A';
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        }
-            // Inspection Modal Controls
+        // Inspection Modal Controls
         function openAddInspectionModal() {
-            document.getElementById('addInspectionModal').style.display = 'flex';
+            switchStage(4);
+            const modal = document.getElementById('addInspectionModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeAddInspectionModal() {
-            document.getElementById('addInspectionModal').style.display = 'none';
+            const modal = document.getElementById('addInspectionModal');
+            if (modal) modal.style.display = 'none';
         }
         function openEditInspectionModal(id, name, designation, date, remarks) {
+            switchStage(4);
             const form = document.getElementById('editInspectionForm');
-            form.setAttribute('action', `/admin/projects/${activeProjectId}/inspections/${id}`);
-            document.getElementById('edit_inspection_name').value = name;
-            document.getElementById('edit_inspection_designation').value = designation;
-            document.getElementById('edit_inspection_date').value = date;
-            document.getElementById('edit_inspection_remarks').value = remarks;
-            document.getElementById('editInspectionModal').style.display = 'flex';
+            if (form) form.setAttribute('action', `/admin/projects/${activeProjectId}/inspections/${id}`);
+            const elName = document.getElementById('edit_inspection_name');
+            if (elName) elName.value = name;
+            const elDesig = document.getElementById('edit_inspection_designation');
+            if (elDesig) elDesig.value = designation;
+            const elDate = document.getElementById('edit_inspection_date');
+            if (elDate) elDate.value = date;
+            const elRem = document.getElementById('edit_inspection_remarks');
+            if (elRem) elRem.value = remarks;
+            const modal = document.getElementById('editInspectionModal');
+            if (modal) modal.style.display = 'flex';
         }
         function closeEditInspectionModal() {
-            document.getElementById('editInspectionModal').style.display = 'none';
+            const modal = document.getElementById('editInspectionModal');
+            if (modal) modal.style.display = 'none';
         }
-</script>
+    </script>
 
     <!-- Add Comm Expense Modal -->
     <div id="addCommExpenseModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
@@ -3130,6 +2952,5 @@
             </form>
         </div>
     </div>
-@endif
 
 @endsection
