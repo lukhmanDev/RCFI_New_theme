@@ -308,10 +308,12 @@
         }
 
         function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeModal = closeModal;
+            const modal = document.getElementById('addPartnerModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
+            if (modal) modal.style.display = 'none';
+            const editModal = document.getElementById('editPartnerModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+            if (editModal) editModal.style.display = 'none';
+        }
+        window.closeModal = closeModal;
 
         // Edit Partner Modal Toggle
         function openEditModal(donor) {
@@ -341,10 +343,10 @@
         }
 
         function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeEditModal = closeEditModal;
+            const modal = document.getElementById('editPartnerModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeEditModal = closeEditModal;
 
         function openDeleteModal(id, name) {
             const form = document.getElementById('deleteConfirmationForm');

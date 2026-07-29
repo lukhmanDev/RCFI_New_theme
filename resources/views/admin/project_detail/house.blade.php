@@ -395,8 +395,8 @@
                         </div> -->
 
                         <div id="status-updated-time-container" style="font-size: 0.85rem; color: var(--text-muted); display: {{ $statusUpdatedAt ? 'inline-flex' : 'none' }}; align-items: center; gap: 0.35rem;">
-                            <i class="bx bx-calendar-event" style="font-size: 1rem; color: var(--accent-cyan);"></i>
-                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: var(--accent-cyan);">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
+                            <i class="bx bx-calendar-event" style="font-size: 1rem; color: #6366f1;"></i>
+                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: #6366f1;">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
                         </div>
                     </div>
 
@@ -417,7 +417,7 @@
                                    value="{{ $currentCustom }}"
                                    style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box;">
                         </div>
-                        <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                        <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; color: #ffffff; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
                             <i class="bx bx-save"></i> Save Status
                         </button>
                     </div>
@@ -2620,10 +2620,7 @@
             if (isSixStage) {
                 if (stageNum <= 2) {
                     isLocked = false;
-                }
-        window.switchStage = switchStage;
-        
- else if (stageNum === 3 || stageNum === 4) {
+                } else if (stageNum === 3 || stageNum === 4) {
                     isLocked = (hasApplication !== '1');
                 } else {
                     // Stage 5 or 6 unlocks when project stage >= 5 or approved

@@ -209,10 +209,10 @@
         }
 
         function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeModal = closeModal;
+            const modal = document.getElementById('addContractorModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeModal = closeModal;
 
         function openEditModal(contractor) {
             const form = document.getElementById('editContractorForm');
@@ -228,10 +228,10 @@
         }
 
         function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeEditModal = closeEditModal;
+            const modal = document.getElementById('editContractorModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeEditModal = closeEditModal;
     </script>
 
 @endsection

@@ -210,9 +210,15 @@
 </div>
 
 <script>
+    let cooChartRetryCount = 0;
     function renderCooDashboardCharts() {
         if (typeof Chart === 'undefined') {
-            setTimeout(renderCooDashboardCharts, 50);
+            if (cooChartRetryCount < 40) {
+                cooChartRetryCount++;
+                setTimeout(renderCooDashboardCharts, 50);
+            } else {
+                console.error('Chart.js failed to load within timeout.');
+            }
             return;
         }
 
@@ -221,89 +227,98 @@
 
         if (!trendCanvas || !statusCanvas) return;
 
-        const existingTrend = Chart.getChart(trendCanvas);
-        if (existingTrend) existingTrend.destroy();
-
-        const existingStatus = Chart.getChart(statusCanvas);
-        if (existingStatus) existingStatus.destroy();
-
         const fontFamily = getComputedStyle(document.body).fontFamily || 'Inter, sans-serif';
         Chart.defaults.font.family = fontFamily;
         Chart.defaults.color = '#64748b';
 
-        const trendLabels = @json($trendLabels);
-        const applicationsTrend = @json($applicationsTrend);
-        const partnersTrend = @json($partnersTrend);
+        try {
+            const existingTrend = Chart.getChart(trendCanvas);
+            if (existingTrend) existingTrend.destroy();
 
-        new Chart(trendCanvas, {
-            type: 'line',
-            data: {
-                labels: trendLabels,
-                datasets: [
-                    {
-                        label: 'Applications',
-                        data: applicationsTrend,
-                        borderColor: '#22d3ee',
-                        backgroundColor: 'rgba(34, 211, 238, 0.12)',
-                        tension: 0.35,
-                        fill: true,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#22d3ee',
-                        borderWidth: 2,
-                    },
-                    {
-                        label: 'Partners',
-                        data: partnersTrend,
-                        borderColor: '#8b5cf6',
-                        backgroundColor: 'rgba(139, 92, 246, 0.10)',
-                        tension: 0.35,
-                        fill: true,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#8b5cf6',
-                        borderWidth: 2,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
-                },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
-                },
-            },
-        });
+            const trendLabels = @json($trendLabels);
+            const applicationsTrend = @json($applicationsTrend);
+            const partnersTrend = @json($partnersTrend);
 
-        new Chart(statusCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: ['Approved', 'Pending', 'Rejected'],
-                datasets: [{
-                    data: [{{ $approvedCount }}, {{ $pendingCount }}, {{ $rejectedCount }}],
-                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                    borderColor: 'transparent',
-                    hoverOffset: 6,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '68%',
-                plugins: { legend: { display: false } },
-            },
-        });
+            new Chart(trendCanvas, {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [
+                        {
+                            label: 'Applications',
+                            data: applicationsTrend,
+                            borderColor: '#22d3ee',
+                            backgroundColor: 'rgba(34, 211, 238, 0.12)',
+                            tension: 0.35,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#22d3ee',
+                            borderWidth: 2,
+                        },
+                        {
+                            label: 'Partners',
+                            data: partnersTrend,
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.10)',
+                            tension: 0.35,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#8b5cf6',
+                            borderWidth: 2,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+                    },
+                },
+            });
+        } catch (e) {
+            console.error('Failed to render COO Trend chart:', e);
+        }
+
+        try {
+            const existingStatus = Chart.getChart(statusCanvas);
+            if (existingStatus) existingStatus.destroy();
+
+            new Chart(statusCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Approved', 'Pending', 'Rejected'],
+                    datasets: [{
+                        data: [{{ $approvedCount }}, {{ $pendingCount }}, {{ $rejectedCount }}],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                        borderColor: 'transparent',
+                        hoverOffset: 6,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: { legend: { display: false } },
+                },
+            });
+        } catch (e) {
+            console.error('Failed to render COO Status chart:', e);
+        }
     }
 
-    setTimeout(renderCooDashboardCharts, 10);
+    const safeRenderCooCharts = () => requestAnimationFrame(renderCooDashboardCharts);
+    setTimeout(safeRenderCooCharts, 50);
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', renderCooDashboardCharts);
+        document.addEventListener('DOMContentLoaded', safeRenderCooCharts);
     }
-    window.addEventListener('pageshow', renderCooDashboardCharts);
-    document.addEventListener('pjax:complete', renderCooDashboardCharts);
+    window.addEventListener('pageshow', safeRenderCooCharts);
+    document.addEventListener('pjax:complete', safeRenderCooCharts);
 </script>
 
 @endsection

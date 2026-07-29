@@ -805,7 +805,7 @@
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
             const form = document.getElementById('editAppForm');
-            form.action = '/admin/applications/' + appItem.id;
+            form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
             document.getElementById('edit_applicant_name').value = appItem.applicant_name;
             document.getElementById('edit_status').value = appItem.status;
@@ -1099,7 +1099,7 @@
                 showCustomConfirm('Are you sure you want to delete this application? This action cannot be undone.', function() {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = '/admin/applications/' + currentDetailsAppItem.id;
+                    form.action = "{{ url('admin/applications') }}/" + currentDetailsAppItem.id;
 
                     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 

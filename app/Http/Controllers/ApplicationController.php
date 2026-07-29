@@ -128,10 +128,23 @@ class ApplicationController extends Controller
 
         // Retrieve only applications in this category
         $user = auth()->user();
+        $statusOrderRaw = "CASE 
+            WHEN LOWER(status) = 'pending' THEN 1 
+            WHEN LOWER(status) = 'approved' THEN 2 
+            WHEN LOWER(status) = 'rejected' THEN 3 
+            ELSE 4 
+        END ASC";
+
         if (in_array($categorySlug, ['orphan-care', 'differently-abled', 'family-aid'])) {
-            $applications = $model::with(['address', 'cluster'])->orderBy('created_at', 'desc')->get();
+            $applications = $model::with(['address', 'cluster'])
+                ->orderByRaw($statusOrderRaw)
+                ->orderBy('created_at', 'desc')
+                ->get();
         } else {
-            $applications = $model::with('address')->orderBy('created_at', 'desc')->get();
+            $applications = $model::with('address')
+                ->orderByRaw($statusOrderRaw)
+                ->orderBy('created_at', 'desc')
+                ->get();
         }
 
         $projectModel = str_replace('Application', 'Project', $model);
@@ -752,7 +765,15 @@ class ApplicationController extends Controller
         $model = $config['model'];
 
         if (in_array($categorySlug, ['orphan-care', 'differently-abled', 'family-aid'])) {
-            $applications = $model::with('cluster')->where('status', 'Approved')->orderBy('created_at', 'desc')->get();
+            $applications = $model::with('cluster')
+                ->where('status', 'Approved')
+                ->orderByRaw("CASE 
+                    WHEN LOWER(sponsor_status) = 'not sponsored' THEN 1 
+                    WHEN LOWER(sponsor_status) = 'sponsored' THEN 2 
+                    ELSE 3 
+                END ASC")
+                ->orderBy('created_at', 'desc')
+                ->get();
         } else {
             $applications = $model::where('status', 'Approved')->orderBy('created_at', 'desc')->get();
         }
@@ -782,6 +803,23 @@ class ApplicationController extends Controller
             $projectsMap = $this->scopeProjectsForUser($query, $user)
                 ->get()
                 ->keyBy('application_id');
+
+            // Priority sorting for non-social-aid approved applications:
+            // 1. Not Started (No project assigned)
+            // 2. In Progress / Not set / other status
+            // 3. Completed (Bottom of list)
+            if (!in_array($categorySlug, ['orphan-care', 'differently-abled', 'family-aid'])) {
+                $applications = $applications->sortBy(function ($app) use ($projectsMap) {
+                    $project = $projectsMap[$app->id] ?? null;
+                    if (!$project) {
+                        return 1;
+                    }
+                    if ($project->status === 'Completed') {
+                        return 3;
+                    }
+                    return 2;
+                })->values();
+            }
         }
 
         $viewName = str_replace('applications.', 'approved_applications.', $config['view']);

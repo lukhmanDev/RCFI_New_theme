@@ -593,8 +593,12 @@
     }
 
     function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
+        const modal = document.getElementById('addProjectModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
+        if (modal) {
+            modal.style.display = 'none';
+        } else {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        }
     }
     window.closeModal = closeModal;
 
@@ -621,8 +625,12 @@
     }
 
     function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
+        const modal = document.getElementById('editProjectModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+        if (modal) {
+            modal.style.display = 'none';
+        } else {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        }
     }
     window.closeEditModal = closeEditModal;
 

@@ -339,99 +339,7 @@
                     <div class="details-label">Subtheme</div><div class="details-colon">:</div><div class="details-value">{{ $project->subtheme ?? 'N/A' }}</div>
                     <div class="details-label">Activity</div><div class="details-colon">:</div><div class="details-value">{{ $project->activity ?? 'N/A' }}</div>
                     <div class="details-label">Remarks</div><div class="details-colon">:</div><div class="details-value" style="font-weight: normal; color: var(--text-muted);">{{ $project->remarks ?? 'N/A' }}</div>
-                    <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ $project->status === 'Completed' ? 'Completed' : ($project->project_phase === 'Other' ? ($project->project_phase_custom ?: 'Other') : $project->project_phase) }}</div>
-                </div>
-
-                {{-- ===== PROJECT PHASE / STATUS SELECTOR ===== --}}
-                @php
-                    $phases = [
-                        'Project Assigned',
-                        'Site identified',
-                        'Documents verified',
-                        'Drawing',
-                        'Tender',
-                        'Agreement',
-                        'Foundation',
-                        'Column',
-                        'Slab',
-                        'Mason work',
-                        'Plastering',
-                        'Flooring, Painting, Joinery and MEP',
-                        'Completed',
-                        'Inaugurated',
-                        'Finance settled and Project phase off',
-                        'Other',
-                    ];
-                    $currentPhase  = $project->project_phase ?? '';
-                    $currentCustom = $project->project_phase_custom ?? '';
-
-                    
-
-                @endphp
-                <div style="margin-top: 2rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
-                    <h3 style="color: var(--text-main); font-size: 1rem; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
-                        
-                        Project Status
-                    </h3>
-
-                    @php
-                        $statusRecord = $project->projectStatus;
-                        $statusUpdatedAt = $statusRecord && $statusRecord->updated_at ? \Carbon\Carbon::parse($statusRecord->updated_at)->timezone('Asia/Kolkata') : null;
-                    @endphp
-
-                    {{-- Current phase badge & last updated time --}}
-                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-                        <!-- <div id="current-phase-badge">
-                            @if($currentPhase)
-                                <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(6,182,212,0.12); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                                    <i class="bx bx-radio-circle-marked" style="font-size: 1rem;"></i>
-                                    {{ $currentPhase === 'Other' ? $currentCustom : $currentPhase }}
-                                </span>
-                            @else
-                                <span style="display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(107,114,128,0.1); border: 1px solid rgba(107,114,128,0.3); color: var(--text-muted); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">
-                                    <i class="bx bx-minus-circle"></i> Not set
-                                </span>
-                            @endif
-                        </div> -->
-
-                        <div id="status-updated-time-container" style="font-size: 0.85rem; color: var(--text-muted); display: {{ $statusUpdatedAt ? 'inline-flex' : 'none' }}; align-items: center; gap: 0.35rem;">
-                            <i class="bx bx-calendar-event" style="font-size: 1rem; color: var(--accent-cyan);"></i>
-                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: var(--accent-cyan);">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
-                        </div>
-                    </div>
-
-                    @if($canEditStatus && $hasApplication)
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; max-width: 560px;">
-                        <div style="flex: 1; min-width: 220px;">
-                            <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Select Phase</label>
-                            <select id="project-phase-select" onchange="onPhaseSelectChange()" style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; cursor: pointer;">
-                                <option value="">— Select phase —</option>
-                                @foreach($phases as $phase)
-                                    <option value="{{ $phase }}" {{ $currentPhase === $phase ? 'selected' : '' }}>{{ $phase }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div id="phase-custom-box" style="flex: 1; min-width: 180px; {{ $currentPhase === 'Other' ? '' : 'display: none;' }}">
-                            <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Describe (Other)</label>
-                            <input type="text" id="project-phase-custom" placeholder="Enter custom status…" maxlength="255"
-                                   value="{{ $currentCustom }}"
-                                   style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box;">
-                        </div>
-                        <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-                            <i class="bx bx-save"></i> Save Status
-                        </button>
-                    </div>
-                    @else
-                        @if(empty($project->application_id))
-                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                <i class="bx bx-error" style="vertical-align: middle; margin-right: 0.35rem; font-size: 1.1rem;"></i> Project status updates are disabled. Please assign/connect an application in Stage 2 first.
-                            </div>
-                        @else
-                            <p style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">
-                                You are not authorized to edit the project status.
-                            </p>
-                        @endif
-                    @endif
+                    <div class="details-label">Project Status</div><div class="details-colon">:</div><div class="details-value" id="grid-project-status" style="font-weight: 600; color: var(--accent-cyan);">{{ $project->status ?? 'Pending' }}</div>
                 </div>
 
                 <!-- Connect Application Form -->
@@ -1601,14 +1509,7 @@
                                     <span style="color: var(--accent-red); font-weight: 600;">Pending</span>
                                 @endif
                             </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-weight: 600;">Consumption sheet for payment:</span>
-                                @if(!empty($measBook))
-                                    <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); text-decoration: none;">View Sheet</a>
-                                @else
-                                    <span style="color: var(--accent-red); font-weight: 600;">Pending</span>
-                                @endif
-                            </div>
+
                             <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <span style="font-weight: 600;">Location Map Link:</span>
                                 @if(!empty($locationMapLink))
@@ -1652,36 +1553,7 @@
                             </div>
                         </div>
 
-                        <!-- Measurement Book row (Renamed to Consumption sheet for payment) -->
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Consumption sheet for payment</span>
-                                <span style="font-size: 0.75rem; color: var(--text-muted);" id="ticked-at-Consumption_sheet_for_payment">
-                                    @if($measBookTime)
-                                        Ticked at: {{ $measBookTime }}
-                                    @else
-                                        -
-                                    @endif
-                                </span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if($isProjectManager && !$isLockedForEditing)
-                                    <button type="button" onclick="toggleChecklistDocument(this, 'Consumption sheet for payment')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
-                                        <i class="bx {{ !empty($measBook) ? 'bxs-checkbox-checked' : 'bx-checkbox' }}" style="font-size: 1.8rem; color: {{ !empty($measBook) ? 'var(--accent-green)' : 'var(--text-muted)' }}; transition: color 0.2s;"></i>
-                                    </button>
-                                @else
-                                    @if(!empty($measBook))
-                                        <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                            <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Ticked
-                                        </span>
-                                    @else
-                                        <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Unticked
-                                        </span>
-                                    @endif
-                                @endif
-                            </div>
-                        </div>
+
 
                         <!-- Location Map Link row -->
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--panel-border);">
@@ -2029,7 +1901,7 @@
                                 </div>
                             @endif
                         </div>
-                    @elseif($project->stage == 6)
+                    @elseif($project->stage == 5 || $project->stage == 6)
                         <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
                             <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem 0; text-transform: uppercase;">COO Final Approval</h4>
                             @if($isCoo || $isSuperAdmin)
@@ -2047,26 +1919,6 @@
                             @else
                                 <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
                                     <i class="bx bx-time-five"></i> Pending COO Final Approval
-                                </div>
-                            @endif
-                        </div>
-                    @elseif($project->stage == 5)
-                        <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
-                            <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; text-transform: uppercase;">Promote to Stage 6</h4>
-                            @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
-                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-                                    Once all expenses have been logged and the evaluation is complete, you can promote this project to Stage 6 (Completion Stage).
-                                </p>
-                                <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="margin: 0;">
-                                    @csrf
-                                    <input type="hidden" name="action" value="promote_to_stage6">
-                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px;">
-                                        <i class="bx bx-right-arrow-alt"></i> Complete Stage 5 & Move to Stage 6
-                                    </button>
-                                </form>
-                            @else
-                                <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                    <i class="bx bx-time-five"></i> Awaiting Project Manager or Engineer to complete Stage 5 and promote to Stage 6.
                                 </div>
                             @endif
                         </div>
@@ -2241,58 +2093,66 @@
                 } else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
                     e.preventDefault();
                     if (form.dataset.submitting === 'true') return;
-                    if (!confirm('Delete this photo?')) return;
-                    form.dataset.submitting = 'true';
 
-                    const photoItem = form.closest('div[style*="position: relative"]');
-                    const card = form.closest('.photo-card');
+                    const doDelete = async () => {
+                        form.dataset.submitting = 'true';
 
-                    try {
-                        const response = await fetch(action, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            },
-                            body: new FormData(form)
-                        });
+                        const photoItem = form.closest('div[style*="position: relative"]');
+                        const card = form.closest('.photo-card');
 
-                        const data = await response.json();
+                        try {
+                            const response = await fetch(action, {
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                body: new FormData(form)
+                            });
 
-                        if (data.success) {
-                            if (photoItem) {
-                                photoItem.style.transition = 'all 0.3s ease';
-                                photoItem.style.opacity = '0';
-                                photoItem.style.transform = 'scale(0.8)';
-                                setTimeout(() => {
-                                    photoItem.remove();
-                                    if (card) {
-                                        const badge = card.querySelector('.photo-card-header span:last-child');
-                                        if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
+                            const data = await response.json();
 
-                                        const container = card.querySelector('.photo-list-container');
-                                        if (container && (data.total_photos === 0 || container.children.length === 0)) {
-                                            const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
-                                            container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                            if (data.success) {
+                                if (photoItem) {
+                                    photoItem.style.transition = 'all 0.3s ease';
+                                    photoItem.style.opacity = '0';
+                                    photoItem.style.transform = 'scale(0.8)';
+                                    setTimeout(() => {
+                                        photoItem.remove();
+                                        if (card) {
+                                            const badge = card.querySelector('.photo-card-header span:last-child');
+                                            if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
+
+                                            const container = card.querySelector('.photo-list-container');
+                                            if (container && (data.total_photos === 0 || container.children.length === 0)) {
+                                                const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
+                                                container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                                            }
                                         }
-                                    }
-                                }, 300);
-                            }
-                            if (typeof showToast === 'function') {
-                                showToast(data.message || 'Photo deleted successfully!', 'success');
-                            }
-                        } else {
-                            if (typeof showToast === 'function') {
-                                showToast(data.message || 'Photo delete failed.', 'danger');
+                                    }, 300);
+                                }
+                                if (typeof showToast === 'function') {
+                                    showToast(data.message || 'Photo deleted successfully!', 'success');
+                                }
                             } else {
-                                alert(data.message || 'Photo delete failed.');
+                                if (typeof showToast === 'function') {
+                                    showToast(data.message || 'Photo delete failed.', 'danger');
+                                } else {
+                                    alert(data.message || 'Photo delete failed.');
+                                }
                             }
+                        } catch (err) {
+                            console.error('AJAX delete photo error:', err);
+                            alert('Photo delete failed. Please try again.');
+                        } finally {
+                            delete form.dataset.submitting;
                         }
-                    } catch (err) {
-                        console.error('AJAX delete photo error:', err);
-                        alert('Photo delete failed. Please try again.');
-                    } finally {
-                        delete form.dataset.submitting;
+                    };
+
+                    if (typeof showCustomConfirm === 'function') {
+                        showCustomConfirm('Delete this photo?', doDelete);
+                    } else if (confirm('Delete this photo?')) {
+                        doDelete();
                     }
                 }
             };
@@ -2577,10 +2437,7 @@
             if (isSixStage) {
                 if (stageNum <= 2) {
                     isLocked = false;
-                }
-        window.switchStage = switchStage;
-        
- else if (stageNum === 3 || stageNum === 4) {
+                } else if (stageNum === 3 || stageNum === 4) {
                     isLocked = (hasApplication !== '1');
                 } else {
                     // Stage 5 or 6 unlocks when project stage >= 5 or approved

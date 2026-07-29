@@ -75,8 +75,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::get('/admin/applications/export/{category}', [ApplicationController::class, 'export'])->name('applications.export');
     Route::post('/admin/applications', [ApplicationController::class, 'store'])->name('applications.store');
     Route::get('/admin/applications/{id}', [ApplicationController::class, 'show'])->name('applications.show');
-    Route::put('/admin/applications/{id}', [ApplicationController::class, 'update'])->name('applications.update');
-    Route::delete('/admin/applications/{id}', [ApplicationController::class, 'destroy'])->name('applications.destroy');
+    Route::match(['put', 'post'], '/admin/applications/{id}', [ApplicationController::class, 'update'])->name('applications.update');
+    Route::match(['delete', 'post'], '/admin/applications/{id}', [ApplicationController::class, 'destroy'])->name('applications.destroy');
     Route::post('/admin/applications/{category}/{id}/approve', [ApplicationController::class, 'approveApplication'])->name('applications.approve');
     Route::post('/admin/applications/{category}/{id}/reject', [ApplicationController::class, 'rejectApplication'])->name('applications.reject');
     Route::post('/admin/applications/{id}/update-cluster', [ApplicationController::class, 'updateCluster'])->name('applications.update_cluster');
@@ -94,6 +94,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
         Route::match(['get', 'post'], '/admin/projects/' . $slug . '/{id}/update-programme/{programme_id}', [ProjectController::class, 'socialAidUpdateProgramme'])->name('projects.' . $key . '.update_programme');
         Route::match(['get', 'delete'], '/admin/projects/' . $slug . '/{id}/delete-programme/{programme_id}', [ProjectController::class, 'socialAidDeleteProgramme'])->name('projects.' . $key . '.delete_programme');
         Route::match(['get', 'post'], '/admin/projects/' . $slug . '/{id}/toggle-programme-tick', [ProjectController::class, 'socialAidToggleProgrammeTick'])->name('projects.' . $key . '.toggle_programme_tick');
+        Route::post('/admin/projects/' . $slug . '/{id}/toggle-suspend', [ProjectController::class, 'socialAidToggleSuspend'])->name('projects.' . $key . '.toggle_suspend');
     }
 
 

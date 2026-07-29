@@ -31,7 +31,7 @@ class DifferentlyAbledApplication extends Model
                 'type_of_project' => 'Differently Abled',
                 'sponsor' => 'Sponsored',
                 'stage' => 1,
-                'status' => 'Pending',
+                'status' => 'Active',
             ]);
         } else {
             $project = \App\Models\DifferentlyAbledProject::where('application_id', $application->id)->first();

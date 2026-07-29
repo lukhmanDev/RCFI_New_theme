@@ -103,9 +103,10 @@
     .user-info-meta h2 {
         font-size: 1.4rem;
         font-weight: 800;
-        color: var(--pf-text-main);
+        color: #ffffff !important;
         margin: 0 0 0.25rem 0;
         line-height: 1.2;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
 
     .user-info-meta p {

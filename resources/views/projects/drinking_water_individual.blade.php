@@ -409,15 +409,6 @@
                     </select>
                 </div>
 
-                <div class="form-group-custom">
-                    <label for="engineer_id">Engineer</label>
-                    <select name="engineer_id" id="engineer_id">
-                        <option value="">Select an engineer</option>
-                        @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
 
                 <div class="form-group-custom">
                     <label for="unit">Unit</label>
@@ -524,15 +515,6 @@
                     </select>
                 </div>
 
-                <div class="form-group-custom">
-                    <label for="edit_engineer_id">Engineer</label>
-                    <select name="engineer_id" id="edit_engineer_id">
-                        <option value="">Select an engineer</option>
-                        @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
 
                 <div class="form-group-custom">
                     <label for="edit_unit">Unit</label>
@@ -593,8 +575,12 @@
     }
 
     function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
+        const modal = document.getElementById('addProjectModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
+        if (modal) {
+            modal.style.display = 'none';
+        } else {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        }
     }
     window.closeModal = closeModal;
 
@@ -608,7 +594,6 @@
         document.getElementById('edit_agency_project_no').value = project.agency_project_no || '';
         document.getElementById('edit_donor_id').value = project.donor_id || '';
         document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';
-        document.getElementById('edit_engineer_id').value = project.engineer_id || '';
         document.getElementById('edit_unit').value = project.unit || 'RCFI';
         document.getElementById('edit_available_budget').value = project.available_budget || '';
         document.getElementById('edit_remarks').value = project.remarks || '';
@@ -621,8 +606,12 @@
     }
 
     function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
+        const modal = document.getElementById('editProjectModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+        if (modal) {
+            modal.style.display = 'none';
+        } else {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        }
     }
     window.closeEditModal = closeEditModal;
 

@@ -507,10 +507,10 @@
         }
 
         function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeModal = closeModal;
+            const modal = document.getElementById('addUserModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeModal = closeModal;
 
         // Edit User Modal
         function openEditModal(user) {
@@ -535,10 +535,10 @@
         }
 
         function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeEditModal = closeEditModal;
+            const modal = document.getElementById('editUserModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeEditModal = closeEditModal;
 
         // View Details Modal
         function openViewModal(userId) {

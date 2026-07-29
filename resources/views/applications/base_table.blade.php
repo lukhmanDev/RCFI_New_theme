@@ -225,7 +225,7 @@
     // Edit Application Modal Toggle
     function openEditModal(appItem) {
         const form = document.getElementById('editAppForm');
-        form.action = '/admin/applications/' + appItem.id;
+        form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
         document.getElementById('edit_applicant_name').value = appItem.applicant_name;
         document.getElementById('edit_amount_requested').value = appItem.amount_requested || '';

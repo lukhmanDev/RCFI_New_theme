@@ -348,10 +348,10 @@
         }
 
         function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeModal = closeModal;
+            const modal = document.getElementById('addClusterModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeModal = closeModal;
 
         function openEditModal(clusterItem) {
             const form = document.getElementById('editClusterForm');
@@ -375,10 +375,10 @@
         }
 
         function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeEditModal = closeEditModal;
+            const modal = document.getElementById('editClusterModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeEditModal = closeEditModal;
     </script>
 
 @endsection

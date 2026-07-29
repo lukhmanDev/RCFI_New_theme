@@ -11,6 +11,9 @@ class OrphanCareProject extends Model
     use HasProjectColumns;
     protected $table = 'orphan_care_projects';
     protected $guarded = [];
+    protected $attributes = [
+        'status' => 'Active',
+    ];
     protected $casts = [
         'stage' => 'integer',
         'community_contributions' => 'array',
@@ -24,7 +27,7 @@ class OrphanCareProject extends Model
         static::created(function ($project) {
             $year = date('y');
             $idString = str_pad($project->id, 3, '0', STR_PAD_LEFT);
-            $unitPrefix = (strtoupper($project->unit) === 'MARKAZ') ? 'MRKZ/' : 'RCFI/';
+            $unitPrefix = (!empty($project->unit) && strtoupper($project->unit) === 'MARKAZ') ? 'MRKZ/' : 'RCFI/';
             $project->project_id = $unitPrefix . $year . '-OC' . $idString;
             $project->saveQuietly();
         });

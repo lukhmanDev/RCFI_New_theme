@@ -299,7 +299,8 @@
                     <th class="col-manager">Project Manager</th>
                     <th class="col-budget" style="text-align: right;">Available Budget</th>
                     <th class="col-remarks">Remarks</th>
-                    <th style="text-align: center; width: 180px;">Action</th>
+                    <th style="text-align: center; width: 110px;">Status</th>
+                    <th style="text-align: center; width: 200px;">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -318,6 +319,28 @@
                         <td class="col-remarks" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             {{ $project->remarks ?? 'N/A' }}
                         </td>
+                        <td style="text-align: center;">
+                            @php
+                                $status = $project->status ?? 'Active';
+                                $badgeStyle = match($status) {
+                                    'Suspended' => 'background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.35);',
+                                    'Completed' => 'background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.35);',
+                                    default     => 'background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.35);',
+                                };
+                                $dotColor = match($status) {
+                                    'Suspended' => '#ef4444',
+                                    'Completed' => '#34d399',
+                                    default     => '#10b981',
+                                };
+                            @endphp
+                            <span id="status-badge-{{ $project->id }}"
+                                  data-project-id="{{ $project->id }}"
+                                  data-status="{{ $status }}"
+                                  style="{{ $badgeStyle }} padding:0.25rem 0.65rem; border-radius:999px; font-size:0.75rem; font-weight:600; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">
+                                <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:{{ $dotColor }};"></span>
+                                {{ $status }}
+                            </span>
+                        </td>
                         <td style="text-align: center; white-space: nowrap;">
                             @if(Auth::user()->hasAdminAccess())
                             <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nName: {{ $project->project_name ?? 'N/A' }}\nSponsor: {{ $project->sponsor ?? 'N/A' }}\nTheme: {{ $project->theme ?? 'N/A' }}\nSubtheme: {{ $project->subtheme ?? 'N/A' }}\nActivity: {{ $project->activity ?? 'N/A' }}\nSpec: {{ $project->project_spec ?? 'N/A' }}\nAgency No: {{ $project->agency_project_no }}\nDonor: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
@@ -333,6 +356,18 @@
                                     <i class="bx bx-trash"></i>
                                 </button>
                             </form>
+
+                            <button type="button"
+                                id="suspend-btn-{{ $project->id }}"
+                                class="btn-action-icon"
+                                data-project-id="{{ $project->id }}"
+                                data-url="{{ route('projects.family_aid.toggle_suspend', $project->id) }}"
+                                data-status="{{ $project->status ?? 'Active' }}"
+                                title="{{ ($project->status ?? 'Active') === 'Suspended' ? 'Reactivate Project' : 'Suspend Project' }}"
+                                style="background-color: {{ ($project->status ?? 'Active') === 'Suspended' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)' }}; color: {{ ($project->status ?? 'Active') === 'Suspended' ? '#10b981' : '#f59e0b' }}; border: 1px solid {{ ($project->status ?? 'Active') === 'Suspended' ? 'rgba(16,185,129,0.4)' : 'rgba(245,158,11,0.4)' }};"
+                                onclick="toggleSuspend(this)">
+                                <i class="bx {{ ($project->status ?? 'Active') === 'Suspended' ? 'bx-lock-open-alt' : 'bx-lock-alt' }}"></i>
+                            </button>
                             @endif
 
                             <button type="button" onclick="openAddProgrammeModal({{ json_encode($project) }})" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
@@ -573,8 +608,12 @@
     }
 
     function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
+        const modal = document.getElementById('addProjectModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
+        if (modal) {
+            modal.style.display = 'none';
+        } else {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        }
     }
     window.closeModal = closeModal;
 
@@ -600,8 +639,12 @@
     }
 
     function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
+        const modal = document.getElementById('editProjectModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+        if (modal) {
+            modal.style.display = 'none';
+        } else {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        }
     }
     window.closeEditModal = closeEditModal;
 
@@ -849,6 +892,53 @@
         if (modal) modal.style.display = "none";
     }
     window.closeAddProgrammeModal = closeAddProgrammeModal;
+
+    function toggleSuspend(btn) {
+        const projectId = btn.dataset.projectId;
+        const url = btn.dataset.url;
+        const currentStatus = btn.dataset.status;
+        const isSuspended = currentStatus === 'Suspended';
+        const confirmMsg = isSuspended ? 'Reactivate this project?' : 'Suspend this project?';
+
+        const doToggle = async () => {
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Error');
+
+                const newStatus = data.status;
+                if (typeof updateProjectStatusUI === 'function') {
+                    updateProjectStatusUI(projectId, newStatus);
+                }
+
+                if (typeof showToast === 'function') showToast(data.message, 'success');
+            } catch (err) {
+                alert(err.message || 'Failed to update project status.');
+            } finally {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        };
+
+        if (typeof showCustomConfirm === 'function') {
+            showCustomConfirm(confirmMsg, doToggle);
+        } else if (confirm(confirmMsg)) {
+            doToggle();
+        }
+    }
+    window.toggleSuspend = toggleSuspend;
 
 </script>
 

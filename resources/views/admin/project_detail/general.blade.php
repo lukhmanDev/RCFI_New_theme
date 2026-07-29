@@ -367,8 +367,8 @@
                         </div> -->
 
                         <div id="status-updated-time-container" style="font-size: 0.85rem; color: var(--text-muted); display: {{ $statusUpdatedAt ? 'inline-flex' : 'none' }}; align-items: center; gap: 0.35rem;">
-                            <i class="bx bx-calendar-event" style="font-size: 1rem; color: var(--accent-cyan);"></i>
-                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: var(--accent-cyan);">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
+                            <i class="bx bx-calendar-event" style="font-size: 1rem; color: #6366f1;"></i>
+                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: #6366f1;">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
                         </div>
                     </div>
 
@@ -389,7 +389,7 @@
                                    value="{{ $currentCustom }}"
                                    style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box;">
                         </div>
-                        <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, var(--accent-cyan), #0891b2); border: none; color: #000; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                        <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; color: #ffffff; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
                             <i class="bx bx-save"></i> Save Status
                         </button>
                     </div>
@@ -1405,6 +1405,8 @@
                         </form>
                     </div>
                 @endif
+
+                
             </div>
         </div>
 
@@ -1976,58 +1978,66 @@
                 } else if (action.includes('delete-photo') || action.includes('delete_photo') || action.includes('/photos/')) {
                     e.preventDefault();
                     if (form.dataset.submitting === 'true') return;
-                    if (!confirm('Delete this photo?')) return;
-                    form.dataset.submitting = 'true';
 
-                    const photoItem = form.closest('div[style*="position: relative"]');
-                    const card = form.closest('.photo-card');
+                    const doDelete = async () => {
+                        form.dataset.submitting = 'true';
 
-                    try {
-                        const response = await fetch(action, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            },
-                            body: new FormData(form)
-                        });
+                        const photoItem = form.closest('div[style*="position: relative"]');
+                        const card = form.closest('.photo-card');
 
-                        const data = await response.json();
+                        try {
+                            const response = await fetch(action, {
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                body: new FormData(form)
+                            });
 
-                        if (data.success) {
-                            if (photoItem) {
-                                photoItem.style.transition = 'all 0.3s ease';
-                                photoItem.style.opacity = '0';
-                                photoItem.style.transform = 'scale(0.8)';
-                                setTimeout(() => {
-                                    photoItem.remove();
-                                    if (card) {
-                                        const badge = card.querySelector('.photo-card-header span:last-child');
-                                        if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
+                            const data = await response.json();
 
-                                        const container = card.querySelector('.photo-list-container');
-                                        if (container && (data.total_photos === 0 || container.children.length === 0)) {
-                                            const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
-                                            container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                            if (data.success) {
+                                if (photoItem) {
+                                    photoItem.style.transition = 'all 0.3s ease';
+                                    photoItem.style.opacity = '0';
+                                    photoItem.style.transform = 'scale(0.8)';
+                                    setTimeout(() => {
+                                        photoItem.remove();
+                                        if (card) {
+                                            const badge = card.querySelector('.photo-card-header span:last-child');
+                                            if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
+
+                                            const container = card.querySelector('.photo-list-container');
+                                            if (container && (data.total_photos === 0 || container.children.length === 0)) {
+                                                const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
+                                                container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                                            }
                                         }
-                                    }
-                                }, 300);
-                            }
-                            if (typeof showToast === 'function') {
-                                showToast(data.message || 'Photo deleted successfully!', 'success');
-                            }
-                        } else {
-                            if (typeof showToast === 'function') {
-                                showToast(data.message || 'Photo delete failed.', 'danger');
+                                    }, 300);
+                                }
+                                if (typeof showToast === 'function') {
+                                    showToast(data.message || 'Photo deleted successfully!', 'success');
+                                }
                             } else {
-                                alert(data.message || 'Photo delete failed.');
+                                if (typeof showToast === 'function') {
+                                    showToast(data.message || 'Photo delete failed.', 'danger');
+                                } else {
+                                    alert(data.message || 'Photo delete failed.');
+                                }
                             }
+                        } catch (err) {
+                            console.error('AJAX delete photo error:', err);
+                            alert('Photo delete failed. Please try again.');
+                        } finally {
+                            delete form.dataset.submitting;
                         }
-                    } catch (err) {
-                        console.error('AJAX delete photo error:', err);
-                        alert('Photo delete failed. Please try again.');
-                    } finally {
-                        delete form.dataset.submitting;
+                    };
+
+                    if (typeof showCustomConfirm === 'function') {
+                        showCustomConfirm('Delete this photo?', doDelete);
+                    } else if (confirm('Delete this photo?')) {
+                        doDelete();
                     }
                 }
             };

@@ -31,7 +31,7 @@ class FamilyAidApplication extends Model
                 'type_of_project' => 'Family Aid',
                 'sponsor' => 'Sponsored',
                 'stage' => 1,
-                'status' => 'Pending',
+                'status' => 'Active',
             ]);
         } else {
             $project = \App\Models\FamilyAidProject::where('application_id', $application->id)->first();

@@ -256,8 +256,20 @@ class ProjectController extends Controller
 
         $user = auth()->user();
         $isOrphanCare = ($slug === 'orphan-care');
+        $isSocialAid = in_array($slug, ['orphan-care', 'differently-abled', 'family-aid']);
         $relations = $isOrphanCare ? [] : ['donor', 'projectManager', 'engineer'];
-        $projects = $this->scopeProjectsForUser($model::with($relations)->orderBy('created_at', 'desc'), $user)->get();
+
+        $projectQuery = $model::with($relations);
+        if ($isSocialAid) {
+            $projectQuery->orderByRaw("CASE 
+                WHEN LOWER(status) = 'active' THEN 1 
+                WHEN LOWER(status) = 'suspended' THEN 2 
+                ELSE 3 
+            END ASC");
+        }
+        $projectQuery->orderBy('created_at', 'desc');
+
+        $projects = $this->scopeProjectsForUser($projectQuery, $user)->get();
 
         $donors = Donor::all();
         $managers = User::whereIn('role', [3, '3', 'project_manager', 'Project Manager'])
@@ -684,6 +696,19 @@ class ProjectController extends Controller
         }
 
         $project->application_id = $applicationId;
+        if (in_array($project->type_of_project, ['Drinking Water - Individual Level', 'Drinking Water - Group Level']) && $applicationId) {
+            $project->status = 'Running';
+            $statusRecord = $project->projectStatus;
+            if (!$statusRecord) {
+                $project->projectStatus()->create([
+                    'status' => 'Running',
+                    'status_custom' => null,
+                ]);
+            } else {
+                $statusRecord->status = 'Running';
+                $statusRecord->save();
+            }
+        }
         $project->save();
 
         $appModels = [
@@ -891,7 +916,35 @@ class ProjectController extends Controller
                 return redirect()->back()->with('error', 'Invalid action for Stage 4.');
             }
 
+            $isIndividualWater = ($project->type_of_project === 'Drinking Water - Individual Level');
+            $isGroupWater = ($project->type_of_project === 'Drinking Water - Group Level');
+            $isWaterProject = ($isIndividualWater || $isGroupWater);
+
             if ($currentStage == 5) {
+                if ($isWaterProject && $action === 'finalize_approval') {
+                    if (!$isCoo && !$isSuperAdmin) {
+                        return redirect()->back()->with('error', 'Only COO is authorized to perform final approval.');
+                    }
+
+                    $project->status = 'Completed';
+                    $project->save();
+
+                    $statusRecord = $project->projectStatus;
+                    if (!$statusRecord) {
+                        $statusRecord = $project->projectStatus()->create([
+                            'status' => null,
+                            'status_custom' => null,
+                        ]);
+                    }
+                    $statusRecord->status = 'Completed';
+                    $statusRecord->coo_approved_at = now();
+                    $statusRecord->coo_approver_id = auth()->id();
+                    $statusRecord->coo_remarks = $request->input('remarks');
+                    $statusRecord->save();
+
+                    return redirect()->route('projects.show', $project->id)->with('success', 'Project completely approved and finalized as COMPLETED by COO!');
+                }
+
                 if ($action === 'promote_to_stage6') {
                     if (!$isPm && !$isEngineer && !$isSuperAdmin) {
                         return redirect()->back()->with('error', 'Only Project Manager or Engineer is authorized to promote project to Stage 6.');
@@ -912,7 +965,7 @@ class ProjectController extends Controller
                 $hasCompCert = ($docRecord && $docRecord->completion_certificate && $docRecord->completion_certificate !== '0');
                 $hasMeasBook = ($docRecord && $docRecord->measurement_book && $docRecord->measurement_book !== '0');
 
-                if (!$hasCompCert || !$hasMeasBook) {
+                if ((!$isIndividualWater && !$hasCompCert) || (!$isGroupWater && !$hasMeasBook)) {
                     return redirect()->back()->with('error', 'Required completion documents (Stage 6) must be uploaded before final approval.');
                 }
 
@@ -1681,7 +1734,8 @@ class ProjectController extends Controller
             $this->compressAndSaveImage($uploadedFile, $targetPath, 2 * 1024 * 1024);
             
             $files = $project->files ?? [];
-            $category = $request->input('category') ?? 'after';
+            $rawCategory = $request->input('category') ?: ($request->query('category') ?: 'after');
+            $category = str_replace('photos_', '', strtolower(trim($rawCategory)));
             if (!in_array($category, ['before', 'starting', 'inbetween', 'after', 'banner', 'stone', 'inauguration'])) {
                 $category = 'after';
             }
@@ -1697,23 +1751,12 @@ class ProjectController extends Controller
 
             $newPhotoPath = 'uploads/projects/' . $project->id . '/' . $filename;
             
-            // Single photo model: save single string filepath directly instead of array
-            $files[$key] = $newPhotoPath;
-            $files[$category . '_photos'] = $newPhotoPath;
+            $files[$key] = [$newPhotoPath];
+            $files[$category . '_photos'] = [$newPhotoPath];
             
             if ($category === 'after') {
-                $files['photos'] = $newPhotoPath;
+                $files['photos'] = [$newPhotoPath];
             }
-            
-            // Sync direct model attributes for neat DB structure (photo_before, photos_before, etc.)
-            $colAttr1 = 'photo_' . $category;
-            $colAttr2 = 'photos_' . $category;
-            $colAttr3 = $category . '_photos';
-            try {
-                $project->$colAttr1 = $newPhotoPath;
-                $project->$colAttr2 = $newPhotoPath;
-                $project->$colAttr3 = $newPhotoPath;
-            } catch(\Exception $e) {}
 
             $project->files = $files;
             $project->save();
@@ -1768,78 +1811,103 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Only Project Manager and Engineer are authorized to manage photos.');
         }
 
-        $category = $request->input('category') ?? 'after';
+        $rawCategory = $request->input('category') ?: ($request->query('category') ?: 'after');
+        $category = str_replace('photos_', '', strtolower(trim($rawCategory)));
         if (!in_array($category, ['before', 'starting', 'inbetween', 'after', 'banner', 'stone', 'inauguration'])) {
             $category = 'after';
         }
+
         $key = 'photos_' . $category;
-        
         $files = $project->files ?? [];
-        
-        // Single photo model: read single string path or fallback
-        $photoPath = null;
-        if (isset($files[$key])) {
-            $photoPath = is_array($files[$key]) ? ($files[$key][0] ?? null) : $files[$key];
-        } elseif (isset($files[$category . '_photos'])) {
-            $photoPath = is_array($files[$category . '_photos']) ? ($files[$category . '_photos'][0] ?? null) : $files[$category . '_photos'];
-        } elseif ($category === 'after' && isset($files['photos'])) {
-            $photoPath = is_array($files['photos']) ? ($files['photos'][0] ?? null) : $files['photos'];
+
+        // Collect all possible keys where photo paths might be stored
+        $possibleKeys = [$key, $category . '_photos', $category];
+        if ($category === 'after') {
+            $possibleKeys[] = 'photos';
         }
 
-        $colAttr1 = 'photo_' . $category;
-        $colAttr2 = 'photos_' . $category;
-        $colAttr3 = $category . '_photos';
-        if (!$photoPath) {
-            $photoPath = $project->$colAttr1 ?? ($project->$colAttr2 ?? ($project->$colAttr3 ?? null));
+        $photoPaths = [];
+
+        // 1. Check in $files accessor
+        foreach ($possibleKeys as $pk) {
+            if (!empty($files[$pk])) {
+                $val = $files[$pk];
+                $arr = is_array($val) ? $val : [$val];
+                foreach ($arr as $p) {
+                    if (!empty($p) && is_string($p)) {
+                        $photoPaths[] = $p;
+                    }
+                }
+            }
         }
 
-        if ($photoPath) {
+        // 2. Check in ProjectPhoto model directly
+        $projectPhoto = $project->projectPhoto;
+        if ($projectPhoto) {
+            foreach ($possibleKeys as $pk) {
+                if (!empty($projectPhoto->$pk)) {
+                    $raw = $projectPhoto->$pk;
+                    $decoded = is_array($raw) ? $raw : json_decode($raw, true);
+                    if (is_array($decoded)) {
+                        foreach ($decoded as $p) {
+                            if (!empty($p) && is_string($p)) {
+                                $photoPaths[] = $p;
+                            }
+                        }
+                    } elseif (is_string($raw) && !empty($raw)) {
+                        $photoPaths[] = $raw;
+                    }
+                }
+            }
+        }
+
+        $photoPaths = array_values(array_unique($photoPaths));
+
+        // Delete physical files found
+        foreach ($photoPaths as $photoPath) {
             $filepath = public_path($photoPath);
             if (file_exists($filepath)) {
                 @unlink($filepath);
             }
-
-            $files[$key] = null;
-            $files[$category . '_photos'] = null;
-            if ($category === 'after') {
-                $files['photos'] = null;
-            }
-
-            try {
-                $project->$colAttr1 = null;
-                $project->$colAttr2 = null;
-                $project->$colAttr3 = null;
-            } catch(\Exception $e) {}
-
-            $project->files = $files;
-            $project->save();
-
-            try {
-                ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'delete_photo', [
-                    'category' => $category,
-                    'photo_index' => 0,
-                    'total_photos' => 0
-                ]);
-            } catch (\Exception $e) {}
-
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Photo deleted successfully!',
-                    'category' => $category,
-                    'photo_index' => 0,
-                    'total_photos' => 0
-                ]);
-            }
-
-            return redirect()->back()->with('success', 'Photo deleted successfully!');
         }
+
+        // Wipe out key across $files array
+        foreach ($possibleKeys as $pk) {
+            $files[$pk] = [];
+        }
+
+        $project->files = $files;
+        $project->save();
+
+        // Directly clear columns on ProjectPhoto model
+        if ($projectPhoto) {
+            foreach ($possibleKeys as $pk) {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('project_photos', $pk)) {
+                    $projectPhoto->$pk = null;
+                }
+            }
+            $projectPhoto->save();
+        }
+
+        try {
+            ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'delete_photo', [
+                'category' => $category,
+                'photo_index' => 0,
+                'total_photos' => 0
+            ]);
+        } catch (\Exception $e) {}
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => false, 'message' => 'Photo not found.'], 404);
+            return response()->json([
+                'success' => true,
+                'message' => 'Photo deleted successfully!',
+                'category' => $category,
+                'photo_index' => 0,
+                'total_photos' => 0
+            ]);
         }
 
-        return redirect()->back()->with('error', 'Photo not found or already deleted.');
+        return redirect()->back()->with('success', 'Photo deleted successfully!');
     }
 
     public function saveCompletionDetails(Request $request, $id)
@@ -2260,9 +2328,48 @@ class ProjectController extends Controller
             'panchayat' => 'nullable|string|max:255',
             'district' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
+            'mobile_1' => 'nullable|string|max:255',
+            'mobile_2' => 'nullable|string|max:255',
+            'contact_number_1' => 'nullable|string|max:255',
+            'contact_number_2' => 'nullable|string|max:255',
+            'mobile' => 'nullable|string|max:255',
         ]);
 
+        $contact1 = $request->input('mobile_1') ?? ($request->input('contact_number_1') ?? $request->input('mobile'));
+        $contact2 = $request->input('mobile_2') ?? $request->input('contact_number_2');
+
+        $table = $application->getTable();
+        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'mobile_1')) {
+            $data['mobile_1'] = $contact1;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'mobile_2')) {
+            $data['mobile_2'] = $contact2;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'mobile')) {
+            $data['mobile'] = $contact1;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'contact_number_1')) {
+            $data['contact_number_1'] = $contact1;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'contact_number_2')) {
+            $data['contact_number_2'] = $contact2;
+        }
+
         $application->update($data);
+
+        if (method_exists($application, 'applicantAddress') && $application->applicantAddress) {
+            $application->applicantAddress->update([
+                'contact_number_1' => $contact1,
+                'contact_number_2' => $contact2,
+                'house_name' => $data['house_name'] ?? $application->applicantAddress->house_name,
+                'place' => $data['place'] ?? $application->applicantAddress->place,
+                'post_office' => $data['post_office'] ?? $application->applicantAddress->post_office,
+                'village' => $data['village'] ?? $application->applicantAddress->village,
+                'panchayat' => $data['panchayat'] ?? $application->applicantAddress->panchayat,
+                'district' => $data['district'] ?? $application->applicantAddress->district,
+                'state' => $data['state'] ?? $application->applicantAddress->state,
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Address updated successfully!');
     }
@@ -2566,6 +2673,86 @@ class ProjectController extends Controller
         imagedestroy($destImage);
 
         return true;
+    }
+
+    public function socialAidToggleSuspend(Request $request, $id)
+    {
+        $user = auth()->user();
+        $isAjax = $request->ajax()
+            || $request->wantsJson()
+            || $request->header('X-Requested-With') === 'XMLHttpRequest'
+            || str_contains($request->header('Accept', ''), 'application/json');
+
+        if (!$user || (!$user->isSuperAdmin() && !$user->isCoo() && !$user->isHod() && !$user->isPm() && !$user->isSocialAid())) {
+            if ($isAjax) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized to update project status.'], 403);
+            }
+            return redirect()->back()->with('error', 'Unauthorized to update project status.');
+        }
+
+        $typeMap = [
+            \App\Models\OrphanCareProject::class       => ['slug' => 'orphan-care',       'category' => 'Orphan Care'],
+            \App\Models\DifferentlyAbledProject::class => ['slug' => 'differently-abled', 'category' => 'Differently Abled'],
+            \App\Models\FamilyAidProject::class        => ['slug' => 'family-aid',        'category' => 'Family Aid'],
+        ];
+
+        // Determine which model based on the route slug
+        $routeSlug = null;
+        $currentPath = $request->path(); // e.g. "admin/projects/orphan-care/8/toggle-suspend"
+        foreach ($typeMap as $modelClass => $info) {
+            if (str_contains($currentPath, $info['slug'])) {
+                $project = $modelClass::find($id);
+                $routeSlug = $info['slug'];
+                break;
+            }
+        }
+
+        // Fallback: search all models
+        if (empty($routeSlug)) {
+            $project = null;
+            foreach ($typeMap as $modelClass => $info) {
+                $found = $modelClass::find($id);
+                if ($found) {
+                    $project = $found;
+                    $routeSlug = $info['slug'];
+                    break;
+                }
+            }
+        }
+
+        if (!isset($project) || !$project) {
+            if ($isAjax) {
+                return response()->json(['success' => false, 'message' => 'Project not found.'], 404);
+            }
+            abort(404);
+        }
+
+        if ($project->status === 'Suspended') {
+            $project->status = 'Active';
+            $message = 'Project has been reactivated successfully.';
+        } else {
+            $project->status = 'Suspended';
+            $message = 'Project has been suspended successfully.';
+        }
+        $project->save();
+
+        try {
+            \App\Events\ProjectUpdated::dispatch($project->id, $routeSlug, auth()->id(), 'status_toggled', [
+                'status'  => $project->status,
+                'message' => $message
+            ]);
+        } catch (\Exception $e) {}
+
+        if ($isAjax) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'status'  => $project->status,
+            ]);
+        }
+
+        $redirectUrl = $request->input('redirect_back') ?: route('projects.category', $routeSlug);
+        return redirect($redirectUrl)->with('success', $message);
     }
 }
 

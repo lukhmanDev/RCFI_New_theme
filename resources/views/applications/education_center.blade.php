@@ -799,7 +799,7 @@
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
             const form = document.getElementById('editAppForm');
-            form.action = '/admin/applications/' + appItem.id;
+            form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
             // Base fields
             document.getElementById('edit_applicant_name').value = appItem.applicant_name;
@@ -866,8 +866,8 @@
             const statusActionsContainer = document.getElementById('modal_status_actions');
             if (statusActionsContainer) {
                 let statusHtml = '';
-                const approveUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/approve`;
-                const rejectUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/reject`;
+                const approveUrl = `{{ url('admin/applications') }}/{{ $categorySlug }}/${appItem.id}/approve`;
+                const rejectUrl = `{{ url('admin/applications') }}/{{ $categorySlug }}/${appItem.id}/reject`;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                 if (appItem.status === 'Pending') {
@@ -1003,7 +1003,7 @@
                 showCustomConfirm('Are you sure you want to delete this application? This action cannot be undone.', function() {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = '/admin/applications/' + currentDetailsAppItem.id;
+                    form.action = "{{ url('admin/applications') }}/" + currentDetailsAppItem.id;
 
                     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 

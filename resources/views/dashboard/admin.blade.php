@@ -343,9 +343,15 @@
         overviewChartInstance.update('active');
     }
 
+    let chartRetryCount = 0;
     function renderAdminDashboardCharts() {
         if (typeof Chart === 'undefined') {
-            setTimeout(renderAdminDashboardCharts, 50);
+            if (chartRetryCount < 40) {
+                chartRetryCount++;
+                setTimeout(renderAdminDashboardCharts, 50);
+            } else {
+                console.error('Chart.js failed to load within timeout.');
+            }
             return;
         }
 
@@ -356,168 +362,176 @@
             return;
         }
 
-        // Clean up any previously attached Chart.js instances to avoid canvas reuse errors
-        const existingOverviewChart = Chart.getChart(overviewCanvas);
-        if (existingOverviewChart) {
-            existingOverviewChart.destroy();
-        } else if (overviewChartInstance) {
-            try { overviewChartInstance.destroy(); } catch (e) {}
-            overviewChartInstance = null;
-        }
-
-        const existingStatusChart = Chart.getChart(statusCanvas);
-        if (existingStatusChart) {
-            existingStatusChart.destroy();
-        } else if (statusChartInstance) {
-            try { statusChartInstance.destroy(); } catch (e) {}
-            statusChartInstance = null;
-        }
-
         const fontFamily = getComputedStyle(document.body).fontFamily || 'Inter, sans-serif';
         Chart.defaults.font.family = fontFamily;
         Chart.defaults.color = '#64748b';
 
         // 1. Smooth Purple Area Line Chart: Applications Overview
-        const ctx = overviewCanvas.getContext('2d');
-        
-        // Create gradient for fill under line
-        const purpleGradient = ctx.createLinearGradient(0, 0, 0, 260);
-        purpleGradient.addColorStop(0, 'rgba(124, 58, 237, 0.22)');
-        purpleGradient.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
+        try {
+            const existingOverviewChart = Chart.getChart(overviewCanvas);
+            if (existingOverviewChart) {
+                existingOverviewChart.destroy();
+            } else if (overviewChartInstance) {
+                try { overviewChartInstance.destroy(); } catch (e) {}
+                overviewChartInstance = null;
+            }
 
-        const initialPeriod = chartPeriodData['this_month'] || {
-            labels: {!! json_encode($chartLabels ?? ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31']) !!},
-            data: {!! json_encode($chartAllData ?? [3, 11, 13, 10, 13, 20]) !!}
-        };
+            const ctx = overviewCanvas.getContext('2d');
+            if (ctx) {
+                const purpleGradient = ctx.createLinearGradient(0, 0, 0, 260);
+                purpleGradient.addColorStop(0, 'rgba(124, 58, 237, 0.22)');
+                purpleGradient.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
 
-        overviewChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: initialPeriod.labels,
-                datasets: [{
-                    label: 'Applications',
-                    data: initialPeriod.data,
-                    borderColor: '#7c3aed',
-                    backgroundColor: purpleGradient,
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: 4,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: '#7c3aed',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 2.5,
-                    pointHoverBackgroundColor: '#7c3aed',
-                    pointHoverBorderColor: '#ffffff',
-                    pointHoverBorderWidth: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        enabled: true,
-                        backgroundColor: '#ffffff',
-                        titleColor: '#101828',
-                        titleFont: { size: 13, weight: '700' },
-                        bodyColor: '#475569',
-                        bodyFont: { size: 12, weight: '600' },
-                        borderColor: '#eaecf0',
-                        borderWidth: 1,
-                        padding: 12,
-                        boxPadding: 6,
-                        usePointStyle: true,
-                        displayColors: true,
-                        boxWidth: 8,
-                        boxHeight: 8,
-                        borderRadius: 10,
-                        shadowColor: 'rgba(16, 24, 40, 0.1)',
-                        callbacks: {
-                            title: function(tooltipItems) {
-                                const label = tooltipItems[0].label;
-                                return label.includes('20') ? label : label + ', 2025';
+                const initialPeriod = chartPeriodData['this_month'] || {
+                    labels: {!! json_encode($chartLabels ?? ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31']) !!},
+                    data: {!! json_encode($chartAllData ?? [3, 11, 13, 10, 13, 20]) !!}
+                };
+
+                overviewChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: initialPeriod.labels,
+                        datasets: [{
+                            label: 'Applications',
+                            data: initialPeriod.data,
+                            borderColor: '#7c3aed',
+                            backgroundColor: purpleGradient,
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#7c3aed',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2.5,
+                            pointHoverBackgroundColor: '#7c3aed',
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                enabled: true,
+                                backgroundColor: '#ffffff',
+                                titleColor: '#101828',
+                                titleFont: { size: 13, weight: '700' },
+                                bodyColor: '#475569',
+                                bodyFont: { size: 12, weight: '600' },
+                                borderColor: '#eaecf0',
+                                borderWidth: 1,
+                                padding: 12,
+                                boxPadding: 6,
+                                usePointStyle: true,
+                                displayColors: true,
+                                boxWidth: 8,
+                                boxHeight: 8,
+                                borderRadius: 10,
+                                shadowColor: 'rgba(16, 24, 40, 0.1)',
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        const label = tooltipItems[0].label;
+                                        return label.includes('20') ? label : label + ', 2025';
+                                    },
+                                    label: function(context) {
+                                        return 'Applications: ' + context.formattedValue;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: { size: 11, weight: '500' }
+                                }
                             },
-                            label: function(context) {
-                                return 'Applications: ' + context.formattedValue;
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f1f5f9',
+                                    strokeDashArray: [4, 4]
+                                },
+                                border: { dash: [4, 4] },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: { size: 11, weight: '500' },
+                                    stepSize: 5
+                                }
                             }
                         }
                     }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            color: '#94a3b8',
-                            font: { size: 11, weight: '500' }
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: '#f1f5f9',
-                            strokeDashArray: [4, 4]
-                        },
-                        border: { dash: [4, 4] },
-                        ticks: {
-                            color: '#94a3b8',
-                            font: { size: 11, weight: '500' },
-                            stepSize: 5
-                        }
-                    }
-                }
+                });
             }
-        });
+        } catch (e) {
+            console.error('Failed to render Applications Overview chart:', e);
+        }
 
         // 2. Doughnut Chart: Applications Status Breakdown
-        statusChartInstance = new Chart(statusCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: ['Approved', 'Pending', 'Rejected'],
-                datasets: [{
-                    data: [
-                        {{ $approvedCount }},
-                        {{ $pendingCount }},
-                        {{ $rejectedCount }}
-                    ],
-                    backgroundColor: [
-                        '#22c55e', // Green for Approved
-                        '#3b82f6', // Blue for Pending
-                        '#94a3b8'  // Gray for Rejected
-                    ],
-                    borderWidth: 3,
-                    borderColor: '#ffffff',
-                    hoverOffset: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '74%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1e293b',
-                        padding: 10,
-                        borderRadius: 8
+        try {
+            const existingStatusChart = Chart.getChart(statusCanvas);
+            if (existingStatusChart) {
+                existingStatusChart.destroy();
+            } else if (statusChartInstance) {
+                try { statusChartInstance.destroy(); } catch (e) {}
+                statusChartInstance = null;
+            }
+
+            statusChartInstance = new Chart(statusCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Approved', 'Pending', 'Rejected'],
+                    datasets: [{
+                        data: [
+                            {{ $approvedCount }},
+                            {{ $pendingCount }},
+                            {{ $rejectedCount }}
+                        ],
+                        backgroundColor: [
+                            '#22c55e', // Green for Approved
+                            '#3b82f6', // Blue for Pending
+                            '#94a3b8'  // Gray for Rejected
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '74%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 10,
+                            borderRadius: 8
+                        }
                     }
                 }
-            }
-        });
+            });
+        } catch (e) {
+            console.error('Failed to render Applications Status chart:', e);
+        }
     }
 
     // Trigger chart initialization for initial page load, PJAX updates, and back/forward cache restore
-    setTimeout(renderAdminDashboardCharts, 10);
+    const safeRenderCharts = () => requestAnimationFrame(renderAdminDashboardCharts);
+    setTimeout(safeRenderCharts, 50);
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', renderAdminDashboardCharts);
+        document.addEventListener('DOMContentLoaded', safeRenderCharts);
     }
-    window.addEventListener('pageshow', renderAdminDashboardCharts);
-    document.addEventListener('pjax:complete', renderAdminDashboardCharts);
+    window.addEventListener('pageshow', safeRenderCharts);
+    document.addEventListener('pjax:complete', safeRenderCharts);
 </script>
 
 @endsection

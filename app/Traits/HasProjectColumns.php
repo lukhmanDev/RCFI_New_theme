@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\ProjectPhoto;
 use App\Models\ProjectFile;
 use App\Models\ProjectContractor;
 use App\Models\ProjectExpense;
@@ -19,9 +20,14 @@ trait HasProjectColumns
     protected $tempExpensesToSave;
 
     // Define polymorphic relations
+    public function projectPhoto()
+    {
+        return $this->morphOne(ProjectPhoto::class, 'project');
+    }
+
     public function projectFile()
     {
-        return $this->morphOne(ProjectFile::class, 'project');
+        return $this->projectPhoto();
     }
 
     public function projectDocument()
@@ -89,7 +95,7 @@ trait HasProjectColumns
         })->toArray();
 
         // 3. Fetch photos
-        $photosFile = $this->projectFile;
+        $photosFile = $this->projectPhoto ?? $this->projectFile;
         $files['photos'] = ($photosFile && $photosFile->photos) ? json_decode($photosFile->photos, true) : [];
         $files['photos_before'] = ($photosFile && $photosFile->photos_before) ? json_decode($photosFile->photos_before, true) : [];
         $files['photos_starting'] = ($photosFile && $photosFile->photos_starting) ? json_decode($photosFile->photos_starting, true) : [];
@@ -266,7 +272,7 @@ trait HasProjectColumns
             $model->projectDocument()->delete();
 
             // 3. Delete project files (photos etc.) — also remove physical files from storage
-            $file = $model->projectFile;
+            $file = $model->projectPhoto ?? $model->projectFile;
             if ($file) {
                 $allPhotos = [];
                 foreach (['photos', 'photos_before', 'photos_inbetween', 'photos_after', 'photos_inauguration'] as $col) {
@@ -316,35 +322,28 @@ trait HasProjectColumns
             if (isset($model->tempFilesToSave)) {
                 $value = $model->tempFilesToSave;
 
-                // Sync photos in one row
+                // Sync photos in one row - strictly enforce maximum 1 photo per column
                 $photoData = [];
-                if (isset($value['photos'])) {
-                    $photoData['photos'] = json_encode($value['photos']);
-                }
-                if (isset($value['photos_before'])) {
-                    $photoData['photos_before'] = json_encode($value['photos_before']);
-                }
-                if (isset($value['photos_starting'])) {
-                    $photoData['photos_starting'] = json_encode($value['photos_starting']);
-                }
-                if (isset($value['photos_inbetween'])) {
-                    $photoData['photos_inbetween'] = json_encode($value['photos_inbetween']);
-                }
-                if (isset($value['photos_after'])) {
-                    $photoData['photos_after'] = json_encode($value['photos_after']);
-                }
-                if (isset($value['photos_banner'])) {
-                    $photoData['photos_banner'] = json_encode($value['photos_banner']);
-                }
-                if (isset($value['photos_stone'])) {
-                    $photoData['photos_stone'] = json_encode($value['photos_stone']);
-                }
-                if (isset($value['photos_inauguration'])) {
-                    $photoData['photos_inauguration'] = json_encode($value['photos_inauguration']);
+                $photoKeys = [
+                    'photos', 'photos_before', 'photos_starting', 'photos_inbetween',
+                    'photos_after', 'photos_banner', 'photos_stone', 'photos_inauguration'
+                ];
+                foreach ($photoKeys as $key) {
+                    if (array_key_exists($key, $value)) {
+                        $raw = $value[$key];
+                        if (is_null($raw)) {
+                            $photoData[$key] = null;
+                        } else {
+                            $arr = is_array($raw) ? $raw : [$raw];
+                            $arr = array_values(array_filter($arr));
+                            $singlePhoto = !empty($arr) ? [end($arr)] : [];
+                            $photoData[$key] = !empty($singlePhoto) ? json_encode($singlePhoto) : null;
+                        }
+                    }
                 }
 
                 if (!empty($photoData)) {
-                    $model->projectFile()->updateOrCreate([], $photoData);
+                    $model->projectPhoto()->updateOrCreate([], $photoData);
                 }
 
                 // Sync contractors

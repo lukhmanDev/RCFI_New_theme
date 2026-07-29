@@ -14,6 +14,11 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"><\/script>');
+        }
+    </script>
 
     <!-- Premium CSS Layout and Design System -->
     <style>
@@ -1283,6 +1288,8 @@
             
             const isUntick = message.toLowerCase().includes('untick');
             const isSponsor = message.toLowerCase().includes('sponsor');
+            const isSuspend = message.toLowerCase().includes('suspend');
+            const isReactivate = message.toLowerCase().includes('reactivate');
             
             if (remarksContainer) {
                 remarksContainer.style.display = isRejection ? 'block' : 'none';
@@ -1309,6 +1316,48 @@
                 }
                 if (icon) {
                     icon.className = 'bx bx-x-circle';
+                }
+            } else if (isSuspend) {
+                if (panel) {
+                    panel.classList.remove('confirm-warning');
+                    panel.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                }
+                if (iconBox) {
+                    iconBox.classList.remove('confirm-warning');
+                    iconBox.style.backgroundColor = 'rgba(245, 158, 11, 0.12)';
+                    iconBox.style.color = '#f59e0b';
+                    iconBox.style.borderColor = 'rgba(245, 158, 11, 0.25)';
+                    iconBox.style.animation = 'none';
+                }
+                if (okBtn) {
+                    okBtn.classList.remove('confirm-warning');
+                    okBtn.innerText = 'Suspend';
+                    okBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    okBtn.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.25)';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-lock-alt';
+                }
+            } else if (isReactivate) {
+                if (panel) {
+                    panel.classList.remove('confirm-warning');
+                    panel.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                }
+                if (iconBox) {
+                    iconBox.classList.remove('confirm-warning');
+                    iconBox.style.backgroundColor = 'rgba(16, 185, 129, 0.12)';
+                    iconBox.style.color = '#10b981';
+                    iconBox.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+                    iconBox.style.animation = 'none';
+                }
+                if (okBtn) {
+                    okBtn.classList.remove('confirm-warning');
+                    okBtn.innerText = 'Reactivate';
+                    okBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    okBtn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.25)';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-lock-open-alt';
                 }
             } else if (isUntick) {
                 if (panel) {
@@ -1481,8 +1530,15 @@
                 if (!message) return;
 
                 form.addEventListener('submit', function(event) {
+                    if (form.dataset.confirmed === 'true') {
+                        delete form.dataset.confirmed;
+                        return;
+                    }
                     event.preventDefault();
-                    showCustomConfirm(message, () => form.submit());
+                    showCustomConfirm(message, () => {
+                        form.dataset.confirmed = 'true';
+                        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    });
                 });
             });
         }
@@ -1891,6 +1947,13 @@
             const port = {{ $reverbPort }};
             const scheme = "{{ $reverbScheme }}";
             
+            // Skip attempting localhost WebSocket connections if user is accessing on a live hosted domain
+            const isLocalClient = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+            const isServerLocal = (host === '127.0.0.1' || host === 'localhost');
+            if (!isLocalClient && isServerLocal) {
+                return;
+            }
+
             if (typeof Pusher !== 'undefined' && appKey && (broadcastDriver === 'reverb' || broadcastDriver === 'pusher')) {
                 try {
                     const pusher = new Pusher(appKey, {
@@ -1926,6 +1989,79 @@
             }
         })();
 
+        // Global helper for updating project status in UI
+        function updateProjectStatusUI(projectId, newStatus) {
+            if (!projectId) return;
+            const nowSuspended = (newStatus === 'Suspended');
+            const color = nowSuspended ? '#ef4444' : '#10b981';
+
+            // 1. Update action button state
+            const btn = document.getElementById('suspend-btn-' + projectId) || document.querySelector(`[data-project-id="${projectId}"][id^="suspend-btn"]`);
+            if (btn) {
+                btn.dataset.status = newStatus;
+                btn.title = nowSuspended ? 'Reactivate Project' : 'Suspend Project';
+                btn.style.backgroundColor = nowSuspended ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)';
+                btn.style.color = nowSuspended ? '#10b981' : '#f59e0b';
+                btn.style.borderColor = nowSuspended ? 'rgba(16,185,129,0.4)' : 'rgba(245,158,11,0.4)';
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'bx ' + (nowSuspended ? 'bx-lock-open-alt' : 'bx-lock-alt');
+                }
+
+                // 2. Direct row status cell update
+                const tr = btn.closest('tr');
+                if (tr) {
+                    const table = tr.closest('table');
+                    if (table) {
+                        const headers = Array.from(table.querySelectorAll('thead th'));
+                        const statusIndex = headers.findIndex(h => h.textContent.trim().toLowerCase() === 'status');
+                        if (statusIndex !== -1 && tr.cells[statusIndex]) {
+                            const statusCell = tr.cells[statusIndex];
+                            const labelText = statusCell.querySelector('.status-label-text');
+                            const dot = statusCell.querySelector('.status-dot');
+                            if (labelText) {
+                                labelText.textContent = newStatus;
+                                labelText.style.color = color;
+                            }
+                            if (dot) {
+                                dot.style.backgroundColor = color;
+                                dot.style.background = color;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback: Update any matching badge element across DOM
+            const badges = document.querySelectorAll('#status-badge-' + projectId + ', [data-project-id="' + projectId + '"].status-badge-container');
+            badges.forEach(badge => {
+                badge.dataset.status = newStatus;
+                const labelText = badge.querySelector('.status-label-text');
+                const dot = badge.querySelector('.status-dot');
+                if (labelText) {
+                    labelText.textContent = newStatus;
+                    labelText.style.color = color;
+                }
+                if (dot) {
+                    dot.style.backgroundColor = color;
+                    dot.style.background = color;
+                }
+            });
+        }
+        window.updateProjectStatusUI = updateProjectStatusUI;
+
+        // Global Realtime listener for Reverb project status updates
+        window.addEventListener('reverb:project.updated', function(e) {
+            const data = e.detail || {};
+            const projectId = data.projectId;
+            const action = data.action;
+            const payload = data.payload || {};
+
+            if (action === 'status_toggled' && projectId && payload.status) {
+                updateProjectStatusUI(projectId, payload.status);
+            }
+        });
+
         // ==========================================
         // Client-Side Generic Table Pagination
         // ==========================================
@@ -1940,6 +2076,7 @@
                 const nameIndex = headerText.findIndex(t => t.includes('name of applicant') || t.includes('applicant name') || t === 'applicant');
                 const appIdIndex = headerText.findIndex(t => t.includes('application id') || t.includes('project id') || t === 'app id' || t === 'project id');
                 const statusIndex = headerText.findIndex(t => t === 'status');
+                const sponsorStatusIndex = headerText.findIndex(t => t.includes('sponsor status') || t === 'sponsor');
                 const actionIndex = headerText.findIndex(t => t === 'action');
 
                 const rows = Array.from(table.querySelectorAll('tbody tr'));
@@ -1976,6 +2113,13 @@
                     if (statusIndex !== -1) {
                         const cell = row.cells[statusIndex];
                         if (cell) {
+                            const projBtn = row.querySelector('[data-project-id]');
+                            let projId = projBtn ? projBtn.dataset.projectId : '';
+                            const badgeSpan = cell.querySelector('[data-project-id]') || cell.querySelector('[id^="status-badge-"]');
+                            if (badgeSpan && badgeSpan.dataset.projectId) {
+                                projId = badgeSpan.dataset.projectId;
+                            }
+
                             const staffStatusEl = cell.querySelector('.staff-status');
                             let statusText = '';
                             if (staffStatusEl) {
@@ -2005,9 +2149,9 @@
                             }
 
                             cell.innerHTML = `
-                                <div style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle; justify-content: center; width: 100%;">
-                                    <span style="width: 8px; height: 8px; background: ${color}; border-radius: 50%; display: inline-block;"></span>
-                                    <span style="color: ${color}; font-weight: 700; font-size: 0.82rem;">${statusText || 'Active'}</span>
+                                <div id="status-badge-${projId}" data-project-id="${projId}" class="status-badge-container" style="display: inline-flex; align-items: center; gap: 0.35rem; vertical-align: middle; justify-content: center; width: 100%;">
+                                    <span class="status-dot" style="width: 8px; height: 8px; background: ${color}; border-radius: 50%; display: inline-block; flex-shrink: 0;"></span>
+                                    <span class="status-label-text" style="color: ${color}; font-weight: 700; font-size: 0.82rem;">${statusText || 'Active'}</span>
                                 </div>
                             `;
                         }
@@ -2048,6 +2192,56 @@
                         }
                     }
                 });
+
+                // Sort table rows strictly by Status / Sponsor Status order:
+                // For Approved Social Aid Applications: Not Sponsored (1) -> Sponsored (2)
+                // For Social Aid Projects List (orphan-care, differently-abled, family-aid): Active (1) -> Suspended (2)
+                // For Approved Application Registry (non-social aid): Not Started (1) -> In Progress / Not set / Phases (2) -> Completed (3)
+                // For General Applications List: Pending (1) -> Approved (2) -> Rejected (3) -> Other (4)
+                if (statusIndex !== -1 || sponsorStatusIndex !== -1) {
+                    const tbody = table.querySelector('tbody');
+                    if (tbody) {
+                        const rowsArray = Array.from(tbody.querySelectorAll('tr'));
+                        const currentPath = window.location.pathname.toLowerCase();
+                        const isApprovedPage = currentPath.includes('/approved-applications') || currentPath.includes('/approved');
+                        const isProjectsPage = currentPath.includes('/projects') || currentPath.includes('/project');
+                        const isSocialAid = ['orphan-care', 'differently-abled', 'family-aid'].some(s => currentPath.includes(s));
+
+                        const getStatusRank = (row) => {
+                            if (isApprovedPage && isSocialAid) {
+                                const cellIndex = (sponsorStatusIndex !== -1 && row.cells[sponsorStatusIndex]) ? sponsorStatusIndex : statusIndex;
+                                if (cellIndex === -1 || !row.cells[cellIndex]) return 99;
+                                const txt = row.cells[cellIndex].textContent.trim().toLowerCase();
+                                if (txt.includes('not sponsored')) return 1;
+                                if (txt.includes('sponsored')) return 2;
+                                return 3;
+                            }
+
+                            if (statusIndex === -1 || !row.cells[statusIndex]) return 99;
+                            const txt = row.cells[statusIndex].textContent.trim().toLowerCase();
+
+                            if (isSocialAid && isProjectsPage && !isApprovedPage) {
+                                if (txt.includes('active')) return 1;
+                                if (txt.includes('suspended')) return 2;
+                                return 3;
+                            }
+
+                            if (isApprovedPage && !isSocialAid) {
+                                if (txt.includes('not started')) return 1;
+                                if (txt.includes('completed')) return 3;
+                                return 2; // Not set, In Progress, Phase names, etc.
+                            }
+
+                            if (txt.includes('pending')) return 1;
+                            if (txt.includes('approved')) return 2;
+                            if (txt.includes('rejected')) return 3;
+                            return 4;
+                        };
+
+                        rowsArray.sort((a, b) => getStatusRank(a) - getStatusRank(b));
+                        rowsArray.forEach(row => tbody.appendChild(row));
+                    }
+                }
             });
         }
 

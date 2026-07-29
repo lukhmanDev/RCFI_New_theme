@@ -104,39 +104,21 @@
                             <td>{{ $project && $project->projectManager ? $project->projectManager->name : '—' }}</td>
                             <td>{{ $project && $project->donor ? $project->donor->name : '—' }}</td>
                             <td style=" vertical-align: middle;">
-                                @if($project && ($project->status === 'Completed' || !empty($project->project_phase)))
+                                @if($project)
                                     @php
-                                        $phaseVal = $project->status === 'Completed' ? 'Completed' : $project->project_phase;
-                                        $phaseLabel = $phaseVal === 'Other'
-                                            ? ($project->project_phase_custom ?: 'Other')
-                                            : $phaseVal;
-                                        $phaseColors = [
-                                            'Project Assigned'                      => ['bg' => 'rgba(99,102,241,0.18)',  'text' => '#a5b4fc'],
-                                            'Site identified'                       => ['bg' => 'rgba(59,130,246,0.18)',  'text' => '#60a5fa'],
-                                            'Documents verified'                    => ['bg' => 'rgba(14,165,233,0.18)',  'text' => '#38bdf8'],
-                                            'Drawing'                               => ['bg' => 'rgba(168,85,247,0.18)', 'text' => '#c084fc'],
-                                            'Tender'                                => ['bg' => 'rgba(245,158,11,0.18)', 'text' => '#fcd34d'],
-                                            'Agreement'                             => ['bg' => 'rgba(249,115,22,0.18)', 'text' => '#fb923c'],
-                                            'Foundation'                            => ['bg' => 'rgba(234,88,12,0.2)',   'text' => '#fdba74'],
-                                            'Column'                                => ['bg' => 'rgba(202,138,4,0.2)',   'text' => '#fde047'],
-                                            'Slab'                                  => ['bg' => 'rgba(132,204,22,0.18)', 'text' => '#bef264'],
-                                            'Mason work'                            => ['bg' => 'rgba(20,184,166,0.18)', 'text' => '#5eead4'],
-                                            'Plastering'                            => ['bg' => 'rgba(6,182,212,0.18)',  'text' => '#22d3ee'],
-                                            'Flooring, Painting, Joinery and MEP'  => ['bg' => 'rgba(16,185,129,0.18)', 'text' => '#6ee7b7'],
-                                            'Completed'                             => ['bg' => 'rgba(16,185,129,0.25)', 'text' => '#4ade80'],
-                                            'Inaugurated'                           => ['bg' => 'rgba(52,211,153,0.25)', 'text' => '#34d399'],
-                                            'Finance settled and Project phase off' => ['bg' => 'rgba(156,163,175,0.2)', 'text' => '#d1d5db'],
-                                        ];
-                                        $pColor = $phaseColors[$phaseVal] ?? ['bg' => 'rgba(6,182,212,0.15)', 'text' => 'var(--accent-cyan)'];
+                                        $displayStatus = ($project->status === 'Completed') ? 'Completed' : ($project->project_phase ?: 'Running');
                                     @endphp
-                                    <span title="{{ $phaseLabel }}" style="display:inline-flex;align-items:center;gap:0.3rem;background-color:{{ $pColor['bg'] }};color:{{ $pColor['text'] }};padding:0.25rem 0.75rem;border-radius:20px;font-size:0.72rem;font-weight:700;white-space:nowrap;margin:0 auto;">
-                                        <i class="bx bx-radio-circle-marked" style="font-size:0.9rem;flex-shrink:0;"></i>
-                                        {{ Str::limit($phaseLabel, 20) }}
-                                    </span>
-                                @elseif($project)
-                                    <span style="background-color:rgba(156,163,175,0.15);color:var(--text-muted);padding:0.25rem 0.6rem;border-radius:20px;font-size:0.7rem;font-weight:600;display:inline-flex;align-items:center;gap:0.25rem;border:1px solid rgba(255,255,255,0.05);">
-                                        <i class="bx bx-time-five" style="font-size:0.85rem;"></i> Not set
-                                    </span>
+                                    @if($displayStatus === 'Completed')
+                                        <span style="display:inline-flex;align-items:center;gap:0.3rem;background-color:rgba(16,185,129,0.25);color:#4ade80;padding:0.25rem 0.75rem;border-radius:20px;font-size:0.72rem;font-weight:700;white-space:nowrap;margin:0 auto;">
+                                            <i class="bx bx-check-circle" style="font-size:0.9rem;flex-shrink:0;"></i>
+                                            Completed
+                                        </span>
+                                    @else
+                                        <span style="display:inline-flex;align-items:center;gap:0.3rem;background-color:rgba(6,182,212,0.18);color:var(--accent-cyan);padding:0.25rem 0.75rem;border-radius:20px;font-size:0.72rem;font-weight:700;white-space:nowrap;margin:0 auto;">
+                                            <i class="bx bx-loader-circle" style="font-size:0.9rem;flex-shrink:0;"></i>
+                                            {{ $displayStatus }}
+                                        </span>
+                                    @endif
                                 @else
                                     <span style="background-color:rgba(156,163,175,0.15);color:var(--text-muted);padding:0.25rem 0.6rem;border-radius:20px;font-size:0.7rem;font-weight:600;display:inline-flex;align-items:center;gap:0.25rem;border:1px solid rgba(255,255,255,0.05);">
                                         <i class="bx bx-minus-circle" style="font-size:0.85rem;"></i> Not Started

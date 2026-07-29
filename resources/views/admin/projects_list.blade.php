@@ -539,10 +539,14 @@
         }
 
         function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeModal = closeModal;
+            const modal = document.getElementById('addProjectModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
+            if (modal) {
+                modal.style.display = 'none';
+            } else {
+                document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+            }
+        }
+        window.closeModal = closeModal;
 
         function openEditModal(project) {
             const form = document.getElementById('editProjectForm');
@@ -562,10 +566,14 @@
         }
 
         function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
-    }
-    window.closeEditModal = closeEditModal;
+            const modal = document.getElementById('editProjectModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
+            if (modal) {
+                modal.style.display = 'none';
+            } else {
+                document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+            }
+        }
+        window.closeEditModal = closeEditModal;
 
         // Live table search filtering
         function filterTable() {

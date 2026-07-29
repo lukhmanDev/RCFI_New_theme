@@ -74,7 +74,7 @@ class OrphanCareApplication extends Model
                 'type_of_project' => 'Orphan Care',
                 'sponsor' => 'Sponsored',
                 'stage' => 1,
-                'status' => 'Pending',
+                'status' => 'Active',
             ]);
         } else {
             $project = \App\Models\OrphanCareProject::where('application_id', $application->id)->first();

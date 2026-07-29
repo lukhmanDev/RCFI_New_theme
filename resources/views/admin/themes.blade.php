@@ -7,17 +7,52 @@
     <!-- Top Header & Navigation Tabs -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <!-- Navigation Tabs -->
-        <div style="display: flex; gap: 0.5rem; background-color: #ffffff; padding: 0.35rem; border-radius: 10px; border: 1px solid var(--panel-border, #e2e8f0); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <button id="tab-btn-themes" onclick="switchTab('themes')" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff;">
+        <style>
+            .theme-tab-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.6rem;
+                padding: 0.6rem 1.25rem;
+                font-size: 0.9rem;
+                font-weight: 600;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                background: transparent;
+                color: #64748b;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .theme-tab-btn .badge-count {
+                background: rgba(99,102,241,0.12);
+                color: #4338ca;
+                font-size: 0.75rem;
+                padding: 0.15rem 0.55rem;
+                border-radius: 12px;
+                font-weight: 700;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .theme-tab-btn.active {
+                color: #ffffff !important;
+                background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+            }
+            .theme-tab-btn.active .badge-count {
+                background: rgba(255, 255, 255, 0.25) !important;
+                color: #ffffff !important;
+            }
+        </style>
+
+        <div id="theme-tabs-wrapper" style="display: inline-flex; gap: 0.35rem; background-color: #ffffff; padding: 0.35rem; border-radius: 12px; border: 1px solid var(--panel-border, #e2e8f0); box-shadow: 0 2px 5px rgba(0,0,0,0.04);">
+            <button id="tab-btn-themes" onclick="switchTab('themes')" class="theme-tab-btn active" type="button">
                 <i class="bx bxs-category"></i>
                 <span>Themes</span>
-                <span id="badge-count-themes" style="background: rgba(255,255,255,0.25); color: #ffffff; font-size: 0.75rem; padding: 0.15rem 0.55rem; border-radius: 12px; font-weight: 700;">{{ count($themes) }}</span>
+                <span id="badge-count-themes" class="badge-count">{{ count($themes) }}</span>
             </button>
             
-            <button id="tab-btn-subthemes" onclick="switchTab('subthemes')" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.25rem; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748b;">
+            <button id="tab-btn-subthemes" onclick="switchTab('subthemes')" class="theme-tab-btn" type="button">
                 <i class="bx bxs-layer"></i>
                 <span>Subthemes</span>
-                <span id="badge-count-subthemes" style="background: rgba(99,102,241,0.12); color: #4338ca; font-size: 0.75rem; padding: 0.15rem 0.55rem; border-radius: 12px; font-weight: 700;">{{ count($subthemes) }}</span>
+                <span id="badge-count-subthemes" class="badge-count">{{ count($subthemes) }}</span>
             </button>
         </div>
 
@@ -370,36 +405,35 @@
             const themesBtn = document.getElementById('tab-btn-themes');
             const subthemesBtn = document.getElementById('tab-btn-subthemes');
 
-            if (tabName === 'themes') {
-                themesPanel.style.display = 'block';
-                subthemesPanel.style.display = 'none';
+            const isThemes = (tabName === 'themes');
 
-                themesBtn.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
-                themesBtn.style.color = '#ffffff';
-                document.getElementById('badge-count-themes').style.background = 'rgba(255,255,255,0.25)';
-                document.getElementById('badge-count-themes').style.color = '#ffffff';
+            // 1. Content panel visibility
+            if (themesPanel) themesPanel.style.display = isThemes ? 'block' : 'none';
+            if (subthemesPanel) subthemesPanel.style.display = isThemes ? 'none' : 'block';
 
-                subthemesBtn.style.background = 'transparent';
-                subthemesBtn.style.color = '#64748b';
-                document.getElementById('badge-count-subthemes').style.background = 'rgba(99,102,241,0.12)';
-                document.getElementById('badge-count-subthemes').style.color = '#4338ca';
-                window.location.hash = 'themes';
+            // 2. Active button CSS state
+            if (themesBtn) {
+                if (isThemes) themesBtn.classList.add('active');
+                else themesBtn.classList.remove('active');
+            }
+
+            if (subthemesBtn) {
+                if (!isThemes) subthemesBtn.classList.add('active');
+                else subthemesBtn.classList.remove('active');
+            }
+
+            // 3. Sync URL Hash
+            if (history.replaceState) {
+                history.replaceState(null, '', '#' + tabName);
             } else {
-                themesPanel.style.display = 'none';
-                subthemesPanel.style.display = 'block';
-
-                subthemesBtn.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
-                subthemesBtn.style.color = '#ffffff';
-                document.getElementById('badge-count-subthemes').style.background = 'rgba(255,255,255,0.25)';
-                document.getElementById('badge-count-subthemes').style.color = '#ffffff';
-
-                themesBtn.style.background = 'transparent';
-                themesBtn.style.color = '#64748b';
-                document.getElementById('badge-count-themes').style.background = 'rgba(99,102,241,0.12)';
-                document.getElementById('badge-count-themes').style.color = '#4338ca';
-                window.location.hash = 'subthemes';
+                window.location.hash = tabName;
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const initialTab = (window.location.hash === '#subthemes') ? 'subthemes' : 'themes';
+            switchTab(initialTab);
+        });
 
         function switchToSubthemesByTheme(themeId) {
             document.getElementById('subthemeParentFilter').value = themeId;
