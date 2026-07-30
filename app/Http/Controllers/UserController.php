@@ -111,27 +111,33 @@ class UserController extends Controller
         $this->checkAdmin();
         $user = User::with('profile')->findOrFail($id);
         
-        $projects = $user->assigned_projects->map(function ($project) use ($user) {
-            $pmId = $project->project_manager_id ?? null;
-            $engId = $project->engineer_id ?? null;
+        $designationLower = strtolower($user->designation ?? '');
+        $isPmOrEngineer = $user->isPm() || $user->isEngineer() || in_array($designationLower, ['project manager', 'engineer', 'pm', 'site engineer', 'project engineer']);
 
-            $projectRole = 'Unknown';
-            if ($pmId == $user->id && $engId == $user->id) {
-                $projectRole = 'PM & Engineer';
-            } elseif ($pmId == $user->id) {
-                $projectRole = 'Project Manager';
-            } elseif ($engId == $user->id) {
-                $projectRole = 'Engineer';
-            }
+        $projects = [];
+        if ($isPmOrEngineer) {
+            $projects = $user->assigned_projects->map(function ($project) use ($user) {
+                $pmId = $project->project_manager_id ?? null;
+                $engId = $project->engineer_id ?? null;
 
-            return [
-                'project_id' => $project->project_id ?? 'N/A',
-                'title' => $project->name ?? $project->type_of_project ?? 'Untitled Project',
-                'type' => $project->type_of_project,
-                'role' => $projectRole,
-                'status' => $project->status ?? 'Pending',
-            ];
-        });
+                $projectRole = 'Unknown';
+                if ($pmId == $user->id && $engId == $user->id) {
+                    $projectRole = 'PM & Engineer';
+                } elseif ($pmId == $user->id) {
+                    $projectRole = 'Project Manager';
+                } elseif ($engId == $user->id) {
+                    $projectRole = 'Engineer';
+                }
+
+                return [
+                    'project_id' => $project->project_id ?? 'N/A',
+                    'title' => $project->name ?? $project->type_of_project ?? 'Untitled Project',
+                    'type' => $project->type_of_project,
+                    'role' => $projectRole,
+                    'status' => $project->status ?? 'Pending',
+                ];
+            });
+        }
 
         $rolesMap = [
             1 => 'Super Admin',
@@ -153,6 +159,7 @@ class UserController extends Controller
                 'mobile' => $user->mobile ?? 'N/A',
                 'designation' => $user->designation ?? 'N/A',
                 'role' => $rolesMap[$user->role] ?? 'User',
+                'is_pm_or_engineer' => $isPmOrEngineer,
                 'address' => $user->profile->address ?? 'N/A',
                 'is_suspended' => $user->is_suspended,
             ],

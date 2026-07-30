@@ -83,7 +83,11 @@
                             $searchStr = strtolower(implode(' ', array_filter($searchTerms)));
                         @endphp
                         <tr class="app-row" data-search="{{ $searchStr }}" data-place="{{ $appItem->place ?? '' }}" onclick="openDetailsModal({{ json_encode($appItem) }})">
-                            <td style="font-weight: 600; color: var(--accent-cyan);">{{ $appId }}</td>
+                            <td style="font-weight: 600;">
+                                <a href="javascript:void(0)" onclick="event.stopPropagation(); openDetailsModal({{ json_encode($appItem) }})" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Application Details">
+                                    {{ $appId }}
+                                </a>
+                            </td>
                             <td>{{ $appItem->applicant_name }}</td>
                             <td>{{ $meta['father_name'] ?? '-' }}</td>
                             <td>{{ $meta['mother_name'] ?? '-' }}</td>
@@ -161,21 +165,7 @@
             const statusActionsContainer = document.getElementById('modal_status_actions');
             if (statusActionsContainer) {
                 let statusHtml = '';
-                const rejectUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/reject`;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                @if(Auth::user()->hasAdminAccess())
-                    if (!isProjectApproved) {
-                        statusHtml += `
-                            <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
-                                <input type="hidden" name="_token" value="${csrfToken}">
-                                <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                    <i class="bx bx-x"></i> Reject Application
-                                </button>
-                            </form>
-                        `;
-                    }
-                @endif
 
                 @if(Auth::user()->hasAdminAccess())
                     statusHtml += `
@@ -241,14 +231,17 @@
                                 </tr>
                             </table>
                             
+                            @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
                             <button onclick="toggleClusterEditForm()" class="btn-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
                                 <i class="bx bx-edit"></i> Edit
                             </button>
+                            @endif
                         </div>
                     </div>
 
+                    @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
                     <div id="modal-cluster-edit-form" style="display: none;">
-                        <form id="save-cluster-form" onsubmit="submitClusterForm(event, ${appItem.id})">
+                        <form id="save-cluster-form" action="{{ url('admin/applications') }}/${appItem.id}/update-cluster" method="POST" onsubmit="submitClusterForm(event, ${appItem.id})">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                                 <div>
                                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Select Cluster *</label>
@@ -270,6 +263,7 @@
                             </div>
                         </form>
                     </div>
+                    @endif
                 </div>
             `;
             document.getElementById('details_content').innerHTML = html;

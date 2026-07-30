@@ -992,14 +992,17 @@
                                     </td>
                                 </tr>
                             </table>
+                            @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
                             <button type="button" onclick="toggleClusterEditForm()" class="btn-custom" style="background: transparent; border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; white-space: nowrap;">
                                 <i class="bx bx-edit"></i> Edit Cluster
                             </button>
+                            @endif
                         </div>
                     </div>
 
+                    @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
                     <div id="modal-cluster-edit-form" style="display: none; margin-top: 0.5rem;">
-                        <form onsubmit="submitClusterForm(event, ${appItem.id})">
+                        <form action="{{ url('admin/applications') }}/${appItem.id}/update-cluster" method="POST" onsubmit="submitClusterForm(event, ${appItem.id})">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                                 <div>
                                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem;">Cluster</label>
@@ -1021,6 +1024,7 @@
                             </div>
                         </form>
                     </div>
+                    @endif
                 </div>
                 ` : ''}
 

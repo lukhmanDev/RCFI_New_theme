@@ -11,6 +11,11 @@ class DifferentlyAbledFund extends Model
 
     public function project()
     {
-        return $this->belongsTo(DifferentlyAbledProject::class, 'differently_abled_project_id');
+        return $this->belongsTo(DifferentlyAbledProject::class, 'agency_project_no', 'agency_project_no');
+    }
+
+    public function donorModel()
+    {
+        return $this->belongsTo(Donor::class, 'donor', 'name');
     }
 }

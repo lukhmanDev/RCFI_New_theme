@@ -28,11 +28,40 @@
             --panel-border: #e2e8f0;
             --text-main: #1e293b;
             --text-muted: #64748b;
-            --accent-purple: #6366f1;
-            --accent-cyan: #0ea5e9;
+            --accent-purple: #10b981;
+            --accent-cyan: #10b981;
             --accent-green: #10b981;
             --accent-red: #ef4444;
             --sidebar-width: 260px;
+        }
+
+        /* Global Emerald Green Table Styling matching screenshot */
+        table thead tr,
+        .table thead tr,
+        .table-custom thead tr {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+        }
+        table thead th,
+        .table thead th,
+        .table-custom thead th {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+        table thead th a,
+        .table thead th a,
+        .table-custom thead th a {
+            color: #ffffff !important;
+        }
+        .page-btn.active,
+        .pagination .active .page-link {
+            background: #10b981 !important;
+            border-color: #10b981 !important;
+            color: #ffffff !important;
         }
 
         * {
@@ -68,15 +97,19 @@
 
         .sidebar-brand {
             height: 70px;
+            min-height: 70px;
+            max-height: 70px;
             padding: 0.5rem 1rem;
             border-bottom: 1px solid var(--panel-border);
             display: flex;
             align-items: center;
             justify-content: center;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .sidebar-logo {
-            max-height: 55px;
+            max-height: 48px;
             max-width: 100%;
             object-fit: contain;
             display: block;
@@ -157,6 +190,9 @@
             background-color: var(--panel-bg);
             border-bottom: 1px solid var(--panel-border);
             height: 70px;
+            min-height: 70px;
+            max-height: 70px;
+            box-sizing: border-box;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -414,13 +450,28 @@
             background-color: #f8fafc;
         }
 
+        .table-custom td a,
+        .table td a,
+        table td a {
+            color: #10b981 !important;
+            font-weight: 700;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .table-custom td a:hover,
+        .table td a:hover,
+        table td a:hover {
+            color: #059669 !important;
+        }
+
         /* Clean Buttons styling */
         .btn-custom {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: #ffffff;
             border: none;
             border-radius: 6px;
@@ -430,6 +481,15 @@
             cursor: pointer;
             text-decoration: none;
             transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary,
+        .btn-indigo,
+        .btn-custom-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            color: #ffffff !important;
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
         }
 
         .btn-custom:hover {
@@ -1045,7 +1105,7 @@
         }
         .modal-body-custom .btn-custom,
         .modal-content-custom button[type="submit"] {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
             color: #ffffff !important;
             border-radius: 8px !important;
             padding: 0.75rem !important;
@@ -1053,7 +1113,7 @@
             font-size: 0.9rem !important;
             width: 100% !important;
             margin-top: 1rem !important;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15) !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
             transition: opacity 0.2s ease !important;
         }
         .modal-body-custom .btn-custom:hover,
@@ -2103,9 +2163,14 @@
                     if (appIdIndex !== -1) {
                         const cell = row.cells[appIdIndex];
                         if (cell) {
-                            cell.style.color = '#4f46e5';
+                            cell.style.color = '#10b981';
                             cell.style.fontWeight = '700';
                             cell.style.fontSize = '0.88rem';
+                            const links = cell.querySelectorAll('a');
+                            links.forEach(link => {
+                                link.style.color = '#10b981';
+                                link.style.fontWeight = '700';
+                            });
                         }
                     }
 
@@ -2322,7 +2387,7 @@
         }
 
         function setupTablePagination(table) {
-            const pageSize = parseInt(table.getAttribute('data-page-size')) || 10;
+            let pageSize = parseInt(table.getAttribute('data-page-size')) || 10;
             let currentPage = 1;
             table.dataset.paginated = 'true';
             
@@ -2384,6 +2449,11 @@
                 renderControls(container, currentPage, totalPages, startIndex + 1, endIndex, totalRows, (page) => {
                     currentPage = page;
                     update();
+                }, pageSize, (newSize) => {
+                    pageSize = newSize;
+                    table.setAttribute('data-page-size', newSize);
+                    currentPage = 1;
+                    update();
                 });
             }
             
@@ -2392,6 +2462,7 @@
             // Listen for filter input changes to reset pagination
             const inputs = document.querySelectorAll('input, select');
             inputs.forEach(input => {
+                if (input.classList.contains('table-page-size-select')) return;
                 input.addEventListener('input', () => {
                     rowsReset();
                     currentPage = 1;
@@ -2418,13 +2489,31 @@
             update();
         }
 
-        function renderControls(container, currentPage, totalPages, startIdx, endIdx, totalRows, onPageChange) {
+        function renderControls(container, currentPage, totalPages, startIdx, endIdx, totalRows, onPageChange, pageSize, onPageSizeChange) {
             if (totalRows === 0) {
                 container.innerHTML = '<div>Showing 0 to 0 of 0 results</div>';
                 return;
             }
             
-            const info = `<div>Showing ${startIdx} to ${endIdx} of ${totalRows} results</div>`;
+            const currentSize = pageSize || 10;
+            const pageSizeSelectHtml = `
+                <div style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: #64748b;">
+                    <span>Show</span>
+                    <select class="table-page-size-select" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.85rem; color: #334155; outline: none; cursor: pointer; font-weight: 600;">
+                        <option value="10" ${currentSize === 10 ? 'selected' : ''}>10</option>
+                        <option value="25" ${currentSize === 25 ? 'selected' : ''}>25</option>
+                        <option value="50" ${currentSize === 50 ? 'selected' : ''}>50</option>
+                        <option value="100" ${currentSize === 100 ? 'selected' : ''}>100</option>
+                    </select>
+                    <span>entries</span>
+                </div>
+            `;
+
+            const info = `<div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                ${pageSizeSelectHtml}
+                <span style="color: #cbd5e1;">|</span>
+                <div>Showing ${startIdx} to ${endIdx} of ${totalRows} results</div>
+            </div>`;
             
             let buttonsHtml = '<div style="display: flex; gap: 0.25rem; align-items: center;">';
             
@@ -2450,7 +2539,7 @@
             for (let i = startPage; i <= endPage; i++) {
                 const isActive = i === currentPage;
                 const activeStyle = isActive 
-                    ? 'background: #4f46e5; border-color: #4f46e5; color: #ffffff; font-weight: 600;' 
+                    ? 'background: #10b981; border-color: #10b981; color: #ffffff; font-weight: 600;' 
                     : 'background: #ffffff; border-color: #e2e8f0; color: #475569;';
                 buttonsHtml += `<button class="page-btn" data-page="${i}" style="border: 1px solid; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; ${activeStyle}">${i}</button>`;
             }
@@ -2477,6 +2566,15 @@
                     onPageChange(page);
                 });
             });
+
+            // Bind page size select change event
+            const sizeSelect = container.querySelector('.table-page-size-select');
+            if (sizeSelect && onPageSizeChange) {
+                sizeSelect.addEventListener('change', (e) => {
+                    const newSize = parseInt(e.target.value) || 10;
+                    onPageSizeChange(newSize);
+                });
+            }
         }
 
         // Initialize on page load

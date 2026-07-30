@@ -2381,17 +2381,38 @@ class ProjectController extends Controller
             abort(404);
         }
 
+        $donorVal = $request->input('donor') ?? $request->input('agency');
+        if (str_contains($donorVal, ' (')) {
+            $donorVal = trim(explode(' (', $donorVal)[0]);
+        }
+
         $request->validate([
             'date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
-            'agency' => 'required|string|max:255',
         ]);
 
-        $fund = $project->funds()->create([
-            'date' => $request->input('date'),
-            'amount' => (float)$request->input('amount'),
-            'agency' => $request->input('agency'),
-        ]);
+        if (empty($donorVal)) {
+            return back()->withErrors(['donor' => 'Donor field is required.']);
+        }
+
+        // Prevent duplicate creation if an identical fund record was created within the last 5 seconds
+        $existingDuplicate = $project->funds()
+            ->where('date', $request->input('date'))
+            ->where('amount', (float)$request->input('amount'))
+            ->where('donor', $donorVal)
+            ->where('created_at', '>=', now()->subSeconds(5))
+            ->first();
+
+        if ($existingDuplicate) {
+            $fund = $existingDuplicate;
+        } else {
+            $fund = $project->funds()->create([
+                'date' => $request->input('date'),
+                'amount' => (float)$request->input('amount'),
+                'donor' => $donorVal,
+                'agency_project_no' => $project->agency_project_no ?? null,
+            ]);
+        }
 
         if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
             return response()->json([

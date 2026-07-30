@@ -15,6 +15,11 @@ class OrphanCareFund extends Model
 
     public function project()
     {
-        return $this->belongsTo(OrphanCareProject::class, 'orphan_care_project_id');
+        return $this->belongsTo(OrphanCareProject::class, 'agency_project_no', 'agency_project_no');
+    }
+
+    public function donorModel()
+    {
+        return $this->belongsTo(Donor::class, 'donor', 'name');
     }
 }

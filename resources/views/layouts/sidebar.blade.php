@@ -49,6 +49,18 @@
                 <span>Staffs</span>
             </a>
         </li>
+        <li>
+            <a href="{{ route('admin.reports.social_aid_funds') }}" class="{{ request()->routeIs('admin.reports.social_aid_funds') ? 'active' : '' }}">
+                <i class="bx bxs-report"></i>
+                <span>Social Aid Fund Report</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('admin.reports.projects') }}" class="{{ request()->routeIs('admin.reports.projects') ? 'active' : '' }}">
+                <i class="bx bxs-briefcase-alt-2"></i>
+                <span>Project Detail Report</span>
+            </a>
+        </li>
         @endif
         <li>
             <a href="{{ route('donors.index') }}" class="{{ request()->routeIs('donors.*') ? 'active' : '' }}">
@@ -130,10 +142,10 @@
     .sidebar-menu li a i { font-size: 1.2rem; flex-shrink: 0; width: 1.2rem; text-align: center; color: inherit; }
 
     .sidebar-menu li a.active {
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: #ffffff !important;
         font-weight: 600;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
     }
     .sidebar-menu li a.active i { color: #ffffff !important; }
 

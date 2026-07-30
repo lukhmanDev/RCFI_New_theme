@@ -32,12 +32,18 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 // Protected admin panel routes
 Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.home');
+    Route::get('/admin/global-search', [AdminController::class, 'globalSearch'])->name('admin.global_search');
     Route::get('/admin/users', [UserController::class, 'index'])->name('users');
     Route::post('/doAddUser', [UserController::class, 'store'])->name('do.add_user');
     Route::put('/admin/users/{id}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/admin/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/admin/users/{id}/details', [UserController::class, 'getDetails'])->name('users.details');
     Route::post('/admin/users/{id}/toggle-suspend', [UserController::class, 'toggleSuspend'])->name('users.toggle_suspend');
+
+    // Reports routes
+    Route::get('/admin/reports/social-aid-funds', [AdminController::class, 'socialAidFundReport'])->name('admin.reports.social_aid_funds');
+    Route::get('/admin/reports/projects', [AdminController::class, 'projectReport'])->name('admin.reports.projects');
+    Route::get('/admin/reports/single-project/{id?}', [AdminController::class, 'singleProjectReport'])->name('admin.reports.single_project');
 
     // Donors / Partners routes
     Route::get('/admin/donors', [DonorController::class, 'index'])->name('donors.index');

@@ -33,8 +33,8 @@
             }
             .theme-tab-btn.active {
                 color: #ffffff !important;
-                background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+                background: linear-gradient(135deg, #10b981, #059669) !important;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
             }
             .theme-tab-btn.active .badge-count {
                 background: rgba(255, 255, 255, 0.25) !important;
@@ -62,7 +62,7 @@
             <button onclick="openAddThemeModal()" class="btn-custom" style="padding: 0.6rem 1.25rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem;">
                 <i class="bx bx-plus-circle"></i> Add Theme
             </button>
-            <button onclick="openAddSubthemeModal()" class="btn-custom" style="padding: 0.6rem 1.25rem; font-size: 0.85rem; background: linear-gradient(135deg, #6366f1, #4f46e5); display: flex; align-items: center; gap: 0.4rem;">
+            <button onclick="openAddSubthemeModal()" class="btn-custom" style="padding: 0.6rem 1.25rem; font-size: 0.85rem; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; gap: 0.4rem;">
                 <i class="bx bx-plus-circle"></i> Add Subtheme
             </button>
         </div>

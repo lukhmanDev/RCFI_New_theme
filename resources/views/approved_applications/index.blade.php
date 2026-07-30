@@ -60,12 +60,12 @@
             border-top: 1px solid #f1f5f9;
             padding-top: 0.85rem;
             font-size: 0.84rem;
-            color: #4f46e5;
+            color: #10b981;
             font-weight: 600;
             transition: color 0.15s ease;
         }
         .app-card:hover .app-card-bottom {
-            color: #312e81;
+            color: #059669;
         }
     </style>
 
@@ -77,7 +77,7 @@
     @foreach($groupedCategories as $groupTitle => $cats)
         <!-- Group Section Divider Header -->
         <div style="margin-top: 2.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1rem;">
-            <span style="color: #4f46e5; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;">{{ $groupTitle }}</span>
+            <span style="color: #10b981; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;">{{ $groupTitle }}</span>
             <div style="flex: 1; height: 1px; background-color: #e2e8f0;"></div>
         </div>
 

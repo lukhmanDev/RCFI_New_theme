@@ -52,7 +52,7 @@ class FamilyAidProject extends Model
 
     public function funds()
     {
-        return $this->hasMany(FamilyAidFund::class, 'family_aid_project_id');
+        return $this->hasMany(FamilyAidFund::class, 'agency_project_no', 'agency_project_no');
     }
 }
 

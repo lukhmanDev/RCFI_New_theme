@@ -11,6 +11,11 @@ class FamilyAidFund extends Model
 
     public function project()
     {
-        return $this->belongsTo(FamilyAidProject::class, 'family_aid_project_id');
+        return $this->belongsTo(FamilyAidProject::class, 'agency_project_no', 'agency_project_no');
+    }
+
+    public function donorModel()
+    {
+        return $this->belongsTo(Donor::class, 'donor', 'name');
     }
 }

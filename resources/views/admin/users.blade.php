@@ -44,7 +44,7 @@
             <h1 style="color: #1e293b; font-size: 1.75rem; font-weight: 700; margin: 0;">Staffs</h1>
             <p style="color: #64748b; font-size: 0.88rem; margin-top: 0.25rem; margin-bottom: 0;">Dashboard &nbsp;•&nbsp; Staffs</p>
         </div>
-        <button onclick="openModal()" class="btn-custom" style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; border: none; border-radius: 10px; padding: 0.65rem 1.25rem; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); transition: transform 0.1s ease;">
+        <button onclick="openModal()" class="btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; border-radius: 10px; padding: 0.65rem 1.25rem; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: transform 0.1s ease;">
             <i class="bx bx-user-plus" style="font-size: 1.15rem;"></i> Add New Staff
         </button>
     </div>
@@ -437,29 +437,31 @@
                 </div>
             </div>
 
-            <!-- Assigned Projects Section -->
-            <div class="panel-header" style="margin-bottom: 1rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
-                <h3 class="panel-title" style="font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #1e293b;">
-                    <i class="bx bx-briefcase" style="color: var(--accent-purple);"></i> Assigned Projects
-                </h3>
-            </div>
+            <!-- Assigned Projects Section (Visible only for Project Managers & Engineers) -->
+            <div id="assigned_projects_wrapper" style="display: none;">
+                <div class="panel-header" style="margin-bottom: 1rem; border-top: 1px solid var(--panel-border); padding-top: 1.5rem;">
+                    <h3 class="panel-title" style="font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #1e293b;">
+                        <i class="bx bx-briefcase" style="color: var(--accent-purple);"></i> Assigned Projects
+                    </h3>
+                </div>
 
-            <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--panel-border); border-radius: 8px; background-color: #f8fafc;">
-                <table class="table-custom" style="margin: 0; font-size: 0.85rem; width: 100%;">
-                    <thead>
-                        <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
-                            <th style="padding: 0.5rem 0.75rem; color: #1e293b; font-weight: 700;">Project ID</th>
-                            <th style="padding: 0.5rem 0.75rem; color: #1e293b; font-weight: 700;">Project Title</th>
-                            <th style="padding: 0.5rem 0.75rem; text-align: center; color: #1e293b; font-weight: 700;">Assigned Role</th>
-                            <th style="padding: 0.5rem 0.75rem; text-align: center; color: #1e293b; font-weight: 700;">Stage/Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="projects_table_body">
-                        <tr>
-                            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1rem;">Loading assigned projects...</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--panel-border); border-radius: 8px; background-color: #f8fafc;">
+                    <table class="table-custom" style="margin: 0; font-size: 0.85rem; width: 100%;">
+                        <thead>
+                            <tr style="background-color: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                                <th style="padding: 0.5rem 0.75rem; color: #1e293b; font-weight: 700;">Project ID</th>
+                                <th style="padding: 0.5rem 0.75rem; color: #1e293b; font-weight: 700;">Project Title</th>
+                                <th style="padding: 0.5rem 0.75rem; text-align: center; color: #1e293b; font-weight: 700;">Assigned Role</th>
+                                <th style="padding: 0.5rem 0.75rem; text-align: center; color: #1e293b; font-weight: 700;">Stage/Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projects_table_body">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1rem;">Loading assigned projects...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </div>
@@ -551,6 +553,9 @@
             document.getElementById('view_status').innerText = 'Loading...';
             document.getElementById('view_address').innerText = 'Loading...';
             
+            const projectsWrapper = document.getElementById('assigned_projects_wrapper');
+            if (projectsWrapper) projectsWrapper.style.display = 'none';
+
             const tableBody = document.getElementById('projects_table_body');
             tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1rem;">Loading assigned projects...</td></tr>`;
             
@@ -580,25 +585,30 @@
                             statusContainer.innerHTML = `<span style="background-color: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">ACTIVE</span>`;
                         }
                         
-                        // Populate projects table
-                        if (data.projects && data.projects.length > 0) {
-                            tableBody.innerHTML = data.projects.map(p => `
-                                <tr style="border-bottom: 1px solid #e2e8f0;">
-                                    <td style="font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem;">${p.project_id}</td>
-                                    <td style="padding: 0.5rem 0.75rem;">
-                                        <div style="font-weight: 500; color: var(--text-main);">${p.title}</div>
-                                        <div style="font-size: 0.75rem; color: var(--text-muted);">${p.type}</div>
-                                    </td>
-                                    <td style="text-align: center; font-weight: 600; color: var(--accent-cyan); padding: 0.5rem 0.75rem;">${p.role}</td>
-                                    <td style="text-align: center; padding: 0.5rem 0.75rem;">
-                                        <span style="background-color: rgba(15, 23, 42, 0.04); color: var(--text-main); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">
-                                            ${p.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            `).join('');
-                        } else {
-                            tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No projects assigned to this user.</td></tr>`;
+                        // Show Assigned Projects section ONLY for Project Managers and Engineers
+                        if (u.is_pm_or_engineer && projectsWrapper) {
+                            projectsWrapper.style.display = 'block';
+                            if (data.projects && data.projects.length > 0) {
+                                tableBody.innerHTML = data.projects.map(p => `
+                                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                                        <td style="font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem;">${p.project_id}</td>
+                                        <td style="padding: 0.5rem 0.75rem;">
+                                            <div style="font-weight: 500; color: var(--text-main);">${p.title}</div>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">${p.type}</div>
+                                        </td>
+                                        <td style="text-align: center; font-weight: 600; color: var(--accent-cyan); padding: 0.5rem 0.75rem;">${p.role}</td>
+                                        <td style="text-align: center; padding: 0.5rem 0.75rem;">
+                                            <span style="background-color: rgba(15, 23, 42, 0.04); color: var(--text-main); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">
+                                                ${p.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('');
+                            } else {
+                                tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No projects assigned to this user.</td></tr>`;
+                            }
+                        } else if (projectsWrapper) {
+                            projectsWrapper.style.display = 'none';
                         }
                     } else {
                         alert('Failed to retrieve user details.');

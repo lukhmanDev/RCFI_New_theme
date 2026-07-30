@@ -52,7 +52,7 @@ class DifferentlyAbledProject extends Model
 
     public function funds()
     {
-        return $this->hasMany(DifferentlyAbledFund::class, 'differently_abled_project_id');
+        return $this->hasMany(DifferentlyAbledFund::class, 'agency_project_no', 'agency_project_no');
     }
 }
 

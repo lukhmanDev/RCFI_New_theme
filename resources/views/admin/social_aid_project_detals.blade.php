@@ -479,8 +479,20 @@
                 @endif
 
                 @if($isSocialAidProject && $application)
+                    @php
+                        $formattedAppId = 'APLRCFI' . (!empty($application->created_at) ? date('y', strtotime($application->created_at)) : '24') . ($project->type_of_project === 'Orphan Care' ? 'OC' : ($project->type_of_project === 'Differently Abled' ? 'DA' : 'FA')) . str_pad($application->id, 5, '0', STR_PAD_LEFT);
+                        $appCatSlug = str_replace('_', '-', $projectRouteKey);
+                        $appLinkUrl = route('applications.approved.category', $appCatSlug);
+                    @endphp
                     <div class="details-grid">
-                        <div class="details-label">Applicant ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ 'APLRCFI' . (!empty($application->created_at) ? date('y', strtotime($application->created_at)) : '24') . ($project->type_of_project === 'Orphan Care' ? 'OC' : ($project->type_of_project === 'Differently Abled' ? 'DA' : 'FA')) . str_pad($application->id, 5, '0', STR_PAD_LEFT) }}</div>
+                        <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $project->project_id ?? 'N/A' }}</div>
+                        <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $project->agency_project_no ?? 'N/A' }}</div>
+                        <div class="details-label">Applicant ID</div><div class="details-colon">:</div>
+                        <div class="details-value">
+                            <a href="{{ $appLinkUrl }}" onclick="openAppDetailsModal(event);" style="color: var(--accent-cyan); font-weight: 700; text-decoration: underline; cursor: pointer;" title="Click to view full application details">
+                                {{ $formattedAppId }}
+                            </a>
+                        </div>
                         <div class="details-label">Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->applicant_name ?? 'N/A' }}</div>
                         <div class="details-label">Gender</div><div class="details-colon">:</div><div class="details-value">{{ $application->gender ?? 'N/A' }}</div>
                         <div class="details-label">Date of Birth</div><div class="details-colon">:</div><div class="details-value">{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} (Age: {{ $application->age ?? 'N/A' }})</div>
@@ -491,6 +503,53 @@
                         <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
                         <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
                     </div>
+
+                    <!-- Application Full Details Modal -->
+                    <div id="appDetailsModal" onclick="if(event.target === this) closeAppDetailsModal()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 9000; align-items: center; justify-content: center; padding: 1.5rem;">
+                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.75rem; width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto; box-shadow: 0 15px 35px rgba(0,0,0,0.4); position: relative;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+                                <h3 style="color: var(--text-main); font-size: 1.15rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="bx bx-file-find" style="color: var(--accent-cyan);"></i> Application Details
+                                </h3>
+                                <button type="button" onclick="closeAppDetailsModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 140px 10px 1fr; gap: 0.6rem 0.5rem; font-size: 0.9rem; margin-bottom: 1.5rem;">
+                                <div style="color: var(--text-muted); font-weight: 500;">Applicant ID</div><div>:</div><div style="color: var(--accent-cyan); font-weight: 700;">{{ $formattedAppId }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Applicant Name</div><div>:</div><div style="color: var(--text-main); font-weight: 600;">{{ $application->applicant_name ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Gender</div><div>:</div><div>{{ $application->gender ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Date of Birth</div><div>:</div><div>{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} (Age: {{ $application->age ?? 'N/A' }})</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Father's Name</div><div>:</div><div>{{ $application->father_name ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Mother's Name</div><div>:</div><div>{{ $application->mother_name ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Guardian</div><div>:</div><div>{{ $application->guardian_name ?? 'N/A' }} (Relation: {{ $application->guardian_relation ?? 'N/A' }})</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">House Name</div><div>:</div><div>{{ $application->house_name ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Place</div><div>:</div><div>{{ $application->place ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Post Office</div><div>:</div><div>{{ $application->post_office ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Village / Panchayat</div><div>:</div><div>{{ $application->village ?? 'N/A' }} / {{ $application->panchayat ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">District / State</div><div>:</div><div>{{ $application->district ?? 'N/A' }}, {{ $application->state ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Contact Numbers</div><div>:</div><div>{{ $application->mobile_1 ?? $application->contact_number_1 ?? 'N/A' }} {{ !empty($application->mobile_2 ?? $application->contact_number_2) ? '/ ' . ($application->mobile_2 ?? $application->contact_number_2) : '' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Sponsor Status</div><div>:</div><div style="color: var(--accent-cyan); font-weight: 700;">{{ $application->sponsor_status ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Application Status</div><div>:</div><div style="color: #10b981; font-weight: 700;">{{ $application->status ?? 'Approved' }}</div>
+                            </div>
+
+                            <div style="display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid var(--panel-border); padding-top: 1.25rem;">
+                                <a href="{{ $appLinkUrl }}" class="btn-custom" style="text-decoration: none; border-radius: 6px; padding: 0.5rem 1.25rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                    <i class="bx bx-external-link"></i> Go to Applications Page
+                                </a>
+                                <button type="button" onclick="closeAppDetailsModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">Close</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function openAppDetailsModal(e) {
+                            if (e) e.preventDefault();
+                            document.getElementById('appDetailsModal').style.display = 'flex';
+                        }
+                        function closeAppDetailsModal() {
+                            document.getElementById('appDetailsModal').style.display = 'none';
+                        }
+                    </script>
                 @else
                     <div class="details-grid">
                         <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
@@ -565,8 +624,8 @@
                         </div> -->
 
                         <div id="status-updated-time-container" style="font-size: 0.85rem; color: var(--text-muted); display: {{ $statusUpdatedAt ? 'inline-flex' : 'none' }}; align-items: center; gap: 0.35rem;">
-                            <i class="bx bx-calendar-event" style="font-size: 1rem; color: #6366f1;"></i>
-                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: #6366f1;">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
+                            <i class="bx bx-calendar-event" style="font-size: 1rem; color: #10b981;"></i>
+                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: #10b981;">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
                         </div>
                     </div>
 
@@ -587,7 +646,7 @@
                                    value="{{ $currentCustom }}"
                                    style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box;">
                         </div>
-                        <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; color: #ffffff; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                        <button onclick="saveProjectPhase()" style="padding: 0.55rem 1.25rem; border-radius: 6px; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; transition: opacity 0.2s; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
                             <i class="bx bx-save"></i> Save Status
                         </button>
                     </div>
@@ -702,7 +761,7 @@
                                     <tr style="border-bottom: 2px solid var(--panel-border); color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
                                         <th style="padding: 0.75rem 1rem; font-weight: 700;">Serial No</th>
                                         <th style="padding: 0.75rem 1rem; font-weight: 700;">Date of Fund Transferred</th>
-                                        <th style="padding: 0.75rem 1rem; font-weight: 700; text-align: right;">Rs (Amount)</th>
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700; text-align: right;">Amount</th>
                                         <th style="padding: 0.75rem 1rem; font-weight: 700;">Agency</th>
                                         <th style="padding: 0.75rem 1rem; font-weight: 700; text-align: center; width: 100px;">Actions</th>
                                     </tr>
@@ -716,7 +775,13 @@
                                             <td class="fund-serial-no" style="padding: 0.75rem 1rem; color: var(--text-muted);">{{ $index + 1 }}</td>
                                             <td style="padding: 0.75rem 1rem;">{{ !empty($row->date) ? date('d-M-Y', strtotime($row->date)) : 'N/A' }}</td>
                                             <td class="fund-amount-cell" data-amount="{{ $row->amount }}" style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹{{ number_format($row->amount, 2) }}</td>
-                                            <td style="padding: 0.75rem 1rem;">{{ $row->agency ?? 'N/A' }}</td>
+                                            <td style="padding: 0.75rem 1rem;">
+                                                @if($row->donorModel)
+                                                    {{ $row->donorModel->name }} {{ $row->donorModel->short_name ? '('.$row->donorModel->short_name.')' : '' }}
+                                                @else
+                                                    {{ $row->donor ?? $row->agency ?? 'N/A' }}
+                                                @endif
+                                            </td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
                                                 <button type="button" onclick="handleDeleteFund(this, {{ $row->id }}, '{{ route('projects.' . $projectRouteKey . '.delete_fund', [$project->id, $row->id]) }}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Row">
                                                     <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
@@ -764,8 +829,8 @@
                                         $donorsList = \App\Models\Donor::orderBy('name')->get();
                                     @endphp
                                     <div class="form-group-custom" style="margin-bottom: 0 !important;">
-                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Agency</label>
-                                        <select name="agency" required class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Agency / Donor</label>
+                                        <select name="donor" required class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none;">
                                             <option value="">Select Agency / Donor...</option>
                                             @foreach($donorsList as $dItem)
                                                 <option value="{{ $dItem->name }}">{{ $dItem->name }} {{ $dItem->short_name ? '('.$dItem->short_name.')' : '' }}</option>
@@ -790,11 +855,17 @@
                         }
 
                         async function handleAddFundSubmit(e) {
-                            e.preventDefault();
-                            const form = e.target;
+                            if (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
+                            const form = document.getElementById('addFundForm');
+                            if (!form) return false;
+                            if (form.dataset.isSubmitting === 'true') return false;
+                            form.dataset.isSubmitting = 'true';
+
                             const submitBtn = form.querySelector('button[type="submit"]');
                             if (submitBtn) {
-                                if (submitBtn.disabled) return false;
                                 submitBtn.disabled = true;
                                 submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Adding...';
                             }
@@ -826,6 +897,7 @@
                                 console.error(err);
                                 alert('An error occurred while adding fund record.');
                             } finally {
+                                form.dataset.isSubmitting = 'false';
                                 if (submitBtn) {
                                     submitBtn.disabled = false;
                                     submitBtn.innerHTML = 'Add Row';
@@ -3096,46 +3168,46 @@
                         <div>
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Orphan & Family Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Orphan Name:</td><td style="color: var(--text-main); font-weight: 600;">\${formatVal(app.applicant_name)} (\${formatVal(meta.gender)})</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>\${formatVal(meta.dob)} / \${formatVal(meta.age)} yrs</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhar Number:</td><td>\${formatVal(meta.aadhar_number)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>\${formatVal(meta.father_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Grandfather's Name:</td><td>\${formatVal(meta.grandfather_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>\${formatVal(meta.mother_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Father Name:</td><td>\${formatVal(meta.mothers_father_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian / Relation:</td><td>\${formatVal(meta.guardian_name)} (\${formatVal(meta.guardian_relation)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Orphan Name:</td><td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)} (${formatVal(meta.gender)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>${formatVal(meta.dob)} / ${formatVal(meta.age)} yrs</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Grandfather's Name:</td><td>${formatVal(meta.grandfather_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Father Name:</td><td>${formatVal(meta.mothers_father_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian / Relation:</td><td>${formatVal(meta.guardian_name)} (${formatVal(meta.guardian_relation)})</td></tr>
                             </table>
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Parental Death & Sibling Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Father's Death Date:</td><td>\${formatVal(meta.father_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(\${formatVal(meta.father_death_cause)})</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Alive Status:</td><td>\${formatVal(meta.mother_alive_status)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Death Date:</td><td>\${formatVal(meta.mother_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(\${formatVal(meta.mother_death_cause)})</span></td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Re-Married?</td><td>\${formatVal(meta.mother_remarried_status)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Brothers & Sisters:</td><td>Total: \${formatVal(meta.siblings_total)} (M: \${formatVal(meta.siblings_male)} / F: \${formatVal(meta.siblings_female)})</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>\${incomeText}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Expense:</td><td>\${expenseText}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Father's Death Date:</td><td>${formatVal(meta.father_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(${formatVal(meta.father_death_cause)})</span></td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Alive Status:</td><td>${formatVal(meta.mother_alive_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Death Date:</td><td>${formatVal(meta.mother_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(${formatVal(meta.mother_death_cause)})</span></td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Re-Married?</td><td>${formatVal(meta.mother_remarried_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Brothers & Sisters:</td><td>Total: ${formatVal(meta.siblings_total)} (M: ${formatVal(meta.siblings_male)} / F: ${formatVal(meta.siblings_female)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>${incomeText}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Expense:</td><td>${expenseText}</td></tr>
                             </table>
                         </div>
 
                         <div>
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Education & House Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Type Of House:</td><td>\${formatVal(meta.house_type)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">School Name:</td><td>\${formatVal(meta.school_name)} (Class: \${formatVal(meta.school_class)})</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Madrassa Name:</td><td>\${formatVal(meta.madrassa_name)} (Class: \${formatVal(meta.madrassa_class)})</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">If Not Studying, Reason:</td><td>\${formatVal(meta.not_studying_reason)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Health Status:</td><td>\${formatVal(meta.health_status)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Sponsorship Details:</td><td>\${formatVal(meta.sponsorship_details)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Type Of House:</td><td>${formatVal(meta.house_type)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">School Name:</td><td>${formatVal(meta.school_name)} (Class: ${formatVal(meta.school_class)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Madrassa Name:</td><td>${formatVal(meta.madrassa_name)} (Class: ${formatVal(meta.madrassa_class)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">If Not Studying, Reason:</td><td>${formatVal(meta.not_studying_reason)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Health Status:</td><td>${formatVal(meta.health_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Sponsorship Details:</td><td>${formatVal(meta.sponsorship_details)}</td></tr>
                             </table>
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>\${formatVal(meta.house_name)} / \${formatVal(app.place)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Town / Post Office:</td><td>\${formatVal(meta.town)} / \${formatVal(meta.post_office)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State / Pin:</td><td>\${formatVal(meta.district)} / \${formatVal(meta.state)} / \${formatVal(meta.pin_code)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1 / 2:</td><td>\${formatVal(meta.mobile_1)} / \${formatVal(meta.mobile_2)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">\${app.status}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>${formatVal(meta.house_name)} / ${formatVal(app.place)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Town / Post Office:</td><td>${formatVal(meta.town)} / ${formatVal(meta.post_office)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin_code)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1 / 2:</td><td>${formatVal(meta.mobile_1)} / ${formatVal(meta.mobile_2)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">${app.status}</td></tr>
                             </table>
                         </div>
                     </div>
@@ -3143,7 +3215,7 @@
                     <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                         <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
                         <p style="color: var(--text-muted); line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: #121824; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); min-height: 50px;">
-                            \${formatVal(app.details)}
+                            ${formatVal(app.details)}
                         </p>
                     </div>
                 `;
@@ -3153,47 +3225,47 @@
                         <div>
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">\${formatVal(app.applicant_name)} (\${formatVal(meta.gender)})</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>\${formatVal(meta.dob)} / \${formatVal(meta.age)} yrs</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhaar / Marital Status:</td><td>\${formatVal(meta.aadhar_number)} / \${formatVal(meta.marital_status)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>\${formatVal(meta.father_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Father:</td><td>\${formatVal(meta.fathers_father)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>\${formatVal(meta.mother_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian / Relation:</td><td>\${formatVal(meta.guardian_name)} (\${formatVal(meta.guardian_relation)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)} (${formatVal(meta.gender)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>${formatVal(meta.dob)} / ${formatVal(meta.age)} yrs</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhaar / Marital Status:</td><td>${formatVal(meta.aadhar_number)} / ${formatVal(meta.marital_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Father:</td><td>${formatVal(meta.fathers_father)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian / Relation:</td><td>${formatVal(meta.guardian_name)} (${formatVal(meta.guardian_relation)})</td></tr>
                             </table>
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Family & Economic Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Male / Female Members:</td><td>M: \${formatVal(meta.male_members)} / F: \${formatVal(meta.female_members)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Total Members:</td><td style="font-weight: 600; color: #ffffff;">\${formatVal(meta.total_members)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">People with Disabilities:</td><td>\${formatVal(meta.people_with_disabilities)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>\${incomeText}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Cost:</td><td>\${costText}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Source of Income:</td><td>\${formatVal(meta.income_source)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Male / Female Members:</td><td>M: ${formatVal(meta.male_members)} / F: ${formatVal(meta.female_members)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Total Members:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.total_members)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">People with Disabilities:</td><td>${formatVal(meta.people_with_disabilities)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>${incomeText}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Cost:</td><td>${costText}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Source of Income:</td><td>${formatVal(meta.income_source)}</td></tr>
                             </table>
                         </div>
 
                         <div>
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Education & Disability Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Studying Institution:</td><td>\${formatVal(meta.studying_institution)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">If not study, reason:</td><td>\${formatVal(meta.not_studying_reason)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Health Status:</td><td>\${formatVal(meta.health_status)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Disability Type:</td><td style="font-weight: 600; color: #ffffff;">\${formatVal(meta.disability_type)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Disability Percentage:</td><td>\${formatVal(meta.disability_percentage)}%</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date/Year of Disability:</td><td>\${formatVal(meta.disability_date)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Level of Disability:</td><td>\${formatVal(meta.disability_level)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Anyone else help?</td><td>\${formatVal(meta.other_help)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Accommodation:</td><td>\${formatVal(meta.accommodation)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Description:</td><td>\${formatVal(meta.description)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Studying Institution:</td><td>${formatVal(meta.studying_institution)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">If not study, reason:</td><td>${formatVal(meta.not_studying_reason)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Health Status:</td><td>${formatVal(meta.health_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Disability Type:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.disability_type)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Disability Percentage:</td><td>${formatVal(meta.disability_percentage)}%</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date/Year of Disability:</td><td>${formatVal(meta.disability_date)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Level of Disability:</td><td>${formatVal(meta.disability_level)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Anyone else help?</td><td>${formatVal(meta.other_help)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Accommodation:</td><td>${formatVal(meta.accommodation)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Description:</td><td>${formatVal(meta.description)}</td></tr>
                             </table>
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>\${formatVal(meta.house_name)} / \${formatVal(app.place)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayat / District:</td><td>\${formatVal(meta.panchayat)} / \${formatVal(meta.district)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pincode / Mobile:</td><td>\${formatVal(meta.pincode)} / \${formatVal(meta.mobile)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">\${app.status}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>${formatVal(meta.house_name)} / ${formatVal(app.place)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayat / District:</td><td>${formatVal(meta.panchayat)} / ${formatVal(meta.district)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pincode / Mobile:</td><td>${formatVal(meta.pincode)} / ${formatVal(meta.mobile)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">${app.status}</td></tr>
                             </table>
                         </div>
                     </div>
@@ -3201,7 +3273,7 @@
                     <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                         <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
                         <p style="color: var(--text-muted); line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: #121824; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); min-height: 50px;">
-                            \${formatVal(app.details)}
+                            ${formatVal(app.details)}
                         </p>
                     </div>
                 `;
@@ -3211,39 +3283,39 @@
                         <div>
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">\${formatVal(app.applicant_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>\${formatVal(meta.dob)} / \${formatVal(meta.age)} yrs</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhaar Number:</td><td>\${formatVal(meta.aadhar_number)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>\${formatVal(meta.father_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Father:</td><td>\${formatVal(meta.fathers_father)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>\${formatVal(meta.mother_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">House / Location:</td><td>\${formatVal(meta.house_name)} / \${formatVal(meta.location)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">PO / Panchayat / Dist:</td><td>\${formatVal(meta.post_office)} / \${formatVal(meta.panchayat)} / \${formatVal(meta.district)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pin Code / Contact:</td><td>Pin: \${formatVal(meta.pin_code)} / Mob: \${formatVal(meta.mobile_1)} \${meta.mobile_2 ? ', ' + meta.mobile_2 : ''}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>${formatVal(meta.dob)} / ${formatVal(meta.age)} yrs</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhaar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Father:</td><td>${formatVal(meta.fathers_father)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">House / Location:</td><td>${formatVal(meta.house_name)} / ${formatVal(meta.location)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">PO / Panchayat / Dist:</td><td>${formatVal(meta.post_office)} / ${formatVal(meta.panchayat)} / ${formatVal(meta.district)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pin Code / Contact:</td><td>Pin: ${formatVal(meta.pin_code)} / Mob: ${formatVal(meta.mobile_1)} ${meta.mobile_2 ? ', ' + meta.mobile_2 : ''}</td></tr>
                             </table>
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Family & Income Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Children in Family:</td><td>Total: \${formatVal(meta.children_total)} (M: \${formatVal(meta.children_male)} / F: \${formatVal(meta.children_female)})</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">NRI Status:</td><td>\${formatVal(meta.nri_status)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Occupation:</td><td>\${formatVal(meta.occupation)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>\${incomeText}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Other Income Sources:</td><td>\${formatVal(meta.other_income_sources)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Health & Disability:</td><td>Health: \${formatVal(meta.health_status)} / Disability: \${formatVal(meta.disability_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Children in Family:</td><td>Total: ${formatVal(meta.children_total)} (M: ${formatVal(meta.children_male)} / F: ${formatVal(meta.children_female)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">NRI Status:</td><td>${formatVal(meta.nri_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Occupation:</td><td>${formatVal(meta.occupation)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>${incomeText}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Other Income Sources:</td><td>${formatVal(meta.other_income_sources)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Health & Disability:</td><td>Health: ${formatVal(meta.health_status)} / Disability: ${formatVal(meta.disability_status)}</td></tr>
                             </table>
                         </div>
 
                         <div>
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Health & Residence Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Routine Treatment:</td><td>\${formatVal(meta.routine_treatment_explanation)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Chronic Patients:</td><td>\${formatVal(meta.chronic_patients_description)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Residence Information:</td><td style="font-weight: 600; color: #ffffff;">\${formatVal(meta.residence_info)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Own House Condition:</td><td>\${formatVal(meta.own_house_condition)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Own Place / Size:</td><td>Place: \${formatVal(meta.own_place_status)} / Size: \${formatVal(meta.own_place_size)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Is there a sequel?</td><td>\${formatVal(meta.sequel_status)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Welfare Areas:</td><td>\${formatVal(meta.welfare_assistance_areas)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">\${app.status}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Routine Treatment:</td><td>${formatVal(meta.routine_treatment_explanation)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Chronic Patients:</td><td>${formatVal(meta.chronic_patients_description)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Residence Information:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.residence_info)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Own House Condition:</td><td>${formatVal(meta.own_house_condition)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Own Place / Size:</td><td>Place: ${formatVal(meta.own_place_status)} / Size: ${formatVal(meta.own_place_size)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Is there a sequel?</td><td>${formatVal(meta.sequel_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Welfare Areas:</td><td>${formatVal(meta.welfare_assistance_areas)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">${app.status}</td></tr>
                             </table>
                         </div>
                     </div>
@@ -3251,7 +3323,7 @@
                     <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                         <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
                         <p style="color: var(--text-muted); line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: #121824; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); min-height: 50px;">
-                            \${formatVal(app.details)}
+                            ${formatVal(app.details)}
                         </p>
                     </div>
                 `;

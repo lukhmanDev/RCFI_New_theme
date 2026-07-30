@@ -87,14 +87,18 @@
                             $searchStr = strtolower(implode(' ', array_filter($searchTerms)));
                         @endphp
                         <tr class="app-row" data-search="{{ $searchStr }}" data-place="{{ $appItem->place ?? '' }}">
-                            <td style="font-weight: 600; color: var(--accent-cyan);">{{ $appId }}</td>
+                            <td style="font-weight: 600;">
+                                <a href="javascript:void(0)" onclick="openDetailsModal({{ json_encode($appItem) }})" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Application Details">
+                                    {{ $appId }}
+                                </a>
+                            </td>
                             <td>{{ $appItem->applicant_name }}</td>
                             <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? '-' }}</td>
                             <td style="border-right: 2px solid #2a3547;">{{ $meta['num_rooms'] ?? '-' }}</td>
                             <!-- Project ID & Status -->
                             <td>
                                 @if($project)
-                                    <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project) }}" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none;">
+                                    <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project) }}" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Project Details">
                                         {{ $project->project_id ?? 'Assigned' }}
                                     </a>
                                 @else
@@ -188,21 +192,7 @@
             // Populate status actions in the modal footer dynamically
             const statusActionsContainer = document.getElementById('modal_status_actions');
             if (statusActionsContainer) {
-                let statusHtml = '';
-                const rejectUrl = `/admin/applications/{{ $categorySlug }}/${appItem.id}/reject`;
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                if (!isProjectApproved) {
-                statusHtml = `
-                                    <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
-                                        <input type="hidden" name="_token" value="${csrfToken}">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                            <i class="bx bx-x"></i> Reject Application
-                                        </button>
-                                    </form>
-                                `;
-            }
-                statusActionsContainer.innerHTML = statusHtml;
+                statusActionsContainer.innerHTML = '';
             }
 
             const meta = appItem.meta || {};
@@ -213,8 +203,8 @@
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant Info</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Applicant Name:</td><td>\${formatVal(appItem.applicant_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Room Count:</td><td>\${formatVal(meta.num_rooms)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Applicant Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Room Count:</td><td>${formatVal(meta.num_rooms)}</td></tr>
                         </table>
                     </div>
                 </div>

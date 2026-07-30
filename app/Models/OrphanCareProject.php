@@ -55,6 +55,6 @@ class OrphanCareProject extends Model
 
     public function funds()
     {
-        return $this->hasMany(OrphanCareFund::class, 'orphan_care_project_id');
+        return $this->hasMany(OrphanCareFund::class, 'agency_project_no', 'agency_project_no');
     }
 }

@@ -5,22 +5,22 @@
 @section('content')
 
     <!-- Welcoming Header -->
-    <div class="welcome-banner" style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #e2e8f0; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; position: relative; overflow: hidden; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.04);">
+    <div class="welcome-banner" style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; position: relative; overflow: hidden; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.04);">
         <div style="flex: 1; z-index: 2;">
-            <h1 style="color: #1e293b; font-size: 1.75rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">Welcome back, {{ Auth::user()->name }}! <span style="animation: wave 2s infinite; transform-origin: 70% 70%; display: inline-block;">👋</span></h1>
-            <p style="color: #64748b; font-size: 0.95rem; margin-top: 0.4rem; margin-bottom: 0;">Here's what's happening with RCFI today.</p>
+            <h1 style="color: #065f46; font-size: 1.75rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">Welcome back, {{ Auth::user()->name }}! <span style="animation: wave 2s infinite; transform-origin: 70% 70%; display: inline-block;">👋</span></h1>
+            <p style="color: #047857; font-size: 0.95rem; margin-top: 0.4rem; margin-bottom: 0;">Here's what's happening with RCFI today.</p>
         </div>
         <div class="banner-illustration" style="flex-shrink: 0; width: 140px; display: flex; align-items: center; justify-content: center; z-index: 2;">
             <svg width="110" height="90" viewBox="0 0 110 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <!-- Doughnut Chart Background -->
-                <circle cx="75" cy="40" r="28" fill="#c7d2fe" fill-opacity="0.5"/>
-                <circle cx="75" cy="40" r="20" stroke="#6366f1" stroke-width="5" stroke-dasharray="80 50"/>
-                <circle cx="75" cy="40" r="20" stroke="#10b981" stroke-width="5" stroke-dasharray="30 100" stroke-dashoffset="-80"/>
+                <circle cx="75" cy="40" r="28" fill="#a7f3d0" fill-opacity="0.5"/>
+                <circle cx="75" cy="40" r="20" stroke="#10b981" stroke-width="5" stroke-dasharray="80 50"/>
+                <circle cx="75" cy="40" r="20" stroke="#059669" stroke-width="5" stroke-dasharray="30 100" stroke-dashoffset="-80"/>
                 
                 <!-- Floating File/Card -->
                 <rect x="15" y="25" width="45" height="55" rx="6" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
-                <rect x="23" y="38" width="28" height="4" rx="2" fill="#818cf8"/>
-                <rect x="23" y="48" width="20" height="4" rx="2" fill="#a5b4fc"/>
+                <rect x="23" y="38" width="28" height="4" rx="2" fill="#34d399"/>
+                <rect x="23" y="48" width="20" height="4" rx="2" fill="#a7f3d0"/>
                 <rect x="23" y="58" width="24" height="4" rx="2" fill="#e2e8f0"/>
                 
                 <!-- Little Success Badge on Card -->
@@ -67,17 +67,17 @@
                     <span style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Total Applications</span>
                     <h2 style="color: #1e293b; font-size: 1.75rem; font-weight: 700; margin-top: 0.3rem; margin-bottom: 0;">{{ $applicationsCount }}</h2>
                 </div>
-                <div style="background: #eef2ff; color: #6366f1; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                <div style="background: #ecfdf5; color: #10b981; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
                     <i class="bx bx-file"></i>
                 </div>
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; border-top: 1px dashed #f1f5f9; padding-top: 0.65rem;">
-                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #6366f1;">
+                <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #10b981;">
                     <span>All Time</span>
                 </div>
                 <div style="width: 60px; height: 20px;">
                     <svg width="60" height="20" viewBox="0 0 60 20">
-                        <path d="M0,18 Q10,14 20,10 T40,12 T60,2" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M0,18 Q10,14 20,10 T40,12 T60,2" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
             </div>
@@ -378,9 +378,9 @@
 
             const ctx = overviewCanvas.getContext('2d');
             if (ctx) {
-                const purpleGradient = ctx.createLinearGradient(0, 0, 0, 260);
-                purpleGradient.addColorStop(0, 'rgba(124, 58, 237, 0.22)');
-                purpleGradient.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
+                const emeraldGradient = ctx.createLinearGradient(0, 0, 0, 260);
+                emeraldGradient.addColorStop(0, 'rgba(16, 185, 129, 0.28)');
+                emeraldGradient.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
 
                 const initialPeriod = chartPeriodData['this_month'] || {
                     labels: {!! json_encode($chartLabels ?? ['May 1', 'May 7', 'May 13', 'May 19', 'May 25', 'May 31']) !!},
@@ -394,17 +394,17 @@
                         datasets: [{
                             label: 'Applications',
                             data: initialPeriod.data,
-                            borderColor: '#7c3aed',
-                            backgroundColor: purpleGradient,
+                            borderColor: '#10b981',
+                            backgroundColor: emeraldGradient,
                             borderWidth: 3,
                             tension: 0.4,
                             fill: true,
                             pointRadius: 4,
                             pointHoverRadius: 7,
-                            pointBackgroundColor: '#7c3aed',
+                            pointBackgroundColor: '#10b981',
                             pointBorderColor: '#ffffff',
                             pointBorderWidth: 2.5,
-                            pointHoverBackgroundColor: '#7c3aed',
+                            pointHoverBackgroundColor: '#10b981',
                             pointHoverBorderColor: '#ffffff',
                             pointHoverBorderWidth: 3
                         }]

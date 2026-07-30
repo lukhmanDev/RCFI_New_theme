@@ -10,9 +10,9 @@
         --pf-border: #e2e8f0;
         --pf-text-main: #0f172a;
         --pf-text-muted: #64748b;
-        --pf-primary: #6366f1;
-        --pf-primary-dark: #4f46e5;
-        --pf-primary-light: #eef2ff;
+        --pf-primary: #10b981;
+        --pf-primary-dark: #059669;
+        --pf-primary-light: #ecfdf5;
         --pf-success: #10b981;
         --pf-warning: #f59e0b;
         --pf-danger: #ef4444;
@@ -40,7 +40,7 @@
 
     .profile-hero-banner {
         height: 120px;
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
         position: relative;
     }
 
@@ -314,7 +314,7 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: #ffffff;
         border: none;
         padding: 0.75rem 1.6rem;
@@ -323,13 +323,13 @@
         font-size: 0.9rem;
         cursor: pointer;
         transition: all 0.2s ease;
-        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
     }
 
     .pf-btn:hover:not(:disabled) {
         opacity: 0.95;
         transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
     }
 
     .pf-btn:disabled {

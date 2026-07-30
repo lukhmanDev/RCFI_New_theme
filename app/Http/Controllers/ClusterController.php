@@ -12,8 +12,10 @@ class ClusterController extends Controller
         if (!$user) {
             return false;
         }
-        // Super Admin (1), COO (2), HOD (4), Project Manager (3), Engineer (6)
-        return $user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']);
+        $designationLower = strtolower($user->designation ?? '');
+        $isAdminDesignation = in_array($designationLower, ['admin', 'super admin', 'coo', 'hod']) || str_contains($designationLower, 'admin');
+
+        return $user->isSuperAdmin() || $user->isCoo() || $user->isHod() || $user->hasAdminAccess() || $isAdminDesignation;
     }
 
     public function index()
