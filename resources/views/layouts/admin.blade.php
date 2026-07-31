@@ -1331,12 +1331,13 @@
             document.body.removeChild(link);
         }
 
-        // Modern Custom Confirm Modal logic
         let activeConfirmCallback = null;
+        let activeConfirmIsRejection = false;
 
         function showCustomConfirm(message, callback, isRejection = false) {
             document.getElementById('customConfirmMessage').innerText = message;
             activeConfirmCallback = callback;
+            activeConfirmIsRejection = isRejection;
             
             const modal = document.getElementById('customConfirmModal');
             const panel = modal.querySelector('.confirm-panel');
@@ -1345,6 +1346,10 @@
             const okBtn = document.getElementById('customConfirmOk');
             const remarksContainer = document.getElementById('confirmRemarksContainer');
             const remarksInput = document.getElementById('confirmRemarksInput');
+            const remarksError = document.getElementById('confirmRemarksError');
+
+            if (remarksError) remarksError.style.display = 'none';
+            if (remarksInput) remarksInput.style.borderColor = '#374151';
             
             const isUntick = message.toLowerCase().includes('untick');
             const isSponsor = message.toLowerCase().includes('sponsor');
@@ -1493,9 +1498,24 @@
         function closeCustomConfirm(confirmed) {
             const modal = document.getElementById('customConfirmModal');
             const remarksInput = document.getElementById('confirmRemarksInput');
-            const remarks = remarksInput ? remarksInput.value : '';
+            const remarksError = document.getElementById('confirmRemarksError');
+            const remarks = remarksInput ? remarksInput.value.trim() : '';
+
+            if (confirmed && activeConfirmIsRejection && !remarks) {
+                if (remarksError) remarksError.style.display = 'block';
+                if (remarksInput) {
+                    remarksInput.style.borderColor = '#ef4444';
+                    remarksInput.focus();
+                }
+                return;
+            }
+
+            if (remarksError) remarksError.style.display = 'none';
+            if (remarksInput) remarksInput.style.borderColor = '#374151';
+
             const callback = activeConfirmCallback;
             activeConfirmCallback = null;
+            activeConfirmIsRejection = false;
             
             modal.classList.remove('show');
             modal.style.display = 'none';
@@ -1723,11 +1743,13 @@
             const link = event.target.closest('a');
             if (!link) return;
             
-            const href = link.getAttribute('href');
+            const href = link.getAttribute('href') || '';
             if (!href || href.startsWith('#') || href.startsWith('javascript:') || 
                 link.getAttribute('target') === '_blank' || 
                 link.getAttribute('download') !== null || 
-                link.getAttribute('data-no-pjax') !== null) {
+                link.getAttribute('data-no-pjax') !== null ||
+                href.includes('/export') || href.includes('/download') ||
+                href.includes('export=') || href.includes('download=')) {
                 return;
             }
             
@@ -1807,7 +1829,7 @@
         async function handleFormSubmit(event) {
             const form = event.target;
             const action = form.getAttribute('action') || window.location.href;
-            if (form.getAttribute('data-no-pjax') !== null || form.getAttribute('data-no-ajax') !== null || action.includes('upload-photo') || action.includes('upload_photo') || action.includes('delete-photo') || action.includes('delete_photo') || action.includes('logout')) {
+            if (form.getAttribute('data-no-pjax') !== null || form.getAttribute('data-no-ajax') !== null || action.includes('export') || action.includes('download') || action.includes('upload-photo') || action.includes('upload_photo') || action.includes('delete-photo') || action.includes('delete_photo') || action.includes('logout')) {
                 return;
             }
             
@@ -1842,12 +1864,26 @@
             showLoader();
             
             const method = (form.getAttribute('method') || 'POST').toUpperCase();
-            const formData = new FormData(form);
+            let fetchUrl = action;
+            let body = null;
+            if (method === 'GET') {
+                const formData = new FormData(form);
+                const params = new URLSearchParams();
+                for (const [key, val] of formData.entries()) {
+                    if (val !== null && val !== '') {
+                        params.append(key, val);
+                    }
+                }
+                const qStr = params.toString();
+                fetchUrl = action.split('?')[0] + (qStr ? '?' + qStr : '');
+            } else {
+                body = new FormData(form);
+            }
             
             try {
-                const response = await fetch(action, {
-                    method: method === 'GET' ? 'GET' : 'POST',
-                    body: method === 'GET' ? null : formData,
+                const response = await fetch(fetchUrl, {
+                    method: method,
+                    body: body,
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'text/html'
@@ -1882,11 +1918,13 @@
             const link = event.target.closest('a');
             if (!link) return;
             
-            const href = link.getAttribute('href');
+            const href = link.getAttribute('href') || '';
             if (!href || href.startsWith('#') || href.startsWith('javascript:') || 
                 link.getAttribute('target') === '_blank' || 
                 link.getAttribute('download') !== null || 
-                link.getAttribute('data-no-pjax') !== null) {
+                link.getAttribute('data-no-pjax') !== null ||
+                href.includes('/export') || href.includes('/download') ||
+                href.includes('export=') || href.includes('download=')) {
                 return;
             }
             
@@ -1898,6 +1936,31 @@
                 }
             } catch (e) {}
         }
+
+        // App-wide Shared Download Delegate (Catches all Download / Export buttons across Projects, Applications, Donors, Contractors, Reports, etc.)
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('a[href*="export"], a[href*="download"], a[download], .download-excel-btn, .btn-export');
+            if (!btn) return;
+
+            const href = btn.getAttribute('href');
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Trigger direct native browser file download
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.href = href;
+                downloadAnchor.setAttribute('download', '');
+                downloadAnchor.style.display = 'none';
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                setTimeout(() => {
+                    if (downloadAnchor.parentNode) {
+                        downloadAnchor.parentNode.removeChild(downloadAnchor);
+                    }
+                }, 500);
+            }
+        }, true);
 
         // Override default programmatic form.submit() to dispatch submit event
         const originalSubmit = HTMLFormElement.prototype.submit;
@@ -2581,6 +2644,375 @@
         document.addEventListener('DOMContentLoaded', () => {
             initAllTablePagers();
         });
+
+        // Global Pincode Master Auto-Fill Listener
+        (function() {
+            let pincodeTimer = null;
+
+            document.addEventListener('input', function(e) {
+                const target = e.target;
+                if (!target || target.tagName !== 'INPUT') return;
+
+                const name = (target.name || '').toLowerCase();
+                const id = (target.id || '').toLowerCase();
+
+                const isPincodeField = name.includes('pin_code') || name.includes('pincode') || 
+                                       id.includes('pin_code') || id.includes('pincode') || 
+                                       id.endsWith('pin');
+
+                if (!isPincodeField) return;
+
+                const rawVal = target.value.trim().replace(/\D/g, '');
+                if (rawVal.length === 6) {
+                    clearTimeout(pincodeTimer);
+                    pincodeTimer = setTimeout(() => {
+                        lookupAndFillPincode(rawVal, target);
+                    }, 250);
+                }
+            });
+
+            function lookupAndFillPincode(pincode, inputEl) {
+                fetch('/admin/pincode-lookup/' + pincode)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data || !data.success) return;
+
+                        // Scope search to the surrounding form or modal panel
+                        const parent = inputEl.closest('form') || inputEl.closest('.panel') || inputEl.closest('.modal') || document;
+
+                        const setFieldValue = (el, val, force = false) => {
+                            if (!el) return;
+                            if (force || !el.value || el.value.trim() === '') {
+                                el.value = val;
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+
+                                // Flash soft green highlight
+                                const origBg = el.style.backgroundColor;
+                                el.style.transition = 'background-color 0.3s ease';
+                                el.style.backgroundColor = 'rgba(16, 185, 129, 0.12)';
+                                setTimeout(() => {
+                                    el.style.backgroundColor = origBg || '';
+                                }, 1200);
+                            }
+                        };
+
+                        const findField = (keys) => {
+                            for (let key of keys) {
+                                let el = parent.querySelector(`[name*="${key}"], [id*="${key}"]`);
+                                if (el) return el;
+                            }
+                            return null;
+                        };
+
+                        // Auto-fill State & District (Always update when pincode matched)
+                        const stateEl = findField(['state']);
+                        setFieldValue(stateEl, data.state, true);
+
+                        const districtEl = findField(['district']);
+                        setFieldValue(districtEl, data.district, true);
+
+                        // Auto-fill Post Office
+                        const poEl = findField(['post_office', 'postoffice', '_po']);
+                        if (poEl) {
+                            setFieldValue(poEl, data.post_office, false);
+
+                            // Create datalist for post office options if multiple exist
+                            if (data.post_offices && data.post_offices.length > 0) {
+                                const dlId = 'po_list_' + pincode;
+                                let dl = document.getElementById(dlId);
+                                if (!dl) {
+                                    dl = document.createElement('datalist');
+                                    dl.id = dlId;
+                                    document.body.appendChild(dl);
+                                }
+                                dl.innerHTML = data.post_offices.map(po => `<option value="${po}"></option>`).join('');
+                                poEl.setAttribute('list', dlId);
+                            }
+                        }
+
+                        // Auto-fill Place & Village if empty
+                        const placeEl = findField(['place']);
+                        setFieldValue(placeEl, data.place, false);
+
+                        const villageEl = findField(['village']);
+                        setFieldValue(villageEl, data.village, false);
+
+                        // Success visual feedback on Pin Code input field
+                        inputEl.style.transition = 'border-color 0.3s ease, box-shadow 0.3s ease';
+                        inputEl.style.borderColor = '#10b981';
+                        inputEl.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
+                        setTimeout(() => {
+                            inputEl.style.borderColor = '';
+                            inputEl.style.boxShadow = '';
+                        }, 1800);
+                    })
+                    .catch(err => console.error('Pincode lookup error:', err));
+            }
+        })();
+
+        // Global Aadhaar Number Standard Auto-Formatter (XXXX XXXX XXXX)
+        (function() {
+            function formatAadhaarString(val) {
+                if (!val) return '';
+                const digits = val.toString().replace(/\D/g, '').slice(0, 12);
+                const parts = [];
+                for (let i = 0; i < digits.length; i += 4) {
+                    parts.push(digits.substring(i, i + 4));
+                }
+                return parts.join(' ');
+            }
+
+            function initAadhaarFields() {
+                const inputs = document.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const name = (input.name || '').toLowerCase();
+                    const id = (input.id || '').toLowerCase();
+
+                    if (name.includes('aadhar') || name.includes('adhaar') || id.includes('aadhar') || id.includes('adhaar')) {
+                        input.setAttribute('maxlength', '14');
+                        if (!input.placeholder || input.placeholder.toLowerCase().includes('enter') || input.placeholder === '' || input.placeholder === '1234 5678 9012') {
+                            input.placeholder = 'XXXX XXXX XXXX';
+                        }
+                        if (input.value) {
+                            const formatted = formatAadhaarString(input.value);
+                            if (input.value !== formatted) {
+                                input.value = formatted;
+                            }
+                        }
+                    }
+                });
+            }
+
+            document.addEventListener('input', function(e) {
+                const target = e.target;
+                if (!target || target.tagName !== 'INPUT') return;
+
+                const name = (target.name || '').toLowerCase();
+                const id = (target.id || '').toLowerCase();
+
+                const isAadhaarField = name.includes('aadhar') || name.includes('adhaar') || 
+                                       id.includes('aadhar') || id.includes('adhaar');
+
+                if (isAadhaarField) {
+                    const selectionStart = target.selectionStart;
+                    const prevLen = target.value.length;
+
+                    const formatted = formatAadhaarString(target.value);
+                    target.value = formatted;
+
+                    if (selectionStart !== null) {
+                        const diff = target.value.length - prevLen;
+                        target.setSelectionRange(selectionStart + diff, selectionStart + diff);
+                    }
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', initAadhaarFields);
+
+            // Re-initialize for dynamic forms or modal popups
+            const observer = new MutationObserver(() => {
+                initAadhaarFields();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            window.formatAadhaarDisplay = formatAadhaarString;
+        })();
+
+        // Global Date of Birth -> Age Auto-Calculator & Readonly Age Handler
+        (function() {
+            function calculateAgeFromDob(dobStr) {
+                if (!dobStr) return '';
+                const birthDate = new Date(dobStr);
+                if (isNaN(birthDate.getTime())) return '';
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                return age >= 0 ? age : 0;
+            }
+
+            function isActualAgeField(input) {
+                if (!input || input.tagName !== 'INPUT') return false;
+                const id = (input.id || '').toLowerCase();
+                const name = (input.name || '').toLowerCase();
+
+                if (id.includes('agency') || name.includes('agency') || id.includes('village') || name.includes('village')) return false;
+
+                return (id === 'age' || id === 'edit_age' || id.endsWith('_age') || id.startsWith('age_') ||
+                        name === 'age' || name === 'meta[age]' || name.endsWith('[age]'));
+            }
+
+            function syncAgeForDob(dobInput) {
+                if (!dobInput) return;
+                const parent = dobInput.closest('tr') || dobInput.closest('.grid') || dobInput.closest('div[style*="grid"]') || dobInput.closest('form') || dobInput.closest('.panel') || dobInput.closest('.modal') || document;
+                
+                const allInputs = parent.querySelectorAll('input');
+                let ageInput = null;
+                allInputs.forEach(input => {
+                    if (isActualAgeField(input)) {
+                        ageInput = input;
+                    }
+                });
+
+                if (ageInput) {
+                    ageInput.readOnly = true;
+                    ageInput.setAttribute('readonly', 'readonly');
+                    ageInput.style.cursor = 'not-allowed';
+                    ageInput.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+
+                    if (dobInput.value) {
+                        const calculatedAge = calculateAgeFromDob(dobInput.value);
+                        if (calculatedAge !== '' && ageInput.value != calculatedAge) {
+                            ageInput.value = calculatedAge;
+                            ageInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            ageInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                }
+            }
+
+            function initReadonlyAgeFields() {
+                const allInputs = document.querySelectorAll('input');
+                allInputs.forEach(input => {
+                    if (isActualAgeField(input)) {
+                        input.readOnly = true;
+                        input.setAttribute('readonly', 'readonly');
+                        input.style.cursor = 'not-allowed';
+                        input.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                    } else if (input.id === 'agency_number' || input.id === 'edit_agency_number' || input.name === 'agency_number') {
+                        input.readOnly = false;
+                        input.removeAttribute('readonly');
+                        input.style.cursor = 'text';
+                        input.style.backgroundColor = '';
+                    }
+                });
+
+                const dobInputs = document.querySelectorAll('input[id*="dob"], input[name*="[dob]"]');
+                dobInputs.forEach(dobInput => {
+                    syncAgeForDob(dobInput);
+                });
+            }
+
+            document.addEventListener('input', function(e) {
+                const target = e.target;
+                if (!target || target.tagName !== 'INPUT') return;
+                const name = (target.name || '').toLowerCase();
+                const id = (target.id || '').toLowerCase();
+
+                if (id.includes('dob') || name.includes('dob')) {
+                    syncAgeForDob(target);
+                }
+            });
+
+            document.addEventListener('change', function(e) {
+                const target = e.target;
+                if (!target || target.tagName !== 'INPUT') return;
+                const name = (target.name || '').toLowerCase();
+                const id = (target.id || '').toLowerCase();
+
+                if (id.includes('dob') || name.includes('dob')) {
+                    syncAgeForDob(target);
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', initReadonlyAgeFields);
+
+            const observer = new MutationObserver(() => {
+                initReadonlyAgeFields();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        })();
+
+        // Global Title Case Auto-Capitalizer (First Letter Capital, Remaining Small)
+        (function() {
+            function toTitleCase(str) {
+                if (!str) return str;
+                return str.toLowerCase().replace(/(?:^|\s|-|\/|\()\S/g, function(match) {
+                    return match.toUpperCase();
+                });
+            }
+
+            function shouldCapitalize(input) {
+                if (!input || (input.tagName !== 'INPUT' && input.tagName !== 'TEXTAREA')) return false;
+                const type = (input.type || 'text').toLowerCase();
+                if (type !== 'text' && type !== 'search' && input.tagName !== 'TEXTAREA') return false;
+                
+                const id = (input.id || '').toLowerCase();
+                const name = (input.name || '').toLowerCase();
+
+                if (id.includes('aadhar') || name.includes('aadhar') || 
+                    id.includes('pincode') || name.includes('pincode') || id.includes('pin_code') || name.includes('pin_code') ||
+                    id.includes('mobile') || name.includes('mobile') ||
+                    id.includes('phone') || name.includes('phone') ||
+                    id.includes('contact') || name.includes('contact') ||
+                    id.includes('whatsapp') || name.includes('whatsapp') ||
+                    id.includes('email') || name.includes('email') || id.includes('password') ||
+                    input.classList.contains('no-capitalize')) {
+                    return false;
+                }
+                return true;
+            }
+
+            document.addEventListener('blur', function(e) {
+                const target = e.target;
+                if (shouldCapitalize(target) && target.value) {
+                    const formatted = toTitleCase(target.value);
+                    if (formatted !== target.value) {
+                        target.value = formatted;
+                        target.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }
+            }, true);
+
+            const style = document.createElement('style');
+            style.innerHTML = `
+                input[type="text"]:not([id*="aadhar"]):not([id*="pincode"]):not([id*="pin_code"]):not([id*="mobile"]):not([id*="phone"]):not([id*="contact"]):not([name*="mobile"]):not([name*="phone"]):not([name*="contact"]):not([type="email"]):not(.no-capitalize),
+                textarea:not(.no-capitalize) {
+                    text-transform: capitalize;
+                }
+            `;
+            document.head.appendChild(style);
+        })();
+
+        // Global Numeric Enforcer for Mobile, Phone, and Pin Code Fields (0-9 Digits Only)
+        (function() {
+            function isNumericOnlyField(input) {
+                if (!input || input.tagName !== 'INPUT') return false;
+                const id = (input.id || '').toLowerCase();
+                const name = (input.name || '').toLowerCase();
+                const type = (input.type || '').toLowerCase();
+                return type === 'tel' || 
+                       id.includes('mobile') || name.includes('mobile') || 
+                       id.includes('phone') || name.includes('phone') || 
+                       id.includes('contact_number') || name.includes('contact_number') ||
+                       id.includes('pincode') || name.includes('pincode') || 
+                       id.includes('pin_code') || name.includes('pin_code');
+            }
+
+            function enforceNumericInput(input) {
+                if (!isNumericOnlyField(input)) return;
+                const cleaned = input.value.replace(/[^0-9]/g, '');
+                if (input.value !== cleaned) {
+                    input.value = cleaned;
+                }
+            }
+
+            document.addEventListener('input', function(e) {
+                enforceNumericInput(e.target);
+            });
+
+            document.addEventListener('keypress', function(e) {
+                if (isNumericOnlyField(e.target)) {
+                    const charCode = e.which ? e.which : e.keyCode;
+                    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        })();
     </script>
 
     <!-- Modern Premium Custom Confirm Modal HTML -->
@@ -2592,8 +3024,9 @@
             <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">Confirm Action</h3>
             <p id="customConfirmMessage" style="color: #9ca3af; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">Are you sure you want to proceed?</p>
             <div id="confirmRemarksContainer" style="display: none; width: 100%; margin-bottom: 1.5rem; text-align: left; box-sizing: border-box;">
-                <label style="display: block; color: #9ca3af; font-size: 0.85rem; margin-bottom: 0.4rem; font-weight: 500;">Rejection Reason</label>
-                <textarea id="confirmRemarksInput" placeholder="Provide rejection reason (optional)…" style="width: 100%; height: 70px; background-color: #1f2937; border: 1px solid #374151; color: #ffffff; padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
+                <label style="display: block; color: #9ca3af; font-size: 0.85rem; margin-bottom: 0.4rem; font-weight: 500;">Rejection Reason <span style="color: #ef4444;">*</span></label>
+                <textarea id="confirmRemarksInput" placeholder="Provide Rejection Reason (Required)..." style="width: 100%; height: 70px; background-color: #1f2937; border: 1px solid #374151; color: #ffffff; padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
+                <div id="confirmRemarksError" style="display: none; color: #ef4444; font-size: 0.8rem; margin-top: 0.35rem; font-weight: 500;">Rejection reason is mandatory.</div>
             </div>
             <div style="display: flex; gap: 1rem; justify-content: center;">
                 <button id="customConfirmCancel" class="confirm-btn-cancel">Cancel</button>
@@ -2601,5 +3034,123 @@
             </div>
         </div>
     </div>
+    <!-- Global Premium Sponsor Date Modal HTML -->
+    <div id="sponsorDateModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background: #ffffff; width: 100%; max-width: 420px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: hidden;">
+            
+            <!-- Header -->
+            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; color: #10b981;">
+                        <i class="bx bxs-award" style="font-size: 1.35rem;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2;">Sponsor Application</h3>
+                        <p style="font-size: 0.78rem; color: #64748b; margin: 0; margin-top: 2px;">Select the official sponsored date</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeSponsorDateModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; padding: 0.2rem; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: color 0.15s;" onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#94a3b8'">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 1.5rem;">
+                <form id="globalSponsorForm" onsubmit="submitGlobalSponsorForm(event)">
+                    <input type="hidden" id="global_sponsor_app_id">
+                    <input type="hidden" id="global_sponsor_category_slug">
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <label for="global_sponsored_date_input" style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 0.4rem;">
+                            Sponsored Date <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="date" id="global_sponsored_date_input" required class="form-control" style="width: 100%; height: 42px; padding: 0 0.85rem; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; color: #1e293b; outline: none; transition: border-color 0.15s;">
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+                        <button type="button" onclick="closeSponsorDateModal()" style="height: 40px; padding: 0 1.25rem; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
+                            Cancel
+                        </button>
+                        <button type="submit" id="globalSponsorSubmitBtn" style="height: 40px; padding: 0 1.25rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <i class="bx bx-check" style="font-size: 1.1rem;"></i> Submit Sponsor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openSponsorDateModal(appId, categorySlug, callback) {
+            document.getElementById('global_sponsor_app_id').value = appId || '';
+            document.getElementById('global_sponsor_category_slug').value = categorySlug || 'orphan-care';
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('global_sponsored_date_input').value = today;
+            
+            window._sponsorModalCallback = callback || null;
+            
+            const modal = document.getElementById('sponsorDateModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeSponsorDateModal() {
+            const modal = document.getElementById('sponsorDateModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            window._sponsorModalCallback = null;
+        }
+
+        async function submitGlobalSponsorForm(e) {
+            e.preventDefault();
+            const appId = document.getElementById('global_sponsor_app_id').value;
+            const categorySlug = document.getElementById('global_sponsor_category_slug').value || 'orphan-care';
+            const sponsoredDate = document.getElementById('global_sponsored_date_input').value;
+
+            if (!sponsoredDate) {
+                alert('Please select a valid sponsored date.');
+                return;
+            }
+
+            if (window._sponsorModalCallback) {
+                const cb = window._sponsorModalCallback;
+                closeSponsorDateModal();
+                cb(sponsoredDate);
+                return;
+            }
+
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
+
+            try {
+                const response = await fetch(`/admin/applications/${categorySlug}/${appId}/toggle-sponsor`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        category: categorySlug,
+                        sponsored_date: sponsoredDate
+                    })
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    closeSponsorDateModal();
+                    window.location.reload();
+                } else {
+                    alert(result.error || 'Failed to update sponsor status.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while saving sponsorship.');
+            }
+        }
+    </script>
 </body>
 </html>

@@ -57,4 +57,9 @@ class OrphanCareProject extends Model
     {
         return $this->hasMany(OrphanCareFund::class, 'agency_project_no', 'agency_project_no');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(OrphanCareApplication::class, 'application_id');
+    }
 }

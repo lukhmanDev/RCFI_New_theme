@@ -16,7 +16,6 @@
     <a href="{{ route('projects.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
         <i class="bx bx-left-arrow-alt"></i> Back to Dashboard
     </a>
-    <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600;">Differently Abled Project Registry</h3>
 </div>
 
 <style>
@@ -96,8 +95,9 @@
     .btn-action-icon.btn-edit {
         background-color: #fa8231;
     }
-    .btn-action-icon.btn-delete {
+    .btn-action-icon.btn-delete, .btn-action-icon.btn-pdf {
         background-color: #eb3b5a;
+        color: #ffffff;
     }
     .btn-action-icon.btn-view {
         background-color: #2bcbba;
@@ -305,7 +305,32 @@
             </thead>
             <tbody>
                 @forelse($projects as $index => $project)
-                    <tr>
+                    @php
+                        $app = $project->application;
+                        $appMeta = $app->meta ?? [];
+                        $searchTerms = [
+                            $project->project_id,
+                            $project->project_name,
+                            $project->sponsor,
+                            $project->agency_project_no,
+                            $project->donor?->name,
+                            $project->projectManager?->name,
+                            $project->remarks,
+                            $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : null),
+                            $app?->applicant_name,
+                            $app?->father_name ?? ($appMeta['father_name'] ?? null),
+                            $app?->mother_name ?? ($appMeta['mother_name'] ?? null),
+                            $app?->place ?? ($appMeta['place'] ?? null),
+                            $app?->district ?? ($appMeta['district'] ?? null),
+                            $app?->state ?? ($appMeta['state'] ?? null),
+                            $app?->agency_number ?? ($appMeta['agency_number'] ?? null),
+                            $app?->cluster?->name,
+                            $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? null)),
+                            $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? null)),
+                        ];
+                        $searchString = strtolower(implode(' ', array_filter($searchTerms)));
+                    @endphp
+                    <tr class="project-row" data-search="{{ $searchString }}">
                         <td style="text-align: center;">{{ $index + 1 }}</td>
                         <td style="font-weight: 600; color: var(--accent-cyan);">
                             {{ $project->project_id }}
@@ -347,15 +372,10 @@
                                 <i class="bx bx-dots-horizontal-rounded"></i>
                             </button>
 
-                            <form action="{{ route('projects.destroy', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this project?');" style="display: inline-block;">
-                                @csrf
-                                @method('DELETE')
-                                <input type="hidden" name="redirect_category" value="differently-abled">
-                                <input type="hidden" name="type_of_project" value="{{ $project->type_of_project }}">
-                                <button type="submit" class="btn-action-icon btn-delete" title="Delete">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            </form>
+                            <!-- PDF Report Button -->
+                            <a href="{{ route('admin.reports.single_project', [$project->id, 'category' => 'differently-abled']) }}?print=1" target="_blank" class="btn-action-icon btn-pdf" title="PDF / Print Report">
+                                <i class="bx bxs-file-pdf"></i>
+                            </a>
 
                             <button type="button"
                                 id="suspend-btn-{{ $project->id }}"
@@ -650,19 +670,26 @@
 
     function filterTable() {
         const input = document.getElementById('tableSearch');
-        const filter = input.value.toLowerCase();
+        const filter = input.value.toLowerCase().trim();
         const table = document.getElementById('projectsTable');
         const trs = table.getElementsByTagName('tr');
 
         for (let i = 1; i < trs.length; i++) {
             let match = false;
-            const tds = trs[i].getElementsByTagName('td');
-            for (let j = 0; j < tds.length - 1; j++) {
-                if (tds[j]) {
-                    const txtValue = tds[j].textContent || tds[j].innerText;
-                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                        match = true;
-                        break;
+            const searchData = trs[i].getAttribute('data-search');
+            if (searchData !== null && searchData !== '') {
+                if (searchData.indexOf(filter) > -1) {
+                    match = true;
+                }
+            } else {
+                const tds = trs[i].getElementsByTagName('td');
+                for (let j = 0; j < tds.length - 1; j++) {
+                    if (tds[j]) {
+                        const txtValue = tds[j].textContent || tds[j].innerText;
+                        if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                            match = true;
+                            break;
+                        }
                     }
                 }
             }

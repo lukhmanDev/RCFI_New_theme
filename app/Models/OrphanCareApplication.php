@@ -61,6 +61,14 @@ class OrphanCareApplication extends Model
         'cluster_id',
         'agency_number',
         'sponsor_status',
+        'current_beneficiaries',
+        'whatsapp_number',
+        'recommender_name',
+        'recommender_org',
+        'recommender_phone',
+        'recommender_position',
+        'agency_name',
+        'application_date',
     ];
 
     public static function ensureProjectExists($application)

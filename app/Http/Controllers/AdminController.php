@@ -837,7 +837,11 @@ class AdminController extends Controller
         if ($id) {
             if ($categoryParam) {
                 $targetProjectData = $allProjectsList->firstWhere(function($item) use ($id, $categoryParam) {
-                    return (string)$item['id'] === (string)$id && $item['category_slug'] === $categoryParam;
+                    return (string)$item['id'] === (string)$id && (
+                        $item['category_slug'] === $categoryParam ||
+                        str_starts_with($item['category_slug'], $categoryParam) ||
+                        str_starts_with($categoryParam, $item['category_slug'])
+                    );
                 });
             }
             if (!$targetProjectData) {

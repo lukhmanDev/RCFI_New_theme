@@ -96,7 +96,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
             <h2 style="color: var(--text-main); font-weight: 700; margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                <i class="bx bxs-file-doc" style="color: #10b981;"></i> Single Project Detailed Report
+                Single Project Detailed Report
             </h2>
             <p style="color: var(--text-muted); margin: 0.25rem 0 0 0; font-size: 0.88rem;">
                 Detailed breakdown of project manager, engineer, documents, inspections, and financial summary
@@ -306,4 +306,14 @@
 
     @endif
 </div>
+
+@if(request()->has('print') || request()->has('pdf'))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            window.print();
+        }, 500);
+    });
+</script>
+@endif
 @endsection

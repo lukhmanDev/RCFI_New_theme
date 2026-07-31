@@ -71,7 +71,7 @@
                 <span style="display: block; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Total Transferred</span>
                 <span style="display: block; color: #10b981; font-size: 1.5rem; font-weight: 700; margin-top: 0.15rem;">₹{{ number_format($totalAmount, 2) }}</span>
             </div>
-        </div>v>
+        </div>
     </div>
 
     <!-- Filter Card -->

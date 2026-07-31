@@ -13,59 +13,44 @@ return new class extends Migration
     public function up(): void
     {
         $dbName = DB::getDatabaseName();
+        $isSqlite = DB::getDriverName() === 'sqlite';
+
+        if ($isSqlite) {
+            DB::statement('PRAGMA foreign_keys = OFF;');
+        }
 
         // 1. orphan_care_funds
         if (Schema::hasTable('orphan_care_funds') && Schema::hasColumn('orphan_care_funds', 'orphan_care_project_id')) {
-            $fkList = DB::table('information_schema.KEY_COLUMN_USAGE')
-                ->where('CONSTRAINT_SCHEMA', $dbName)
-                ->where('TABLE_NAME', 'orphan_care_funds')
-                ->where('COLUMN_NAME', 'orphan_care_project_id')
-                ->whereNotNull('REFERENCED_TABLE_NAME')
-                ->pluck('CONSTRAINT_NAME');
-
-            foreach ($fkList as $fkName) {
-                DB::statement("ALTER TABLE orphan_care_funds DROP FOREIGN KEY `{$fkName}`");
-            }
-
             Schema::table('orphan_care_funds', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['orphan_care_project_id']);
+                } catch (\Throwable $e) {}
                 $table->dropColumn('orphan_care_project_id');
             });
         }
 
         // 2. differently_abled_funds
         if (Schema::hasTable('differently_abled_funds') && Schema::hasColumn('differently_abled_funds', 'differently_abled_project_id')) {
-            $fkList = DB::table('information_schema.KEY_COLUMN_USAGE')
-                ->where('CONSTRAINT_SCHEMA', $dbName)
-                ->where('TABLE_NAME', 'differently_abled_funds')
-                ->where('COLUMN_NAME', 'differently_abled_project_id')
-                ->whereNotNull('REFERENCED_TABLE_NAME')
-                ->pluck('CONSTRAINT_NAME');
-
-            foreach ($fkList as $fkName) {
-                DB::statement("ALTER TABLE differently_abled_funds DROP FOREIGN KEY `{$fkName}`");
-            }
-
             Schema::table('differently_abled_funds', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['differently_abled_project_id']);
+                } catch (\Throwable $e) {}
                 $table->dropColumn('differently_abled_project_id');
             });
         }
 
         // 3. family_aid_funds
         if (Schema::hasTable('family_aid_funds') && Schema::hasColumn('family_aid_funds', 'family_aid_project_id')) {
-            $fkList = DB::table('information_schema.KEY_COLUMN_USAGE')
-                ->where('CONSTRAINT_SCHEMA', $dbName)
-                ->where('TABLE_NAME', 'family_aid_funds')
-                ->where('COLUMN_NAME', 'family_aid_project_id')
-                ->whereNotNull('REFERENCED_TABLE_NAME')
-                ->pluck('CONSTRAINT_NAME');
-
-            foreach ($fkList as $fkName) {
-                DB::statement("ALTER TABLE family_aid_funds DROP FOREIGN KEY `{$fkName}`");
-            }
-
             Schema::table('family_aid_funds', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['family_aid_project_id']);
+                } catch (\Throwable $e) {}
                 $table->dropColumn('family_aid_project_id');
             });
+        }
+
+        if ($isSqlite) {
+            DB::statement('PRAGMA foreign_keys = ON;');
         }
     }
 

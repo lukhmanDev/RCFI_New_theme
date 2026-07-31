@@ -54,5 +54,10 @@ class DifferentlyAbledProject extends Model
     {
         return $this->hasMany(DifferentlyAbledFund::class, 'agency_project_no', 'agency_project_no');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(DifferentlyAbledApplication::class, 'application_id');
+    }
 }
 

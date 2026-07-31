@@ -327,13 +327,13 @@ class ApplicationApprovalPermissionsTest extends TestCase
 
     public function test_only_pending_applications_can_be_deleted(): void
     {
-        $coo = User::create([
-            'name' => 'COO Test App Delete',
-            'email' => 'coo_test_delete@rcfi.org',
+        $superAdmin = User::create([
+            'name' => 'Super Admin Test App Delete',
+            'email' => 'admin_test_delete@rcfi.org',
             'mobile' => '9888888812',
-            'role' => 2,
+            'role' => 1,
             'password' => bcrypt('password'),
-            'designation' => 'COO',
+            'designation' => 'Super Admin',
         ]);
 
         // 1. Create a pending application
@@ -351,14 +351,14 @@ class ApplicationApprovalPermissionsTest extends TestCase
         ]);
 
         // 3. Try to delete the approved application -> should fail
-        $response = $this->actingAs($coo)->delete("/admin/applications/{$approvedApp->id}", [
+        $response = $this->actingAs($superAdmin)->delete("/admin/applications/{$approvedApp->id}", [
             'redirect_category' => 'house'
         ]);
-        $response->assertSessionHas('error', 'Only pending applications can be deleted.');
+        $response->assertSessionHas('error', 'Approved applications cannot be deleted by any role.');
         $this->assertNotNull(HouseApplication::find($approvedApp->id));
 
         // 4. Try to delete the pending application -> should succeed
-        $response = $this->actingAs($coo)->delete("/admin/applications/{$pendingApp->id}", [
+        $response = $this->actingAs($superAdmin)->delete("/admin/applications/{$pendingApp->id}", [
             'redirect_category' => 'house'
         ]);
         $response->assertRedirect('/admin/applications/category/house');
@@ -474,8 +474,20 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $this->assertNotNull($project);
         $this->assertEquals($app->applicant_name, $project->project_name);
 
-        // 4. COO toggles again -> Should toggle back to 'Not Sponsored'
+        // 4. COO attempts to toggle back to Not Sponsored -> Should fail (Only Super Admin can un-sponsor)
         $response = $this->actingAs($coo)->post("/admin/applications/orphan-care/{$app->id}/toggle-sponsor");
+        $response->assertSessionHas('error', 'Only Super Admin can un-sponsor applications.');
+        $this->assertEquals('Sponsored', $app->fresh()->sponsor_status);
+
+        // 5. Super Admin attempts to toggle back to Not Sponsored -> Should succeed
+        $superAdmin = User::create([
+            'name' => 'Super Admin Test',
+            'email' => 'super_admin_sponsor@rcfi.org',
+            'password' => bcrypt('password'),
+            'role' => 1,
+            'designation' => 'Super Admin',
+        ]);
+        $response = $this->actingAs($superAdmin)->post("/admin/applications/orphan-care/{$app->id}/toggle-sponsor");
         $response->assertSessionHas('success', 'Sponsor status updated successfully.');
         $this->assertEquals('Not Sponsored', $app->fresh()->sponsor_status);
 
@@ -595,15 +607,20 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'designation' => 'COO',
         ]);
 
+        $cluster = \App\Models\Cluster::create(['name' => 'Cluster A', 'code' => 'CL-A']);
         $app = \App\Models\OrphanCareApplication::create([
             'category' => 'Orphan Care',
             'applicant_name' => 'Fund Test Student',
             'status' => 'Approved',
             'sponsor_status' => 'Sponsored',
+            'agency_number' => 'AG-123',
+            'cluster_id' => $cluster->id,
         ]);
 
         $project = \App\Models\OrphanCareProject::where('application_id', $app->id)->first();
         $this->assertNotNull($project);
+
+        \App\Models\Donor::create(['name' => 'Agency A', 'type_of_partner' => 'Individual', 'type_of_fund' => 'Zakat']);
 
         $response = $this->actingAs($coo)->post("/admin/projects/orphan-care/{$project->id}/add-fund", [
             'date' => '2026-07-20',
@@ -615,10 +632,45 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $project = $project->fresh();
         $this->assertCount(1, $project->funds);
         $this->assertEquals(5000, $project->funds->first()->amount);
-        $this->assertEquals('Agency A', $project->funds->first()->agency);
 
         $response = $this->actingAs($coo)->delete("/admin/projects/orphan-care/{$project->id}/delete-fund/" . $project->funds->first()->id);
         $response->assertSessionHas('success', 'Fund transfer record deleted successfully!');
         $this->assertEmpty($project->fresh()->funds);
+    }
+
+    public function test_approved_applications_cannot_be_edited_or_deleted_by_any_role(): void
+    {
+        $superAdmin = User::create([
+            'name' => 'Super Admin Test',
+            'email' => 'admin_no_edit_del@rcfi.org',
+            'mobile' => '9999999991',
+            'role' => 1,
+            'password' => bcrypt('password'),
+            'designation' => 'Super Admin',
+        ]);
+
+        $app = HouseApplication::create([
+            'category' => 'House',
+            'applicant_name' => 'Approved Applicant',
+            'amount_requested' => 100000,
+            'status' => 'Approved',
+            'place' => 'Original Place',
+        ]);
+
+        // Super Admin attempts to edit approved application -> Should fail with error
+        $response = $this->actingAs($superAdmin)->put("/admin/applications/{$app->id}", [
+            'applicant_name' => 'Modified Applicant Name',
+            'category' => 'House',
+            'redirect_category' => 'house',
+        ]);
+        $response->assertSessionHas('error', 'Approved applications cannot be edited by any role.');
+        $this->assertEquals('Approved Applicant', $app->fresh()->applicant_name);
+
+        // Super Admin attempts to delete approved application -> Should fail with error
+        $response = $this->actingAs($superAdmin)->delete("/admin/applications/{$app->id}", [
+            'redirect_category' => 'house',
+        ]);
+        $response->assertSessionHas('error', 'Approved applications cannot be deleted by any role.');
+        $this->assertNotNull(HouseApplication::find($app->id));
     }
 }

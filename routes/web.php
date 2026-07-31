@@ -75,6 +75,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
 
     // Applications routes
     Route::get('/admin/applications/approved', [ApplicationController::class, 'showApprovedDashboard'])->name('applications.approved.index');
+    Route::get('/admin/applications/approved/export', [ApplicationController::class, 'exportApproved'])->name('applications.approved.export');
     Route::get('/admin/applications/approved/category/{category}', [ApplicationController::class, 'showApprovedCategory'])->name('applications.approved.category');
     Route::get('/admin/applications', [ApplicationController::class, 'index'])->name('applications.index');
     Route::get('/admin/applications/category/{category}', [ApplicationController::class, 'showCategory'])->name('applications.category');
@@ -192,4 +193,49 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
             ]);
         return response()->json(['success' => true]);
     })->name('notifications.mark_read');
+
+    // Pincode Master Lookup Route
+    Route::get('/admin/pincode-lookup/{pincode}', function($pincode) {
+        $pincode = trim($pincode);
+        $records = \Illuminate\Support\Facades\DB::table('pincode_master')
+            ->where('pincode', $pincode)
+            ->orWhere('pincode', (int)$pincode)
+            ->get();
+
+        if ($records->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pincode not found'
+            ]);
+        }
+
+        $first = $records->first();
+        
+        $toTitleCase = function($str) {
+            if (!$str) return '';
+            $words = explode(' ', ucwords(strtolower(trim($str))));
+            return implode(' ', array_map(function($word) {
+                if (in_array(strtolower(trim($word, '.')), ['bo', 'so', 'ho', 'gpo', 'ndho'])) {
+                    return strtoupper($word);
+                }
+                return $word;
+            }, $words));
+        };
+
+        $postOffices = $records->pluck('office_name')->filter()->map($toTitleCase)->unique()->values()->toArray();
+        $districts = $records->pluck('district')->filter()->map($toTitleCase)->unique()->values()->toArray();
+        $states = $records->pluck('state_name')->filter()->map($toTitleCase)->unique()->values()->toArray();
+        $divisions = $records->pluck('division_name')->filter()->map($toTitleCase)->unique()->values()->toArray();
+
+        return response()->json([
+            'success' => true,
+            'pincode' => $pincode,
+            'district' => $districts[0] ?? '',
+            'state' => $states[0] ?? '',
+            'post_office' => $postOffices[0] ?? '',
+            'post_offices' => $postOffices,
+            'place' => $postOffices[0] ?? ($divisions[0] ?? ''),
+            'village' => $postOffices[0] ?? ($divisions[0] ?? ''),
+        ]);
+    })->name('pincode.lookup');
 });

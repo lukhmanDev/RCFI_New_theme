@@ -9,7 +9,6 @@
         <a href="{{ route('applications.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
             <i class="bx bx-left-arrow-alt"></i> Back to Dashboard
         </a>
-        <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600;">Orphan Care Applications Registry</h3>
     </div>
 
     <!-- Success & Error Alert Panels -->
@@ -94,13 +93,13 @@
                     <tr>
                         <th>Application ID</th>
                         <th>Orphan Name</th>
-                        <th>Name of Mother</th>
+                        <th>Father Name</th>
+                        <th>Mother Name</th>
                         <th>Gender</th>
                         <th>Age</th>
-                        <th>School Class</th>
-                        <th>Madrassa Class</th>
                         <th>Place</th>
-                        <th>Panchayath</th>
+                        <th>District</th>
+                        <th>State</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
@@ -116,6 +115,8 @@
                                 $appId,
                                 $appItem->applicant_name ?? '',
                                 $appItem->place ?? '',
+                                $appItem->district ?? '',
+                                $appItem->state ?? '',
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
@@ -140,7 +141,10 @@
                             <!-- Orphan Name -->
                             <td style="font-weight: 600; color: #ffffff;">{{ $appItem->applicant_name }}</td>
 
-                            <!-- Name of Mother -->
+                            <!-- Father Name -->
+                            <td>{{ $meta['father_name'] ?? 'N/A' }}</td>
+
+                            <!-- Mother Name -->
                             <td>{{ $meta['mother_name'] ?? 'N/A' }}</td>
 
                             <!-- Gender -->
@@ -149,17 +153,14 @@
                             <!-- Age -->
                             <td>{{ $meta['age'] ?? 'N/A' }}</td>
 
-                            <!-- School Class -->
-                            <td>{{ $meta['school_class'] ?? 'N/A' }}</td>
-
-                            <!-- Madrassa Class -->
-                            <td>{{ $meta['madrassa_class'] ?? 'N/A' }}</td>
-
                             <!-- Place -->
-                            <td>{{ $appItem->place ?? 'N/A' }}</td>
+                            <td>{{ $appItem->place ?? $meta['place'] ?? 'N/A' }}</td>
 
-                            <!-- Panchayath -->
-                            <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? 'N/A' }}</td>
+                            <!-- District -->
+                            <td>{{ $appItem->district ?? $meta['district'] ?? 'N/A' }}</td>
+
+                            <!-- State -->
+                            <td>{{ $appItem->state ?? $meta['state'] ?? 'N/A' }}</td>
 
                             <!-- Status -->
                             <td style="text-align: center;">
@@ -182,22 +183,24 @@
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending')
                                         <!-- Approve -->
-                                        <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
+                                        <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}', '{{ addslashes($meta['agency_name'] ?? '') }}', '{{ $meta['application_date'] ?? date('Y-m-d') }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
                                             <i class="bx bx-check"></i>
                                         </button>
 
                                         <!-- Reject -->
+                                        @if(($appItem->sponsor_status ?? 'Not Sponsored') !== 'Sponsored')
                                         <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                                             @csrf
                                             <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject">
                                                 <i class="bx bx-x"></i>
                                             </button>
                                         </form>
+                                        @endif
 
                                     @endif
                                 @endif
 
-                                @if(Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess()))
+                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
                                     <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
                                         @csrf
                                         @method('DELETE')
@@ -221,7 +224,7 @@
 
     <!-- View Full Details Modal Dialog -->
     <div id="detailsAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1100; overflow-y: auto;" onclick="closeDetailsModal()">
-        <div class="panel" style="width: 100%; max-width: 850px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+        <div class="panel" style="width: 100%; max-width: 920px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
             
             <button onclick="closeDetailsModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
@@ -239,10 +242,12 @@
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 @if(Auth::user()->hasAdminAccess())
-                    <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
+                    <button id="modal_edit_btn" onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
                         <i class="bx bx-pencil"></i> Edit
                     </button>
-                    <button onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
+                @endif
+                @if(Auth::user()->canDeleteApplications())
+                    <button id="modal_delete_btn" onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
                         <i class="bx bx-trash"></i> Delete
                     </button>
                 @endif
@@ -261,7 +266,7 @@
                 <h2 class="panel-title" style="font-size: 1.25rem;">Add Orphan Care Application</h2>
             </div>
 
-            <form action="{{ route('applications.store') }}" method="POST">
+            <form action="{{ route('applications.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 
                 <!-- Hidden Category and redirect tags -->
@@ -271,56 +276,89 @@
 
                 <!-- Form Section 1: Orphan & Family Details -->
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">1. Orphan & Family Details</h4>
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1.25rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">1. Orphan & Family Details</h4>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="applicant_name">Name Of Orphan *</label>
-                            <input type="text" class="form-control-dark" id="applicant_name" name="applicant_name" value="{{ old('applicant_name') }}" required>
+                    <!-- Top Split Layout: Left (Inputs 2x2 Grid) | Right (Fixed 175px Student Photo Card) -->
+                    <div style="display: flex; gap: 1.25rem; margin-bottom: 1rem; align-items: flex-start; flex-wrap: wrap;">
+                        <!-- Left Column: 2x2 Inputs Grid -->
+                        <div style="flex: 1; min-width: 280px; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <label class="form-label" for="applicant_name">Name Of Orphan *</label>
+                                <input type="text" class="form-control-dark" id="applicant_name" name="applicant_name" value="{{ old('applicant_name') }}" required>
+                            </div>
+                            <div>
+                                <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Male/Female *</label>
+                                <div style="display: flex; gap: 1.5rem; align-items: center; padding: 0.45rem 0;">
+                                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-size: 0.88rem; font-weight: 500;">
+                                        <input type="radio" id="gender_male" name="meta[gender]" value="Male" {{ old('meta.gender', 'Male') === 'Male' ? 'checked' : '' }}>
+                                        Male
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-size: 0.88rem; font-weight: 500;">
+                                        <input type="radio" id="gender_female" name="meta[gender]" value="Female" {{ old('meta.gender') === 'Female' ? 'checked' : '' }}>
+                                        Female
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="father_name">Name Of Father *</label>
+                                <input type="text" class="form-control-dark" id="father_name" name="meta[father_name]" value="{{ old('meta.father_name') }}" required>
+                            </div>
+                            <div>
+                                <label class="form-label" for="grandfather_name">Name Of GrandFather</label>
+                                <input type="text" class="form-control-dark" id="grandfather_name" name="meta[grandfather_name]" value="{{ old('meta.grandfather_name') }}">
+                            </div>
                         </div>
-                        <div>
-                            <label class="form-label" for="father_name">Name Of Father *</label>
-                            <input type="text" class="form-control-dark" id="father_name" name="meta[father_name]" value="{{ old('meta.father_name') }}" required>
+
+                        <!-- Right Column: Fixed-Width Top-Aligned Student Photo Card (175px Wide, Passport 3:4 Frame) -->
+                        <div style="width: 175px; flex-shrink: 0; align-self: flex-start; margin-top: -6px; border: 1px solid var(--panel-border); border-radius: 12px; padding: 0.55rem 0.65rem; background: rgba(255,255,255,0.03); text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center;">
+                            <h5 style="color: #00a65a; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; margin: 0 0 0.5rem 0; text-transform: uppercase;">STUDENT PHOTO</h5>
+                            
+                            <div id="add_photo_preview_box" style="width: 105px; height: 135px; border: 2px dashed #00a65a; border-radius: 10px; padding: 0.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; overflow: hidden; position: relative; margin: 0 auto 0.6rem auto;">
+                                <i id="add_photo_icon" class="bx bx-image-add" style="font-size: 2.2rem; color: #00a65a; margin-bottom: 0.2rem;"></i>
+                                <span id="add_photo_text" style="color: var(--text-muted); font-size: 0.7rem; font-weight: 500; text-align: center; line-height: 1.2;">No Photo<br>Uploaded</span>
+                                <img id="add_photo_img" src="" style="display: none; width: 100%; height: 100%; border-radius: 8px; object-fit: cover;">
+                                <button type="button" id="add_photo_trash_overlay" onclick="removeStudentPhoto('add')" style="display: none; position: absolute; top: 4px; right: 4px; background: #dc3545; color: #ffffff; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.3);" title="Remove Photo">
+                                    <i class="bx bx-trash" style="font-size: 0.82rem; color: #ffffff;"></i>
+                                </button>
+                            </div>
+
+                            <div style="display: flex; gap: 0.5rem; width: 100%;">
+                                <label for="add_student_photo" class="btn-custom" style="display: flex; align-items: center; justify-content: center; gap: 0.3rem; flex: 1; padding: 0.45rem 0.25rem; background: #00a65a !important; color: #ffffff !important; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.78rem; border: none; margin: 0; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,166,90,0.3);">
+                                    <i class="bx bx-upload" style="font-size: 0.9rem; color: #ffffff !important;"></i> <span style="color: #ffffff !important;">Upload</span>
+                                </label>
+                                <button type="button" id="add_photo_remove_btn" onclick="removeStudentPhoto('add')" style="display: none; align-items: center; justify-content: center; gap: 0.3rem; flex: 1; padding: 0.45rem 0.25rem; background: #dc3545 !important; color: #ffffff !important; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.78rem; border: none; margin: 0; transition: all 0.2s; box-shadow: 0 2px 6px rgba(220,53,69,0.3);" title="Delete Photo">
+                                    <i class="bx bx-trash" style="font-size: 0.9rem; color: #ffffff !important;"></i> <span style="color: #ffffff !important;">Delete</span>
+                                </button>
+                            </div>
+                            <input type="file" id="add_student_photo" name="student_photo" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 'add')">
+                            <input type="hidden" id="add_photo_hidden" name="meta[student_photo]" value="{{ old('meta.student_photo') }}">
                         </div>
                     </div>
 
+                    <!-- Flowing Form Fields below top split section -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="grandfather_name">Name Of GrandFather</label>
-                            <input type="text" class="form-control-dark" id="grandfather_name" name="meta[grandfather_name]" value="{{ old('meta.grandfather_name') }}">
-                        </div>
                         <div>
                             <label class="form-label" for="mother_name">Name Of Mother *</label>
                             <input type="text" class="form-control-dark" id="mother_name" name="meta[mother_name]" value="{{ old('meta.mother_name') }}" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="mothers_father_name">Name Of MothersFather</label>
                             <input type="text" class="form-control-dark" id="mothers_father_name" name="meta[mothers_father_name]" value="{{ old('meta.mothers_father_name') }}">
                         </div>
-                        <div>
-                            <label class="form-label" for="gender">Male/Female *</label>
-                            <select class="form-select-dark" id="gender" name="meta[gender]" required>
-                                <option value="Male" {{ old('meta.gender') === 'Male' ? 'selected' : '' }}>Male</option>
-                                <option value="Female" {{ old('meta.gender') === 'Female' ? 'selected' : '' }}>Female</option>
-                            </select>
-                        </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1.5fr 1fr 2fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="dob">Date of Birth *</label>
                             <input type="date" class="form-control-dark" id="dob" name="meta[dob]" value="{{ old('meta.dob') }}" required>
                         </div>
                         <div>
                             <label class="form-label" for="age">Age *</label>
-                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" required>
+                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
                         </div>
                         <div>
-                            <label class="form-label" for="aadhar_number">Aadhar Number *</label>
-                            <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" required>
+                            <label class="form-label" for="aadhar_number">Aadhaar Number *</label>
+                            <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" placeholder="XXXX XXXX XXXX" maxlength="14" required>
                         </div>
                     </div>
 
@@ -343,7 +381,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="father_death_date">Date of Death(Father) *</label>
-                            <input type="text" class="form-control-dark" id="father_death_date" name="meta[father_death_date]" placeholder="e.g. DD-MM-YYYY or Cause" value="{{ old('meta.father_death_date') }}" required>
+                            <input type="date" class="form-control-dark" id="father_death_date" name="meta[father_death_date]" value="{{ old('meta.father_death_date') }}" required>
                         </div>
                         <div>
                             <label class="form-label" for="father_death_cause">Cause Of Death *</label>
@@ -353,42 +391,57 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="mother_alive_status">Mother Alive/Not *</label>
-                            <input type="text" class="form-control-dark" id="mother_alive_status" name="meta[mother_alive_status]" placeholder="e.g. Yes / No" value="{{ old('meta.mother_alive_status') }}" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Mother Alive/Not *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; padding: 0.45rem 0;">
+                                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-size: 0.88rem; font-weight: 500;">
+                                    <input type="radio" id="mother_alive_yes" name="meta[mother_alive_status]" value="Yes" {{ old('meta.mother_alive_status', 'Yes') == 'Yes' ? 'checked' : '' }} onchange="toggleMotherDeathFieldsAdd()">
+                                    Yes
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-size: 0.88rem; font-weight: 500;">
+                                    <input type="radio" id="mother_alive_no" name="meta[mother_alive_status]" value="No" {{ old('meta.mother_alive_status') == 'No' ? 'checked' : '' }} onchange="toggleMotherDeathFieldsAdd()">
+                                    No
+                                </label>
+                            </div>
                         </div>
-                        <div>
-                            <label class="form-label" for="mother_death_date">If Not/Date of Death</label>
-                            <input type="text" class="form-control-dark" id="mother_death_date" name="meta[mother_death_date]" placeholder="e.g. Alive or DD-MM-YYYY" value="{{ old('meta.mother_death_date') }}">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="mother_death_cause">Cause Of Death (Mother)</label>
-                            <input type="text" class="form-control-dark" id="mother_death_cause" name="meta[mother_death_cause]" placeholder="e.g. N/A or Cause" value="{{ old('meta.mother_death_cause') }}">
-                        </div>
-                        <div>
+                        <div id="add_mother_remarried_wrapper" style="display: {{ old('meta.mother_alive_status', 'Yes') == 'Yes' ? 'block' : 'none' }};">
                             <label class="form-label" for="mother_remarried_status">Mother Re-Married/not *</label>
                             <input type="text" class="form-control-dark" id="mother_remarried_status" name="meta[mother_remarried_status]" placeholder="e.g. Yes / No" value="{{ old('meta.mother_remarried_status') }}" required>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <!-- Conditional Mother Death Details -->
+                    <div id="add_mother_death_fields" style="display: {{ old('meta.mother_alive_status') == 'No' ? 'grid' : 'none' }}; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="siblings_total">No Of Brothers And Sisters *</label>
-                            <input type="number" class="form-control-dark" id="siblings_total" name="meta[siblings_total]" value="{{ old('meta.siblings_total') }}" readonly required>
+                            <label class="form-label" for="mother_death_date">If Not/Date of Death</label>
+                            <input type="date" class="form-control-dark" id="mother_death_date" name="meta[mother_death_date]" value="{{ old('meta.mother_death_date') }}">
                         </div>
                         <div>
-                            <label class="form-label" for="siblings_male">Male *</label>
-                            <input type="number" class="form-control-dark" id="siblings_male" name="meta[siblings_male]" value="{{ old('meta.siblings_male') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="siblings_female">Female *</label>
-                            <input type="number" class="form-control-dark" id="siblings_female" name="meta[siblings_female]" value="{{ old('meta.siblings_female') }}" required>
+                            <label class="form-label" for="mother_death_cause">Cause Of Death (Mother)</label>
+                            <input type="text" class="form-control-dark" id="mother_death_cause" name="meta[mother_death_cause]" placeholder="e.g. Cause" value="{{ old('meta.mother_death_cause') }}">
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="siblings_male">Brothers *</label>
+                            <input type="number" class="form-control-dark" id="siblings_male" name="meta[siblings_male]" value="{{ old('meta.siblings_male') }}" min="0" placeholder="0" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="siblings_female">Sisters *</label>
+                            <input type="number" class="form-control-dark" id="siblings_female" name="meta[siblings_female]" value="{{ old('meta.siblings_female') }}" min="0" placeholder="0" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="siblings_total">No Of Brothers And Sisters *</label>
+                            <input type="number" class="form-control-dark" id="siblings_total" name="meta[siblings_total]" value="{{ old('meta.siblings_total', 0) }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label class="form-label" for="current_beneficiaries">Current Beneficiaries *</label>
+                        <input type="number" class="form-control-dark" id="current_beneficiaries" name="meta[current_beneficiaries]" value="{{ old('meta.current_beneficiaries') }}" min="0" placeholder="Enter number of current beneficiaries" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="monthly_income">Monthly Income (₹) *</label>
                             <input type="number" class="form-control-dark" id="monthly_income" name="meta[monthly_income]" value="{{ old('meta.monthly_income') }}" required>
@@ -398,6 +451,11 @@
                             <input type="number" class="form-control-dark" id="monthly_expense" name="meta[monthly_expense]" value="{{ old('meta.monthly_expense') }}" required>
                         </div>
                     </div>
+
+                    <div>
+                        <label class="form-label" for="sponsorship_details">Sponsorship Details If Any</label>
+                        <input type="text" class="form-control-dark" id="sponsorship_details" name="meta[sponsorship_details]" placeholder="Enter sponsorship info or 'None'" value="{{ old('meta.sponsorship_details') }}">
+                    </div>
                 </div>
 
                 <!-- Form Section 3: Education & Health Details -->
@@ -406,9 +464,12 @@
                     
                     <div style="margin-bottom: 1rem;">
                         <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Type Of House *</label>
-                        <div style="display: flex; gap: 1.5rem; align-items: center; margin-top: 0.5rem;">
+                        <div style="display: flex; gap: 1.5rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
                             <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer;">
                                 <input type="radio" name="meta[house_type]" value="Own House" required {{ old('meta.house_type') === 'Own House' ? 'checked' : '' }}> Own House
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer;">
+                                <input type="radio" name="meta[house_type]" value="Family House" required {{ old('meta.house_type') === 'Family House' ? 'checked' : '' }}> Family House
                             </label>
                             <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer;">
                                 <input type="radio" name="meta[house_type]" value="Rental" required {{ old('meta.house_type') === 'Rental' ? 'checked' : '' }}> Rental
@@ -424,12 +485,12 @@
 
                     <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="school_name">Name Of School *</label>
-                            <input type="text" class="form-control-dark" id="school_name" name="meta[school_name]" value="{{ old('meta.school_name') }}" required>
+                            <label class="form-label" for="school_name">Name Of School</label>
+                            <input type="text" class="form-control-dark" id="school_name" name="meta[school_name]" value="{{ old('meta.school_name') }}">
                         </div>
                         <div>
-                            <label class="form-label" for="school_class">Class *</label>
-                            <input type="text" class="form-control-dark" id="school_class" name="meta[school_class]" value="{{ old('meta.school_class') }}" required>
+                            <label class="form-label" for="school_class">Class</label>
+                            <input type="number" min="1" max="12" class="form-control-dark" id="school_class" name="meta[school_class]" value="{{ old('meta.school_class') }}" placeholder="e.g. 5">
                         </div>
                     </div>
 
@@ -440,7 +501,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="madrassa_class">Class</label>
-                            <input type="text" class="form-control-dark" id="madrassa_class" name="meta[madrassa_class]" value="{{ old('meta.madrassa_class') }}">
+                            <input type="number" min="1" max="12" class="form-control-dark" id="madrassa_class" name="meta[madrassa_class]" value="{{ old('meta.madrassa_class') }}" placeholder="e.g. 5">
                         </div>
                     </div>
 
@@ -449,14 +510,9 @@
                         <input type="text" class="form-control-dark" id="not_studying_reason" name="meta[not_studying_reason]" placeholder="Enter reason or 'N/A'" value="{{ old('meta.not_studying_reason') }}">
                     </div>
 
-                    <div style="margin-bottom: 1rem;">
+                    <div>
                         <label class="form-label" for="health_status">Health Status *</label>
                         <input type="text" class="form-control-dark" id="health_status" name="meta[health_status]" value="{{ old('meta.health_status') }}" required>
-                    </div>
-
-                    <div>
-                        <label class="form-label" for="sponsorship_details">Sponsorship Details If Any</label>
-                        <input type="text" class="form-control-dark" id="sponsorship_details" name="meta[sponsorship_details]" placeholder="Enter sponsorship info or 'None'" value="{{ old('meta.sponsorship_details') }}">
                     </div>
                 </div>
 
@@ -474,22 +530,78 @@
                     <input type="hidden" name="status" value="Pending">
                 </div>
 
-                <!-- Form Section 5: Cluster & Agency Details -->
-                <div style="margin-bottom: 2rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">5. Cluster & Agency Details (Optional)</h4>
+                <!-- Form Section 5: Recommendation Details -->
+                <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">5. Recommendation Details</h4>
+                    
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="cluster_id">Cluster</label>
-                            <select class="form-select-dark" id="cluster_id" name="cluster_id" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
-                                <option value="">-- Select Cluster --</option>
+                            <label class="form-label" for="recommender_name">Name</label>
+                            <input type="text" class="form-control-dark" id="recommender_name" name="meta[recommender_name]" value="{{ old('meta.recommender_name') }}" placeholder="Enter recommender's name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="recommender_org_select">Organization</label>
+                            <select class="form-select-dark" id="recommender_org_select" name="meta[recommender_org]" onchange="toggleRecommenderOrgAdd()" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                                <option value="">-- Select Organization --</option>
+                                <option value="KMJ" {{ old('meta.recommender_org') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
+                                <option value="SYS" {{ old('meta.recommender_org') == 'SYS' ? 'selected' : '' }}>SYS</option>
+                                <option value="SSF" {{ old('meta.recommender_org') == 'SSF' ? 'selected' : '' }}>SSF</option>
+                                <option value="Others" {{ old('meta.recommender_org') && !in_array(old('meta.recommender_org'), ['KMJ', 'SYS', 'SSF']) ? 'selected' : '' }}>Others</option>
+                            </select>
+                            <input type="text" class="form-control-dark" id="recommender_org_text" placeholder="Enter Organization Name" value="{{ old('meta.recommender_org') && !in_array(old('meta.recommender_org'), ['KMJ', 'SYS', 'SSF']) ? old('meta.recommender_org') : '' }}" style="display: {{ old('meta.recommender_org') && !in_array(old('meta.recommender_org'), ['KMJ', 'SYS', 'SSF']) ? 'block' : 'none' }}; margin-top: 0.5rem;" {{ old('meta.recommender_org') && !in_array(old('meta.recommender_org'), ['KMJ', 'SYS', 'SSF']) ? 'name=meta[recommender_org]' : 'disabled' }}>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="recommender_phone">Phone Number</label>
+                            <input type="tel" class="form-control-dark" id="recommender_phone" name="meta[recommender_phone]" value="{{ old('meta.recommender_phone') }}" placeholder="Enter 10-digit phone number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
+                        </div>
+                        <div>
+                            <label class="form-label" for="recommender_position">Position</label>
+                            <input type="text" class="form-control-dark" id="recommender_position" name="meta[recommender_position]" value="{{ old('meta.recommender_position') }}" placeholder="e.g. President, Secretary">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Section 6: Cluster & Agency Details -->
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">6. Cluster & Agency Details (Optional)</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="cluster_search_input">Cluster</label>
+                            <input type="text" class="form-control-dark" id="cluster_search_input" list="cluster_options_list" placeholder="Search or select cluster..." onchange="onClusterSelect(this, 'cluster_id')" oninput="onClusterSelect(this, 'cluster_id')" autocomplete="off">
+                            <datalist id="cluster_options_list">
                                 @foreach($clusters as $cl)
-                                    <option value="{{ $cl->id }}" {{ old('cluster_id') == $cl->id ? 'selected' : '' }}>{{ $cl->name }} ({{ $cl->code }})</option>
+                                    <option value="{{ $cl->name }} ({{ $cl->code }})" data-id="{{ $cl->id }}">
+                                @endforeach
+                            </datalist>
+                            <input type="hidden" id="cluster_id" name="cluster_id" value="{{ old('cluster_id') }}">
+                        </div>
+                        <div>
+                            <label class="form-label" for="agency_number">Agency Number</label>
+                            <input type="text" class="form-control-dark" id="agency_number" name="agency_number" value="{{ old('agency_number') }}" placeholder="Enter Agency Number">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="agency_name">Agency Name (Donor)</label>
+                            <select class="form-select-dark" id="agency_name" name="meta[agency_name]" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                                <option value="">-- Select Agency / Donor --</option>
+                                @php
+                                    $donorsList = $donors ?? \App\Models\Donor::orderBy('name', 'asc')->get();
+                                @endphp
+                                @foreach($donorsList as $dn)
+                                    <option value="{{ $dn->name }}" {{ old('meta.agency_name') == $dn->name ? 'selected' : '' }}>
+                                        {{ $dn->name }} {{ $dn->short_name ? '('.$dn->short_name.')' : '' }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="agency_number">Agency Number</label>
-                            <input type="text" class="form-control-dark" id="agency_number" name="agency_number" value="{{ old('agency_number') }}">
+                            <label class="form-label" for="application_date">Date</label>
+                            <input type="date" class="form-control-dark" id="application_date" name="meta[application_date]" value="{{ old('meta.application_date') }}">
                         </div>
                     </div>
                 </div>
@@ -512,7 +624,7 @@
                 <h2 class="panel-title" style="font-size: 1.25rem;">Edit Orphan Care Application</h2>
             </div>
 
-            <form id="editAppForm" action="" method="POST">
+            <form id="editAppForm" action="" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 
@@ -523,56 +635,89 @@
 
                 <!-- Form Section 1: Orphan & Family Details -->
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">1. Orphan & Family Details</h4>
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1.25rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">1. Orphan & Family Details</h4>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_applicant_name">Name Of Orphan *</label>
-                            <input type="text" class="form-control-dark" id="edit_applicant_name" name="applicant_name" required>
+                    <!-- Top Split Layout: Left (Inputs 2x2 Grid) | Right (Fixed 175px Student Photo Card) -->
+                    <div style="display: flex; gap: 1.25rem; margin-bottom: 1rem; align-items: flex-start; flex-wrap: wrap;">
+                        <!-- Left Column: 2x2 Inputs Grid -->
+                        <div style="flex: 1; min-width: 280px; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <label class="form-label" for="edit_applicant_name">Name Of Orphan *</label>
+                                <input type="text" class="form-control-dark" id="edit_applicant_name" name="applicant_name" required>
+                            </div>
+                            <div>
+                                <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Male/Female *</label>
+                                <div style="display: flex; gap: 1.5rem; align-items: center; padding: 0.45rem 0;">
+                                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-size: 0.88rem; font-weight: 500;">
+                                        <input type="radio" id="edit_gender_male" name="meta[gender]" value="Male">
+                                        Male
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-size: 0.88rem; font-weight: 500;">
+                                        <input type="radio" id="edit_gender_female" name="meta[gender]" value="Female">
+                                        Female
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label" for="edit_father_name">Name Of Father *</label>
+                                <input type="text" class="form-control-dark" id="edit_father_name" name="meta[father_name]" required>
+                            </div>
+                            <div>
+                                <label class="form-label" for="edit_grandfather_name">Name Of GrandFather</label>
+                                <input type="text" class="form-control-dark" id="edit_grandfather_name" name="meta[grandfather_name]">
+                            </div>
                         </div>
-                        <div>
-                            <label class="form-label" for="edit_father_name">Name Of Father *</label>
-                            <input type="text" class="form-control-dark" id="edit_father_name" name="meta[father_name]" required>
+
+                        <!-- Right Column: Fixed-Width Top-Aligned Student Photo Card (175px Wide, Passport 3:4 Frame) -->
+                        <div style="width: 175px; flex-shrink: 0; align-self: flex-start; margin-top: -6px; border: 1px solid var(--panel-border); border-radius: 12px; padding: 0.55rem 0.65rem; background: rgba(255,255,255,0.03); text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center;">
+                            <h5 style="color: #00a65a; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; margin: 0 0 0.5rem 0; text-transform: uppercase;">STUDENT PHOTO</h5>
+                            
+                            <div id="edit_photo_preview_box" style="width: 105px; height: 135px; border: 2px dashed #00a65a; border-radius: 10px; padding: 0.2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; overflow: hidden; position: relative; margin: 0 auto 0.6rem auto;">
+                                <i id="edit_photo_icon" class="bx bx-image-add" style="font-size: 2.2rem; color: #00a65a; margin-bottom: 0.2rem;"></i>
+                                <span id="edit_photo_text" style="color: var(--text-muted); font-size: 0.7rem; font-weight: 500; text-align: center; line-height: 1.2;">No Photo<br>Uploaded</span>
+                                <img id="edit_photo_img" src="" style="display: none; width: 100%; height: 100%; border-radius: 8px; object-fit: cover;">
+                                <button type="button" id="edit_photo_trash_overlay" onclick="removeStudentPhoto('edit')" style="display: none; position: absolute; top: 4px; right: 4px; background: #dc3545; color: #ffffff; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.3);" title="Remove Photo">
+                                    <i class="bx bx-trash" style="font-size: 0.82rem; color: #ffffff;"></i>
+                                </button>
+                            </div>
+
+                            <div style="display: flex; gap: 0.5rem; width: 100%;">
+                                <label for="edit_student_photo" class="btn-custom" style="display: flex; align-items: center; justify-content: center; gap: 0.3rem; flex: 1; padding: 0.45rem 0.25rem; background: #00a65a !important; color: #ffffff !important; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.78rem; border: none; margin: 0; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,166,90,0.3);">
+                                    <i class="bx bx-upload" style="font-size: 0.9rem; color: #ffffff !important;"></i> <span style="color: #ffffff !important;">Upload</span>
+                                </label>
+                                <button type="button" id="edit_photo_remove_btn" onclick="removeStudentPhoto('edit')" style="display: none; align-items: center; justify-content: center; gap: 0.3rem; flex: 1; padding: 0.45rem 0.25rem; background: #dc3545 !important; color: #ffffff !important; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.78rem; border: none; margin: 0; transition: all 0.2s; box-shadow: 0 2px 6px rgba(220,53,69,0.3);" title="Delete Photo">
+                                    <i class="bx bx-trash" style="font-size: 0.9rem; color: #ffffff !important;"></i> <span style="color: #ffffff !important;">Delete</span>
+                                </button>
+                            </div>
+                            <input type="file" id="edit_student_photo" name="student_photo" accept="image/*" style="display: none;" onchange="previewStudentPhoto(this, 'edit')">
+                            <input type="hidden" id="edit_photo_hidden" name="meta[student_photo]">
                         </div>
                     </div>
 
+                    <!-- Flowing Form Fields below top split section -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_grandfather_name">Name Of GrandFather</label>
-                            <input type="text" class="form-control-dark" id="edit_grandfather_name" name="meta[grandfather_name]">
-                        </div>
                         <div>
                             <label class="form-label" for="edit_mother_name">Name Of Mother *</label>
                             <input type="text" class="form-control-dark" id="edit_mother_name" name="meta[mother_name]" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_mothers_father_name">Name Of MothersFather</label>
                             <input type="text" class="form-control-dark" id="edit_mothers_father_name" name="meta[mothers_father_name]">
                         </div>
-                        <div>
-                            <label class="form-label" for="edit_gender">Male/Female *</label>
-                            <select class="form-select-dark" id="edit_gender" name="meta[gender]" required>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                            </select>
-                        </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1.5fr 1fr 2fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_dob">Date of Birth *</label>
                             <input type="date" class="form-control-dark" id="edit_dob" name="meta[dob]" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_age">Age *</label>
-                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" required>
+                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_aadhar_number">Aadhar Number *</label>
-                            <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" required>
+                            <label class="form-label" for="edit_aadhar_number">Aadhaar Number *</label>
+                            <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" placeholder="XXXX XXXX XXXX" maxlength="14" required>
                         </div>
                     </div>
 
@@ -595,7 +740,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_father_death_date">Date of Death(Father) *</label>
-                            <input type="text" class="form-control-dark" id="edit_father_death_date" name="meta[father_death_date]" required>
+                            <input type="date" class="form-control-dark" id="edit_father_death_date" name="meta[father_death_date]" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_father_death_cause">Cause Of Death *</label>
@@ -605,42 +750,57 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_mother_alive_status">Mother Alive/Not *</label>
-                            <input type="text" class="form-control-dark" id="edit_mother_alive_status" name="meta[mother_alive_status]" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Mother Alive/Not *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; padding: 0.45rem 0;">
+                                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-size: 0.88rem; font-weight: 500;">
+                                    <input type="radio" id="edit_mother_alive_yes" name="meta[mother_alive_status]" value="Yes" onchange="toggleMotherDeathFieldsEdit()">
+                                    Yes
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-size: 0.88rem; font-weight: 500;">
+                                    <input type="radio" id="edit_mother_alive_no" name="meta[mother_alive_status]" value="No" onchange="toggleMotherDeathFieldsEdit()">
+                                    No
+                                </label>
+                            </div>
                         </div>
-                        <div>
-                            <label class="form-label" for="edit_mother_death_date">If Not/Date of Death</label>
-                            <input type="text" class="form-control-dark" id="edit_mother_death_date" name="meta[mother_death_date]">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_mother_death_cause">Cause Of Death (Mother)</label>
-                            <input type="text" class="form-control-dark" id="edit_mother_death_cause" name="meta[mother_death_cause]">
-                        </div>
-                        <div>
+                        <div id="edit_mother_remarried_wrapper" style="display: block;">
                             <label class="form-label" for="edit_mother_remarried_status">Mother Re-Married/not *</label>
                             <input type="text" class="form-control-dark" id="edit_mother_remarried_status" name="meta[mother_remarried_status]" required>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <!-- Conditional Mother Death Details in Edit Modal -->
+                    <div id="edit_mother_death_fields" style="display: none; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_siblings_total">No Of Brothers And Sisters *</label>
-                            <input type="number" class="form-control-dark" id="edit_siblings_total" name="meta[siblings_total]" readonly required>
+                            <label class="form-label" for="edit_mother_death_date">If Not/Date of Death</label>
+                            <input type="date" class="form-control-dark" id="edit_mother_death_date" name="meta[mother_death_date]">
                         </div>
                         <div>
-                            <label class="form-label" for="edit_siblings_male">Male *</label>
-                            <input type="number" class="form-control-dark" id="edit_siblings_male" name="meta[siblings_male]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_siblings_female">Female *</label>
-                            <input type="number" class="form-control-dark" id="edit_siblings_female" name="meta[siblings_female]" required>
+                            <label class="form-label" for="edit_mother_death_cause">Cause Of Death (Mother)</label>
+                            <input type="text" class="form-control-dark" id="edit_mother_death_cause" name="meta[mother_death_cause]">
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_siblings_male">Brothers *</label>
+                            <input type="number" class="form-control-dark" id="edit_siblings_male" name="meta[siblings_male]" min="0" placeholder="0" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_siblings_female">Sisters *</label>
+                            <input type="number" class="form-control-dark" id="edit_siblings_female" name="meta[siblings_female]" min="0" placeholder="0" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_siblings_total">No Of Brothers And Sisters *</label>
+                            <input type="number" class="form-control-dark" id="edit_siblings_total" name="meta[siblings_total]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label class="form-label" for="edit_current_beneficiaries">Current Beneficiaries *</label>
+                        <input type="number" class="form-control-dark" id="edit_current_beneficiaries" name="meta[current_beneficiaries]" min="0" placeholder="Enter number of current beneficiaries" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_monthly_income">Monthly Income (₹) *</label>
                             <input type="number" class="form-control-dark" id="edit_monthly_income" name="meta[monthly_income]" required>
@@ -650,6 +810,11 @@
                             <input type="number" class="form-control-dark" id="edit_monthly_expense" name="meta[monthly_expense]" required>
                         </div>
                     </div>
+
+                    <div>
+                        <label class="form-label" for="edit_sponsorship_details">Sponsorship Details If Any</label>
+                        <input type="text" class="form-control-dark" id="edit_sponsorship_details" name="meta[sponsorship_details]">
+                    </div>
                 </div>
 
                 <!-- Form Section 3: Education & Health Details -->
@@ -658,9 +823,12 @@
                     
                     <div style="margin-bottom: 1rem;">
                         <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Type Of House *</label>
-                        <div style="display: flex; gap: 1.5rem; align-items: center; margin-top: 0.5rem;">
+                        <div style="display: flex; gap: 1.5rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
                             <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer;">
                                 <input type="radio" id="edit_house_own" name="meta[house_type]" value="Own House" required> Own House
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer;">
+                                <input type="radio" id="edit_house_family" name="meta[house_type]" value="Family House" required> Family House
                             </label>
                             <label style="display: flex; align-items: center; gap: 0.5rem; color: #ffffff; cursor: pointer;">
                                 <input type="radio" id="edit_house_rental" name="meta[house_type]" value="Rental" required> Rental
@@ -676,12 +844,12 @@
 
                     <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_school_name">Name Of School *</label>
-                            <input type="text" class="form-control-dark" id="edit_school_name" name="meta[school_name]" required>
+                            <label class="form-label" for="edit_school_name">Name Of School</label>
+                            <input type="text" class="form-control-dark" id="edit_school_name" name="meta[school_name]">
                         </div>
                         <div>
-                            <label class="form-label" for="edit_school_class">Class *</label>
-                            <input type="text" class="form-control-dark" id="edit_school_class" name="meta[school_class]" required>
+                            <label class="form-label" for="edit_school_class">Class</label>
+                            <input type="number" min="1" max="12" class="form-control-dark" id="edit_school_class" name="meta[school_class]" placeholder="e.g. 5">
                         </div>
                     </div>
 
@@ -692,7 +860,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_madrassa_class">Class</label>
-                            <input type="text" class="form-control-dark" id="edit_madrassa_class" name="meta[madrassa_class]">
+                            <input type="number" min="1" max="12" class="form-control-dark" id="edit_madrassa_class" name="meta[madrassa_class]" placeholder="e.g. 5">
                         </div>
                     </div>
 
@@ -701,14 +869,9 @@
                         <input type="text" class="form-control-dark" id="edit_not_studying_reason" name="meta[not_studying_reason]">
                     </div>
 
-                    <div style="margin-bottom: 1rem;">
+                    <div>
                         <label class="form-label" for="edit_health_status">Health Status *</label>
                         <input type="text" class="form-control-dark" id="edit_health_status" name="meta[health_status]" required>
-                    </div>
-
-                    <div>
-                        <label class="form-label" for="edit_sponsorship_details">Sponsorship Details If Any</label>
-                        <input type="text" class="form-control-dark" id="edit_sponsorship_details" name="meta[sponsorship_details]">
                     </div>
                 </div>
 
@@ -726,22 +889,78 @@
                     </div>
                 </div>
 
-                <!-- Form Section 5: Cluster & Agency Details -->
-                <div style="margin-bottom: 2rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">5. Cluster & Agency Details (Optional)</h4>
+                <!-- Form Section 5: Recommendation Details -->
+                <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">5. Recommendation Details</h4>
+                    
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_cluster_id">Cluster</label>
-                            <select class="form-select-dark" id="edit_cluster_id" name="cluster_id" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
-                                <option value="">-- Select Cluster --</option>
+                            <label class="form-label" for="edit_recommender_name">Name</label>
+                            <input type="text" class="form-control-dark" id="edit_recommender_name" name="meta[recommender_name]" placeholder="Enter recommender's name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_recommender_org_select">Organization</label>
+                            <select class="form-select-dark" id="edit_recommender_org_select" name="meta[recommender_org]" onchange="toggleRecommenderOrgEdit()" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                                <option value="">-- Select Organization --</option>
+                                <option value="KMJ">KMJ</option>
+                                <option value="SYS">SYS</option>
+                                <option value="SSF">SSF</option>
+                                <option value="Others">Others</option>
+                            </select>
+                            <input type="text" class="form-control-dark" id="edit_recommender_org_text" placeholder="Enter Organization Name" style="display: none; margin-top: 0.5rem;" disabled>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_recommender_phone">Phone Number</label>
+                            <input type="tel" class="form-control-dark" id="edit_recommender_phone" name="meta[recommender_phone]" placeholder="Enter 10-digit phone number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_recommender_position">Position</label>
+                            <input type="text" class="form-control-dark" id="edit_recommender_position" name="meta[recommender_position]" placeholder="e.g. President, Secretary">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Section 6: Cluster & Agency Details -->
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">6. Cluster & Agency Details (Optional)</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_cluster_search_input">Cluster</label>
+                            <input type="text" class="form-control-dark" id="edit_cluster_search_input" list="edit_cluster_options_list" placeholder="Search or select cluster..." onchange="onClusterSelect(this, 'edit_cluster_id')" oninput="onClusterSelect(this, 'edit_cluster_id')" autocomplete="off">
+                            <datalist id="edit_cluster_options_list">
                                 @foreach($clusters as $cl)
-                                    <option value="{{ $cl->id }}">{{ $cl->name }} ({{ $cl->code }})</option>
+                                    <option value="{{ $cl->name }} ({{ $cl->code }})" data-id="{{ $cl->id }}">
+                                @endforeach
+                            </datalist>
+                            <input type="hidden" id="edit_cluster_id" name="cluster_id">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_agency_number">Agency Number</label>
+                            <input type="text" class="form-control-dark" id="edit_agency_number" name="agency_number" placeholder="Enter Agency Number">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_agency_name">Agency Name (Donor)</label>
+                            <select class="form-select-dark" id="edit_agency_name" name="meta[agency_name]" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                                <option value="">-- Select Agency / Donor --</option>
+                                @php
+                                    $donorsList = $donors ?? \App\Models\Donor::orderBy('name', 'asc')->get();
+                                @endphp
+                                @foreach($donorsList as $dn)
+                                    <option value="{{ $dn->name }}">
+                                        {{ $dn->name }} {{ $dn->short_name ? '('.$dn->short_name.')' : '' }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_agency_number">Agency Number</label>
-                            <input type="text" class="form-control-dark" id="edit_agency_number" name="agency_number">
+                            <label class="form-label" for="edit_application_date">Date</label>
+                            <input type="date" class="form-control-dark" id="edit_application_date" name="meta[application_date]">
                         </div>
                     </div>
                 </div>
@@ -775,9 +994,25 @@
                         @endforeach
                     </select>
                 </div>
-                <div style="margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 1.25rem;">
                     <label class="form-label" for="approve_agency_number">Agency Number *</label>
-                    <input type="text" id="approve_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" required>
+                    <input type="text" id="approve_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" required placeholder="Enter Agency Number">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label class="form-label" for="approve_agency_name">Agency Name (Donor)</label>
+                        <select id="approve_agency_name" name="meta[agency_name]" class="form-select-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                            <option value="">-- Select Agency --</option>
+                            @foreach(($donors ?? []) as $d)
+                                <option value="{{ $d->name }}">{{ $d->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="approve_application_date">Application Date</label>
+                        <input type="date" id="approve_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" value="{{ date('Y-m-d') }}">
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -804,6 +1039,10 @@
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
+            if (appItem && appItem.status === 'Approved') {
+                alert('Approved applications cannot be edited.');
+                return;
+            }
             const form = document.getElementById('editAppForm');
             form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
@@ -813,11 +1052,41 @@
 
             // Meta fields mapping
             const meta = appItem.meta || {};
+            const photoVal = meta.student_photo || '';
+            const editImg = document.getElementById('edit_photo_img');
+            const editIcon = document.getElementById('edit_photo_icon');
+            const editText = document.getElementById('edit_photo_text');
+            const editHidden = document.getElementById('edit_photo_hidden');
+
+            if (photoVal) {
+                if (editImg) { editImg.src = photoVal; editImg.style.display = 'block'; }
+                if (editIcon) editIcon.style.display = 'none';
+                if (editText) editText.style.display = 'none';
+                if (editHidden) editHidden.value = photoVal;
+                const removeBtn = document.getElementById('edit_photo_remove_btn');
+                const trashOverlay = document.getElementById('edit_photo_trash_overlay');
+                if (removeBtn) removeBtn.style.display = 'inline-flex';
+                if (trashOverlay) trashOverlay.style.display = 'flex';
+            } else {
+                if (editImg) { editImg.src = ''; editImg.style.display = 'none'; }
+                if (editIcon) editIcon.style.display = 'block';
+                if (editText) editText.style.display = 'block';
+                if (editHidden) editHidden.value = '';
+                const removeBtn = document.getElementById('edit_photo_remove_btn');
+                const trashOverlay = document.getElementById('edit_photo_trash_overlay');
+                if (removeBtn) removeBtn.style.display = 'none';
+                if (trashOverlay) trashOverlay.style.display = 'none';
+            }
+
             document.getElementById('edit_father_name').value = meta.father_name || '';
             document.getElementById('edit_grandfather_name').value = meta.grandfather_name || '';
             document.getElementById('edit_mother_name').value = meta.mother_name || '';
             document.getElementById('edit_mothers_father_name').value = meta.mothers_father_name || '';
-            document.getElementById('edit_gender').value = meta.gender || 'Male';
+            if (meta.gender === 'Female' || meta.gender === 'female') {
+                document.getElementById('edit_gender_female').checked = true;
+            } else {
+                document.getElementById('edit_gender_male').checked = true;
+            }
             document.getElementById('edit_dob').value = meta.dob || '';
             document.getElementById('edit_age').value = meta.age || '';
             document.getElementById('edit_aadhar_number').value = meta.aadhar_number || '';
@@ -826,19 +1095,30 @@
 
             document.getElementById('edit_father_death_date').value = meta.father_death_date || '';
             document.getElementById('edit_father_death_cause').value = meta.father_death_cause || '';
-            document.getElementById('edit_mother_alive_status').value = meta.mother_alive_status || '';
+            
+            if (meta.mother_alive_status === 'No' || meta.mother_alive_status === 'no' || meta.mother_alive_status === 'Not' || meta.mother_alive_status === 'not') {
+                document.getElementById('edit_mother_alive_no').checked = true;
+            } else {
+                document.getElementById('edit_mother_alive_yes').checked = true;
+            }
+            toggleMotherDeathFieldsEdit();
+
             document.getElementById('edit_mother_death_date').value = meta.mother_death_date || '';
             document.getElementById('edit_mother_death_cause').value = meta.mother_death_cause || '';
+            
             document.getElementById('edit_mother_remarried_status').value = meta.mother_remarried_status || '';
             document.getElementById('edit_siblings_male').value = meta.siblings_male || '';
             document.getElementById('edit_siblings_female').value = meta.siblings_female || '';
             document.getElementById('edit_siblings_total').value = meta.siblings_total || '';
+            document.getElementById('edit_current_beneficiaries').value = meta.current_beneficiaries || '';
             document.getElementById('edit_monthly_income').value = meta.monthly_income || '';
             document.getElementById('edit_monthly_expense').value = meta.monthly_expense || '';
 
             // Radio buttons mapping
             if (meta.house_type === 'Own House') {
                 document.getElementById('edit_house_own').checked = true;
+            } else if (meta.house_type === 'Family House') {
+                document.getElementById('edit_house_family').checked = true;
             } else if (meta.house_type === 'Rental') {
                 document.getElementById('edit_house_rental').checked = true;
             } else if (meta.house_type === 'Flat') {
@@ -866,6 +1146,7 @@
             const pinCode = meta.pin_code || addr.pin_code || appItem.pin_code || '';
             const mob1 = meta.mobile_1 || meta.mobile || addr.contact_number_1 || addr.mobile_1 || appItem.mobile_1 || '';
             const mob2 = meta.mobile_2 || addr.contact_number_2 || addr.mobile_2 || appItem.mobile_2 || '';
+            const whatsappNum = meta.whatsapp_number || addr.whatsapp_number || appItem.whatsapp_number || '';
 
             if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = houseName; }
             if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = placeName; }
@@ -877,8 +1158,40 @@
             if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = pinCode; }
             if (document.getElementById('edit_mobile_1')) { document.getElementById('edit_mobile_1').value = mob1; }
             if (document.getElementById('edit_mobile_2')) { document.getElementById('edit_mobile_2').value = mob2; }
-            document.getElementById('edit_cluster_id').value = appItem.cluster_id || '';
+            if (document.getElementById('edit_whatsapp_number')) { document.getElementById('edit_whatsapp_number').value = whatsappNum; }
+            document.getElementById('edit_recommender_name').value = meta.recommender_name || '';
+            const recommenderOrgVal = meta.recommender_org || '';
+            const editOrgSelect = document.getElementById('edit_recommender_org_select');
+            const editOrgText = document.getElementById('edit_recommender_org_text');
+            if (editOrgSelect && editOrgText) {
+                if (['KMJ', 'SYS', 'SSF', ''].includes(recommenderOrgVal)) {
+                    editOrgSelect.value = recommenderOrgVal;
+                    editOrgText.value = '';
+                } else {
+                    editOrgSelect.value = 'Others';
+                    editOrgText.value = recommenderOrgVal;
+                }
+            }
+            toggleRecommenderOrgEdit();
+            document.getElementById('edit_recommender_phone').value = meta.recommender_phone || '';
+            document.getElementById('edit_recommender_position').value = meta.recommender_position || '';
+            const clusterId = appItem.cluster_id || '';
+            document.getElementById('edit_cluster_id').value = clusterId;
+            const editClusterDatalist = document.getElementById('edit_cluster_options_list');
+            if (editClusterDatalist) {
+                let foundText = '';
+                const options = editClusterDatalist.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].getAttribute('data-id') == clusterId) {
+                        foundText = options[i].value;
+                        break;
+                    }
+                }
+                document.getElementById('edit_cluster_search_input').value = foundText;
+            }
             document.getElementById('edit_agency_number').value = appItem.agency_number || '';
+            if (document.getElementById('edit_agency_name')) { document.getElementById('edit_agency_name').value = meta.agency_name || ''; }
+            if (document.getElementById('edit_application_date')) { document.getElementById('edit_application_date').value = meta.application_date || ''; }
 
             document.getElementById('editAppModal').style.display = 'flex';
         }
@@ -903,7 +1216,7 @@
 
                 if (appItem.status === 'Pending') {
                     statusHtml = `
-                        <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
+                        <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}', '${meta.agency_name || ''}', '${meta.application_date || '{{ date("Y-m-d") }}'}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
                             <i class="bx bx-check"></i> Approve
                         </button>
                         <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
@@ -914,14 +1227,16 @@
                         </form>
                     `;
                 } else if (appItem.status === 'Approved') {
-                    statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-x"></i> Reject Application
-                            </button>
-                        </form>
-                    `;
+                    if (appItem.sponsor_status !== 'Sponsored') {
+                        statusHtml = `
+                            <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
+                                <input type="hidden" name="_token" value="${csrfToken}">
+                                <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                    <i class="bx bx-x"></i> Reject Application
+                                </button>
+                            </form>
+                        `;
+                    }
                 } else if (appItem.status === 'Rejected') {
                     statusHtml = `
                         <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
@@ -944,6 +1259,7 @@
             const pinCode = meta.pin_code || addr.pin_code || appItem.pin_code;
             const mob1 = meta.mobile_1 || meta.mobile || addr.contact_number_1 || addr.mobile_1 || appItem.mobile_1;
             const mob2 = meta.mobile_2 || addr.contact_number_2 || addr.mobile_2 || appItem.mobile_2;
+            const whatsappNum = meta.whatsapp_number || addr.whatsapp_number || appItem.whatsapp_number;
 
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
             
@@ -952,26 +1268,49 @@
                     <!-- Col 1 -->
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Orphan & Family Details</h4>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Orphan Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(appItem.applicant_name)} (${formatVal(meta.gender)})</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Date of Birth / Age:</td><td>${formatVal(meta.dob)} / ${formatVal(meta.age)} yrs</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Aadhar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Grandfather's Name:</td><td>${formatVal(meta.grandfather_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Father Name:</td><td>${formatVal(meta.mothers_father_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Guardian / Relation:</td><td>${formatVal(meta.guardian_name)} (${formatVal(meta.guardian_relation)})</td></tr>
-                        </table>
+                        <div style="display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <div style="flex: 1; min-width: 0;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 135px;">Orphan Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(appItem.applicant_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Gender:</td><td>${formatVal(meta.gender)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Date of Birth:</td><td>${formatVal(meta.dob)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Age:</td><td>${formatVal(meta.age)} yrs</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Aadhar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Grandfather's Name:</td><td>${formatVal(meta.grandfather_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Father Name:</td><td>${formatVal(meta.mothers_father_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Guardian Name:</td><td>${formatVal(meta.guardian_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Guardian Relation:</td><td>${formatVal(meta.guardian_relation)}</td></tr>
+                                </table>
+                            </div>
+                            <div style="width: 112px; flex-shrink: 0; align-self: flex-start; margin-top: 0px; border: 1px solid var(--panel-border); border-radius: 10px; padding: 0.4rem 0.25rem; background: rgba(255,255,255,0.03); text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center;">
+                                <h5 style="color: #00a65a; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.04em; margin: 0 0 0.3rem 0; text-transform: uppercase;">STUDENT PHOTO</h5>
+                                <div style="width: 80px; height: 104px; border: 2px dashed #00a65a; border-radius: 8px; padding: 0.15rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; overflow: hidden; position: relative;">
+                                    ${meta.student_photo ? `
+                                        <img src="${meta.student_photo}" style="width: 100%; height: 100%; border-radius: 6px; object-fit: cover;">
+                                    ` : `
+                                        <i class="bx bx-image" style="font-size: 1.5rem; color: #00a65a; margin-bottom: 0.1rem;"></i>
+                                        <span style="color: var(--text-muted); font-size: 0.6rem; font-weight: 500; text-align: center; line-height: 1.1;">No Photo<br>Uploaded</span>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Parental Death & Sibling Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Father's Death Date:</td><td>${formatVal(meta.father_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(${formatVal(meta.father_death_cause)})</span></td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother Alive Status:</td><td>${formatVal(meta.mother_alive_status)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Death Date:</td><td>${formatVal(meta.mother_death_date)} <span style="font-size: 0.8rem; color: var(--text-muted);">(${formatVal(meta.mother_death_cause)})</span></td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother Re-Married?</td><td>${formatVal(meta.mother_remarried_status)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Brothers & Sisters:</td><td>Total: ${formatVal(meta.siblings_total)} (M: ${formatVal(meta.siblings_male)} / F: ${formatVal(meta.siblings_female)})</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Expense:</td><td>${meta.monthly_expense ? '₹' + Number(meta.monthly_expense).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 140px;">Father's Death Date:</td><td>${formatVal(meta.father_death_date)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Father's Death Cause:</td><td>${formatVal(meta.father_death_cause)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother Alive Status:</td><td>${formatVal(meta.mother_alive_status)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Death Date:</td><td>${formatVal(meta.mother_death_date)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Death Cause:</td><td>${formatVal(meta.mother_death_cause)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother Re-Married?</td><td>${formatVal(meta.mother_remarried_status)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Brothers:</td><td>${formatVal(meta.siblings_male)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Sisters:</td><td>${formatVal(meta.siblings_female)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Total Siblings:</td><td>${formatVal(meta.siblings_total)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Current Beneficiaries:</td><td>${formatVal(meta.current_beneficiaries)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Monthly Expense:</td><td>${meta.monthly_expense ? '₹' + Number(meta.monthly_expense).toLocaleString() : 'N/A'}</td></tr>
                         </table>
                     </div>
 
@@ -979,22 +1318,38 @@
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Education & House Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Type Of House:</td><td>${formatVal(meta.house_type)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">School Name:</td><td>${formatVal(meta.school_name)} (Class: ${formatVal(meta.school_class)})</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Madrassa Name:</td><td>${formatVal(meta.madrassa_name)} (Class: ${formatVal(meta.madrassa_class)})</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">If Not Studying, Reason:</td><td>${formatVal(meta.not_studying_reason)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Health Status:</td><td>${formatVal(meta.health_status)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Sponsorship Details:</td><td>${formatVal(meta.sponsorship_details)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 140px;">Type Of House:</td><td>${formatVal(meta.house_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">School Name:</td><td>${formatVal(meta.school_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">School Class:</td><td>${formatVal(meta.school_class)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Madrassa Name:</td><td>${formatVal(meta.madrassa_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Madrassa Class:</td><td>${formatVal(meta.madrassa_class)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">If Not Studying, Reason:</td><td>${formatVal(meta.not_studying_reason)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Health Status:</td><td>${formatVal(meta.health_status)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Sponsorship Details:</td><td>${formatVal(meta.sponsorship_details)}</td></tr>
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">House Name / Place:</td><td>${formatVal(houseName)} / ${formatVal(placeName)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village / P.O.:</td><td>${formatVal(villageName)} / ${formatVal(postOffice)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath / District:</td><td>${formatVal(panchayatName)} / ${formatVal(districtName)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State / Pin Code:</td><td>${formatVal(stateName)} / ${formatVal(pinCode)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile 1 / Mobile 2:</td><td>${formatVal(mob1)} / ${formatVal(mob2)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 140px;">House Name:</td><td>${formatVal(houseName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Place:</td><td>${formatVal(placeName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Village:</td><td>${formatVal(villageName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Post Office:</td><td>${formatVal(postOffice)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(panchayatName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">District:</td><td>${formatVal(districtName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">State:</td><td>${formatVal(stateName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(pinCode)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mobile 1:</td><td>${formatVal(mob1)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mobile 2:</td><td>${formatVal(mob2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">WhatsApp Number:</td><td>${formatVal(whatsappNum)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
+                        </table>
+
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">5. Recommendation Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 140px;">Recommender Name:</td><td>${formatVal(meta.recommender_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Organization:</td><td>${formatVal(meta.recommender_org)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Phone Number:</td><td>${formatVal(meta.recommender_phone)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Position:</td><td>${formatVal(meta.recommender_position)}</td></tr>
                         </table>
                     </div>
                 </div>
@@ -1011,7 +1366,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                                    <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Assigned Cluster:</td>
+                                    <td style="padding: 0.5rem 0; font-weight: 600; width: 160px; color: var(--text-muted);">Assigned Cluster:</td>
                                     <td id="modal-cluster-display-name" style="font-weight: 600; color: #ffffff;">
                                         ${appItem.cluster ? `${appItem.cluster.name} (${appItem.cluster.code})` : '<span style="color: var(--text-muted); font-style: italic;">Not assigned</span>'}
                                     </td>
@@ -1020,6 +1375,18 @@
                                     <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Number:</td>
                                     <td id="modal-agency-display-number" style="font-weight: 600; color: #ffffff;">
                                         ${appItem.agency_number ? appItem.agency_number : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Name (Donor):</td>
+                                    <td id="modal-agency-display-name" style="font-weight: 600; color: #ffffff;">
+                                        ${meta.agency_name ? meta.agency_name : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Application Date:</td>
+                                    <td id="modal-agency-display-date" style="font-weight: 600; color: #ffffff;">
+                                        ${meta.application_date ? meta.application_date : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
                                     </td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
@@ -1032,7 +1399,7 @@
                                 </tr>
                             </table>
                             
-                            @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
+                            @if(Auth::user() && Auth::user()->isSuperAdmin())
                             <button onclick="toggleClusterEditForm()" class="btn-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
                                 <i class="bx bx-edit"></i> Edit
                             </button>
@@ -1040,7 +1407,7 @@
                         </div>
                     </div>
 
-                    @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
+                    @if(Auth::user() && Auth::user()->isSuperAdmin())
                     <div id="modal-cluster-edit-form" style="display: none;">
                         <form id="save-cluster-form" action="{{ url('admin/applications') }}/${appItem.id}/update-cluster" method="POST" onsubmit="submitClusterForm(event, ${appItem.id})">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -1056,6 +1423,21 @@
                                 <div>
                                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Agency Number *</label>
                                     <input type="text" id="assign_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" required value="${appItem.agency_number || ''}">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Agency Name (Donor)</label>
+                                    <select id="assign_agency_name" name="meta[agency_name]" class="form-select-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                                        <option value="">-- Select Agency --</option>
+                                        @foreach(($donors ?? []) as $d)
+                                            <option value="{{ $d->name }}" ${meta.agency_name == '{{ addslashes($d->name) }}' ? 'selected' : ''}>{{ $d->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Application Date</label>
+                                    <input type="date" id="assign_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="${meta.application_date || ''}">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
@@ -1078,7 +1460,7 @@
                 ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                     <h5 style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Rejected Reason:</h5>
-                    <p style="color: #ffffff; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); min-height: 50px;">
+                    <p style="color: #ef4444; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.08); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3); min-height: 50px; font-weight: 600;">
                         ${appItem.rejected_reason || meta.rejected_reason}
                     </p>
                 </div>
@@ -1086,6 +1468,10 @@
             `;
             
             document.getElementById('details_content').innerHTML = html;
+            const editBtn = document.getElementById('modal_edit_btn');
+            const deleteBtn = document.getElementById('modal_delete_btn');
+            if (editBtn) editBtn.style.display = (appItem.status === 'Approved') ? 'none' : 'inline-block';
+            if (deleteBtn) deleteBtn.style.display = (appItem.status === 'Approved') ? 'none' : 'inline-block';
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
@@ -1100,6 +1486,10 @@
 
         function deleteFromDetails() {
             if (currentDetailsAppItem) {
+                if (currentDetailsAppItem.status === 'Approved') {
+                    alert('Approved applications cannot be deleted.');
+                    return;
+                }
                 showCustomConfirm('Are you sure you want to delete this application? This action cannot be undone.', function() {
                     const form = document.createElement('form');
                     form.method = 'POST';
@@ -1154,8 +1544,134 @@
             });
         }
 
+        function toggleMotherDeathFieldsAdd() {
+            const noRadio = document.getElementById('mother_alive_no');
+            const deathFields = document.getElementById('add_mother_death_fields');
+            const remarriedWrapper = document.getElementById('add_mother_remarried_wrapper');
+            if (noRadio && noRadio.checked) {
+                if (deathFields) deathFields.style.display = 'grid';
+                if (remarriedWrapper) remarriedWrapper.style.display = 'none';
+            } else {
+                if (deathFields) deathFields.style.display = 'none';
+                if (remarriedWrapper) remarriedWrapper.style.display = 'block';
+            }
+        }
+
+        function toggleMotherDeathFieldsEdit() {
+            const noRadio = document.getElementById('edit_mother_alive_no');
+            const deathFields = document.getElementById('edit_mother_death_fields');
+            const remarriedWrapper = document.getElementById('edit_mother_remarried_wrapper');
+            if (noRadio && noRadio.checked) {
+                if (deathFields) deathFields.style.display = 'grid';
+                if (remarriedWrapper) remarriedWrapper.style.display = 'none';
+            } else {
+                if (deathFields) deathFields.style.display = 'none';
+                if (remarriedWrapper) remarriedWrapper.style.display = 'block';
+            }
+        }
+
+        function toggleRecommenderOrgAdd() {
+            const orgSelect = document.getElementById('recommender_org_select');
+            const orgText = document.getElementById('recommender_org_text');
+            if (!orgSelect || !orgText) return;
+
+            if (orgSelect.value === 'Others') {
+                orgText.style.display = 'block';
+                orgText.disabled = false;
+                orgText.setAttribute('name', 'meta[recommender_org]');
+                orgSelect.removeAttribute('name');
+                orgText.focus();
+            } else {
+                orgText.style.display = 'none';
+                orgText.disabled = true;
+                orgText.removeAttribute('name');
+                orgSelect.setAttribute('name', 'meta[recommender_org]');
+            }
+        }
+
+        function toggleRecommenderOrgEdit() {
+            const orgSelect = document.getElementById('edit_recommender_org_select');
+            const orgText = document.getElementById('edit_recommender_org_text');
+            if (!orgSelect || !orgText) return;
+
+            if (orgSelect.value === 'Others') {
+                orgText.style.display = 'block';
+                orgText.disabled = false;
+                orgText.setAttribute('name', 'meta[recommender_org]');
+                orgSelect.removeAttribute('name');
+            } else {
+                orgText.style.display = 'none';
+                orgText.disabled = true;
+                orgText.removeAttribute('name');
+                orgSelect.setAttribute('name', 'meta[recommender_org]');
+            }
+        }
+
+        function previewStudentPhoto(input, type) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewImg = document.getElementById(type + '_photo_img');
+                    const icon = document.getElementById(type + '_photo_icon');
+                    const text = document.getElementById(type + '_photo_text');
+                    const hidden = document.getElementById(type + '_photo_hidden');
+                    const removeBtn = document.getElementById(type + '_photo_remove_btn');
+                    const trashOverlay = document.getElementById(type + '_photo_trash_overlay');
+
+                    if (previewImg) {
+                        previewImg.src = e.target.result;
+                        previewImg.style.display = 'block';
+                    }
+                    if (icon) icon.style.display = 'none';
+                    if (text) text.style.display = 'none';
+                    if (hidden) hidden.value = e.target.result;
+                    if (removeBtn) removeBtn.style.display = 'inline-flex';
+                    if (trashOverlay) trashOverlay.style.display = 'flex';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function removeStudentPhoto(type) {
+            const fileInput = document.getElementById(type + '_student_photo');
+            const previewImg = document.getElementById(type + '_photo_img');
+            const icon = document.getElementById(type + '_photo_icon');
+            const text = document.getElementById(type + '_photo_text');
+            const hidden = document.getElementById(type + '_photo_hidden');
+            const removeBtn = document.getElementById(type + '_photo_remove_btn');
+            const trashOverlay = document.getElementById(type + '_photo_trash_overlay');
+
+            if (fileInput) fileInput.value = '';
+            if (previewImg) { previewImg.src = ''; previewImg.style.display = 'none'; }
+            if (icon) icon.style.display = 'block';
+            if (text) text.style.display = 'block';
+            if (hidden) hidden.value = '';
+            if (removeBtn) removeBtn.style.display = 'none';
+            if (trashOverlay) trashOverlay.style.display = 'none';
+        }
+
+        function onClusterSelect(input, hiddenId) {
+            const hiddenInput = document.getElementById(hiddenId);
+            if (!hiddenInput) return;
+            const val = input.value;
+            const datalist = document.getElementById(input.getAttribute('list'));
+            if (!datalist) return;
+            
+            let matchedId = '';
+            const options = datalist.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === val) {
+                    matchedId = options[i].getAttribute('data-id');
+                    break;
+                }
+            }
+            hiddenInput.value = matchedId;
+        }
+
         // Realtime calculation of siblings count and age from Date of Birth
         document.addEventListener("DOMContentLoaded", function() {
+            toggleMotherDeathFieldsAdd();
+            toggleMotherDeathFieldsEdit();
             // Age calculation helper
             function calcAge(dobVal) {
                 if (!dobVal) return '';
@@ -1227,12 +1743,14 @@
                 openModal();
             });
         @endif
-        function openApproveModal(appId, clusterId = '', agencyNumber = '') {
+        function openApproveModal(appId, clusterId = '', agencyNumber = '', agencyName = '', appDate = '') {
             const form = document.getElementById('approveAppForm');
             form.action = "{{ url('admin/applications/orphan-care') }}/" + appId + "/approve";
             
-            document.getElementById('approve_cluster_id').value = clusterId || '';
-            document.getElementById('approve_agency_number').value = agencyNumber || '';
+            if (document.getElementById('approve_cluster_id')) document.getElementById('approve_cluster_id').value = clusterId || '';
+            if (document.getElementById('approve_agency_number')) document.getElementById('approve_agency_number').value = agencyNumber || '';
+            if (document.getElementById('approve_agency_name')) document.getElementById('approve_agency_name').value = agencyName || '';
+            if (document.getElementById('approve_application_date')) document.getElementById('approve_application_date').value = appDate || '{{ date("Y-m-d") }}';
             
             document.getElementById('approveAppModal').style.display = 'flex';
         }

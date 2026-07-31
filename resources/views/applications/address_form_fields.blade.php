@@ -43,18 +43,22 @@
     </div>
     <div>
         <label class="form-label" for="{{ $prefix }}pin_code">Pin Code *</label>
-        <input type="text" class="form-control-dark" id="{{ $prefix }}pin_code" name="meta[pin_code]" placeholder="Enter pin code" required>
+        <input type="tel" class="form-control-dark" id="{{ $prefix }}pin_code" name="meta[pin_code]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
     <div>
         <label class="form-label" for="{{ $prefix }}mobile_1">Mobile 1 *</label>
-        <input type="text" class="form-control-dark" id="{{ $prefix }}mobile_1" name="meta[mobile_1]" placeholder="Enter mobile 1" required>
+        <input type="tel" class="form-control-dark" id="{{ $prefix }}mobile_1" name="meta[mobile_1]" placeholder="Enter 10-digit Mobile 1" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
     </div>
     <div>
-        <label class="form-label" for="{{ $prefix }}mobile_2">Mobile 2</label>
-        <input type="text" class="form-control-dark" id="{{ $prefix }}mobile_2" name="meta[mobile_2]" placeholder="Enter mobile 2 (optional)">
+        <label class="form-label" for="{{ $prefix }}mobile_2">Mobile 2 *</label>
+        <input type="tel" class="form-control-dark" id="{{ $prefix }}mobile_2" name="meta[mobile_2]" placeholder="Enter 10-digit Mobile 2" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
+    </div>
+    <div>
+        <label class="form-label" for="{{ $prefix }}whatsapp_number">WhatsApp Number *</label>
+        <input type="tel" class="form-control-dark" id="{{ $prefix }}whatsapp_number" name="meta[whatsapp_number]" placeholder="Enter WhatsApp Number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
     </div>
 </div>
 

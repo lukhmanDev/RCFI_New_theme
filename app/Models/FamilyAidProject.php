@@ -54,5 +54,10 @@ class FamilyAidProject extends Model
     {
         return $this->hasMany(FamilyAidFund::class, 'agency_project_no', 'agency_project_no');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(FamilyAidApplication::class, 'application_id');
+    }
 }
 

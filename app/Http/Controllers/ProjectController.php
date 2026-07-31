@@ -257,7 +257,7 @@ class ProjectController extends Controller
         $user = auth()->user();
         $isOrphanCare = ($slug === 'orphan-care');
         $isSocialAid = in_array($slug, ['orphan-care', 'differently-abled', 'family-aid']);
-        $relations = $isOrphanCare ? [] : ['donor', 'projectManager', 'engineer'];
+        $relations = $isSocialAid ? ['application.cluster', 'application.address'] : ['donor', 'projectManager', 'engineer'];
 
         $projectQuery = $model::with($relations);
         if ($isSocialAid) {

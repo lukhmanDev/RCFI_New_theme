@@ -69,9 +69,16 @@
         }
     </style>
 
-    <div style="margin-bottom: 2rem;">
-        <h1 style="color: #1e293b; font-size: 1.75rem; font-weight: 700; margin: 0;">Approved Applications Dashboard</h1>
-        <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">Select a category card to view approved application projects.</p>
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="color: #1e293b; font-size: 1.75rem; font-weight: 700; margin: 0;">Approved Applications Dashboard</h1>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">Select a category card to view approved application projects.</p>
+        </div>
+        <div>
+            <a href="{{ route('applications.approved.export', ['category' => 'all']) }}" onclick="event.preventDefault(); const url = this.href; window.location.href = url; setTimeout(function(){ window.location.reload(); }, 1500);" class="btn-custom" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" title="Download Excel report with all approved application data">
+                <i class="bx bxs-file-export" style="font-size: 1.15rem;"></i> Export All Approved Excel
+            </a>
+        </div>
     </div>
 
     @foreach($groupedCategories as $groupTitle => $cats)

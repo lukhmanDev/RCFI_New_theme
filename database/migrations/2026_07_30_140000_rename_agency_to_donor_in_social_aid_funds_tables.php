@@ -12,11 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Add UNIQUE constraint on donors.name if not already present
-        $uniqueExists = DB::select("SHOW INDEX FROM donors WHERE Key_name = 'donors_name_unique' OR (Non_unique = 0 AND Column_name = 'name')");
-        if (empty($uniqueExists)) {
-            DB::statement("UPDATE donors SET name = TRIM(name)");
-            DB::statement("ALTER TABLE donors ADD CONSTRAINT donors_name_unique UNIQUE (name)");
+        $isSqlite = DB::getDriverName() === 'sqlite';
+
+        if (!$isSqlite) {
+            // 1. Add UNIQUE constraint on donors.name if not already present
+            $uniqueExists = DB::select("SHOW INDEX FROM donors WHERE Key_name = 'donors_name_unique' OR (Non_unique = 0 AND Column_name = 'name')");
+            if (empty($uniqueExists)) {
+                DB::statement("UPDATE donors SET name = TRIM(name)");
+                DB::statement("ALTER TABLE donors ADD CONSTRAINT donors_name_unique UNIQUE (name)");
+            }
         }
 
         $tables = ['orphan_care_funds', 'differently_abled_funds', 'family_aid_funds'];
@@ -51,18 +55,20 @@ return new class extends Migration
                 });
             }
 
-            // Update donor column values to extract just the Name (strip " (ShortName)")
-            DB::statement("UPDATE {$tableName} SET donor = TRIM(SUBSTRING_INDEX(donor, ' (', 1)) WHERE donor LIKE '% (%'");
+            if (!$isSqlite) {
+                // Update donor column values to extract just the Name (strip " (ShortName)")
+                DB::statement("UPDATE {$tableName} SET donor = TRIM(SUBSTRING_INDEX(donor, ' (', 1)) WHERE donor LIKE '% (%'");
 
-            // Ensure column definition & add foreign key constraint referencing donors.name
-            Schema::table($tableName, function (Blueprint $table) use ($tableName) {
-                $table->string('donor', 255)->change();
-                $table->foreign('donor', "{$tableName}_donor_foreign")
-                      ->references('name')
-                      ->on('donors')
-                      ->onUpdate('cascade')
-                      ->onDelete('restrict');
-            });
+                // Ensure column definition & add foreign key constraint referencing donors.name
+                Schema::table($tableName, function (Blueprint $table) use ($tableName) {
+                    $table->string('donor', 255)->change();
+                    $table->foreign('donor', "{$tableName}_donor_foreign")
+                          ->references('name')
+                          ->on('donors')
+                          ->onUpdate('cascade')
+                          ->onDelete('restrict');
+                });
+            }
         }
     }
 

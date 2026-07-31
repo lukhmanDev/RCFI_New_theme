@@ -178,22 +178,24 @@
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending')
                                         <!-- Approve -->
-                                        <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
+                                        <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}', '{{ addslashes($meta['agency_name'] ?? '') }}', '{{ $meta['application_date'] ?? date('Y-m-d') }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
                                             <i class="bx bx-check"></i>
                                         </button>
 
                                         <!-- Reject -->
+                                        @if(($appItem->sponsor_status ?? 'Not Sponsored') !== 'Sponsored')
                                         <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                                             @csrf
                                             <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Reject">
                                                 <i class="bx bx-x"></i>
                                             </button>
                                         </form>
+                                        @endif
 
                                     @endif
                                 @endif
 
-                                @if(Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess()))
+                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
                                     <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
                                         @csrf
                                         @method('DELETE')
@@ -235,10 +237,12 @@
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 @if(Auth::user()->hasAdminAccess())
-                    <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
+                    <button id="modal_edit_btn" onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
                         <i class="bx bx-pencil"></i> Edit
                     </button>
-                    <button onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
+                @endif
+                @if(Auth::user()->canDeleteApplications())
+                    <button id="modal_delete_btn" onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
                         <i class="bx bx-trash"></i> Delete
                     </button>
                 @endif
@@ -301,7 +305,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="aadhar_number">Aadhaar Number *</label>
-                            <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" required>
+                            <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" placeholder="XXXX XXXX XXXX" maxlength="14" required>
                         </div>
                     </div>
 
@@ -312,7 +316,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="age">Age *</label>
-                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" required>
+                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
                         </div>
                         <div>
                             <label class="form-label" for="marital_status">Marital Status *</label>
@@ -548,7 +552,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_aadhar_number">Aadhaar Number *</label>
-                            <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" required>
+                            <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" placeholder="XXXX XXXX XXXX" maxlength="14" required>
                         </div>
                     </div>
 
@@ -559,7 +563,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_age">Age *</label>
-                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" required>
+                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_marital_status">Marital Status *</label>
@@ -761,9 +765,25 @@
                         @endforeach
                     </select>
                 </div>
-                <div style="margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 1.25rem;">
                     <label class="form-label" for="approve_agency_number">Agency Number *</label>
-                    <input type="text" id="approve_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" required>
+                    <input type="text" id="approve_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" required placeholder="Enter Agency Number">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label class="form-label" for="approve_agency_name">Agency Name (Donor)</label>
+                        <select id="approve_agency_name" name="meta[agency_name]" class="form-select-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                            <option value="">-- Select Agency --</option>
+                            @foreach($donors as $d)
+                                <option value="{{ $d->name }}">{{ $d->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="approve_application_date">Application Date</label>
+                        <input type="date" id="approve_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" value="{{ date('Y-m-d') }}">
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -790,6 +810,10 @@
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
+            if (appItem && appItem.status === 'Approved') {
+                alert('Approved applications cannot be edited.');
+                return;
+            }
             const form = document.getElementById('editAppForm');
             form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
@@ -972,7 +996,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                                    <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Assigned Cluster:</td>
+                                    <td style="padding: 0.5rem 0; font-weight: 600; width: 160px; color: var(--text-muted);">Assigned Cluster:</td>
                                     <td id="modal-cluster-display-name" style="font-weight: 600; color: #ffffff;">
                                         ${appItem.cluster ? `${appItem.cluster.name} (${appItem.cluster.code})` : '<span style="color: var(--text-muted); font-style: italic;">Not assigned</span>'}
                                     </td>
@@ -984,6 +1008,18 @@
                                     </td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Name (Donor):</td>
+                                    <td id="modal-agency-display-name" style="font-weight: 600; color: #ffffff;">
+                                        ${meta.agency_name ? meta.agency_name : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Application Date:</td>
+                                    <td id="modal-agency-display-date" style="font-weight: 600; color: #ffffff;">
+                                        ${meta.application_date ? meta.application_date : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                                     <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Sponsor Status:</td>
                                     <td id="modal-sponsor-display-status" style="font-weight: 600; color: #ffffff;">
                                         ${appItem.sponsor_status === 'Sponsored' 
@@ -992,7 +1028,7 @@
                                     </td>
                                 </tr>
                             </table>
-                            @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
+                            @if(Auth::user() && Auth::user()->isSuperAdmin())
                             <button type="button" onclick="toggleClusterEditForm()" class="btn-custom" style="background: transparent; border: 1px solid var(--accent-cyan); color: var(--accent-cyan); padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; white-space: nowrap;">
                                 <i class="bx bx-edit"></i> Edit Cluster
                             </button>
@@ -1000,7 +1036,7 @@
                         </div>
                     </div>
 
-                    @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
+                    @if(Auth::user() && Auth::user()->isSuperAdmin())
                     <div id="modal-cluster-edit-form" style="display: none; margin-top: 0.5rem;">
                         <form action="{{ url('admin/applications') }}/${appItem.id}/update-cluster" method="POST" onsubmit="submitClusterForm(event, ${appItem.id})">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -1018,6 +1054,21 @@
                                     <input type="text" name="agency_number" value="${appItem.agency_number || ''}" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" required>
                                 </div>
                             </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem;">Agency Name (Donor)</label>
+                                    <select name="meta[agency_name]" class="form-select-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                                        <option value="">-- Select Agency --</option>
+                                        @foreach($donors as $d)
+                                            <option value="{{ $d->name }}" ${meta.agency_name == '{{ addslashes($d->name) }}' ? 'selected' : ''}>{{ $d->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem;">Application Date</label>
+                                    <input type="date" name="meta[application_date]" value="${meta.application_date || ''}" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                                </div>
+                            </div>
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
                                 <button type="button" onclick="toggleClusterEditForm()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.35rem 0.75rem; font-size: 0.8rem;">Cancel</button>
                                 <button type="submit" class="btn-custom" style="background: var(--accent-blue); color: #ffffff; border: none; padding: 0.35rem 0.75rem; font-size: 0.8rem;">Save Cluster Info</button>
@@ -1031,7 +1082,7 @@
                 ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                     <h5 style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Rejected Reason:</h5>
-                    <p style="color: #ffffff; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); min-height: 50px;">
+                    <p style="color: #ef4444; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.08); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3); min-height: 50px; font-weight: 600;">
                         ${appItem.rejected_reason || meta.rejected_reason}
                     </p>
                 </div>
@@ -1046,6 +1097,10 @@
             `;
             
             document.getElementById('details_content').innerHTML = html;
+            const editBtn = document.getElementById('modal_edit_btn');
+            const deleteBtn = document.getElementById('modal_delete_btn');
+            if (editBtn) editBtn.style.display = (appItem.status === 'Approved') ? 'none' : 'inline-block';
+            if (deleteBtn) deleteBtn.style.display = (appItem.status === 'Approved') ? 'none' : 'inline-block';
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
@@ -1060,6 +1115,10 @@
 
         function deleteFromDetails() {
             if (currentDetailsAppItem) {
+                if (currentDetailsAppItem.status === 'Approved') {
+                    alert('Approved applications cannot be deleted.');
+                    return;
+                }
                 showCustomConfirm('Are you sure you want to delete this application? This action cannot be undone.', function() {
                     const form = document.createElement('form');
                     form.method = 'POST';
@@ -1188,15 +1247,17 @@
             });
         @endif
 
-        function openApproveModal(appId, clusterId = '', agencyNumber = '') {
+        function openApproveModal(appId, clusterId = '', agencyNumber = '', agencyName = '', appDate = '') {
             const form = document.getElementById('approveAppForm');
-            form.action = "{{ url('admin/applications') }}/{{ $categorySlug }}/" + appId + "/approve";
+            form.action = `{{ url('admin/applications') }}/{{ $categorySlug }}/${appId}/approve`;
             
-            document.getElementById('approve_cluster_id').value = clusterId || '';
-            document.getElementById('approve_agency_number').value = agencyNumber || '';
+            if (document.getElementById('approve_cluster_id')) document.getElementById('approve_cluster_id').value = clusterId || '';
+            if (document.getElementById('approve_agency_number')) document.getElementById('approve_agency_number').value = agencyNumber || '';
+            if (document.getElementById('approve_agency_name')) document.getElementById('approve_agency_name').value = agencyName || '';
+            if (document.getElementById('approve_application_date')) document.getElementById('approve_application_date').value = appDate || '{{ date("Y-m-d") }}';
             
             document.getElementById('approveAppModal').style.display = 'flex';
-        }
+        };
 
         function closeApproveModal() {
             document.getElementById('approveAppModal').style.display = 'none';

@@ -164,13 +164,37 @@ class User extends Authenticatable
 
     public function canApproveApplications(): bool
     {
+        if ($this->isSocialAid()) {
+            return false;
+        }
         $designationLower = strtolower($this->designation ?? '');
+        if (str_contains($designationLower, 'social aid') || str_contains($designationLower, 'social_aid')) {
+            return false;
+        }
+
         $isDesigCoo = ($designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
         $isDesigHod = ($designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
-        $isDesigSocialAid = (str_contains($designationLower, 'social aid') || str_contains($designationLower, 'social_aid'));
         $isDesigSuperAdmin = ($designationLower === 'super admin' || str_contains($designationLower, 'super_admin'));
 
-        return $this->isCoo() || $this->isSuperAdmin() || $this->isHod() || $this->isSocialAid() || $isDesigCoo || $isDesigHod || $isDesigSocialAid || $isDesigSuperAdmin;
+        return $this->isCoo() || $this->isSuperAdmin() || $this->isHod() || $isDesigCoo || $isDesigHod || $isDesigSuperAdmin;
+    }
+
+    public function canDeleteApplications(): bool
+    {
+        return $this->isSuperAdmin();
+    }
+
+    public function canManageSponsorship(): bool
+    {
+        if ($this->isSocialAid()) {
+            return false;
+        }
+        $designationLower = strtolower($this->designation ?? '');
+        if (str_contains($designationLower, 'social aid') || str_contains($designationLower, 'social_aid')) {
+            return false;
+        }
+
+        return $this->isSuperAdmin() || $this->isCoo() || $this->isHod();
     }
 
     public function profile()

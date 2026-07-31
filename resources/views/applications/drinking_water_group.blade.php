@@ -170,12 +170,9 @@
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending')
                                         <!-- Approve -->
-                                        <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
-                                            @csrf
-                                            <button type="submit" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
-                                                <i class="bx bx-check"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}', '{{ addslashes($meta['agency_name'] ?? '') }}', '{{ $meta['application_date'] ?? date('Y-m-d') }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
+                                             <i class="bx bx-check"></i>
+                                         </button>
 
                                         <!-- Reject -->
                                         <form action="{{ route('applications.reject', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
@@ -188,7 +185,7 @@
                                     @endif
                                 @endif
 
-                                @if(Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess()))
+                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
                                     <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
                                         @csrf
                                         @method('DELETE')
@@ -230,10 +227,12 @@
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 @if(Auth::user()->hasAdminAccess())
-                    <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
+                    <button id="modal_edit_btn" onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
                         <i class="bx bx-pencil"></i> Edit
                     </button>
-                    <button onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
+                @endif
+                @if(Auth::user()->canDeleteApplications())
+                    <button id="modal_delete_btn" onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
                         <i class="bx bx-trash"></i> Delete
                     </button>
                 @endif
@@ -300,14 +299,14 @@
                         </div>
                         <div>
                             <label class="form-label" for="age">Age *</label>
-                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" required>
+                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="aadhar_number">Aadhaar Number *</label>
-                            <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" required>
+                            <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" placeholder="XXXX XXXX XXXX" maxlength="14" required>
                         </div>
                         <div>
                             <label class="form-label" for="location">Place *</label>
@@ -545,14 +544,14 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_age">Age *</label>
-                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" required>
+                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_aadhar_number">Aadhaar Number *</label>
-                            <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" required>
+                            <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" placeholder="XXXX XXXX XXXX" maxlength="14" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_location">Place *</label>
@@ -731,6 +730,56 @@
         </div>
     </div>
 
+    <!-- Approve Application Modal Dialog -->
+    <div id="approveAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1200; overflow-y: auto;" onclick="closeApproveModal()">
+        <div class="panel" style="width: 100%; max-width: 500px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; border-radius: 12px; padding: 1.5rem;" onclick="event.stopPropagation()">
+            
+            <button onclick="closeApproveModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
+            
+            <div class="panel-header" style="margin-bottom: 1.5rem;">
+                <h2 class="panel-title" style="font-size: 1.25rem;"><i class="bx bx-check-circle" style="vertical-align: middle; margin-right: 0.5rem; color: var(--accent-green);"></i> Approve Application</h2>
+            </div>
+
+            <form id="approveAppForm" action="" method="POST">
+                @csrf
+                <div style="margin-bottom: 1.25rem;">
+                    <label class="form-label" for="approve_cluster_id">Select Cluster *</label>
+                    <select id="approve_cluster_id" name="cluster_id" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" required>
+                        <option value="">-- Choose Cluster --</option>
+                        @foreach($clusters as $cl)
+                            <option value="{{ $cl->id }}">{{ $cl->name }} ({{ $cl->code }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div style="margin-bottom: 1.25rem;">
+                    <label class="form-label" for="approve_agency_number">Agency Number *</label>
+                    <input type="text" id="approve_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" required placeholder="Enter Agency Number">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label class="form-label" for="approve_agency_name">Agency Name (Donor)</label>
+                        <select id="approve_agency_name" name="meta[agency_name]" class="form-select-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                            <option value="">-- Select Agency --</option>
+                            @foreach($donors as $d)
+                                <option value="{{ $d->name }}">{{ $d->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="approve_application_date">Application Date</label>
+                        <input type="date" id="approve_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;" value="{{ date('Y-m-d') }}">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeApproveModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.6rem 1.5rem;">Cancel</button>
+                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; padding: 0.6rem 1.5rem; font-weight: 600;">Approve Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Scripts -->
     <script>
         // Add Application Modal Toggle
@@ -747,6 +796,10 @@
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
+            if (appItem && appItem.status === 'Approved') {
+                alert('Approved applications cannot be edited.');
+                return;
+            }
             const form = document.getElementById('editAppForm');
             form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
@@ -816,12 +869,9 @@
 
                 if (appItem.status === 'Pending') {
                     statusHtml = `
-                        <form action="${approveUrl}" method="POST" style="display: inline-block;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-check"></i> Approve
-                            </button>
-                        </form>
+                        <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
+                            <i class="bx bx-check"></i> Approve
+                        </button>
                         <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                             <input type="hidden" name="_token" value="${csrfToken}">
                             <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
@@ -840,12 +890,9 @@
                     `;
                 } else if (appItem.status === 'Rejected') {
                     statusHtml = `
-                        <form action="${approveUrl}" method="POST" style="display: inline-block;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-check"></i> Approve Application
-                            </button>
-                        </form>
+                        <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
+                            <i class="bx bx-check"></i> Approve Application
+                        </button>
                     `;
                 }
                 statusActionsContainer.innerHTML = statusHtml;
@@ -903,7 +950,7 @@
                 ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                     <h5 style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Rejected Reason:</h5>
-                    <p style="color: #ffffff; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); min-height: 50px;">
+                    <p style="color: #ef4444; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.08); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3); min-height: 50px; font-weight: 600;">
                         ${appItem.rejected_reason || meta.rejected_reason}
                     </p>
                 </div>
@@ -918,6 +965,10 @@
             `;
             
             document.getElementById('details_content').innerHTML = html;
+            const editBtn = document.getElementById('modal_edit_btn');
+            const deleteBtn = document.getElementById('modal_delete_btn');
+            if (editBtn) editBtn.style.display = (appItem.status === 'Approved') ? 'none' : 'inline-block';
+            if (deleteBtn) deleteBtn.style.display = (appItem.status === 'Approved') ? 'none' : 'inline-block';
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
@@ -932,6 +983,10 @@
 
         function deleteFromDetails() {
             if (currentDetailsAppItem) {
+                if (currentDetailsAppItem.status === 'Approved') {
+                    alert('Approved applications cannot be deleted.');
+                    return;
+                }
                 showCustomConfirm('Are you sure you want to delete this application? This action cannot be undone.', function() {
                     const form = document.createElement('form');
                     form.method = 'POST';
@@ -1081,6 +1136,20 @@
                 }
             });
         @endif
+        function openApproveModal(appId, clusterId = '', agencyNumber = '', agencyName = '', appDate = '') {
+            const form = document.getElementById('approveAppForm');
+            form.action = `{{ url('admin/applications') }}/${categorySlug}/${appId}/approve`;
+            
+            if (document.getElementById('approve_cluster_id')) document.getElementById('approve_cluster_id').value = clusterId || '';
+            if (document.getElementById('approve_agency_number')) document.getElementById('approve_agency_number').value = agencyNumber || '';
+            if (document.getElementById('approve_agency_name')) document.getElementById('approve_agency_name').value = agencyName || '';
+            if (document.getElementById('approve_application_date')) document.getElementById('approve_application_date').value = appDate || '{{ date("Y-m-d") }}';
+            
+            document.getElementById('approveAppModal').style.display = 'flex';
+        }
+        function closeApproveModal() {
+            document.getElementById('approveAppModal').style.display = 'none';
+        }
     </script>
 
 @endsection

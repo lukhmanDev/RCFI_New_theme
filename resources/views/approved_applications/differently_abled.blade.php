@@ -24,11 +24,47 @@
             <h2 class="panel-title">Approved Records</h2>
         </div>
         
-        <!-- Search Toolbar -->
-        <div style="margin-bottom: 1.25rem; display: flex; justify-content: flex-end;">
-            <div style="position: relative; width: 100%; max-width: 320px;">
-                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"><i class="bx bx-search"></i></span>
-                <input type="text" id="tableSearchInput" placeholder="Search applications..." style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.25rem; background-color: #111c2d; border: 1px solid #2a3547; border-radius: 6px; color: #ffffff; font-size: 0.875rem; outline: none; transition: border-color 0.2s;" onkeyup="filterTable()">
+        <!-- Filter & Export Toolbar -->
+        <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; background: #f8fafc; padding: 0.85rem 1.25rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <!-- Filter Form -->
+            <form method="GET" action="{{ route('applications.approved.category', $categorySlug) }}" id="filterForm" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 0;">
+                <!-- Cluster Filter -->
+                @if(!empty($clusters) && count($clusters) > 0)
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label for="clusterFilterSelect" style="font-size: 0.825rem; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Cluster:</label>
+                    <select name="cluster_id" id="clusterFilterSelect" onchange="filterTable(); this.form.submit();" style="height: 38px; border-radius: 8px; padding: 0 0.85rem; font-size: 0.85rem; font-weight: 500; background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
+                        <option value="all">All Clusters</option>
+                        @foreach($clusters as $c)
+                            <option value="{{ $c->id }}" {{ request('cluster_id') == $c->id ? 'selected' : '' }}>
+                                [{{ $c->code }}] {{ $c->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+
+                <!-- Sponsor Status Filter -->
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label for="sponsorFilterSelect" style="font-size: 0.825rem; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Sponsor Status:</label>
+                    <select name="sponsor_status" id="sponsorFilterSelect" onchange="filterTable(); this.form.submit();" style="height: 38px; border-radius: 8px; padding: 0 0.85rem; font-size: 0.85rem; font-weight: 500; background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
+                        <option value="all">All Status</option>
+                        <option value="sponsored" {{ strtolower(request('sponsor_status')) === 'sponsored' ? 'selected' : '' }}>Sponsored</option>
+                        <option value="not sponsored" {{ in_array(strtolower(request('sponsor_status')), ['not sponsored', 'un-sponsored', 'unsponsored']) ? 'selected' : '' }}>Not Sponsored</option>
+                    </select>
+                </div>
+            </form>
+
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: nowrap;">
+                <!-- Search Input -->
+                <div style="position: relative; width: 100%; min-width: 200px; max-width: 240px;">
+                    <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; pointer-events: none;"><i class="bx bx-search"></i></span>
+                    <input type="text" id="tableSearchInput" placeholder="Search applications..." style="width: 100%; height: 38px; padding: 0 1rem 0 2.25rem; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; color: #1e293b; font-size: 0.875rem; outline: none;" onkeyup="filterTable()">
+                </div>
+
+                <!-- Export Excel Button -->
+                <a id="excelExportBtn" href="{{ route('applications.approved.export', ['category' => $categorySlug, 'cluster_id' => request('cluster_id', 'all'), 'sponsor_status' => request('sponsor_status', 'all')]) }}" class="btn-custom" style="height: 38px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; padding: 0 1.1rem; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2); white-space: nowrap;" title="Download Excel report with all data">
+                    <i class="bx bxs-file-export" style="font-size: 1.1rem;"></i> Export Excel
+                </a>
             </div>
         </div>
 
@@ -83,7 +119,7 @@
                             }
                             $searchStr = strtolower(implode(' ', array_filter($searchTerms)));
                         @endphp
-                        <tr class="app-row" data-search="{{ $searchStr }}" data-place="{{ $appItem->place ?? '' }}" onclick="openDetailsModal({{ json_encode($appItem) }})">
+                        <tr class="app-row" data-search="{{ $searchStr }}" data-cluster="{{ $appItem->cluster_id ?? '' }}" data-sponsor="{{ strtolower($appItem->sponsor_status ?? 'not sponsored') }}" data-place="{{ $appItem->place ?? '' }}" onclick="openDetailsModal({{ json_encode($appItem) }})">
                             <td style="font-weight: 600;">
                                 <a href="javascript:void(0)" onclick="event.stopPropagation(); openDetailsModal({{ json_encode($appItem) }})" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Application Details">
                                     {{ $appId }}
@@ -97,28 +133,34 @@
                             <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? '-' }}</td>
                             <td>
                                 @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
-                                    <span style="background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
-                                        Sponsored
+                                    <span style="background-color: #d1fae5; color: #065f46; border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;">
+                                        <i class="bx bx-check-circle" style="font-size: 0.85rem;"></i> Sponsored
                                     </span>
                                 @else
-                                    <span style="background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
-                                        Not Sponsored
+                                    <span style="background-color: #fef3c7; color: #92400e; border: 1px solid rgba(245, 158, 11, 0.3); padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;">
+                                        <i class="bx bx-time-five" style="font-size: 0.85rem;"></i> Not Sponsored
                                     </span>
                                 @endif
                             </td>
                             <td style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
-                                @if(Auth::user()->hasAdminAccess())
-                                    @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
-                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }})" style="background-color: transparent; color: #f59e0b; border: 1px solid #f59e0b; padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-block; text-align: center; text-decoration: none; transition: all 0.2s;" title="Mark as Not Sponsored">
-                                            Un-sponsor
+                                @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
+                                    @if(Auth::user()->isSuperAdmin())
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }}, 'Sponsored', 'differently-abled')" style="background: #ffffff; color: #dc2626 !important; border: 1px solid #fca5a5; padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 600; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; text-decoration: none; min-width: 110px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;" title="Mark as Not Sponsored (Super Admin Only)">
+                                            <i class="bx bx-x" style="font-size: 0.95rem;"></i> Un-sponsor
                                         </a>
                                     @else
-                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }})" style="background-color: #10b981; color: #ffffff; border: none; padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-block; text-align: center; text-decoration: none; transition: background-color 0.2s;" title="Mark as Sponsored">
-                                            Sponsor
-                                        </a>
+                                        <span style="color: #10b981; font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.75rem; background: rgba(16, 185, 129, 0.1); border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                            <i class="bx bx-check-double"></i> Sponsored
+                                        </span>
                                     @endif
                                 @else
-                                    <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No Action</span>
+                                    @if(Auth::user()->canManageSponsorship())
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }}, 'Not Sponsored', 'differently-abled')" style="background: #10b981; color: #ffffff !important; border: 1px solid #059669; padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 600; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; text-decoration: none; min-width: 110px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;" title="Mark as Sponsored">
+                                            <i class="bx bx-check" style="font-size: 0.95rem;"></i> Sponsor
+                                        </a>
+                                    @else
+                                        <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No Action</span>
+                                    @endif
                                 @endif
                             </td>
                         </tr>
@@ -169,15 +211,23 @@
                 let statusHtml = '';
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                @if(Auth::user()->hasAdminAccess())
-                    statusHtml += `
-                        <button type="button" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, ${appItem.id})" class="btn-custom" style="${appItem.sponsor_status === 'Sponsored' ? 'background: transparent; color: #f59e0b; border: 1px solid #f59e0b;' : 'background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: #ffffff;'} padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
-                            ${appItem.sponsor_status === 'Sponsored' 
-                                ? '<i class="bx bx-x-circle"></i> Un-sponsor' 
-                                : '<i class="bx bx-check-circle"></i> Sponsor'}
-                        </button>
-                    `;
-                @endif
+                if (appItem.sponsor_status === 'Sponsored') {
+                    @if(Auth::user()->isSuperAdmin())
+                        statusHtml += `
+                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, ${appItem.id}, 'Sponsored', 'differently-abled')" class="btn-custom" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
+                                <i class="bx bx-x-circle"></i> Mark as Un-sponsored
+                            </button>
+                        `;
+                    @endif
+                } else {
+                    @if(Auth::user()->canManageSponsorship())
+                        statusHtml += `
+                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); openSponsorDateModal(${appItem.id}, 'differently-abled')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: #ffffff; padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
+                                <i class="bx bx-check-circle"></i> Mark as Sponsored
+                            </button>
+                        `;
+                    @endif
+                }
                 statusActionsContainer.innerHTML = statusHtml;
             }
 
@@ -213,7 +263,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
-                                    <td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Assigned Cluster:</td>
+                                    <td style="padding: 0.5rem 0; font-weight: 600; width: 160px; color: var(--text-muted);">Assigned Cluster:</td>
                                     <td id="modal-cluster-display-name" style="font-weight: 600; color: #ffffff;">
                                         ${appItem.cluster ? `${appItem.cluster.name} (${appItem.cluster.code})` : '<span style="color: var(--text-muted); font-style: italic;">Not assigned</span>'}
                                     </td>
@@ -222,6 +272,18 @@
                                     <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Number:</td>
                                     <td id="modal-agency-display-number" style="font-weight: 600; color: #ffffff;">
                                         ${appItem.agency_number ? appItem.agency_number : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Name (Donor):</td>
+                                    <td id="modal-agency-display-name" style="font-weight: 600; color: #ffffff;">
+                                        ${meta.agency_name ? meta.agency_name : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                    </td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Application Date:</td>
+                                    <td id="modal-agency-display-date" style="font-weight: 600; color: #ffffff;">
+                                        ${meta.application_date ? meta.application_date : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
                                     </td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
@@ -234,7 +296,7 @@
                                 </tr>
                             </table>
                             
-                            @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
+                            @if(Auth::user() && Auth::user()->isSuperAdmin())
                             <button onclick="toggleClusterEditForm()" class="btn-custom" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer;">
                                 <i class="bx bx-edit"></i> Edit
                             </button>
@@ -242,7 +304,7 @@
                         </div>
                     </div>
 
-                    @if(Auth::user() && !Auth::user()->isPm() && !Auth::user()->isEngineer())
+                    @if(Auth::user() && Auth::user()->isSuperAdmin())
                     <div id="modal-cluster-edit-form" style="display: none;">
                         <form id="save-cluster-form" action="{{ url('admin/applications') }}/${appItem.id}/update-cluster" method="POST" onsubmit="submitClusterForm(event, ${appItem.id})">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -258,6 +320,21 @@
                                 <div>
                                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Agency Number *</label>
                                     <input type="text" id="assign_agency_number" name="agency_number" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" required value="${appItem.agency_number || ''}">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Agency Name (Donor)</label>
+                                    <select id="assign_agency_name" name="meta[agency_name]" class="form-select-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                                        <option value="">-- Select Agency --</option>
+                                        @foreach(($donors ?? []) as $d)
+                                            <option value="{{ $d->name }}" ${meta.agency_name == '{{ addslashes($d->name) }}' ? 'selected' : ''}>{{ $d->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Application Date</label>
+                                    <input type="date" id="assign_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="${meta.application_date || ''}">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
@@ -280,17 +357,46 @@
 
         function filterTable() {
             const input = document.getElementById('tableSearchInput');
-            const filter = input.value.toLowerCase().trim();
+            const filter = input ? input.value.toLowerCase().trim() : '';
+            
+            const clusterSelect = document.getElementById('clusterFilterSelect');
+            const clusterVal = clusterSelect ? clusterSelect.value : 'all';
+
+            const sponsorSelect = document.getElementById('sponsorFilterSelect');
+            const sponsorVal = sponsorSelect ? sponsorSelect.value.toLowerCase() : 'all';
+
             const rows = document.querySelectorAll('.app-row');
             
             rows.forEach(row => {
-                const searchText = row.getAttribute('data-search') || '';
-                if (searchText.includes(filter)) {
+                const searchText = (row.getAttribute('data-search') || '').toLowerCase();
+                const rowCluster = row.getAttribute('data-cluster') || '';
+                const rowSponsor = (row.getAttribute('data-sponsor') || 'not sponsored').toLowerCase();
+
+                let matchesSearch = !filter || searchText.includes(filter);
+                let matchesCluster = (clusterVal === 'all') || (rowCluster == clusterVal);
+                let matchesSponsor = (sponsorVal === 'all') ||
+                    (sponsorVal === 'sponsored' && rowSponsor === 'sponsored') ||
+                    (sponsorVal.includes('not') && rowSponsor !== 'sponsored');
+
+                if (matchesSearch && matchesCluster && matchesSponsor) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }
             });
+
+            // Update Export Excel button href dynamically
+            const exportBtn = document.getElementById('excelExportBtn');
+            if (exportBtn) {
+                let baseUrl = "{{ route('applications.approved.export', ['category' => $categorySlug]) }}";
+                let params = new URLSearchParams();
+                if (clusterVal && clusterVal !== 'all') params.set('cluster_id', clusterVal);
+                if (sponsorVal && sponsorVal !== 'all') params.set('sponsor_status', sponsorVal);
+                if (filter) params.set('search', filter);
+                
+                let qStr = params.toString();
+                exportBtn.href = baseUrl + (qStr ? '?' + qStr : '');
+            }
         }
 
         function toggleClusterEditForm() {
@@ -346,43 +452,75 @@
             }
         }
 
-        async function handleToggleSponsor(event, appId) {
+        async function handleToggleSponsor(event, appId, currentStatus = '', categorySlug = 'differently-abled') {
             if (event) {
                 event.preventDefault();
                 event.stopPropagation();
             }
-            const doToggle = async () => {
-                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-                const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
-                try {
-                    const response = await fetch(`/admin/applications/differently-abled/${appId}/toggle-sponsor`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        body: JSON.stringify({
-                            category: 'differently-abled'
-                        })
-                    });
 
-                    const result = await response.json();
-                    if (response.ok && result.success) {
-                        window.location.reload();
-                    } else {
-                        alert(result.error || 'Failed to update sponsor status.');
+            const isSponsored = (currentStatus && String(currentStatus).toLowerCase() === 'sponsored');
+
+            if (isSponsored) {
+                const doUnsponsor = async () => {
+                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
+                    try {
+                        const response = await fetch(`/admin/applications/differently-abled/${appId}/toggle-sponsor`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({ category: categorySlug })
+                        });
+
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            window.location.reload();
+                        } else {
+                            alert(result.error || 'Failed to update sponsor status.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('An error occurred while updating sponsor status.');
                     }
-                } catch (err) {
-                    console.error(err);
-                    alert('An error occurred while updating sponsor status.');
-                }
-            };
+                };
 
-            if (typeof showCustomConfirm === 'function') {
-                showCustomConfirm('Are you sure you want to change the sponsor status?', doToggle);
-            } else if (confirm('Are you sure you want to change the sponsor status?')) {
-                doToggle();
+                if (typeof showCustomConfirm === 'function') {
+                    showCustomConfirm('Are you sure you want to un-sponsor this application?', doUnsponsor);
+                } else if (confirm('Are you sure you want to un-sponsor this application?')) {
+                    doUnsponsor();
+                }
+            } else {
+                if (typeof openSponsorDateModal === 'function') {
+                    openSponsorDateModal(appId, categorySlug);
+                } else {
+                    const sponsoredDate = prompt("Enter Sponsored Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+                    if (!sponsoredDate) return;
+                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
+                    try {
+                        const response = await fetch(`/admin/applications/differently-abled/${appId}/toggle-sponsor`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({ category: categorySlug, sponsored_date: sponsoredDate })
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            window.location.reload();
+                        } else {
+                            alert(result.error || 'Failed to update sponsor status.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('An error occurred while updating sponsor status.');
+                    }
+                }
             }
         }
     </script>

@@ -159,12 +159,10 @@ class ApplicationController extends Controller
             $projectsMap = $projects->toArray();
         }
 
-        $clusters = [];
-        if (in_array($categorySlug, ['orphan-care', 'differently-abled', 'family-aid'])) {
-            $clusters = \App\Models\Cluster::orderBy('name', 'asc')->get();
-        }
+        $clusters = \App\Models\Cluster::orderBy('name', 'asc')->get();
+        $donors = \App\Models\Donor::orderBy('name', 'asc')->get();
 
-        return view($config['view'], compact('applications', 'categoryName', 'categorySlug', 'projectsMap', 'clusters'));
+        return view($config['view'], compact('applications', 'categoryName', 'categorySlug', 'projectsMap', 'clusters', 'donors'));
     }
 
     public function store(Request $request)
@@ -197,17 +195,26 @@ class ApplicationController extends Controller
             'agency_number' => ['nullable', 'string', 'max:255'],
         ];
 
-        $redirectCategory = $request->input('redirect_category');
-        $isOrphanCare = ($request->input('category') === 'Orphan Care' || $redirectCategory === 'orphan-care');
-        if ($isOrphanCare && $request->input('status') === 'Approved') {
+        if ($request->input('status') === 'Approved') {
             $rules['cluster_id'] = ['required', 'exists:clusters,id'];
             $rules['agency_number'] = ['required', 'string', 'max:255'];
+        }
+
+        if ($request->hasFile('student_photo')) {
+            $path = $request->file('student_photo')->store('student_photos', 'public');
+            $meta = $request->input('meta', []);
+            $meta['student_photo'] = '/storage/' . $path;
+            $request->merge(['meta' => $meta]);
         }
 
         $data = $request->validate($rules, [
             'cluster_id.required' => 'The cluster field is required when the application is approved.',
             'agency_number.required' => 'The agency number field is required when the application is approved.',
         ]);
+
+        if (isset($meta['student_photo'])) {
+            $data['meta'] = array_merge($data['meta'] ?? [], ['student_photo' => $meta['student_photo']]);
+        }
 
         $redirectCategory = $request->input('redirect_category');
         $config = $this->categories[$redirectCategory] ?? null;
@@ -297,6 +304,41 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'You are not authorized to edit applications.');
         }
 
+        $redirectCategory = $request->input('redirect_category');
+        $config = $this->categories[$redirectCategory] ?? null;
+
+        if (!$config && $request->filled('category')) {
+            foreach ($this->categories as $slug => $c) {
+                if ($c['name'] === $request->input('category')) {
+                    $config = $c;
+                    $redirectCategory = $slug;
+                    break;
+                }
+            }
+        }
+
+        if (!$config) {
+            foreach ($this->categories as $slug => $c) {
+                $m = $c['model'];
+                if ($m::where('id', $id)->exists()) {
+                    $config = $c;
+                    $redirectCategory = $slug;
+                    break;
+                }
+            }
+        }
+
+        if ($config) {
+            $model = $config['model'];
+            $application = $model::findOrFail($id);
+            if (strtolower($application->status ?? 'pending') === 'approved') {
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'error' => 'Approved applications cannot be edited by any role.'], 403);
+                }
+                return redirect()->back()->with('error', 'Approved applications cannot be edited by any role.');
+            }
+        }
+
         $rules = [
             'applicant_name' => ['required', 'string', 'min:2', 'max:255'],
             'category' => ['nullable', 'string'],
@@ -333,20 +375,32 @@ class ApplicationController extends Controller
             $rules['agency_number'] = ['required', 'string', 'max:255'];
         }
 
+        if ($request->hasFile('student_photo')) {
+            $path = $request->file('student_photo')->store('student_photos', 'public');
+            $meta = $request->input('meta', []);
+            $meta['student_photo'] = '/storage/' . $path;
+            $request->merge(['meta' => $meta]);
+        }
+
         $data = $request->validate($rules, [
             'cluster_id.required' => 'The cluster field is required when the application is approved.',
             'agency_number.required' => 'The agency number field is required when the application is approved.',
         ]);
 
-        $redirectCategory = $request->input('redirect_category');
-        $config = $this->categories[$redirectCategory] ?? null;
+        if (isset($meta['student_photo'])) {
+            $data['meta'] = array_merge($data['meta'] ?? [], ['student_photo' => $meta['student_photo']]);
+        }
 
         if (!$config) {
-            foreach ($this->categories as $slug => $c) {
-                if ($c['name'] === ($data['category'] ?? '')) {
-                    $config = $c;
-                    $redirectCategory = $slug;
-                    break;
+            $redirectCategory = $request->input('redirect_category');
+            $config = $this->categories[$redirectCategory] ?? null;
+            if (!$config) {
+                foreach ($this->categories as $slug => $c) {
+                    if ($c['name'] === ($data['category'] ?? '')) {
+                        $config = $c;
+                        $redirectCategory = $slug;
+                        break;
+                    }
                 }
             }
         }
@@ -422,7 +476,7 @@ class ApplicationController extends Controller
     public function destroy(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user || !$user->hasAdminAccess()) {
+        if (!$user || !$user->canDeleteApplications()) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => 'You are not authorized to delete applications.'], 403);
             }
@@ -456,11 +510,11 @@ class ApplicationController extends Controller
         if ($config) {
             $model = $config['model'];
             $application = $model::findOrFail($id);
-            if (!$user->isSuperAdmin() && strtolower($application->status ?? 'pending') !== 'pending') {
+            if (strtolower($application->status ?? 'pending') === 'approved') {
                 if ($request->wantsJson()) {
-                    return response()->json(['success' => false, 'error' => 'Only pending applications can be deleted.'], 403);
+                    return response()->json(['success' => false, 'error' => 'Approved applications cannot be deleted by any role.'], 403);
                 }
-                return redirect()->back()->with('error', 'Only pending applications can be deleted.');
+                return redirect()->back()->with('error', 'Approved applications cannot be deleted by any role.');
             }
 
             $projectModels = [
@@ -678,13 +732,22 @@ class ApplicationController extends Controller
 
         $model = $config['model'];
         $app = $model::findOrFail($id);
+
+        if (($app->sponsor_status ?? 'Not Sponsored') === 'Sponsored') {
+            return redirect()->back()->with('error', 'Sponsored applications cannot be rejected. Please remove sponsorship first.');
+        }
+
         $app->status = 'Rejected';
 
+        $request->validate([
+            'remarks' => ['required', 'string', 'min:2', 'max:1000'],
+        ], [
+            'remarks.required' => 'A rejection reason is mandatory when rejecting an application.',
+        ]);
+
         $remarks = $request->input('remarks');
-        if ($remarks) {
-            $app->rejected_reason = $remarks;
-            $app->additional_note = ($app->additional_note ? $app->additional_note . "\n" : "") . "Rejection Reason: " . $remarks;
-        }
+        $app->rejected_reason = $remarks;
+        $app->additional_note = ($app->additional_note ? $app->additional_note . "\n" : "") . "Rejection Reason: " . $remarks;
 
         $app->save();
 
@@ -745,7 +808,7 @@ class ApplicationController extends Controller
         return view('approved_applications.index', compact('categories', 'groupedCategories', 'approvedCounts'));
     }
 
-    public function showApprovedCategory($category)
+    public function showApprovedCategory(Request $request, $category)
     {
         if (auth()->user() && auth()->user()->isReception()) {
             return redirect()->route('applications.index')->with('error', 'Unauthorized access.');
@@ -764,9 +827,42 @@ class ApplicationController extends Controller
         $categorySlug = $category;
         $model = $config['model'];
 
+        $sponsorStatusParam = $request->input('sponsor_status', 'all');
+        $clusterIdParam = $request->input('cluster_id', 'all');
+
+        $relations = [];
+        $dummyModel = new $model;
+        if (method_exists($dummyModel, 'cluster')) {
+            $relations[] = 'cluster';
+        }
+        if (method_exists($dummyModel, 'address')) {
+            $relations[] = 'address';
+        }
+
+        $query = $model::query();
+        if (!empty($relations)) {
+            $query->with($relations);
+        }
+        $query->where('status', 'Approved');
+
+        if ($sponsorStatusParam !== 'all' && !empty($sponsorStatusParam)) {
+            $statusVal = strtolower(trim($sponsorStatusParam));
+            if ($statusVal === 'sponsored') {
+                $query->whereRaw("LOWER(sponsor_status) = 'sponsored'");
+            } elseif (in_array($statusVal, ['not sponsored', 'un-sponsored', 'unsponsored', 'notsponsored'])) {
+                $query->where(function($q) {
+                    $q->whereRaw("LOWER(sponsor_status) != 'sponsored'")
+                      ->orWhereNull('sponsor_status');
+                });
+            }
+        }
+
+        if ($clusterIdParam !== 'all' && !empty($clusterIdParam)) {
+            $query->where('cluster_id', $clusterIdParam);
+        }
+
         if (in_array($categorySlug, ['orphan-care', 'differently-abled', 'family-aid'])) {
-            $applications = $model::with('cluster')
-                ->where('status', 'Approved')
+            $applications = $query
                 ->orderByRaw("CASE 
                     WHEN LOWER(sponsor_status) = 'not sponsored' THEN 1 
                     WHEN LOWER(sponsor_status) = 'sponsored' THEN 2 
@@ -775,7 +871,7 @@ class ApplicationController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else {
-            $applications = $model::where('status', 'Approved')->orderBy('created_at', 'desc')->get();
+            $applications = $query->orderBy('created_at', 'desc')->get();
         }
         
         // Find assigned projects
@@ -828,8 +924,252 @@ class ApplicationController extends Controller
         if (in_array($categorySlug, ['orphan-care', 'differently-abled', 'family-aid'])) {
             $clusters = \App\Models\Cluster::orderBy('name', 'asc')->get();
         }
+        $donors = \App\Models\Donor::orderBy('name', 'asc')->get();
 
-        return view($viewName, compact('applications', 'categoryName', 'categorySlug', 'projectsMap', 'clusters'));
+        return view($viewName, compact('applications', 'categoryName', 'categorySlug', 'projectsMap', 'clusters', 'donors'));
+    }
+
+    public function exportApproved(Request $request)
+    {
+        if (auth()->user() && auth()->user()->isReception()) {
+            return redirect()->route('applications.index')->with('error', 'Unauthorized access.');
+        }
+
+        set_time_limit(300);
+
+        $categoryParam = $request->input('category', 'all');
+        $sponsorStatusParam = $request->input('sponsor_status', 'all');
+        $clusterIdParam = $request->input('cluster_id', 'all');
+        $searchParam = strtolower(trim($request->input('search', '')));
+
+        $targetCategories = [];
+        if ($categoryParam !== 'all' && isset($this->categories[$categoryParam])) {
+            $targetCategories[$categoryParam] = $this->categories[$categoryParam];
+        } else {
+            $targetCategories = $this->categories;
+            if (auth()->user() && auth()->user()->isSocialAid()) {
+                $socialAidSlugs = ['orphan-care', 'differently-abled', 'family-aid'];
+                $targetCategories = array_filter($targetCategories, fn($key) => in_array($key, $socialAidSlugs), ARRAY_FILTER_USE_KEY);
+            }
+        }
+
+        $allApprovedApps = collect();
+
+        foreach ($targetCategories as $catSlug => $config) {
+            $model = $config['model'];
+            $dummyModel = new $model;
+            $relations = [];
+            if (method_exists($dummyModel, 'cluster')) {
+                $relations[] = 'cluster';
+            }
+            if (method_exists($dummyModel, 'address')) {
+                $relations[] = 'address';
+            }
+
+            $query = $model::query();
+            if (!empty($relations)) {
+                $query->with($relations);
+            }
+            $query->where('status', 'Approved');
+
+            if ($sponsorStatusParam !== 'all' && !empty($sponsorStatusParam)) {
+                $statusVal = strtolower(trim($sponsorStatusParam));
+                if ($statusVal === 'sponsored') {
+                    $query->whereRaw("LOWER(sponsor_status) = 'sponsored'");
+                } elseif (in_array($statusVal, ['not sponsored', 'un-sponsored', 'unsponsored', 'notsponsored'])) {
+                    $query->where(function($q) {
+                        $q->whereRaw("LOWER(sponsor_status) != 'sponsored'")
+                          ->orWhereNull('sponsor_status');
+                    });
+                }
+            }
+
+            if ($clusterIdParam !== 'all' && !empty($clusterIdParam)) {
+                $query->where('cluster_id', $clusterIdParam);
+            }
+
+            $items = $query->orderBy('created_at', 'desc')->get();
+
+            foreach ($items as $app) {
+                $app->category_slug = $catSlug;
+                $app->category_name = $config['name'];
+                $allApprovedApps->push($app);
+            }
+        }
+
+        if ($searchParam !== '') {
+            $allApprovedApps = $allApprovedApps->filter(function($app) use ($searchParam) {
+                $metaStr = is_array($app->meta) ? implode(' ', array_filter($app->meta, 'is_scalar')) : '';
+                $searchable = strtolower(implode(' ', array_filter([
+                    $app->applicant_name,
+                    $app->agency_number,
+                    $app->place,
+                    $app->district,
+                    $app->state,
+                    $app->contact_email,
+                    $app->contact_number_1,
+                    $metaStr
+                ])));
+                return str_contains($searchable, $searchParam);
+            });
+        }
+
+        // 1. Fast gathering of metadata keys using array keys set
+        $metaKeysSet = [];
+        foreach ($allApprovedApps as $appItem) {
+            $meta = $appItem->meta;
+            if (is_string($meta)) {
+                $meta = json_decode($meta, true);
+            }
+            if (is_array($meta)) {
+                foreach (array_keys($meta) as $k) {
+                    if ($k !== 'category') {
+                        $metaKeysSet[$k] = true;
+                    }
+                }
+            }
+        }
+        $metaKeys = array_keys($metaKeysSet);
+
+        // 2. Prepare comprehensive column headers
+        $headers = [
+            'Application ID',
+            'Registration No',
+            'Category',
+            'Applicant Name',
+            'Amount Requested',
+            'Status',
+            'Sponsor Status',
+            'Cluster Code',
+            'Cluster Name',
+            'Agency Number',
+            'Contact Email',
+            'Contact Number 1',
+            'Contact Number 2',
+            'House Name',
+            'Place',
+            'Post Office',
+            'Town',
+            'Village',
+            'Panchayat',
+            'District',
+            'State',
+            'Pin Code',
+            'Details / Note',
+            'Created At',
+            'Updated At'
+        ];
+
+        foreach ($metaKeys as $key) {
+            $headers[] = ucwords(str_replace('_', ' ', $key));
+        }
+
+        $prefixes = [
+            'education-center' => 'EC',
+            'cultural-center' => 'CC',
+            'hospital-or-clinics' => 'HC',
+            'shops-and-others' => 'SO',
+            'house' => 'HS',
+            'drinking-water-group-level' => 'DWG',
+            'drinking-water-individual-level' => 'DWI',
+            'orphan-care' => 'OC',
+            'differently-abled' => 'DA',
+            'family-aid' => 'FA',
+            'general' => 'GN'
+        ];
+
+        $callback = function() use ($allApprovedApps, $headers, $metaKeys, $prefixes) {
+            $file = fopen('php://output', 'w');
+            // Write UTF-8 BOM for Excel UTF-8 decoding
+            fputs($file, "\xEF\xBB\xBF");
+            fputcsv($file, $headers);
+
+            $rowCount = 0;
+            foreach ($allApprovedApps as $appItem) {
+                $prefix = $prefixes[$appItem->category_slug] ?? 'APP';
+                $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
+                $appId = 'APLRCFI' . $appYear . $prefix . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
+
+                $regNo = $appItem->reg_number ?? ($appItem->meta['reg_number'] ?? 'N/A');
+                $clusterCode = $appItem->cluster ? $appItem->cluster->code : 'N/A';
+                $clusterName = $appItem->cluster ? $appItem->cluster->name : 'N/A';
+
+                $addr = $appItem->address;
+                $houseName = $addr->house_name ?? ($appItem->house_name ?? ($appItem->meta['house_name'] ?? ''));
+                $place = $addr->place ?? ($appItem->place ?? ($appItem->meta['place'] ?? ''));
+                $postOffice = $addr->post_office ?? ($appItem->post_office ?? ($appItem->meta['post_office'] ?? ''));
+                $town = $addr->town ?? ($appItem->town ?? ($appItem->meta['town'] ?? ''));
+                $village = $addr->village ?? ($appItem->village ?? ($appItem->meta['village'] ?? ''));
+                $panchayat = $addr->panchayat ?? ($appItem->panchayat ?? ($appItem->meta['panchayat'] ?? ''));
+                $district = $addr->district ?? ($appItem->district ?? ($appItem->meta['district'] ?? ''));
+                $state = $addr->state ?? ($appItem->state ?? ($appItem->meta['state'] ?? ''));
+                $pinCode = $addr->pin_code ?? ($appItem->pin_code ?? ($appItem->meta['pin_code'] ?? ''));
+                $contact1 = $addr->contact_number_1 ?? ($appItem->contact_number_1 ?? ($appItem->mobile ?? ''));
+                $contact2 = $addr->contact_number_2 ?? ($appItem->contact_number_2 ?? ($appItem->mobile_2 ?? ''));
+
+                $row = [
+                    $appId,
+                    $regNo,
+                    $appItem->category_name,
+                    $appItem->applicant_name,
+                    $appItem->amount_requested,
+                    $appItem->status,
+                    $appItem->sponsor_status ?? 'N/A',
+                    $clusterCode,
+                    $clusterName,
+                    $appItem->agency_number ?? 'N/A',
+                    $appItem->contact_email ?? 'N/A',
+                    $contact1,
+                    $contact2,
+                    $houseName,
+                    $place,
+                    $postOffice,
+                    $town,
+                    $village,
+                    $panchayat,
+                    $district,
+                    $state,
+                    $pinCode,
+                    $appItem->details ?? ($appItem->additional_note ?? ''),
+                    $appItem->created_at,
+                    $appItem->updated_at
+                ];
+
+                $meta = $appItem->meta;
+                if (is_string($meta)) {
+                    $meta = json_decode($meta, true);
+                }
+                foreach ($metaKeys as $key) {
+                    $val = $meta[$key] ?? '';
+                    $row[] = is_array($val) ? json_encode($val) : $val;
+                }
+
+                fputcsv($file, $row);
+
+                $rowCount++;
+                if ($rowCount % 50 === 0) {
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+                }
+            }
+
+            fclose($file);
+        };
+
+        $catNameStr = ($categoryParam !== 'all' && isset($this->categories[$categoryParam]))
+            ? str_replace(' ', '_', strtolower($this->categories[$categoryParam]['name']))
+            : 'all_categories';
+        $filename = 'approved_applications_' . $catNameStr . '_' . date('Ymd_His') . '.csv';
+
+        return response()->stream($callback, 200, [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ]);
     }
 
     private function scopeProjectsForUser($query, $user)
@@ -903,11 +1243,11 @@ class ApplicationController extends Controller
     public function updateCluster(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user || !$user->hasAdminAccess()) {
+        if (!$user || !$user->isSuperAdmin()) {
             if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'error' => 'Unauthorized action.'], 403);
+                return response()->json(['success' => false, 'error' => 'Only Super Admin can edit cluster details after approval.'], 403);
             }
-            return redirect()->back()->with('error', 'You are not authorized to edit applications.');
+            return redirect()->back()->with('error', 'Only Super Admin can edit cluster details after approval.');
         }
 
         $request->validate([
@@ -929,18 +1269,29 @@ class ApplicationController extends Controller
 
         $app->cluster_id = $request->input('cluster_id');
         $app->agency_number = $request->input('agency_number');
+        
+        $meta = $app->meta ?? [];
+        $metaInput = $request->input('meta', []);
+        if (isset($metaInput['agency_name'])) {
+            $meta['agency_name'] = $metaInput['agency_name'];
+        }
+        if (isset($metaInput['application_date'])) {
+            $meta['application_date'] = $metaInput['application_date'];
+        }
+        $app->meta = $meta;
         $app->save();
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Cluster and Agency Number updated successfully.',
+                'message' => 'Cluster and Agency details updated successfully.',
                 'cluster' => $app->cluster ? [
                     'id' => $app->cluster->id,
                     'name' => $app->cluster->name,
                     'code' => $app->cluster->code
                 ] : null,
-                'agency_number' => $app->agency_number
+                'agency_number' => $app->agency_number,
+                'meta' => $app->meta
             ]);
         }
 
@@ -950,7 +1301,7 @@ class ApplicationController extends Controller
     public function toggleSponsor(Request $request, $id)
     {
         $user = auth()->user();
-        if (!$user || !$user->hasAdminAccess()) {
+        if (!$user || !$user->canManageSponsorship()) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => 'You are not authorized to update sponsor status.'], 403);
             }
@@ -966,14 +1317,33 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'Application not found.');
         }
 
-        $app->sponsor_status = ($app->sponsor_status === 'Sponsored') ? 'Not Sponsored' : 'Sponsored';
+        $meta = $app->meta ?? [];
+        unset($meta['sponsor_status']);
+
+        if ($app->sponsor_status === 'Sponsored' && !$request->has('sponsored_date')) {
+            if (!$user->isSuperAdmin()) {
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'error' => 'Only Super Admin can un-sponsor applications.'], 403);
+                }
+                return redirect()->back()->with('error', 'Only Super Admin can un-sponsor applications.');
+            }
+
+            $app->sponsor_status = 'Not Sponsored';
+            unset($meta['sponsored_date']);
+        } else {
+            $app->sponsor_status = 'Sponsored';
+            $meta['sponsored_date'] = $request->input('sponsored_date', date('Y-m-d'));
+        }
+
+        $app->meta = $meta;
         $app->save();
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Sponsor status updated successfully.',
-                'sponsor_status' => $app->sponsor_status
+                'sponsor_status' => $app->sponsor_status,
+                'sponsored_date' => $meta['sponsored_date'] ?? null
             ]);
         }
 

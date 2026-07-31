@@ -11,7 +11,9 @@
             3 => 'Project Manager',
             4 => 'HOD',
             5 => 'Others',
-            6 => 'Engineer'
+            6 => 'Engineer',
+            7 => 'Reception',
+            8 => 'Social Aid Manager'
         ];
 
         // Stats queries
@@ -109,9 +111,10 @@
                 <option value="coo">COO</option>
                 <option value="project_manager">Project Manager</option>
                 <option value="hod">HOD</option>
-                <option value="others">Others</option>
+                <option value="social_aid">Social Aid Manager</option>
                 <option value="engineer">Engineer</option>
                 <option value="reception">Reception</option>
+                <option value="others">Others</option>
             </select>
 
             <select id="statusFilter" onchange="filterStaffs()" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; padding: 0.65rem 1rem; font-size: 0.88rem; outline: none; font-family: inherit; font-weight: 500; cursor: pointer; min-width: 135px;">
@@ -161,6 +164,12 @@
                             } elseif ($user->isHod()) {
                                 $roleBadgeBg = 'rgba(16, 185, 129, 0.12)';
                                 $roleBadgeColor = '#059669';
+                            } elseif ($user->isSocialAid()) {
+                                $roleBadgeBg = 'rgba(16, 185, 129, 0.15)';
+                                $roleBadgeColor = '#047857';
+                            } elseif ($user->isReception()) {
+                                $roleBadgeBg = 'rgba(6, 182, 212, 0.12)';
+                                $roleBadgeColor = '#0891b2';
                             } elseif ($user->isEngineer()) {
                                 $roleBadgeBg = 'rgba(236, 72, 153, 0.12)';
                                 $roleBadgeColor = '#db2777';
@@ -297,9 +306,10 @@
                         <option value="coo" {{ old('role') == 'coo' ? 'selected' : '' }}>COO</option>
                         <option value="project_manager" {{ old('role') == 'project_manager' ? 'selected' : '' }}>Project Manager</option>
                         <option value="hod" {{ old('role') == 'hod' ? 'selected' : '' }}>HOD</option>
-                        <option value="others" {{ (old('role') == 'others' || !Auth::user()->isSuperAdmin()) ? 'selected' : '' }}>Others</option>
+                        <option value="social_aid" {{ old('role') == 'social_aid' ? 'selected' : '' }}>Social Aid Manager</option>
                         <option value="engineer" {{ old('role') == 'engineer' ? 'selected' : '' }}>Engineer</option>
                         <option value="reception" {{ old('role') == 'reception' ? 'selected' : '' }}>Reception</option>
+                        <option value="others" {{ (old('role') == 'others' || !Auth::user()->isSuperAdmin()) ? 'selected' : '' }}>Others</option>
                     </select>
                     @if(!Auth::user()->isSuperAdmin())
                         <input type="hidden" name="role" value="others">
@@ -314,7 +324,7 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
                     <i class="bx bx-plus-circle"></i> Register Staff
                 </button>
             </form>
@@ -367,9 +377,10 @@
                         <option value="coo">COO</option>
                         <option value="project_manager">Project Manager</option>
                         <option value="hod">HOD</option>
-                        <option value="others">Others</option>
+                        <option value="social_aid">Social Aid Manager</option>
                         <option value="engineer">Engineer</option>
                         <option value="reception">Reception</option>
+                        <option value="others">Others</option>
                     </select>
                     @if(!Auth::user()->isSuperAdmin())
                         <input type="hidden" name="role" id="edit_role_hidden">
@@ -386,7 +397,7 @@
                 @endif
 
                 <!-- Submit Button -->
-                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
                     <i class="bx bx-save"></i> Save Changes
                 </button>
             </form>

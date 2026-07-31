@@ -5,6 +5,7 @@ namespace App\Traits;
 trait HasCategoryMeta
 {
     public $pendingAddressData = [];
+    public array $virtualMeta = [];
 
     /**
      * Initialize the trait by appending 'meta' to the model's serialized attributes.
@@ -64,6 +65,10 @@ trait HasCategoryMeta
             }
         }
 
+        if (is_array($this->virtualMeta)) {
+            $meta = array_merge($meta, $this->virtualMeta);
+        }
+
         return $meta;
     }
 
@@ -74,9 +79,19 @@ trait HasCategoryMeta
     public function setMetaAttribute($value)
     {
         if (is_array($value)) {
+            $table = $this->getTable();
             foreach ($value as $key => $val) {
-                if ($key !== 'category') {
-                    $this->setAttribute($key, $val);
+                if ($key !== 'category' && $key !== 'sponsor_status' && $key !== 'status') {
+                    if (\Illuminate\Support\Facades\Schema::hasColumn($table, $key)) {
+                        $this->setAttribute($key, $val);
+                    } else {
+                        $addressFields = ['house_name', 'place', 'post_office', 'post', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'pincode', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
+                        if (in_array($key, $addressFields)) {
+                            $this->setAttribute($key, $val);
+                        } else {
+                            $this->virtualMeta[$key] = $val;
+                        }
+                    }
                 }
             }
         }

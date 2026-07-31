@@ -81,8 +81,9 @@
         .btn-action-icon.btn-edit {
             background-color: #fa8231;
         }
-        .btn-action-icon.btn-delete {
+        .btn-action-icon.btn-delete, .btn-action-icon.btn-pdf {
             background-color: #eb3b5a;
+            color: #ffffff;
         }
         .btn-action-icon.btn-view {
             background-color: #2bcbba;
@@ -314,16 +315,10 @@
                                     <i class="bx bx-pencil"></i>
                                 </button>
 
-                                <!-- Delete Button -->
-                                <form action="{{ route('projects.destroy', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this project?');" style="display: inline-block;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                    <input type="hidden" name="type_of_project" value="{{ $project->type_of_project }}">
-                                    <button type="submit" class="btn-action-icon btn-delete" title="Delete">
-                                        <i class="bx bx-trash"></i>
-                                    </button>
-                                </form>
+                                <!-- PDF Report Button -->
+                                <a href="{{ route('admin.reports.single_project', [$project->id, 'category' => $categorySlug]) }}?print=1" target="_blank" class="btn-action-icon btn-pdf" title="PDF / Print Report">
+                                    <i class="bx bxs-file-pdf"></i>
+                                </a>
                                 @endif
 
                                 <!-- View Details Stage Button -->

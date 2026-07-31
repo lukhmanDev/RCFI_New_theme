@@ -188,7 +188,7 @@
                                     @endif
                                 @endif
 
-                                @if(Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess()))
+                                @if($appItem->status !== 'Approved' && (Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess())))
                                     <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
                                         @csrf
                                         @method('DELETE')
@@ -230,10 +230,12 @@
                     <span id="modal_status_actions" style="display: inline-flex; gap: 0.75rem;"></span>
                 @endif
                 @if(Auth::user()->hasAdminAccess())
-                    <button onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
+                    <button id="modal_edit_btn" onclick="editFromDetails()" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.6rem 1.5rem;">
                         <i class="bx bx-pencil"></i> Edit
                     </button>
-                    <button onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
+                @endif
+                @if(Auth::user()->canDeleteApplications())
+                    <button id="modal_delete_btn" onclick="deleteFromDetails()" class="btn-danger-custom" style="padding: 0.6rem 1.5rem;">
                         <i class="bx bx-trash"></i> Delete
                     </button>
                 @endif
@@ -798,6 +800,10 @@
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
+            if (appItem && appItem.status === 'Approved') {
+                alert('Approved applications cannot be edited.');
+                return;
+            }
             const form = document.getElementById('editAppForm');
             form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
@@ -971,7 +977,7 @@
                 ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                     <h5 style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Rejected Reason:</h5>
-                    <p style="color: #ffffff; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); min-height: 50px;">
+                    <p style="color: #ef4444; line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: rgba(239, 68, 68, 0.08); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3); min-height: 50px; font-weight: 600;">
                         ${appItem.rejected_reason || meta.rejected_reason}
                     </p>
                 </div>
@@ -986,6 +992,10 @@
             `;
             
             document.getElementById('details_content').innerHTML = html;
+            const editBtn = document.getElementById('modal_edit_btn');
+            const deleteBtn = document.getElementById('modal_delete_btn');
+            if (editBtn) editBtn.style.display = (appItem.status === 'Approved') ? 'none' : 'inline-block';
+            if (deleteBtn) deleteBtn.style.display = (appItem.status === 'Approved') ? 'none' : 'inline-block';
             document.getElementById('detailsAppModal').style.display = 'flex';
         }
 
@@ -1000,6 +1010,10 @@
 
         function deleteFromDetails() {
             if (currentDetailsAppItem) {
+                if (currentDetailsAppItem.status === 'Approved') {
+                    alert('Approved applications cannot be deleted.');
+                    return;
+                }
                 showCustomConfirm('Are you sure you want to delete this application? This action cannot be undone.', function() {
                     const form = document.createElement('form');
                     form.method = 'POST';
