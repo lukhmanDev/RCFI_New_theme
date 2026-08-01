@@ -239,6 +239,16 @@
             }
 
             const meta = appItem.meta || {};
+            const addr = appItem.address || appItem.applicant_address || {};
+            const photoVal = appItem.student_photo || appItem.photo || (meta && meta.student_photo ? meta.student_photo : null) || (addr && addr.student_photo ? addr.student_photo : null);
+            let photoSrc = null;
+            if (photoVal) {
+                if (photoVal.startsWith('http://') || photoVal.startsWith('https://')) {
+                    photoSrc = photoVal;
+                } else {
+                    photoSrc = window.location.origin + '/' + photoVal.replace(/^\/+/, '');
+                }
+            }
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
             
             let html = `
@@ -262,8 +272,8 @@
                             <div style="width: 112px; flex-shrink: 0; align-self: flex-start; margin-top: 0px; border: 1px solid var(--panel-border); border-radius: 10px; padding: 0.4rem 0.25rem; background: rgba(255,255,255,0.03); text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center;">
                                 <h5 style="color: #00a65a; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.04em; margin: 0 0 0.3rem 0; text-transform: uppercase;">STUDENT PHOTO</h5>
                                 <div style="width: 80px; height: 104px; border: 2px dashed #00a65a; border-radius: 8px; padding: 0.15rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; overflow: hidden; position: relative;">
-                                    ${meta.student_photo ? `
-                                        <img src="${meta.student_photo}" style="width: 100%; height: 100%; border-radius: 6px; object-fit: cover;">
+                                    ${photoSrc ? `
+                                        <img src="${photoSrc}" onerror="this.onerror=null; this.parentNode.innerHTML='<i class=\\'bx bx-image\\' style=\\'font-size: 1.5rem; color: #00a65a; margin-bottom: 0.1rem;\\'></i><span style=\\'color: var(--text-muted); font-size: 0.6rem; font-weight: 500; text-align: center; line-height: 1.1;\\'>No Photo<br>Uploaded</span>';" style="width: 100%; height: 100%; border-radius: 6px; object-fit: cover;">
                                     ` : `
                                         <i class="bx bx-image" style="font-size: 1.5rem; color: #00a65a; margin-bottom: 0.1rem;"></i>
                                         <span style="color: var(--text-muted); font-size: 0.6rem; font-weight: 500; text-align: center; line-height: 1.1;">No Photo<br>Uploaded</span>

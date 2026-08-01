@@ -968,9 +968,56 @@ class AdminController extends Controller
             'project_summary_form' => 'Project summary form',
         ];
 
+        $project = $projectObj;
+
+        $funds = collect();
+        if (method_exists($projectObj, 'funds')) {
+            $funds = $projectObj->funds;
+        }
+
+        $programmes = collect();
+        if (method_exists($projectObj, 'programmes')) {
+            $programmes = $projectObj->programmes;
+        }
+
+        if ($request->has('pdf') || $request->has('print') || $request->has('download')) {
+            $isSocialAid = in_array($categorySlug, ['orphan-care', 'family-aid', 'differently-abled']) 
+                || str_contains($categorySlug, 'orphan') 
+                || str_contains($categorySlug, 'family') 
+                || str_contains($categorySlug, 'abled');
+
+            $pdfView = $isSocialAid ? 'pdf.social_aid_project_pdf' : 'pdf.project_pdf';
+
+            return view($pdfView, compact(
+                'targetProjectData',
+                'projectObj',
+                'project',
+                'allProjectsList',
+                'projectManager',
+                'engineer',
+                'contractor',
+                'application',
+                'projectDocument',
+                'completionDetail',
+                'inspections',
+                'communityContributions',
+                'funds',
+                'programmes',
+                'totalAllocated',
+                'totalCommunityContrib',
+                'totalGrants',
+                'leverage',
+                'anyOther',
+                'deductions',
+                'totalProjectCost',
+                'docFields'
+            ));
+        }
+
         return view('admin.reports.single_project', compact(
             'targetProjectData',
             'projectObj',
+            'project',
             'allProjectsList',
             'projectManager',
             'engineer',
@@ -980,6 +1027,8 @@ class AdminController extends Controller
             'completionDetail',
             'inspections',
             'communityContributions',
+            'funds',
+            'programmes',
             'totalAllocated',
             'totalCommunityContrib',
             'totalGrants',
@@ -989,5 +1038,11 @@ class AdminController extends Controller
             'totalProjectCost',
             'docFields'
         ));
+    }
+
+    public function projectPdf(Request $request, $id = null)
+    {
+        $request->query->set('pdf', '1');
+        return $this->singleProjectReport($request, $id);
     }
 }

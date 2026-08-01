@@ -214,6 +214,40 @@
             }
         }
         window.switchStage = switchStage;
+
+        window.openAddProgrammeModal = function openAddProgrammeModal() {
+            const modal = document.getElementById('addProgrammeModal');
+            if (modal) {
+                document.body.appendChild(modal);
+                modal.style.setProperty('z-index', '999999', 'important');
+                modal.style.setProperty('display', 'flex', 'important');
+            }
+        };
+        window.closeAddProgrammeModal = function closeAddProgrammeModal() {
+            const modal = document.getElementById('addProgrammeModal');
+            if (modal) {
+                modal.style.setProperty('display', 'none', 'important');
+            }
+        };
+
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('#btn-add-programme-main, .btn-add-programme-trigger');
+            if (btn) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof window.openAddProgrammeModal === 'function') {
+                    window.openAddProgrammeModal();
+                } else {
+                    const modal = document.getElementById('addProgrammeModal');
+                    if (modal) {
+                        document.body.appendChild(modal);
+                        modal.style.setProperty('z-index', '999999', 'important');
+                        modal.style.setProperty('display', 'flex', 'important');
+                    }
+                }
+            }
+        });
+
         function restoreActiveStage() {
             try {
                 const savedStage = sessionStorage.getItem('current_project_stage_{{ $project->id ?? 0 }}');
@@ -223,9 +257,19 @@
             } catch(e) {}
         }
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', restoreActiveStage);
+            document.addEventListener('DOMContentLoaded', function() {
+                restoreActiveStage();
+                const addModal = document.getElementById('addProgrammeModal');
+                if (addModal && addModal.parentElement !== document.body) {
+                    document.body.appendChild(addModal);
+                }
+            });
         } else {
             restoreActiveStage();
+            const addModal = document.getElementById('addProgrammeModal');
+            if (addModal && addModal.parentElement !== document.body) {
+                document.body.appendChild(addModal);
+            }
         }
 
     </script>
@@ -249,6 +293,11 @@
                 $projectRouteKey = $projectRouteKeys[$project->type_of_project] ?? 'orphan_care';
                 $projectRouteSlug = $projectRouteSlugs[$project->type_of_project] ?? 'orphan-care';
 
+                $socialAidStageLabels = [
+                    1 => 'Profile',
+                    2 => 'Scholarship',
+                    3 => 'Report',
+                ];
             @endphp
             @for($i = 1; $i <= $maxStages; $i++)
                 @php
@@ -278,12 +327,14 @@
                     if ($isLocked) {
                         $class .= ' locked';
                     }
+
+                    $stageTabTitle = $isSocialAidProject ? ($socialAidStageLabels[$i] ?? "Stage {$i}") : "Stage {$i}";
                 @endphp
                 <div class="stage-tab {{ $class }}" id="tab-{{ $i }}" onclick="switchStage({{ $i }})">
                     @if($isLocked)
                         <i class="bx bx-lock-alt" style="margin-right: 0.25rem;"></i>
                     @endif
-                    Stage {{ $i }}
+                    {{ $stageTabTitle }}
                 </div>
             @endfor
         </div>
@@ -298,7 +349,10 @@
         $isHod = ($authUser && ($authUser->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
         $isPmOnly = ($authUser && ($authUser->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
         $isEngineerOnly = ($authUser && ($authUser->isEngineer() || strtolower($authUser->designation ?? '') === 'engineer'));
-        
+        $isSocialAid = ($authUser && ((method_exists($authUser, 'isSocialAid') ? $authUser->isSocialAid() : false) || in_array($authUser->role, [8, '8', 'social_aid', 'Social Aid', 'Social Aid Manager']) || str_contains($designationLower, 'social aid')));
+        $canManageFinance = ($isSuperAdmin || $isCoo || $isHod);
+        $canDeleteFinanceRow = ($isSuperAdmin || $isCoo || $isHod);
+
         $isProjectManager = ($authUser && ($isSuperAdmin || $isCoo || $isHod || $isPmOnly || $isEngineerOnly || in_array($authUser->role, [1, 2, 3, 4, 6, 'super_admin', 'coo', 'project_manager', 'hod', 'engineer']) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod', 'super admin', 'admin'])));
         $isLockedForEditing = ($project->status === 'Completed' && !$isSuperAdmin);
         
@@ -352,52 +406,61 @@
                 @endif
 
                 @if($isSocialAidProject && $application)
-                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 2rem; margin-bottom: 2.5rem; align-items: start;">
-                        <!-- Left Side: Beneficiary Photo Card -->
-                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;">
-                            <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin-top: 0; margin-bottom: 1.25rem; letter-spacing: 0.05em;">{{ $project->type_of_project === 'Orphan Care' ? 'Student Photo' : 'Beneficiary Photo' }}</h4>
-                            
-                            <div style="width: 180px; height: 180px; border-radius: 12px; border: 2px dashed var(--panel-border); margin: 0 auto 1.5rem auto; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: rgba(255,255,255,0.02);">
-                                @if($application->student_photo)
-                                    <img src="{{ asset($application->student_photo) }}" alt="Photo" style="width: 100%; height: 100%; object-fit: cover;">
-                                @else
-                                    <div style="text-align: center; color: var(--text-muted); padding: 1rem;">
-                                        <i class="bx bx-image-add" style="font-size: 2.5rem; margin-bottom: 0.5rem; display: block; color: var(--accent-cyan);"></i>
-                                        <span style="font-size: 0.75rem;">No Photo Uploaded</span>
-                                    </div>
-                                @endif
-                            </div>
+                    @php
+                        $studentPhoto = $application->student_photo 
+                            ?? ($application->meta['student_photo'] ?? null) 
+                            ?? ($application->applicantAddress ? $application->applicantAddress->student_photo : null);
+                        $studentPhotoUrl = $studentPhoto ? (Str::startsWith($studentPhoto, ['http://', 'https://']) ? $studentPhoto : asset(ltrim($studentPhoto, '/'))) : null;
+                    @endphp
 
-                            <form action="{{ route('projects.' . $projectRouteKey . '.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-top: 1rem;">
-                                @csrf
-                                <button type="button" class="btn-custom" onclick="document.getElementById('student_photo_input').click()" style="width: 100%; margin-bottom: 0.5rem; justify-content: center; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem;">
-                                    <i class="bx bx-upload"></i> {{ $application->student_photo ? 'Change Photo' : 'Upload Photo' }}
-                                </button>
-                                <input type="file" name="student_photo" id="student_photo_input" accept="image/*" style="display: none;" onchange="this.form.submit()">
-                            </form>
-                            @if($application->student_photo)
-                                <form action="{{ route('projects.' . $projectRouteKey . '.delete_photo', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this photo?')" style="margin-top: 0.5rem;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-custom" style="width: 100%; background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); justify-content: center; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem;">
-                                        <i class="bx bx-trash"></i> Delete Photo
-                                    </button>
-                                </form>
-                            @endif
+                    <!-- Main Application Details Panel Container -->
+                    <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 2.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+                            <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">
+                                <i class="bx bx-user-pin" style="font-size: 1.1rem; vertical-align: middle; margin-right: 0.35rem;"></i> {{ $project->type_of_project === 'Orphan Care' ? 'Student & Application Details' : 'Beneficiary & Application Details' }}
+                            </h4>
+                            <button type="button" id="edit-address-btn" onclick="toggleAddressEdit()" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; border-radius: 6px;">
+                                <i class="bx bx-edit"></i> Edit Details
+                            </button>
                         </div>
 
-                        <!-- Right Side: Address details and editing -->
-                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
-                                <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">{{ $project->type_of_project === 'Orphan Care' ? 'Student Address' : 'Beneficiary Address' }}</h4>
-                                <button type="button" id="edit-address-btn" onclick="toggleAddressEdit()" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; border-radius: 6px;">
-                                    <i class="bx bx-edit"></i> Edit Address
-                                </button>
-                            </div>
-
-                            <!-- Display Address View -->
-                            <div id="address-display-view">
+                        <!-- Display Details View (Grid with Details on Left & Photo Card on Right) -->
+                        <div id="address-display-view">
+                            <div style="display: grid; grid-template-columns: 1fr 240px; gap: 1.5rem; align-items: start;">
+                                <!-- Left Column: Details Key-Value List -->
                                 <div class="details-grid">
+                                    <div class="details-label">Applicant Name</div><div class="details-colon">:</div><div class="details-value" style="font-weight: 700; color: #ffffff;">{{ $application->applicant_name ?? 'N/A' }}</div>
+                                    <div class="details-label">Gender</div><div class="details-colon">:</div><div class="details-value">{{ $application->gender ?? 'N/A' }}</div>
+                                    <div class="details-label">Date of Birth</div><div class="details-colon">:</div><div class="details-value">{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} @if(!empty($application->age))(Age: {{ $application->age }})@endif</div>
+                                    <div class="details-label">Aadhar Number</div><div class="details-colon">:</div><div class="details-value">{{ $application->aadhar_number ?? 'N/A' }}</div>
+                                    
+                                    <div class="details-label">Father's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->father_name ?? 'N/A' }}</div>
+                                    @if(!empty($application->grandfather_name))
+                                        <div class="details-label">Grandfather's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->grandfather_name }}</div>
+                                    @endif
+                                    <div class="details-label">Mother's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->mother_name ?? 'N/A' }}</div>
+                                    @if(!empty($application->mothers_father_name))
+                                        <div class="details-label">Mother's Father Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->mothers_father_name }}</div>
+                                    @endif
+                                    <div class="details-label">Guardian</div><div class="details-colon">:</div><div class="details-value">{{ $application->guardian_name ?? 'N/A' }} @if(!empty($application->guardian_relation))(Relation: {{ $application->guardian_relation }})@endif</div>
+
+                                    @if(!empty($application->father_death_date) || !empty($application->father_death_cause))
+                                        <div class="details-label">Father Death Info</div><div class="details-colon">:</div>
+                                        <div class="details-value">Date: {{ !empty($application->father_death_date) ? date('d-M-Y', strtotime($application->father_death_date)) : 'N/A' }} | Cause: {{ $application->father_death_cause ?? 'N/A' }}</div>
+                                    @endif
+                                    @if(!empty($application->mother_alive_status))
+                                        <div class="details-label">Mother Status</div><div class="details-colon">:</div>
+                                        <div class="details-value">Alive: {{ $application->mother_alive_status }} @if(!empty($application->mother_remarried_status))| Remarried: {{ $application->mother_remarried_status }}@endif @if(!empty($application->mother_death_date))| Death Date: {{ date('d-M-Y', strtotime($application->mother_death_date)) }}@endif</div>
+                                    @endif
+
+                                    @if(!empty($application->siblings_total) || !empty($application->siblings_male) || !empty($application->siblings_female))
+                                        <div class="details-label">Siblings</div><div class="details-colon">:</div>
+                                        <div class="details-value">Total: {{ $application->siblings_total ?? (($application->siblings_male ?? 0) + ($application->siblings_female ?? 0)) }} (Brothers: {{ $application->siblings_male ?? 0 }}, Sisters: {{ $application->siblings_female ?? 0 }})</div>
+                                    @endif
+                                    @if(!empty($application->current_beneficiaries))
+                                        <div class="details-label">Current Beneficiaries</div><div class="details-colon">:</div><div class="details-value">{{ $application->current_beneficiaries }}</div>
+                                    @endif
+
                                     <div class="details-label">House Name</div><div class="details-colon">:</div><div class="details-value" id="display-house_name">{{ $application->house_name ?? 'N/A' }}</div>
                                     <div class="details-label">Place</div><div class="details-colon">:</div><div class="details-value" id="display-place">{{ $application->place ?? 'N/A' }}</div>
                                     <div class="details-label">Post Office</div><div class="details-colon">:</div><div class="details-value" id="display-post_office">{{ $application->post_office ?? 'N/A' }}</div>
@@ -405,15 +468,253 @@
                                     <div class="details-label">Panchayat</div><div class="details-colon">:</div><div class="details-value" id="display-panchayat">{{ $application->panchayat ?? 'N/A' }}</div>
                                     <div class="details-label">District</div><div class="details-colon">:</div><div class="details-value" id="display-district">{{ $application->district ?? 'N/A' }}</div>
                                     <div class="details-label">State</div><div class="details-colon">:</div><div class="details-value" id="display-state">{{ $application->state ?? 'N/A' }}</div>
+                                    @if(!empty($application->pin_code))
+                                        <div class="details-label">PIN Code</div><div class="details-colon">:</div><div class="details-value">{{ $application->pin_code }}</div>
+                                    @endif
                                     <div class="details-label">Mobile 1</div><div class="details-colon">:</div><div class="details-value" id="display-mobile_1">{{ $application->mobile_1 ?? $application->contact_number_1 ?? $application->mobile ?? optional($application->applicantAddress)->contact_number_1 ?? 'N/A' }}</div>
                                     <div class="details-label">Mobile 2</div><div class="details-colon">:</div><div class="details-value" id="display-mobile_2">{{ $application->mobile_2 ?? $application->contact_number_2 ?? optional($application->applicantAddress)->contact_number_2 ?? 'N/A' }}</div>
+                                    @if(!empty($application->whatsapp_number))
+                                        <div class="details-label">WhatsApp Number</div><div class="details-colon">:</div><div class="details-value">{{ $application->whatsapp_number }}</div>
+                                    @endif
+
+                                    @if(!empty($application->school_name) || !empty($application->school_class))
+                                        <div class="details-label">School Education</div><div class="details-colon">:</div><div class="details-value">{{ $application->school_name ?? 'N/A' }} @if(!empty($application->school_class))(Class: {{ $application->school_class }})@endif</div>
+                                    @endif
+                                    @if(!empty($application->madrassa_name) || !empty($application->madrassa_class))
+                                        <div class="details-label">Madrassa Education</div><div class="details-colon">:</div><div class="details-value">{{ $application->madrassa_name ?? 'N/A' }} @if(!empty($application->madrassa_class))(Class: {{ $application->madrassa_class }})@endif</div>
+                                    @endif
+                                    @if(!empty($application->not_studying_reason))
+                                        <div class="details-label">Not Studying Reason</div><div class="details-colon">:</div><div class="details-value" style="color: #ff8a8a;">{{ $application->not_studying_reason }}</div>
+                                    @endif
+                                    @if(!empty($application->health_status))
+                                        <div class="details-label">Health Status</div><div class="details-colon">:</div><div class="details-value">{{ $application->health_status }}</div>
+                                    @endif
+
+                                    @if(!empty($application->monthly_income) || !empty($application->monthly_expense))
+                                        <div class="details-label">Monthly Finance</div><div class="details-colon">:</div><div class="details-value">Income: ₹{{ $application->monthly_income ?? '0' }} / Expense: ₹{{ $application->monthly_expense ?? '0' }}</div>
+                                    @endif
+                                    @if(!empty($application->house_type))
+                                        <div class="details-label">House Type</div><div class="details-colon">:</div><div class="details-value">{{ $application->house_type }}</div>
+                                    @endif
+                                    @if(!empty($application->sponsorship_details))
+                                        <div class="details-label">Sponsorship Info</div><div class="details-colon">:</div><div class="details-value">{{ $application->sponsorship_details }}</div>
+                                    @endif
+
+                                    @if(!empty($application->recommender_name))
+                                        <div class="details-label">Recommender</div><div class="details-colon">:</div>
+                                        <div class="details-value">{{ $application->recommender_name }} @if(!empty($application->recommender_org))({{ $application->recommender_org }} - {{ $application->recommender_position }})@endif @if(!empty($application->recommender_phone))Ph: {{ $application->recommender_phone }}@endif</div>
+                                    @endif
+                                </div>
+
+                                <!-- Right Column: Student/Beneficiary Photo Card (Inside Application Details) -->
+                                <div style="background-color: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.25rem; text-align: center; box-sizing: border-box;">
+                                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 0; margin-bottom: 1rem; letter-spacing: 0.05em;">{{ $project->type_of_project === 'Orphan Care' ? 'Student Photo' : 'Beneficiary Photo' }}</h5>
+                                    
+                                    <div style="width: 160px; height: 160px; border-radius: 12px; border: 2px dashed var(--panel-border); margin: 0 auto 1.25rem auto; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: rgba(0,0,0,0.1);">
+                                        @if($studentPhotoUrl)
+                                            <img src="{{ $studentPhotoUrl }}" onerror="this.onerror=null; this.parentNode.innerHTML='<div style=\'text-align: center; color: var(--text-muted); padding: 1rem;\'><i class=\'bx bx-image-add\' style=\'font-size: 2.5rem; margin-bottom: 0.5rem; display: block; color: var(--accent-cyan);\'></i><span style=\'font-size: 0.75rem;\'>No Photo Uploaded</span></div>';" alt="Photo" style="width: 100%; height: 100%; object-fit: cover;">
+                                        @else
+                                            <div style="text-align: center; color: var(--text-muted); padding: 1rem;">
+                                                <i class="bx bx-image-add" style="font-size: 2.5rem; margin-bottom: 0.5rem; display: block; color: var(--accent-cyan);"></i>
+                                                <span style="font-size: 0.75rem;">No Photo Uploaded</span>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <form action="{{ route('projects.' . $projectRouteKey . '.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-top: 0.75rem;">
+                                        @csrf
+                                        <button type="button" class="btn-custom" onclick="document.getElementById('student_photo_input').click()" style="width: 100%; margin-bottom: 0.5rem; justify-content: center; border-radius: 6px; padding: 0.45rem; font-size: 0.8rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #fff; font-weight: 600;">
+                                            <i class="bx bx-upload"></i> {{ $studentPhotoUrl ? 'Change Photo' : 'Upload Photo' }}
+                                        </button>
+                                        <input type="file" name="student_photo" id="student_photo_input" accept="image/*" style="display: none;" onchange="this.form.submit()">
+                                    </form>
+                                    @if($studentPhotoUrl && ($isSuperAdmin || $isCoo || $isHod))
+                                        <form action="{{ route('projects.' . $projectRouteKey . '.delete_photo', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this photo?')" style="margin-top: 0.35rem;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-custom" style="width: 100%; background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); justify-content: center; border-radius: 6px; padding: 0.45rem; font-size: 0.8rem; color: #fff; font-weight: 600; border: none;">
+                                                <i class="bx bx-trash"></i> Delete Photo
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Edit Address Form -->
-                            <form id="address-edit-form" action="{{ route('projects.' . $projectRouteKey . '.update_address', $project->id) }}" method="POST" style="display: none;">
-
+                            <!-- Edit Details Form -->
+                            <form id="address-edit-form" action="{{ route('projects.' . $projectRouteKey . '.update_address', $project->id) }}" method="POST" onsubmit="handleAddressSubmit(event)" style="display: none;">
                                 @csrf
+                                
+                                <!-- Section 1: Basic & Personal Info -->
+                                <h5 style="color: var(--accent-cyan); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 0; margin-bottom: 0.85rem; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
+                                    1. Basic &amp; Personal Info
+                                </h5>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div class="form-group-custom" style="grid-column: span 2; margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Applicant Name *</label>
+                                        <input type="text" name="applicant_name" value="{{ $application->applicant_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;" required>
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Father's Name *</label>
+                                        <input type="text" name="father_name" value="{{ $application->father_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Grandfather's Name</label>
+                                        <input type="text" name="grandfather_name" value="{{ $application->grandfather_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mother's Name *</label>
+                                        <input type="text" name="mother_name" value="{{ $application->mother_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mother's Father Name</label>
+                                        <input type="text" name="mothers_father_name" value="{{ $application->mothers_father_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Gender</label>
+                                        <select name="gender" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                            <option value="">Select Gender</option>
+                                            <option value="Male" {{ ($application->gender ?? '') === 'Male' ? 'selected' : '' }}>Male</option>
+                                            <option value="Female" {{ ($application->gender ?? '') === 'Female' ? 'selected' : '' }}>Female</option>
+                                            <option value="Other" {{ ($application->gender ?? '') === 'Other' ? 'selected' : '' }}>Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Date of Birth</label>
+                                        <input type="date" name="dob" value="{{ !empty($application->dob) ? date('Y-m-d', strtotime($application->dob)) : '' }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Age</label>
+                                        <input type="text" name="age" value="{{ $application->age }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Aadhaar Number</label>
+                                        <input type="text" name="aadhar_number" value="{{ $application->aadhar_number }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Guardian Name</label>
+                                        <input type="text" name="guardian_name" value="{{ $application->guardian_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Guardian Relation</label>
+                                        <input type="text" name="guardian_relation" value="{{ $application->guardian_relation }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                </div>
+
+                                <!-- Section 2: Parental Death & Family Details -->
+                                <h5 style="color: var(--accent-cyan); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 1rem; margin-bottom: 0.85rem; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
+                                    2. Parental Death &amp; Family Details
+                                </h5>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Father Death Date</label>
+                                        <input type="date" name="father_death_date" value="{{ !empty($application->father_death_date) ? date('Y-m-d', strtotime($application->father_death_date)) : '' }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Father Cause of Death</label>
+                                        <input type="text" name="father_death_cause" value="{{ $application->father_death_cause }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mother Alive Status</label>
+                                        <select name="mother_alive_status" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                            <option value="Yes" {{ ($application->mother_alive_status ?? 'Yes') === 'Yes' ? 'selected' : '' }}>Yes</option>
+                                            <option value="No" {{ ($application->mother_alive_status ?? '') === 'No' ? 'selected' : '' }}>No</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mother Re-Married Status</label>
+                                        <input type="text" name="mother_remarried_status" value="{{ $application->mother_remarried_status }}" placeholder="e.g. Yes / No" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mother Death Date</label>
+                                        <input type="date" name="mother_death_date" value="{{ !empty($application->mother_death_date) ? date('Y-m-d', strtotime($application->mother_death_date)) : '' }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mother Cause of Death</label>
+                                        <input type="text" name="mother_death_cause" value="{{ $application->mother_death_cause }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Brothers</label>
+                                        <input type="number" name="siblings_male" value="{{ $application->siblings_male }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Sisters</label>
+                                        <input type="number" name="siblings_female" value="{{ $application->siblings_female }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Current Beneficiaries</label>
+                                        <input type="number" name="current_beneficiaries" value="{{ $application->current_beneficiaries }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Sponsorship Details</label>
+                                        <input type="text" name="sponsorship_details" value="{{ $application->sponsorship_details }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Monthly Income (₹)</label>
+                                        <input type="text" name="monthly_income" value="{{ $application->monthly_income }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Monthly Expense (₹)</label>
+                                        <input type="text" name="monthly_expense" value="{{ $application->monthly_expense }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                </div>
+
+                                <!-- Section 3: Education & Health Details -->
+                                <h5 style="color: var(--accent-cyan); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 1rem; margin-bottom: 0.85rem; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
+                                    3. Education &amp; Health Details
+                                </h5>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div class="form-group-custom" style="grid-column: span 2; margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Type of House</label>
+                                        <select name="house_type" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                            <option value="">Select House Type</option>
+                                            <option value="Own House" {{ ($application->house_type ?? '') === 'Own House' ? 'selected' : '' }}>Own House</option>
+                                            <option value="Family House" {{ ($application->house_type ?? '') === 'Family House' ? 'selected' : '' }}>Family House</option>
+                                            <option value="Rental" {{ ($application->house_type ?? '') === 'Rental' ? 'selected' : '' }}>Rental</option>
+                                            <option value="Flat" {{ ($application->house_type ?? '') === 'Flat' ? 'selected' : '' }}>Flat</option>
+                                            <option value="Others" {{ ($application->house_type ?? '') === 'Others' ? 'selected' : '' }}>Others</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">School Name</label>
+                                        <input type="text" name="school_name" value="{{ $application->school_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">School Class</label>
+                                        <input type="text" name="school_class" value="{{ $application->school_class }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Madrassa Name</label>
+                                        <input type="text" name="madrassa_name" value="{{ $application->madrassa_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Madrassa Class</label>
+                                        <input type="text" name="madrassa_class" value="{{ $application->madrassa_class }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Not Studying Reason</label>
+                                        <input type="text" name="not_studying_reason" value="{{ $application->not_studying_reason }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Health Status</label>
+                                        <input type="text" name="health_status" value="{{ $application->health_status }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                </div>
+
+                                <!-- Section 4: Address & Contact Details -->
+                                <h5 style="color: var(--accent-cyan); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 1rem; margin-bottom: 0.85rem; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
+                                    4. Address &amp; Contact Details
+                                </h5>
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                                     <div class="form-group-custom" style="margin-bottom: 0 !important;">
                                         <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">House Name</label>
@@ -444,21 +745,63 @@
                                         <input type="text" name="state" value="{{ $application->state }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
                                     </div>
                                     <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">PIN Code</label>
+                                        <input type="text" name="pin_code" value="{{ $application->pin_code }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
                                         <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mobile 1</label>
                                         <input type="text" name="mobile_1" value="{{ $application->mobile_1 ?? $application->contact_number_1 ?? $application->mobile ?? optional($application->applicantAddress)->contact_number_1 ?? '' }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
                                     </div>
-                                    <div class="form-group-custom" style="grid-column: span 2; margin-bottom: 0 !important;">
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
                                         <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mobile 2</label>
                                         <input type="text" name="mobile_2" value="{{ $application->mobile_2 ?? $application->contact_number_2 ?? optional($application->applicantAddress)->contact_number_2 ?? '' }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
                                     </div>
+                                    <div class="form-group-custom" style="grid-column: span 2; margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">WhatsApp Number</label>
+                                        <input type="text" name="whatsapp_number" value="{{ $application->whatsapp_number }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+
+                                    <div class="form-group-custom" style="grid-column: span 2; margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Additional Notes</label>
+                                        <textarea name="additional_note" rows="2" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">{{ $application->additional_note }}</textarea>
+                                    </div>
                                 </div>
-                                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
-                                    <button type="button" onclick="toggleAddressEdit()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">Cancel</button>
-                                    <button type="submit" class="btn-custom" style="border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">Save Changes</button>
+
+                                <!-- Section 5: Recommendation Details -->
+                                <h5 style="color: var(--accent-cyan); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 1rem; margin-bottom: 0.85rem; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.4rem;">
+                                    5. Recommendation Details
+                                </h5>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Recommender Name</label>
+                                        <input type="text" name="recommender_name" value="{{ $application->recommender_name }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Organization</label>
+                                        <select name="recommender_org" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                            <option value="">Select Organization</option>
+                                            <option value="KMJ" {{ ($application->recommender_org ?? '') === 'KMJ' ? 'selected' : '' }}>KMJ</option>
+                                            <option value="SYS" {{ ($application->recommender_org ?? '') === 'SYS' ? 'selected' : '' }}>SYS</option>
+                                            <option value="SSF" {{ ($application->recommender_org ?? '') === 'SSF' ? 'selected' : '' }}>SSF</option>
+                                            <option value="Others" {{ ($application->recommender_org ?? '') === 'Others' ? 'selected' : '' }}>Others</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Position</label>
+                                        <input type="text" name="recommender_position" value="{{ $application->recommender_position }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Phone Number</label>
+                                        <input type="text" name="recommender_phone" value="{{ $application->recommender_phone }}" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                                    <button type="button" onclick="closeAddressEdit()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">Cancel</button>
+                                    <button type="submit" class="btn-custom" style="border-radius: 6px; padding: 0.5rem 1.25rem; font-size: 0.85rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #fff; font-weight: 700;">Save Details</button>
                                 </div>
                             </form>
                         </div>
-                    </div>
 
                     <script>
                         function toggleAddressEdit() {
@@ -470,10 +813,45 @@
                                 display.style.display = 'none';
                                 btn.style.display = 'none';
                             } else {
-                                form.style.display = 'none';
-                                display.style.display = 'block';
-                                btn.style.display = 'inline-flex';
+                                closeAddressEdit();
                             }
+                        }
+
+                        function closeAddressEdit() {
+                            const display = document.getElementById('address-display-view');
+                            const form = document.getElementById('address-edit-form');
+                            const btn = document.getElementById('edit-address-btn');
+                            if (form) form.style.display = 'none';
+                            if (display) display.style.display = 'block';
+                            if (btn) btn.style.display = 'inline-flex';
+                        }
+
+                        function handleAddressSubmit(event) {
+                            event.preventDefault();
+                            const form = event.target;
+                            const formData = new FormData(form);
+
+                            fetch(form.action, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json'
+                                },
+                                body: formData
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    closeAddressEdit();
+                                    window.location.reload();
+                                } else {
+                                    alert(data.message || 'Failed to update details.');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error updating details:', error);
+                                form.submit();
+                            });
                         }
                     </script>
                 @endif
@@ -483,53 +861,335 @@
                         $formattedAppId = 'APLRCFI' . (!empty($application->created_at) ? date('y', strtotime($application->created_at)) : '24') . ($project->type_of_project === 'Orphan Care' ? 'OC' : ($project->type_of_project === 'Differently Abled' ? 'DA' : 'FA')) . str_pad($application->id, 5, '0', STR_PAD_LEFT);
                         $appCatSlug = str_replace('_', '-', $projectRouteKey);
                         $appLinkUrl = route('applications.approved.category', $appCatSlug);
+
+                        $agencyName = null;
+                        if (!empty($project->sponsor) && $project->sponsor !== 'Sponsored') {
+                            $agencyName = $project->sponsor;
+                        } elseif (!empty($project->agency_name)) {
+                            $agencyName = $project->agency_name;
+                        } elseif (!empty($project->donor_name)) {
+                            $agencyName = $project->donor_name;
+                        } elseif (!empty($application->agency_name)) {
+                            $agencyName = $application->agency_name;
+                        } elseif (!empty($application->donor_name)) {
+                            $agencyName = $application->donor_name;
+                        } elseif (!empty($application->agency)) {
+                            $agencyName = $application->agency;
+                        } elseif ($project->donor) {
+                            $agencyName = $project->donor->name;
+                        }
+
+                        $agencyId = $project->agency_project_no ?? $application->agency_number ?? $project->agency_id ?? 'N/A';
+
+                        $clusterName = $application->cluster ? ($application->cluster->name . (!empty($application->cluster->code) ? ' (' . $application->cluster->code . ')' : '')) : ($project->cluster ? ($project->cluster->name . (!empty($project->cluster->code) ? ' (' . $project->cluster->code . ')' : '')) : ($application->cluster_name ?? $application->cluster ?? 'N/A'));
+
+                        $spDateRaw = $project->sponsored_date ?? $project->sponsor_date ?? $application->sponsored_date ?? $project->created_at;
+                        $sponsoredDate = !empty($spDateRaw) ? date('d-M-Y', strtotime($spDateRaw)) : 'N/A';
+
+                        $projectLocation = $project->location ?? ($project->place ?? ($application->location ?? ($application->place ?? ($application->locality_location ?? ($application->meta['location'] ?? 'N/A')))));
+                        $remarks = $project->remarks ?? $project->additional_note ?? 'N/A';
                     @endphp
-                    <div class="details-grid">
-                        <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $project->project_id ?? 'N/A' }}</div>
-                        <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $project->agency_project_no ?? 'N/A' }}</div>
-                        <div class="details-label">Applicant ID</div><div class="details-colon">:</div>
-                        <div class="details-value">
-                            <a href="{{ $appLinkUrl }}" onclick="openAppDetailsModal(event);" style="color: var(--accent-cyan); font-weight: 700; text-decoration: underline; cursor: pointer;" title="Click to view full application details">
-                                {{ $formattedAppId }}
-                            </a>
+
+                    <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin-top: 0; margin-bottom: 1.25rem; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
+                            <i class="bx bx-id-card" style="font-size: 1.1rem; vertical-align: middle; margin-right: 0.35rem;"></i> Project &amp; Agency Details
+                        </h4>
+                        <div class="details-grid">
+                            <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $project->project_id ?? 'N/A' }}</div>
+                            <div class="details-label">Agency Name</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $agencyName ?? 'N/A' }}</div>
+                            <div class="details-label">Agency ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $agencyId }}</div>
+                            <div class="details-label">Cluster Name</div><div class="details-colon">:</div><div class="details-value" style="color: #ffffff; font-weight: 600;">{{ $clusterName }}</div>
+                            <div class="details-label">Sponsored Date</div><div class="details-colon">:</div><div class="details-value" style="color: #ffffff; font-weight: 600;">{{ $sponsoredDate }}</div>
+                            <div class="details-label">Location</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: #ffffff; font-weight: 600;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;" id="location-display-wrapper">
+                                        <span id="location-display-text">{{ $projectLocation }}</span>
+                                        @if(!empty($projectLocation) && $projectLocation !== 'N/A')
+                                            <a href="{{ Str::startsWith($projectLocation, ['http://', 'https://']) ? $projectLocation : 'https://www.google.com/maps/search/?api=1&query=' . urlencode($projectLocation) }}" 
+                                               target="_blank" 
+                                               class="btn-custom" 
+                                               style="padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.35); color: #38bdf8; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;" 
+                                               title="View on Google Maps">
+                                                <i class="bx bx-map-pin"></i> Google Map
+                                            </a>
+                                        @endif
+                                    </div>
+                                    <button type="button" id="edit-location-btn" onclick="toggleLocationEdit()" class="btn-custom" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px;" title="Edit Location">
+                                        <i class="bx bx-edit"></i> Edit Location
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="details-label">Remarks</div><div class="details-colon">:</div>
+                            <div class="details-value" style="color: #ffffff; font-weight: 500;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                                    <span id="remarks-display-text" style="white-space: pre-wrap; flex: 1;">{{ $remarks }}</span>
+                                    <button type="button" id="edit-remarks-btn" onclick="toggleRemarksEdit()" class="btn-custom" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px;" title="Edit Remarks">
+                                        <i class="bx bx-edit"></i> Edit Remarks
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="details-label">Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->applicant_name ?? 'N/A' }}</div>
-                        <div class="details-label">Gender</div><div class="details-colon">:</div><div class="details-value">{{ $application->gender ?? 'N/A' }}</div>
-                        <div class="details-label">Date of Birth</div><div class="details-colon">:</div><div class="details-value">{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} (Age: {{ $application->age ?? 'N/A' }})</div>
-                        <div class="details-label">Father's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->father_name ?? 'N/A' }}</div>
-                        <div class="details-label">Mother's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->mother_name ?? 'N/A' }}</div>
-                        <div class="details-label">Guardian</div><div class="details-colon">:</div><div class="details-value">{{ $application->guardian_name ?? 'N/A' }} (Relation: {{ $application->guardian_relation ?? 'N/A' }})</div>
-                        <div class="details-label">Sponsor Status</div><div class="details-colon">:</div><div class="details-value" style="font-weight: 600; color: var(--accent-cyan);">{{ $application->sponsor_status ?? 'N/A' }}</div>
-                        <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
-                        <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
+
+                        <!-- Inline Edit Form for Location -->
+                        <form id="location-edit-form" action="{{ route('projects.' . $projectRouteKey . '.update_address', $project->id) }}" method="POST" onsubmit="handleLocationSubmit(event)" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--panel-border);">
+                            @csrf
+                            <div style="margin-bottom: 0.75rem;">
+                                <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Edit Location</label>
+                                <input type="text" name="location" value="{{ $projectLocation !== 'N/A' ? $projectLocation : '' }}" placeholder="Enter location name or Google Maps URL..." class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <button type="button" onclick="closeLocationEdit()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); border-radius: 6px; padding: 0.35rem 0.85rem; font-size: 0.8rem;">Cancel</button>
+                                <button type="submit" class="btn-custom" style="border-radius: 6px; padding: 0.35rem 0.85rem; font-size: 0.8rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #fff; font-weight: 700;">Save Location</button>
+                            </div>
+                        </form>
+
+                        <!-- Inline Edit Form for Remarks -->
+                        <form id="remarks-edit-form" action="{{ route('projects.' . $projectRouteKey . '.update_address', $project->id) }}" method="POST" onsubmit="handleRemarksSubmit(event)" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--panel-border);">
+                            @csrf
+                            <div style="margin-bottom: 0.75rem;">
+                                <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Edit Remarks</label>
+                                <textarea name="remarks" rows="3" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">{{ $remarks !== 'N/A' ? $remarks : '' }}</textarea>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <button type="button" onclick="closeRemarksEdit()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); border-radius: 6px; padding: 0.35rem 0.85rem; font-size: 0.8rem;">Cancel</button>
+                                <button type="submit" class="btn-custom" style="border-radius: 6px; padding: 0.35rem 0.85rem; font-size: 0.8rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #fff; font-weight: 700;">Save Remarks</button>
+                            </div>
+                        </form>
                     </div>
 
+                    <script>
+                        function toggleLocationEdit() {
+                            const form = document.getElementById('location-edit-form');
+                            const btn = document.getElementById('edit-location-btn');
+                            const remarksForm = document.getElementById('remarks-edit-form');
+                            if (remarksForm) closeRemarksEdit();
+                            if (form) {
+                                if (form.style.display === 'none') {
+                                    form.style.display = 'block';
+                                    if (btn) btn.style.display = 'none';
+                                } else {
+                                    closeLocationEdit();
+                                }
+                            }
+                        }
+
+                        function closeLocationEdit() {
+                            const form = document.getElementById('location-edit-form');
+                            const btn = document.getElementById('edit-location-btn');
+                            if (form) form.style.display = 'none';
+                            if (btn) btn.style.display = 'inline-flex';
+                        }
+
+                        function toggleRemarksEdit() {
+                            const form = document.getElementById('remarks-edit-form');
+                            const text = document.getElementById('remarks-display-text');
+                            const btn = document.getElementById('edit-remarks-btn');
+                            const locForm = document.getElementById('location-edit-form');
+                            if (locForm) closeLocationEdit();
+                            if (form) {
+                                if (form.style.display === 'none') {
+                                    form.style.display = 'block';
+                                    if (text) text.style.display = 'none';
+                                    if (btn) btn.style.display = 'none';
+                                } else {
+                                    closeRemarksEdit();
+                                }
+                            }
+                        }
+
+                        function closeRemarksEdit() {
+                            const form = document.getElementById('remarks-edit-form');
+                            const text = document.getElementById('remarks-display-text');
+                            const btn = document.getElementById('edit-remarks-btn');
+                            if (form) form.style.display = 'none';
+                            if (text) text.style.display = 'inline';
+                            if (btn) btn.style.display = 'inline-flex';
+                        }
+
+                        async function handleLocationSubmit(event) {
+                            event.preventDefault();
+                            const form = event.target;
+                            const formData = new FormData(form);
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            if (submitBtn) submitBtn.disabled = true;
+
+                            try {
+                                const response = await fetch(form.action, {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                    const locVal = data.location || formData.get('location') || '';
+                                    const dispText = document.getElementById('location-display-text');
+                                    if (dispText) dispText.textContent = locVal || 'N/A';
+
+                                    const wrapper = document.getElementById('location-display-wrapper');
+                                    if (wrapper) {
+                                        let mapBtn = wrapper.querySelector('a');
+                                        if (locVal && locVal !== 'N/A') {
+                                            const mapsUrl = (locVal.startsWith('http://') || locVal.startsWith('https://')) ? locVal : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(locVal);
+                                            if (!mapBtn) {
+                                                mapBtn = document.createElement('a');
+                                                mapBtn.target = '_blank';
+                                                mapBtn.className = 'btn-custom';
+                                                mapBtn.style.cssText = 'padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.35); color: #38bdf8; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;';
+                                                mapBtn.title = 'View on Google Maps';
+                                                mapBtn.innerHTML = '<i class="bx bx-map-pin"></i> Google Map';
+                                                wrapper.appendChild(mapBtn);
+                                            }
+                                            mapBtn.href = mapsUrl;
+                                        } else if (mapBtn) {
+                                            mapBtn.remove();
+                                        }
+                                    }
+                                    closeLocationEdit();
+                                    if (typeof showToast === 'function') {
+                                        showToast(data.message || 'Location updated successfully!', 'success');
+                                    }
+                                } else {
+                                    alert(data.error || 'Failed to update location');
+                                }
+                            } catch (e) {
+                                console.error('Error updating location:', e);
+                                alert('An error occurred while updating location.');
+                            } finally {
+                                if (submitBtn) submitBtn.disabled = false;
+                            }
+                        }
+
+                        async function handleRemarksSubmit(event) {
+                            event.preventDefault();
+                            const form = event.target;
+                            const formData = new FormData(form);
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            if (submitBtn) submitBtn.disabled = true;
+
+                            try {
+                                const response = await fetch(form.action, {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                    const remVal = data.remarks || formData.get('remarks') || '';
+                                    const dispText = document.getElementById('remarks-display-text');
+                                    if (dispText) dispText.textContent = remVal || 'N/A';
+                                    closeRemarksEdit();
+                                    if (typeof showToast === 'function') {
+                                        showToast(data.message || 'Remarks updated successfully!', 'success');
+                                    }
+                                } else {
+                                    alert(data.error || 'Failed to update remarks');
+                                }
+                            } catch (e) {
+                                console.error('Error updating remarks:', e);
+                                alert('An error occurred while updating remarks.');
+                            } finally {
+                                if (submitBtn) submitBtn.disabled = false;
+                            }
+                        }
+
+                        async function handleAddressSubmit(event) {
+                            event.preventDefault();
+                            const form = event.target;
+                            const formData = new FormData(form);
+                            const submitBtn = form.querySelector('button[type="submit"]');
+                            if (submitBtn) submitBtn.disabled = true;
+
+                            try {
+                                const response = await fetch(form.action, {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                    closeAddressEdit();
+                                    if (typeof showToast === 'function') {
+                                        showToast(data.message || 'Details updated successfully!', 'success');
+                                    }
+                                } else {
+                                    alert(data.error || 'Failed to update details');
+                                }
+                            } catch (e) {
+                                console.error('Error updating details:', e);
+                                alert('An error occurred while updating details.');
+                            } finally {
+                                if (submitBtn) submitBtn.disabled = false;
+                            }
+                        }
+                    </script>
+
                     <!-- Application Full Details Modal -->
-                    <div id="appDetailsModal" onclick="if(event.target === this) closeAppDetailsModal()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 9000; align-items: center; justify-content: center; padding: 1.5rem;">
-                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.75rem; width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto; box-shadow: 0 15px 35px rgba(0,0,0,0.4); position: relative;">
+                    <div id="appDetailsModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 9000; align-items: center; justify-content: center; padding: 1.5rem;">
+                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.75rem; width: 100%; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 15px 35px rgba(0,0,0,0.4); position: relative;">
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.25rem;">
                                 <h3 style="color: var(--text-main); font-size: 1.15rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                                    <i class="bx bx-file-find" style="color: var(--accent-cyan);"></i> Application Details
+                                    <i class="bx bx-file-find" style="color: var(--accent-cyan);"></i> Complete Application Details
                                 </h3>
                                 <button type="button" onclick="closeAppDetailsModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 140px 10px 1fr; gap: 0.6rem 0.5rem; font-size: 0.9rem; margin-bottom: 1.5rem;">
+                            <div style="display: grid; grid-template-columns: 160px 10px 1fr; gap: 0.6rem 0.5rem; font-size: 0.9rem; margin-bottom: 1.5rem;">
                                 <div style="color: var(--text-muted); font-weight: 500;">Applicant ID</div><div>:</div><div style="color: var(--accent-cyan); font-weight: 700;">{{ $formattedAppId }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Applicant Name</div><div>:</div><div style="color: var(--text-main); font-weight: 600;">{{ $application->applicant_name ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Gender</div><div>:</div><div>{{ $application->gender ?? 'N/A' }}</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">Date of Birth</div><div>:</div><div>{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} (Age: {{ $application->age ?? 'N/A' }})</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">Father's Name</div><div>:</div><div>{{ $application->father_name ?? 'N/A' }}</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">Mother's Name</div><div>:</div><div>{{ $application->mother_name ?? 'N/A' }}</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">Guardian</div><div>:</div><div>{{ $application->guardian_name ?? 'N/A' }} (Relation: {{ $application->guardian_relation ?? 'N/A' }})</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Date of Birth</div><div>:</div><div>{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} @if(!empty($application->age))(Age: {{ $application->age }})@endif</div>
+                                @if(!empty($application->aadhar_number))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Aadhar Number</div><div>:</div><div>{{ $application->aadhar_number }}</div>
+                                @endif
+                                @if(!empty($application->health_status))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Health Status</div><div>:</div><div>{{ $application->health_status }}</div>
+                                @endif
+                                <div style="color: var(--text-muted); font-weight: 500;">Father's Name</div><div>:</div><div>{{ $application->father_name ?? 'N/A' }} @if(!empty($application->father_death_date) || !empty($application->father_death_cause))(Deceased: {{ !empty($application->father_death_date) ? date('d-M-Y', strtotime($application->father_death_date)) : '' }} {{ !empty($application->father_death_cause) ? '- ' . $application->father_death_cause : '' }})@endif</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Mother's Name</div><div>:</div><div>{{ $application->mother_name ?? 'N/A' }} @if(!empty($application->mother_alive_status))({{ $application->mother_alive_status }})@endif @if(!empty($application->mother_death_date) || !empty($application->mother_death_cause))(Deceased: {{ !empty($application->mother_death_date) ? date('d-M-Y', strtotime($application->mother_death_date)) : '' }} {{ !empty($application->mother_death_cause) ? '- ' . $application->mother_death_cause : '' }})@endif</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Guardian</div><div>:</div><div>{{ $application->guardian_name ?? 'N/A' }} @if(!empty($application->guardian_relation))(Relation: {{ $application->guardian_relation }})@endif</div>
+                                @if(!empty($application->grandfather_name))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Grandfather's Name</div><div>:</div><div>{{ $application->grandfather_name }}</div>
+                                @endif
+                                @if(!empty($application->mothers_father_name))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Mother's Father Name</div><div>:</div><div>{{ $application->mothers_father_name }}</div>
+                                @endif
+                                @if(!empty($application->siblings_total) || !empty($application->siblings_male) || !empty($application->siblings_female))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Siblings</div><div>:</div><div>Total: {{ $application->siblings_total ?? (($application->siblings_male ?? 0) + ($application->siblings_female ?? 0)) }} (Male: {{ $application->siblings_male ?? 0 }}, Female: {{ $application->siblings_female ?? 0 }})</div>
+                                @endif
                                 <div style="color: var(--text-muted); font-weight: 500;">House Name</div><div>:</div><div>{{ $application->house_name ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Place</div><div>:</div><div>{{ $application->place ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Post Office</div><div>:</div><div>{{ $application->post_office ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Village / Panchayat</div><div>:</div><div>{{ $application->village ?? 'N/A' }} / {{ $application->panchayat ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">District / State</div><div>:</div><div>{{ $application->district ?? 'N/A' }}, {{ $application->state ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Contact Numbers</div><div>:</div><div>{{ $application->mobile_1 ?? $application->contact_number_1 ?? 'N/A' }} {{ !empty($application->mobile_2 ?? $application->contact_number_2) ? '/ ' . ($application->mobile_2 ?? $application->contact_number_2) : '' }}</div>
+                                @if(!empty($application->school_name) || !empty($application->school_class))
+                                    <div style="color: var(--text-muted); font-weight: 500;">School Education</div><div>:</div><div>{{ $application->school_name ?? 'N/A' }} @if(!empty($application->school_class))(Class: {{ $application->school_class }})@endif</div>
+                                @endif
+                                @if(!empty($application->madrassa_name) || !empty($application->madrassa_class))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Madrassa Education</div><div>:</div><div>{{ $application->madrassa_name ?? 'N/A' }} @if(!empty($application->madrassa_class))(Class: {{ $application->madrassa_class }})@endif</div>
+                                @endif
+                                @if(!empty($application->monthly_income) || !empty($application->monthly_expense))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Monthly Finance</div><div>:</div><div>Income: ₹{{ $application->monthly_income ?? '0' }} / Expense: ₹{{ $application->monthly_expense ?? '0' }}</div>
+                                @endif
+                                @if(!empty($application->cluster))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Cluster</div><div>:</div><div>{{ $application->cluster->name }} ({{ $application->cluster->code }})</div>
+                                @endif
                                 <div style="color: var(--text-muted); font-weight: 500;">Sponsor Status</div><div>:</div><div style="color: var(--accent-cyan); font-weight: 700;">{{ $application->sponsor_status ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Application Status</div><div>:</div><div style="color: #10b981; font-weight: 700;">{{ $application->status ?? 'Approved' }}</div>
+                                @if(!empty($application->additional_note))
+                                    <div style="color: var(--text-muted); font-weight: 500;">Additional Note</div><div>:</div><div style="white-space: pre-wrap;">{{ $application->additional_note }}</div>
+                                @endif
                             </div>
 
                             <div style="display: flex; gap: 0.75rem; justify-content: flex-end; border-top: 1px solid var(--panel-border); padding-top: 1.25rem;">
@@ -750,9 +1410,11 @@
                     <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 2rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <h4 style="color: var(--accent-cyan); font-size: 0.95rem; font-weight: 700; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">Fund Transfers</h4>
-                            <button type="button" class="btn-custom" onclick="openAddFundModal()" style="border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">
-                                <i class="bx bx-plus"></i> Add New Row
-                            </button>
+                            @if($canManageFinance)
+                                <button type="button" class="btn-custom" onclick="openAddFundModal()" style="border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.85rem;">
+                                    <i class="bx bx-plus"></i> Add New Row
+                                </button>
+                            @endif
                         </div>
 
                         <div class="table-responsive-custom" style="overflow-x: auto;">
@@ -763,6 +1425,9 @@
                                         <th style="padding: 0.75rem 1rem; font-weight: 700;">Date of Fund Transferred</th>
                                         <th style="padding: 0.75rem 1rem; font-weight: 700; text-align: right;">Amount</th>
                                         <th style="padding: 0.75rem 1rem; font-weight: 700;">Agency</th>
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700;">Account Name</th>
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700;">Account Number</th>
+                                        <th style="padding: 0.75rem 1rem; font-weight: 700;">IFSC Number</th>
                                         <th style="padding: 0.75rem 1rem; font-weight: 700; text-align: center; width: 100px;">Actions</th>
                                     </tr>
                                 </thead>
@@ -782,15 +1447,22 @@
                                                     {{ $row->donor ?? $row->agency ?? 'N/A' }}
                                                 @endif
                                             </td>
+                                            <td style="padding: 0.75rem 1rem;">{{ $row->account_name ?? 'N/A' }}</td>
+                                            <td style="padding: 0.75rem 1rem;">{{ $row->account_number ?? 'N/A' }}</td>
+                                            <td style="padding: 0.75rem 1rem; font-family: monospace;">{{ $row->ifsc_number ?? 'N/A' }}</td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
-                                                <button type="button" onclick="handleDeleteFund(this, {{ $row->id }}, '{{ route('projects.' . $projectRouteKey . '.delete_fund', [$project->id, $row->id]) }}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Row">
-                                                    <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
-                                                </button>
+                                                @if($canDeleteFinanceRow)
+                                                    <button type="button" onclick="handleDeleteFund(this, {{ $row->id }}, '{{ route('projects.' . $projectRouteKey . '.delete_fund', [$project->id, $row->id]) }}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Row">
+                                                        <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
+                                                    </button>
+                                                @else
+                                                    <span style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @empty
                                         <tr id="no-funds-row">
-                                            <td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted); font-style: italic;">
+                                            <td colspan="8" style="padding: 2rem; text-align: center; color: var(--text-muted); font-style: italic;">
                                                 No fund transfer records found. Click "Add New Row" to add one.
                                             </td>
                                         </tr>
@@ -800,7 +1472,7 @@
                                     <tr style="border-top: 2px solid var(--panel-border); font-weight: 700; font-size: 0.95rem;">
                                         <td colspan="2" style="padding: 0.75rem 1rem; color: var(--text-main); text-align: left;">Total</td>
                                         <td id="fund-total-amount" style="padding: 0.75rem 1rem; text-align: right; color: var(--accent-cyan);">₹{{ number_format($financials->sum('amount'), 2) }}</td>
-                                        <td colspan="2" style="padding: 0.75rem 1rem;"></td>
+                                        <td colspan="5" style="padding: 0.75rem 1rem;"></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -808,8 +1480,8 @@
                     </div>
 
                     <!-- Add Fund Row Modal -->
-                    <div id="addFundModal" onclick="if(event.target === this) closeAddFundModal()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
-                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.75rem; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); box-sizing: border-box; position: relative;">
+                    <div id="addFundModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1.5rem;">
+                        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 1.75rem; width: 100%; max-width: 520px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); box-sizing: border-box; position: relative;">
                             <h3 style="color: var(--text-main); font-size: 1.1rem; margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">
                                 Add Fund Transfer Row
                             </h3>
@@ -836,6 +1508,18 @@
                                                 <option value="{{ $dItem->name }}">{{ $dItem->name }} {{ $dItem->short_name ? '('.$dItem->short_name.')' : '' }}</option>
                                             @endforeach
                                         </select>
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Account Name</label>
+                                        <input type="text" name="account_name" placeholder="Enter account holder name..." class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Account Number</label>
+                                        <input type="number" name="account_number" placeholder="Enter account number..." class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none;">
+                                    </div>
+                                    <div class="form-group-custom" style="margin-bottom: 0 !important;">
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">IFSC Number</label>
+                                        <input type="text" name="ifsc_number" placeholder="Enter IFSC code..." class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none; text-transform: uppercase;">
                                     </div>
                                 </div>
                                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -929,11 +1613,16 @@
                                 <td class="fund-serial-no" style="padding: 0.75rem 1rem; color: var(--text-muted);">${rowsCount + 1}</td>
                                 <td style="padding: 0.75rem 1rem;">${formattedDate}</td>
                                 <td class="fund-amount-cell" data-amount="${fund.amount}" style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">₹${formattedAmount}</td>
-                                <td style="padding: 0.75rem 1rem;">${fund.agency || 'N/A'}</td>
+                                <td style="padding: 0.75rem 1rem;">${fund.donor || fund.agency || 'N/A'}</td>
+                                <td style="padding: 0.75rem 1rem;">${fund.account_name || 'N/A'}</td>
+                                <td style="padding: 0.75rem 1rem;">${fund.account_number || 'N/A'}</td>
+                                <td style="padding: 0.75rem 1rem; font-family: monospace;">${fund.ifsc_number || 'N/A'}</td>
                                 <td style="padding: 0.75rem 1rem; text-align: center;">
-                                    <button type="button" onclick="handleDeleteFund(this, ${fund.id}, '${deleteUrl}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Row">
-                                        <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
-                                    </button>
+                                    ${ {{ $canDeleteFinanceRow ? 'true' : 'false' }} ? `
+                                        <button type="button" onclick="handleDeleteFund(this, ${fund.id}, '${deleteUrl}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.25rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Row">
+                                            <i class="bx bx-trash" style="font-size: 1.15rem;"></i>
+                                        </button>
+                                    ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>' }
                                 </td>
                             `;
 
@@ -1313,7 +2002,7 @@
             <div class="detail-header-panel" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>{{ $isSocialAidProject ? 'PROGRAMME DETAILS' : 'FILES' }}</h2>
                 @if($isSocialAidProject && $isProjectManager && !$isLockedForEditing)
-                    <button type="button" onclick="openAddProgrammeModal()" class="btn-custom" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                    <button type="button" id="btn-add-programme-main" onclick="openAddProgrammeModal(); return false;" class="btn-custom btn-add-programme-trigger" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
                         <i class="bx bx-plus-circle" style="font-size: 1.1rem;"></i> Add Programme
                     </button>
                 @endif
@@ -1345,7 +2034,7 @@
 
                 @if($isSocialAidProject)
                     @php
-                        $programmes = $project->programmes ?? collect();
+                        $programmes = $project->programmes ? $project->programmes->sortByDesc('created_at')->values() : collect();
                     @endphp
 
                     <!-- Social Aid Programmes Table -->
@@ -1359,6 +2048,7 @@
                                         <th style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; vertical-align: middle;">Programme Name</th>
                                         <th style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; vertical-align: middle;">Date</th>
                                         <th style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; vertical-align: middle;">Place</th>
+                                        <th style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; vertical-align: middle;">Remarks</th>
                                         <th style="padding: 0.85rem 1rem; font-weight: 700; text-align: center; white-space: nowrap; vertical-align: middle;">Checklist &amp; Documents</th>
                                         <th style="padding: 0.85rem 1rem; font-weight: 700; text-align: center; width: 110px; white-space: nowrap; vertical-align: middle;">Actions</th>
                                     </tr>
@@ -1370,6 +2060,7 @@
                                             <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--text-main); vertical-align: middle;">{{ $prog->programme_name ?? 'Untitled Programme' }}</td>
                                             <td style="padding: 0.85rem 1rem; color: var(--text-main); white-space: nowrap; vertical-align: middle;">{{ !empty($prog->date) ? date('d-M-Y', strtotime($prog->date)) : '-' }}</td>
                                             <td style="padding: 0.85rem 1rem; color: var(--text-main); vertical-align: middle;">{{ $prog->place ?? '-' }}</td>
+                                            <td style="padding: 0.85rem 1rem; color: var(--text-main); vertical-align: middle;">{{ $prog->remarks ?? '-' }}</td>
                                             <td style="padding: 0.85rem 1rem; text-align: center; vertical-align: middle;">
 
                                                 @php
@@ -1404,22 +2095,27 @@
                                                 </div>
                                             </td>
                                             <td style="padding: 0.85rem 1rem; text-align: center; white-space: nowrap; vertical-align: middle;">
+                                                <!-- View Button (Visible to all users) -->
+                                                <button type="button" onclick="openViewProgrammeModal(this)" data-prog="{{ json_encode($prog) }}" style="background: transparent; border: none; color: #10b981; cursor: pointer; padding: 0.3rem; margin-right: 0.25rem; border-radius: 4px; transition: background 0.2s;" title="View Details" onmouseover="this.style.background='rgba(16, 185, 129, 0.1)'" onmouseout="this.style.background='transparent'">
+                                                    <i class="bx bx-show" style="font-size: 1.15rem; vertical-align: middle;"></i>
+                                                </button>
+
                                                 @if($isProjectManager && !$isLockedForEditing)
                                                     <button type="button" onclick="openEditProgrammeModal(this)" data-prog="{{ json_encode($prog) }}" style="background: transparent; border: none; color: #0284c7; cursor: pointer; padding: 0.3rem; margin-right: 0.25rem; border-radius: 4px; transition: background 0.2s;" title="Edit Programme" onmouseover="this.style.background='rgba(2, 132, 199, 0.1)'" onmouseout="this.style.background='transparent'">
                                                         <i class="bx bx-pencil" style="font-size: 1.15rem; vertical-align: middle;"></i>
                                                     </button>
+                                                @endif
 
+                                                @if($isSuperAdmin || $isHod || $isCoo)
                                                     <button type="button" onclick="handleDeleteProgramme(this, {{ $prog->id }}, '{{ route('projects.' . $projectRouteKey . '.delete_programme', [$project->id, $prog->id]) }}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.3rem; border-radius: 4px; transition: background 0.2s;" title="Delete Programme" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
                                                         <i class="bx bx-trash" style="font-size: 1.15rem; vertical-align: middle;"></i>
                                                     </button>
-                                                @else
-                                                    <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No Action</span>
                                                 @endif
                                             </td>
                                         </tr>
                                     @empty
                                         <tr id="no-programmes-row">
-                                            <td colspan="6" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); font-style: italic;">
+                                            <td colspan="7" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); font-style: italic;">
                                                 No programme records found. Click "Add Programme" to add one.
                                             </td>
                                         </tr>
@@ -3956,8 +4652,9 @@
             </form>
         </div>
     </div>
+
     <!-- Add Programme Modal -->
-    <div id="addProgrammeModal" onclick="if(event.target === this) closeAddProgrammeModal()" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+    <div id="addProgrammeModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; position: relative;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3 style="color: var(--text-main); margin: 0; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Add New Programme</h3>
@@ -3967,21 +4664,32 @@
             </div>
             <form id="addProgrammeForm" action="{{ route('projects.' . $projectRouteKey . '.add_programme', $project->id) }}" method="POST" onsubmit="handleAddProgrammeSubmit(event); return false;" style="margin: 0;">
 
-
-
                 @csrf
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div style="grid-column: span 2;">
                         <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Programme Name *</label>
-                        <input type="text" name="programme_name" required placeholder="e.g. Annual Student Meet 2026" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                        <select name="programme_name" id="add_prog_name_select" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" onchange="toggleSpecifyProgrammeField(this, 'add_prog_other_name_wrapper', 'add_prog_other_name_input')">
+                            <option value="" disabled selected>-- Select Programme --</option>
+                            <option value="Cluster Camp">Cluster Camp</option>
+                            <option value="Report Collection Programme">Report Collection Programme</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div id="add_prog_other_name_wrapper" style="grid-column: span 2; display: none;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Specify Programme Name *</label>
+                        <input type="text" id="add_prog_other_name_input" name="other_programme_name" placeholder="Enter custom programme name..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                     </div>
                     <div>
-                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
-                        <input type="date" name="date" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date *</label>
+                        <input type="date" name="date" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                     </div>
                     <div>
                         <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
                         <input type="text" name="place" placeholder="e.g. Main Auditorium" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Remarks</label>
+                        <input type="text" name="remarks" placeholder="Enter remarks (optional)..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                     </div>
                 </div>
 
@@ -4023,7 +4731,7 @@
     </div>
 
     <!-- Edit Programme Modal -->
-    <div id="editProgrammeModal" onclick="if(event.target === this) closeEditProgrammeModal()" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+    <div id="editProgrammeModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
         <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; position: relative;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3 style="color: var(--text-main); margin: 0; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Edit Programme</h3>
@@ -4038,15 +4746,28 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div style="grid-column: span 2;">
                         <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Programme Name *</label>
-                        <input type="text" id="edit_prog_name" name="programme_name" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                        <select name="programme_name" id="edit_prog_name_select" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" onchange="toggleSpecifyProgrammeField(this, 'edit_prog_other_name_wrapper', 'edit_prog_other_name_input')">
+                            <option value="" disabled>-- Select Programme --</option>
+                            <option value="Cluster Camp">Cluster Camp</option>
+                            <option value="Report Collection Programme">Report Collection Programme</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div id="edit_prog_other_name_wrapper" style="grid-column: span 2; display: none;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Specify Programme Name *</label>
+                        <input type="text" id="edit_prog_other_name_input" name="other_programme_name" placeholder="Enter custom programme name..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                     </div>
                     <div>
-                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
-                        <input type="date" id="edit_prog_date" name="date" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date *</label>
+                        <input type="date" id="edit_prog_date" name="date" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                     </div>
                     <div>
                         <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
                         <input type="text" id="edit_prog_place" name="place" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Remarks</label>
+                        <input type="text" id="edit_prog_remarks" name="remarks" placeholder="Enter remarks (optional)..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                     </div>
                 </div>
 
@@ -4087,23 +4808,143 @@
         </div>
     </div>
 
+    <!-- View Programme Modal -->
+    <div id="viewProgrammeModal" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem;">
+                <h3 style="color: var(--text-main); margin: 0; font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Programme Details</h3>
+                <button type="button" onclick="closeViewProgrammeModal()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0.2rem; display: flex; align-items: center; justify-content: center; transition: color 0.2s;" onmouseover="this.style.color='var(--accent-red)'" onmouseout="this.style.color='var(--text-muted)'" title="Close Modal">
+                    <i class="bx bx-x"></i>
+                </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="grid-column: span 2; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+                    <span style="display: block; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Programme Name</span>
+                    <span id="view_prog_name" style="color: var(--text-main); font-size: 1.05rem; font-weight: 700;">-</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+                    <span style="display: block; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Date</span>
+                    <span id="view_prog_date" style="color: var(--text-main); font-size: 0.95rem; font-weight: 600;">-</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+                    <span style="display: block; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Place</span>
+                    <span id="view_prog_place" style="color: var(--text-main); font-size: 0.95rem; font-weight: 600;">-</span>
+                </div>
+                <div style="grid-column: span 2; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+                    <span style="display: block; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Remarks</span>
+                    <span id="view_prog_remarks" style="color: var(--text-main); font-size: 0.9rem; line-height: 1.4;">-</span>
+                </div>
+            </div>
+
+            <h4 style="color: var(--accent-cyan); font-size: 0.9rem; text-transform: uppercase; margin: 1.5rem 0 1rem 0; font-weight: 700; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.4rem;">Checklist &amp; Document Status</h4>
+
+            <div id="view_prog_checklist_container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="button" onclick="closeViewProgrammeModal()" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); cursor: pointer; padding: 0.5rem 1.5rem;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeAddProgrammeModal();
                 closeEditProgrammeModal();
+                closeViewProgrammeModal();
             }
         });
 
+        function openViewProgrammeModal(btnElement) {
+            const rawProg = btnElement.getAttribute('data-prog');
+            if (!rawProg) return;
+            try {
+                const prog = JSON.parse(rawProg);
+                const modal = document.getElementById('viewProgrammeModal');
+                if (modal && prog) {
+                    document.body.appendChild(modal);
+                    modal.style.setProperty('z-index', '999999', 'important');
+                    modal.style.setProperty('display', 'flex', 'important');
+
+                    document.getElementById('view_prog_name').innerText = prog.programme_name || 'N/A';
+                    document.getElementById('view_prog_date').innerText = prog.date ? new Date(prog.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+                    document.getElementById('view_prog_place').innerText = prog.place || 'N/A';
+                    document.getElementById('view_prog_remarks').innerText = prog.remarks || 'No remarks provided';
+
+                    const items = {
+                        'present': 'Present / Attendance',
+                        'photo': 'Photo',
+                        'marklist': 'Marklist',
+                        'thanks_letter': 'Thanks Letter',
+                        'report_form': 'Report Form',
+                        'other_document': 'Other Document'
+                    };
+
+                    const container = document.getElementById('view_prog_checklist_container');
+                    if (container) {
+                        let html = '';
+                        for (const [key, label] of Object.entries(items)) {
+                            const isTicked = !!(prog[key + '_ticked']);
+                            html += `
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-radius: 6px; ${isTicked ? 'background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669;' : 'background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); color: #d97706;'}">
+                                    <span style="font-size: 0.85rem; font-weight: 600;">${label}</span>
+                                    <span style="font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                        <i class="bx ${isTicked ? 'bxs-check-circle' : 'bx-x-circle'}" style="font-size: 1rem;"></i> ${isTicked ? 'Completed' : 'Pending'}
+                                    </span>
+                                </div>
+                            `;
+                        }
+                        container.innerHTML = html;
+                    }
+                }
+            } catch(e) {
+                console.error('Error opening view programme modal:', e);
+            }
+        }
+        window.openViewProgrammeModal = openViewProgrammeModal;
+
+        function closeViewProgrammeModal() {
+            const modal = document.getElementById('viewProgrammeModal');
+            if (modal) modal.style.setProperty('display', 'none', 'important');
+        }
+        window.closeViewProgrammeModal = closeViewProgrammeModal;
+
+        function toggleSpecifyProgrammeField(selectElem, wrapperId, inputId) {
+            const wrapper = document.getElementById(wrapperId);
+            const input = document.getElementById(inputId);
+            if (!wrapper || !input) return;
+
+            if (selectElem.value === 'Others') {
+                wrapper.style.display = 'block';
+                input.required = true;
+            } else {
+                wrapper.style.display = 'none';
+                input.required = false;
+                input.value = '';
+            }
+        }
+        window.toggleSpecifyProgrammeField = toggleSpecifyProgrammeField;
+
         window.openAddProgrammeModal = function openAddProgrammeModal() {
             const modal = document.getElementById('addProgrammeModal');
-            if (modal) modal.style.display = 'flex';
-        }
+            if (modal) {
+                document.body.appendChild(modal);
+                modal.style.setProperty('z-index', '999999', 'important');
+                modal.style.setProperty('display', 'flex', 'important');
+                const selectElem = document.getElementById('add_prog_name_select');
+                if (selectElem) {
+                    selectElem.selectedIndex = 0;
+                    toggleSpecifyProgrammeField(selectElem, 'add_prog_other_name_wrapper', 'add_prog_other_name_input');
+                }
+            }
+        };
         function closeAddProgrammeModal() {
-        const modal = document.getElementById("addProgrammeModal");
-        if (modal) modal.style.display = "none";
-    }
-    window.closeAddProgrammeModal = closeAddProgrammeModal;
+            const modal = document.getElementById("addProgrammeModal");
+            if (modal) modal.style.setProperty('display', 'none', 'important');
+        }
+        window.closeAddProgrammeModal = closeAddProgrammeModal;
 
         function openEditProgrammeModal(btnElement) {
             const rawProg = btnElement.getAttribute('data-prog');
@@ -4113,10 +4954,29 @@
                 const modal = document.getElementById('editProgrammeModal');
                 const form = document.getElementById('editProgrammeForm');
                 if (modal && form && prog) {
+                    document.body.appendChild(modal);
+                    modal.style.setProperty('z-index', '999999', 'important');
                     form.action = `/admin/projects/{{ $projectRouteSlug }}/{{ $project->id }}/update-programme/${prog.id}`;
-                    document.getElementById('edit_prog_name').value = prog.programme_name || '';
+
+                    const selectElem = document.getElementById('edit_prog_name_select');
+                    const knownOptions = ['Cluster Camp', 'Report Collection Programme'];
+                    const progName = prog.programme_name || '';
+
+                    if (knownOptions.includes(progName)) {
+                        if (selectElem) selectElem.value = progName;
+                        toggleSpecifyProgrammeField(selectElem, 'edit_prog_other_name_wrapper', 'edit_prog_other_name_input');
+                    } else {
+                        if (selectElem) selectElem.value = 'Others';
+                        toggleSpecifyProgrammeField(selectElem, 'edit_prog_other_name_wrapper', 'edit_prog_other_name_input');
+                        const input = document.getElementById('edit_prog_other_name_input');
+                        if (input) input.value = progName;
+                    }
+
                     document.getElementById('edit_prog_date').value = prog.date || '';
                     document.getElementById('edit_prog_place').value = prog.place || '';
+                    if (document.getElementById('edit_prog_remarks')) {
+                        document.getElementById('edit_prog_remarks').value = prog.remarks || '';
+                    }
 
                     // Handle checkbox values
                     const fields = ['present', 'photo', 'marklist', 'thanks_letter', 'report_form', 'other_document'];
@@ -4127,7 +4987,7 @@
                         }
                     });
 
-                    modal.style.display = 'flex';
+                    modal.style.setProperty('display', 'flex', 'important');
                 }
             } catch (e) {
                 console.error('Error opening edit programme modal:', e);
@@ -4140,9 +5000,13 @@
         }
 
         async function handleAddProgrammeSubmit(e) {
-            e.preventDefault();
-            closeAddProgrammeModal();
-            const form = e.target;
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const form = e.target || document.getElementById('addProgrammeForm');
+            if (!form) return false;
+
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
@@ -4151,7 +5015,11 @@
 
             try {
                 const formData = new FormData(form);
-                const response = await fetch(`/admin/projects/{{ $projectRouteSlug }}/{{ $project->id }}/add-programme`, {
+                if (formData.get('programme_name') === 'Others' && formData.get('other_programme_name')) {
+                    formData.set('programme_name', formData.get('other_programme_name').trim());
+                }
+                const actionUrl = form.action || `/admin/projects/{{ $projectRouteSlug }}/{{ $project->id }}/add-programme`;
+                const response = await fetch(actionUrl, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -4168,7 +5036,7 @@
                     if (typeof showToast === 'function') {
                         showToast(data.message || 'Programme added successfully!', 'success');
                     }
-                    setTimeout(() => window.location.reload(), 300);
+                    window.location.reload();
                 } else {
                     alert(data.error || 'Failed to add programme.');
                     if (submitBtn) {
@@ -4184,6 +5052,7 @@
                     submitBtn.innerHTML = 'Add Programme';
                 }
             }
+            return false;
         }
 
         async function handleEditProgrammeSubmit(e) {
@@ -4197,6 +5066,9 @@
 
             try {
                 const formData = new FormData(form);
+                if (formData.get('programme_name') === 'Others' && formData.get('other_programme_name')) {
+                    formData.set('programme_name', formData.get('other_programme_name').trim());
+                }
                 const response = await fetch(form.action, {
                     method: 'POST',
                     headers: {
@@ -4213,7 +5085,7 @@
                     if (typeof showToast === 'function') {
                         showToast(data.message || 'Programme updated successfully!', 'success');
                     }
-                    setTimeout(() => window.location.reload(), 300);
+                    window.location.reload();
                 } else {
                     alert(data.error || 'Failed to update programme.');
                     if (submitBtn) {

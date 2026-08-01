@@ -573,7 +573,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'place' => 'New Place',
             'post_office' => 'New PO',
         ]);
-        $response->assertSessionHas('success', 'Address updated successfully!');
+        $response->assertSessionHas('success', 'Details updated successfully!');
         $this->assertEquals('New House', $app->fresh()->house_name);
         $this->assertEquals('New Place', $app->fresh()->place);
 

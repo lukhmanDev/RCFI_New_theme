@@ -334,7 +334,7 @@
                             </button>
 
                             <!-- PDF Report Button -->
-                            <a href="{{ route('admin.reports.single_project', [$project->id, 'category' => 'house']) }}?print=1" target="_blank" class="btn-action-icon btn-pdf" title="PDF / Print Report">
+                            <a href="{{ route('projects.pdf', [$project->id, 'category' => 'house']) }}" onclick="downloadDirectPdf(event, this.href)" class="btn-action-icon btn-pdf" title="Download PDF Report">
                                 <i class="bx bxs-file-pdf"></i>
                             </a>
                             @endif

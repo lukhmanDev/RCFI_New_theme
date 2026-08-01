@@ -21,6 +21,22 @@
     </script>
 
     <!-- Premium CSS Layout and Design System -->
+    @if(request('embed'))
+    <style>
+        .sidebar, .sidebar-panel, .top-header, .top-navbar, header, nav, .app-header, .sidebar-wrapper, .navbar, aside, .header-panel, .group-header-panel, #sidebar, .sidebar-menu, .main-header, .layout-navbar, .layout-menu {
+            display: none !important;
+        }
+        body, main, .main-content, .content-body, .wrapper, .page-wrapper, .admin-container, .content-wrapper {
+            margin-left: 0 !important;
+            margin-top: 0 !important;
+            padding: 0.5rem 1rem !important;
+            background: #ffffff !important;
+            width: 100% !important;
+            min-height: auto !important;
+            overflow-y: auto !important;
+        }
+    </style>
+    @endif
     <style>
         :root {
             --bg-color: #f5f7fb;
@@ -1829,7 +1845,7 @@
         async function handleFormSubmit(event) {
             const form = event.target;
             const action = form.getAttribute('action') || window.location.href;
-            if (form.getAttribute('data-no-pjax') !== null || form.getAttribute('data-no-ajax') !== null || action.includes('export') || action.includes('download') || action.includes('upload-photo') || action.includes('upload_photo') || action.includes('delete-photo') || action.includes('delete_photo') || action.includes('logout')) {
+            if (form.getAttribute('data-no-pjax') !== null || form.getAttribute('data-no-ajax') !== null || (form.getAttribute('method') || '').toUpperCase() === 'GET' || form.id === 'globalSponsorForm' || action.includes('export') || action.includes('download') || action.includes('upload-photo') || action.includes('upload_photo') || action.includes('delete-photo') || action.includes('delete_photo') || action.includes('logout')) {
                 return;
             }
             
@@ -3056,7 +3072,7 @@
 
             <!-- Body -->
             <div style="padding: 1.5rem;">
-                <form id="globalSponsorForm" onsubmit="submitGlobalSponsorForm(event)">
+                <form id="globalSponsorForm" data-no-ajax="true" onsubmit="submitGlobalSponsorForm(event)">
                     <input type="hidden" id="global_sponsor_app_id">
                     <input type="hidden" id="global_sponsor_category_slug">
 
@@ -3150,6 +3166,28 @@
                 console.error(err);
                 alert('An error occurred while saving sponsorship.');
             }
+        }
+
+        function downloadDirectPdf(event, url) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            let iframe = document.getElementById('direct-pdf-print-iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'direct-pdf-print-iframe';
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                iframe.style.visibility = 'hidden';
+                document.body.appendChild(iframe);
+            }
+            iframe.src = url;
+            return false;
         }
     </script>
 </body>

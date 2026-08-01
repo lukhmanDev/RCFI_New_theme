@@ -1300,9 +1300,10 @@ class ApplicationController extends Controller
 
     public function toggleSponsor(Request $request, $id)
     {
+        $isJson = $request->expectsJson() || $request->wantsJson() || $request->ajax();
         $user = auth()->user();
         if (!$user || !$user->canManageSponsorship()) {
-            if ($request->wantsJson()) {
+            if ($isJson) {
                 return response()->json(['success' => false, 'error' => 'You are not authorized to update sponsor status.'], 403);
             }
             return redirect()->back()->with('error', 'You are not authorized to update sponsor status.');
@@ -1311,43 +1312,51 @@ class ApplicationController extends Controller
         $category = $request->input('category');
         $app = $this->findSocialAidApplication($id, $category);
         if (!$app) {
-            if ($request->wantsJson()) {
+            if ($isJson) {
                 return response()->json(['success' => false, 'error' => 'Application not found.'], 404);
             }
             return redirect()->back()->with('error', 'Application not found.');
         }
 
-        $meta = $app->meta ?? [];
-        unset($meta['sponsor_status']);
+        try {
+            $meta = $app->meta ?? [];
+            unset($meta['sponsor_status']);
 
-        if ($app->sponsor_status === 'Sponsored' && !$request->has('sponsored_date')) {
-            if (!$user->isSuperAdmin()) {
-                if ($request->wantsJson()) {
-                    return response()->json(['success' => false, 'error' => 'Only Super Admin can un-sponsor applications.'], 403);
+            if ($app->sponsor_status === 'Sponsored' && !$request->has('sponsored_date')) {
+                if (!$user->isSuperAdmin()) {
+                    if ($isJson) {
+                        return response()->json(['success' => false, 'error' => 'Only Super Admin can un-sponsor applications.'], 403);
+                    }
+                    return redirect()->back()->with('error', 'Only Super Admin can un-sponsor applications.');
                 }
-                return redirect()->back()->with('error', 'Only Super Admin can un-sponsor applications.');
+
+                $app->sponsor_status = 'Not Sponsored';
+                unset($meta['sponsored_date']);
+            } else {
+                $app->sponsor_status = 'Sponsored';
+                $meta['sponsored_date'] = $request->input('sponsored_date', date('Y-m-d'));
             }
 
-            $app->sponsor_status = 'Not Sponsored';
-            unset($meta['sponsored_date']);
-        } else {
-            $app->sponsor_status = 'Sponsored';
-            $meta['sponsored_date'] = $request->input('sponsored_date', date('Y-m-d'));
+            $app->meta = $meta;
+            $app->save();
+
+            if ($isJson) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sponsor status updated successfully.',
+                    'sponsor_status' => $app->sponsor_status,
+                    'sponsored_date' => $meta['sponsored_date'] ?? null
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Sponsor status updated successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error toggling sponsor: ' . $e->getMessage());
+            if ($isJson) {
+                return response()->json(['success' => false, 'error' => 'Failed to update sponsor status: ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Failed to update sponsor status: ' . $e->getMessage());
         }
-
-        $app->meta = $meta;
-        $app->save();
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Sponsor status updated successfully.',
-                'sponsor_status' => $app->sponsor_status,
-                'sponsored_date' => $meta['sponsored_date'] ?? null
-            ]);
-        }
-
-        return redirect()->back()->with('success', 'Sponsor status updated successfully.');
     }
 }
 

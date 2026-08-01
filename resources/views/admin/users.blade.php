@@ -262,8 +262,8 @@
     </div>
 
     <!-- Add User Modal Dialog -->
-    <div id="addUserModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.3); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;" onclick="closeModal()">
-        <div class="panel" style="width: 100%; max-width: 440px; margin: 1rem; position: relative; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); border-color: var(--panel-border); background: #ffffff; border-radius: 16px; padding: 2rem;" onclick="event.stopPropagation()">
+    <div id="addUserModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.3); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="panel" style="width: 100%; max-width: 440px; margin: 1rem; position: relative; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); border-color: var(--panel-border); background: #ffffff; border-radius: 16px; padding: 2rem;">
             
             <button onclick="closeModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: color 0.2s;"><i class="bx bx-x"></i></button>
             
@@ -332,8 +332,8 @@
     </div>
 
     <!-- Edit User Modal Dialog -->
-    <div id="editUserModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.3); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;" onclick="closeEditModal()">
-        <div class="panel" style="width: 100%; max-width: 440px; margin: 1rem; position: relative; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); border-color: var(--panel-border); background: #ffffff; border-radius: 16px; padding: 2rem;" onclick="event.stopPropagation()">
+    <div id="editUserModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.3); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="panel" style="width: 100%; max-width: 440px; margin: 1rem; position: relative; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); border-color: var(--panel-border); background: #ffffff; border-radius: 16px; padding: 2rem;">
             
             <button onclick="closeEditModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: color 0.2s;"><i class="bx bx-x"></i></button>
             
@@ -405,8 +405,8 @@
     </div>
 
     <!-- View Staff Details Modal -->
-    <div id="viewUserModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.3); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;" onclick="closeViewModal()">
-        <div class="panel" style="width: 100%; max-width: 650px; margin: 1rem; position: relative; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); border-color: var(--panel-border); background: #ffffff; border-radius: 16px; padding: 2rem;" onclick="event.stopPropagation()">
+    <div id="viewUserModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.3); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+        <div class="panel" style="width: 100%; max-width: 650px; margin: 1rem; position: relative; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); border-color: var(--panel-border); background: #ffffff; border-radius: 16px; padding: 2rem;">
             
             <button onclick="closeViewModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: color 0.2s;"><i class="bx bx-x"></i></button>
             

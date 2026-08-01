@@ -20,10 +20,20 @@ trait HasCategoryMeta
      */
     public function setAttribute($key, $value)
     {
+        if ($key === 'pendingAddressData') {
+            $this->pendingAddressData = $value;
+            unset($this->attributes['pendingAddressData']);
+            return $this;
+        }
+        if ($key === 'virtualMeta') {
+            $this->virtualMeta = $value;
+            unset($this->attributes['virtualMeta']);
+            return $this;
+        }
+
         $addressFields = ['house_name', 'place', 'post_office', 'post', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'pincode', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
         if (in_array($key, $addressFields) && !str_starts_with($key, 'locality_')) {
             $normalizedKey = match ($key) {
-                'location' => 'place',
                 'post' => 'post_office',
                 'panchayath' => 'panchayat',
                 'pin', 'pincode' => 'pin_code',
@@ -31,7 +41,14 @@ trait HasCategoryMeta
                 'mobile_2' => 'contact_number_2',
                 default => $key,
             };
-            $this->pendingAddressData[$normalizedKey] = $value;
+            $data = is_array($this->pendingAddressData) ? $this->pendingAddressData : [];
+            $data[$normalizedKey] = $value;
+            $this->pendingAddressData = $data;
+            unset($this->attributes['pendingAddressData']);
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), $key)) {
+                parent::setAttribute($key, $value);
+            }
             return $this;
         }
 
@@ -89,7 +106,10 @@ trait HasCategoryMeta
                         if (in_array($key, $addressFields)) {
                             $this->setAttribute($key, $val);
                         } else {
-                            $this->virtualMeta[$key] = $val;
+                            $vMeta = is_array($this->virtualMeta) ? $this->virtualMeta : [];
+                            $vMeta[$key] = $val;
+                            $this->virtualMeta = $vMeta;
+                            unset($this->attributes['virtualMeta']);
                         }
                     }
                 }
@@ -102,14 +122,36 @@ trait HasCategoryMeta
         $data = $this->pendingAddressData ?? [];
         $data[$key] = $value;
         $this->pendingAddressData = $data;
+        unset($this->attributes['pendingAddressData']);
     }
 
     public static function bootHasCategoryMeta()
     {
+        static::saving(function ($model) {
+            if (array_key_exists('pendingAddressData', $model->attributes)) {
+                unset($model->attributes['pendingAddressData']);
+            }
+            if (array_key_exists('virtualMeta', $model->attributes)) {
+                unset($model->attributes['virtualMeta']);
+            }
+        });
+
         static::saved(function ($model) {
             if (isset($model->pendingAddressData) && !empty(array_filter($model->pendingAddressData))) {
-                $model->address()->updateOrCreate([], $model->pendingAddressData);
+                if (method_exists($model, 'address')) {
+                    $validAddressData = [];
+                    $addrTable = (new \App\Models\ApplicantAddress)->getTable();
+                    foreach ($model->pendingAddressData as $k => $v) {
+                        if (\Illuminate\Support\Facades\Schema::hasColumn($addrTable, $k)) {
+                            $validAddressData[$k] = $v;
+                        }
+                    }
+                    if (!empty($validAddressData)) {
+                        $model->address()->updateOrCreate([], $validAddressData);
+                    }
+                }
                 unset($model->pendingAddressData);
+                unset($model->attributes['pendingAddressData']);
             }
         });
     }
@@ -303,12 +345,12 @@ trait HasCategoryMeta
     public function getTownAttribute()
     {
         $addr = $this->getApplicantAddressObject();
-        return ($this->pendingAddressData['town'] ?? null) ?? ($addr ? ($addr->town ?? null) : ($this->attributes['town'] ?? null));
+        return ($this->pendingAddressData['place'] ?? $this->pendingAddressData['town'] ?? null) ?? ($addr ? ($addr->place ?? null) : ($this->attributes['place'] ?? $this->attributes['town'] ?? null));
     }
 
     public function setTownAttribute($value)
     {
-        $this->setAddressField('town', $value);
+        $this->setAddressField('place', $value);
     }
 
     public function getAdditionalNoteAttribute()

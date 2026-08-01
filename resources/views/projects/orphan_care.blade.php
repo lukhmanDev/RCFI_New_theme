@@ -245,8 +245,11 @@
     }
 </style>
 
-<div class="group-header-panel">
-    Orphan Care PROJECT LIST
+<div class="group-header-panel" style="display: flex; justify-content: space-between; align-items: center;">
+    <span>Orphan Care PROJECT LIST</span>
+    <a href="{{ route('projects.export', 'orphan-care') }}" class="excel-export-btn btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);">
+        <i class="bx bxs-file-export" style="font-size: 1.1rem;"></i> Export Excel
+    </a>
 </div>
 
 @if (session('success'))
@@ -271,16 +274,133 @@
     </div>
 @endif
 
-<div class="controls-row">
-    <div style="display: flex; gap: 0.75rem;">
-        <a href="{{ route('projects.export', 'orphan-care') }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
-            <i class="bx bx-download"></i> Download Excel
-        </a>
+@php
+    $filterStates = collect();
+    $filterDistricts = collect();
+    $filterAgencies = collect();
+    $filterClusters = collect();
+    $filterGenders = collect();
+
+    foreach($projects as $p) {
+        $pApp = $p->application;
+        $pMeta = $pApp->meta ?? [];
+
+        $st = $pApp?->state ?? ($pMeta['state'] ?? null);
+        if ($st && trim($st) !== '') $filterStates->push(trim($st));
+
+        $dt = $pApp?->district ?? ($pMeta['district'] ?? null);
+        if ($dt && trim($dt) !== '') $filterDistricts->push(trim($dt));
+
+        $ag = $pApp?->agency_name 
+            ?? ($pMeta['agency_name'] ?? null) 
+            ?? ($p->donor?->name ?? null) 
+            ?? ($p->agency ?? null) 
+            ?? ($p->funds?->first()?->donor ?? null) 
+            ?? ($p->funds?->first()?->agency ?? null) 
+            ?? ($p->sponsor && $p->sponsor !== 'Sponsored' ? $p->sponsor : null);
+        if ($ag && trim($ag) !== '' && $ag !== 'N/A') $filterAgencies->push(trim($ag));
+
+        $cl = $pApp?->cluster?->name ?? ($pMeta['cluster'] ?? null);
+        if ($cl && trim($cl) !== '') $filterClusters->push(trim($cl));
+
+        $gn = $pApp?->gender ?? ($pMeta['gender'] ?? null);
+        if ($gn && trim($gn) !== '') $filterGenders->push(trim($gn));
+    }
+
+    $filterStates = $filterStates->unique()->sort()->values();
+    $filterDistricts = $filterDistricts->unique()->sort()->values();
+    $filterAgencies = $filterAgencies->unique()->sort()->values();
+    $filterClusters = $filterClusters->unique()->sort()->values();
+    $filterGenders = $filterGenders->unique()->sort()->values();
+@endphp
+
+<div class="controls-row" style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between; background: #ffffff; padding: 1.1rem 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px -2px rgba(0,0,0,0.04);">
+    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; flex: 1;">
+        <!-- State Filter -->
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label for="stateFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">State</label>
+            <select id="stateFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 130px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
+                <option value="all">All States</option>
+                @foreach($filterStates as $st)
+                    <option value="{{ strtolower($st) }}">{{ $st }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- District Filter -->
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label for="districtFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">District</label>
+            <select id="districtFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 130px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
+                <option value="all">All Districts</option>
+                @foreach($filterDistricts as $dt)
+                    <option value="{{ strtolower($dt) }}">{{ $dt }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- Agency Filter -->
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label for="agencyFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">Agency</label>
+            <select id="agencyFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 140px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
+                <option value="all">All Agencies</option>
+                @foreach($filterAgencies as $ag)
+                    <option value="{{ strtolower($ag) }}">{{ $ag }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- Cluster Filter -->
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label for="clusterFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">Cluster</label>
+            <select id="clusterFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 130px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
+                <option value="all">All Clusters</option>
+                @foreach($filterClusters as $cl)
+                    <option value="{{ strtolower($cl) }}">{{ $cl }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- Gender Filter -->
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label for="genderFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">Gender</label>
+            <select id="genderFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 120px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
+                <option value="all">All Genders</option>
+                @foreach($filterGenders as $gn)
+                    <option value="{{ strtolower($gn) }}">{{ ucfirst($gn) }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <label for="statusFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">Status</label>
+            <select id="statusFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 600; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 130px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="completed">Completed</option>
+            </select>
+        </div>
+
+        <!-- Reset Button -->
+        <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+            <button type="button" onclick="resetFilters()" class="btn-custom" style="height: 38px; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 0 0.85rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s;" title="Reset all filters" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='#ffffff';">
+                <i class="bx bx-refresh" style="font-size: 1.1rem;"></i> Reset
+            </button>
+        </div>
+
+        <!-- Export Excel Button -->
+        <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+            <a id="excelExportBtn" href="{{ route('projects.export', 'orphan-care') }}" class="btn-custom excel-export-btn" style="height: 38px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0 1rem; border-radius: 6px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); white-space: nowrap;" title="Download Excel report with all filtered data">
+                <i class="bx bxs-file-export" style="font-size: 1.1rem;"></i> Export Excel
+            </a>
+        </div>
     </div>
 
-    <div class="search-container">
-        <span>Search:</span>
-        <input type="text" id="tableSearch" onkeyup="filterTable()" class="form-control-dark" style="width: 200px; padding: 0.4rem 0.8rem; font-size: 0.85rem;" placeholder="Search projects...">
+    <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
+        <div class="search-container" style="margin: 0;">
+            <input type="text" id="tableSearch" onkeyup="filterTable()" class="form-control-dark" style="width: 200px; height: 38px; padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;" placeholder="Search projects...">
+        </div>
     </div>
 </div>
 
@@ -291,10 +411,11 @@
                 <tr>
                     <th style="width: 60px; text-align: center;">S.No</th>
                     <th>Project ID</th>
-                    <th>Project Name</th>
-                    <th>Sponsor</th>
-                    <th class="col-agency">Agency Project No</th>
-                    <th class="col-remarks">Remarks</th>
+                    <th>Agency ID</th>
+                    <th>Agency</th>
+                    <th>Name of Orphan</th>
+                    <th>Mother Name</th>
+                    <th>Mobile</th>
                     <th style="text-align: center; width: 110px;">Status</th>
                     <th style="text-align: center; width: 200px;">Action</th>
                 </tr>
@@ -304,6 +425,15 @@
                     @php
                         $app = $project->application;
                         $appMeta = $app->meta ?? [];
+                        
+                        $rowAgencyName = $app?->agency_name 
+                            ?? ($appMeta['agency_name'] ?? null) 
+                            ?? ($project->donor?->name ?? null) 
+                            ?? ($project->agency ?? null) 
+                            ?? ($project->funds?->first()?->donor ?? null) 
+                            ?? ($project->funds?->first()?->agency ?? null) 
+                            ?? ($project->sponsor && $project->sponsor !== 'Sponsored' ? $project->sponsor : 'N/A');
+
                         $searchTerms = [
                             $project->project_id,
                             $project->project_name,
@@ -323,18 +453,33 @@
                             $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? null)),
                         ];
                         $searchString = strtolower(implode(' ', array_filter($searchTerms)));
+
+                        $rowState = strtolower(trim($app?->state ?? ($appMeta['state'] ?? '')));
+                        $rowDistrict = strtolower(trim($app?->district ?? ($appMeta['district'] ?? '')));
+                        $rowAgency = strtolower(trim($rowAgencyName !== 'N/A' ? $rowAgencyName : ''));
+                        $rowCluster = strtolower(trim($app?->cluster?->name ?? ($appMeta['cluster'] ?? '')));
+                        $rowGender = strtolower(trim($app?->gender ?? ($appMeta['gender'] ?? '')));
+                        $rowStatus = strtolower(trim($project->status ?? 'active'));
                     @endphp
-                    <tr class="project-row" data-search="{{ $searchString }}">
+                    <tr class="project-row" 
+                        data-search="{{ $searchString }}"
+                        data-state="{{ $rowState }}"
+                        data-district="{{ $rowDistrict }}"
+                        data-agency="{{ $rowAgency }}"
+                        data-cluster="{{ $rowCluster }}"
+                        data-gender="{{ $rowGender }}"
+                        data-status="{{ $rowStatus }}">
                         <td style="text-align: center;">{{ $index + 1 }}</td>
                         <td style="font-weight: 600; color: var(--accent-cyan);">
-                            {{ $project->project_id }}
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Orphan Care') }}" style="color: var(--accent-cyan); font-weight: 700; text-decoration: underline;" title="View Project Details">
+                                {{ $project->project_id }}
+                            </a>
                         </td>
-                        <td>{{ $project->project_name ?? 'N/A' }}</td>
-                        <td>{{ $project->sponsor ?? 'N/A' }}</td>
-                        <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
-                        <td class="col-remarks" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            {{ $project->remarks ?? 'N/A' }}
-                        </td>
+                        <td>{{ $project->agency_project_no ?? ($app?->agency_number ?? ($appMeta['agency_number'] ?? 'N/A')) }}</td>
+                        <td>{{ $rowAgencyName }}</td>
+                        <td>{{ $project->project_name ?? ($app?->applicant_name ?? ($appMeta['applicant_name'] ?? 'N/A')) }}</td>
+                        <td>{{ $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A') }}</td>
+                        <td>{{ $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? ($app?->mobile_2 ?? ($appMeta['mobile_2'] ?? 'N/A')))) }}</td>
                         <td style="text-align: center;">
                             @php
                                 $status = $project->status ?? 'Active';
@@ -359,12 +504,12 @@
                         </td>
                         <td style="text-align: center; white-space: nowrap;">
                             @if(Auth::user()->hasAdminAccess())
-                            <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nName: {{ $project->project_name ?? 'N/A' }}\nSponsor: {{ $project->sponsor ?? 'N/A' }}\nTheme: {{ $project->theme ?? 'N/A' }}\nSubtheme: {{ $project->subtheme ?? 'N/A' }}\nActivity: {{ $project->activity ?? 'N/A' }}\nSpec: {{ $project->project_spec ?? 'N/A' }}\nAgency No: {{ $project->agency_project_no }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Orphan Care') }}" class="btn-action-icon btn-dots" title="Details">
                                 <i class="bx bx-dots-horizontal-rounded"></i>
-                            </button>
+                            </a>
 
                             <!-- PDF Report Button -->
-                            <a href="{{ route('admin.reports.single_project', [$project->id, 'category' => 'orphan-care']) }}?print=1" target="_blank" class="btn-action-icon btn-pdf" title="PDF / Print Report">
+                            <a href="{{ route('projects.pdf', [$project->id, 'category' => 'orphan-care']) }}" onclick="downloadDirectPdf(event, this.href)" class="btn-action-icon btn-pdf" title="Download PDF Report">
                                 <i class="bx bxs-file-pdf"></i>
                             </a>
 
@@ -381,11 +526,11 @@
                             </button>
                             @endif
 
-                            <button type="button" onclick="openAddProgrammeModal({{ json_encode($project) }})" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
+                            <button type="button" data-id="{{ $project->id }}" data-name="{{ $project->project_name ?? '' }}" data-agency="{{ $project->agency_project_no ?? '' }}" onclick="openAddProgrammeModal(this)" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
                                 <i class="bx bx-plus-circle"></i>
                             </button>
 
-                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project) }}" class="btn-action-icon btn-view" title="Stage Details">
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Orphan Care') }}" class="btn-action-icon btn-view" title="Stage Details">
                                 <i class="bx bx-show-alt"></i>
                             </a>
                         </td>
@@ -588,33 +733,93 @@
     window.closeEditModal = closeEditModal;
 
     function filterTable() {
-        const input = document.getElementById('tableSearch');
-        const filter = input.value.toLowerCase().trim();
-        const table = document.getElementById('projectsTable');
-        const trs = table.getElementsByTagName('tr');
+        const searchFilter = (document.getElementById('tableSearch')?.value || '').toLowerCase().trim();
+        const stateFilter = (document.getElementById('stateFilter')?.value || '').toLowerCase().trim();
+        const districtFilter = (document.getElementById('districtFilter')?.value || '').toLowerCase().trim();
+        const agencyFilter = (document.getElementById('agencyFilter')?.value || '').toLowerCase().trim();
+        const clusterFilter = (document.getElementById('clusterFilter')?.value || '').toLowerCase().trim();
+        const genderFilter = (document.getElementById('genderFilter')?.value || '').toLowerCase().trim();
 
-        for (let i = 1; i < trs.length; i++) {
-            let match = false;
-            const searchData = trs[i].getAttribute('data-search');
-            if (searchData !== null && searchData !== '') {
-                if (searchData.indexOf(filter) > -1) {
-                    match = true;
-                }
-            } else {
-                const tds = trs[i].getElementsByTagName('td');
-                for (let j = 0; j < tds.length - 1; j++) {
-                    if (tds[j]) {
-                        const txtValue = tds[j].textContent || tds[j].innerText;
-                        if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                            match = true;
-                            break;
-                        }
-                    }
-                }
+        const table = document.getElementById('projectsTable');
+        if (!table) return;
+        const trs = table.querySelectorAll('tbody tr.project-row');
+
+        trs.forEach(tr => {
+            let match = true;
+
+            if (searchFilter) {
+                const searchData = tr.getAttribute('data-search') || '';
+                if (!searchData.includes(searchFilter)) match = false;
             }
-            trs[i].style.display = match ? '' : 'none';
-        }
+
+            if (match && stateFilter && stateFilter !== 'all') {
+                const stateVal = tr.getAttribute('data-state') || '';
+                if (stateVal !== stateFilter) match = false;
+            }
+
+            if (match && districtFilter && districtFilter !== 'all') {
+                const distVal = tr.getAttribute('data-district') || '';
+                if (distVal !== districtFilter) match = false;
+            }
+
+            if (match && agencyFilter && agencyFilter !== 'all') {
+                const agencyVal = tr.getAttribute('data-agency') || '';
+                if (agencyVal !== agencyFilter) match = false;
+            }
+
+            if (match && clusterFilter && clusterFilter !== 'all') {
+                const clusterVal = tr.getAttribute('data-cluster') || '';
+                if (clusterVal !== clusterFilter) match = false;
+            }
+
+            if (match && genderFilter && genderFilter !== 'all') {
+                const genderVal = tr.getAttribute('data-gender') || '';
+                if (genderVal !== genderFilter) match = false;
+            }
+
+            tr.style.display = match ? '' : 'none';
+        });
+
+        updateExportUrl();
     }
+    window.filterTable = filterTable;
+
+    function updateExportUrl() {
+        const btns = document.querySelectorAll('.excel-export-btn, #excelExportBtn, a[href*="projects/export"]');
+        if (!btns.length) return;
+        const baseUrl = "{{ route('projects.export', 'orphan-care') }}";
+        const params = new URLSearchParams();
+        
+        const searchVal = document.getElementById('tableSearch')?.value;
+        const stateVal = document.getElementById('stateFilter')?.value;
+        const districtVal = document.getElementById('districtFilter')?.value;
+        const agencyVal = document.getElementById('agencyFilter')?.value;
+        const clusterVal = document.getElementById('clusterFilter')?.value;
+        const genderVal = document.getElementById('genderFilter')?.value;
+
+        if (searchVal) params.append('search', searchVal);
+        if (stateVal && stateVal !== 'all') params.append('state', stateVal);
+        if (districtVal && districtVal !== 'all') params.append('district', districtVal);
+        if (agencyVal && agencyVal !== 'all') params.append('agency', agencyVal);
+        if (clusterVal && clusterVal !== 'all') params.append('cluster', clusterVal);
+        if (genderVal && genderVal !== 'all') params.append('gender', genderVal);
+
+        const queryString = params.toString();
+        const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+        btns.forEach(btn => btn.href = fullUrl);
+    }
+    window.updateExportUrl = updateExportUrl;
+
+    function resetFilters() {
+        if (document.getElementById('tableSearch')) document.getElementById('tableSearch').value = '';
+        if (document.getElementById('stateFilter')) document.getElementById('stateFilter').value = 'all';
+        if (document.getElementById('districtFilter')) document.getElementById('districtFilter').value = 'all';
+        if (document.getElementById('agencyFilter')) document.getElementById('agencyFilter').value = 'all';
+        if (document.getElementById('clusterFilter')) document.getElementById('clusterFilter').value = 'all';
+        if (document.getElementById('genderFilter')) document.getElementById('genderFilter').value = 'all';
+        filterTable();
+    }
+    window.resetFilters = resetFilters;
 
     var themesData = {
         @foreach($themes as $t)
@@ -820,17 +1025,42 @@
 
 
 
-    window.openAddProgrammeModal = function openAddProgrammeModal(project) {
+    window.openAddProgrammeModal = function openAddProgrammeModal(param) {
+        let projectId, projectName, agencyNo;
+
+        if (param && param.dataset) {
+            projectId = param.dataset.id;
+            projectName = param.dataset.name;
+            agencyNo = param.dataset.agency;
+        } else if (typeof param === 'object' && param !== null) {
+            projectId = param.id;
+            projectName = param.project_name;
+            agencyNo = param.agency_project_no;
+        } else {
+            projectId = param;
+        }
+
+        if (!projectId) return;
+
         const form = document.getElementById('addProgrammeForm');
-        form.action = `/admin/projects/orphan-care/${project.id}/add-programme`;
+        if (form) {
+            form.action = `/admin/projects/orphan-care/${projectId}/add-programme`;
+            form.reset();
+        }
 
-        document.getElementById('prog_modal_student_name').textContent = project.project_name || 'N/A';
-        document.getElementById('prog_modal_agency_no').textContent = project.agency_project_no || 'N/A';
+        const nameElem = document.getElementById('prog_modal_student_name');
+        if (nameElem) nameElem.textContent = projectName || 'N/A';
 
-        form.reset();
+        const agencyElem = document.getElementById('prog_modal_agency_no');
+        if (agencyElem) agencyElem.textContent = agencyNo || 'N/A';
 
         const modal = document.getElementById('addProgrammeModal');
-        if (modal) modal.style.display = 'flex';
+        if (modal) {
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+        }
     }
 
     function closeAddProgrammeModal() {
@@ -889,7 +1119,7 @@
 </script>
 
 <!-- Add Programme Modal -->
-<div class="modal-overlay" id="addProgrammeModal" style="display: none;" onclick="if(event.target === this) closeAddProgrammeModal()">
+<div class="modal-overlay" id="addProgrammeModal" style="display: none;">
     <div class="modal-content-custom" style="max-width: 600px; max-height: 90vh; overflow-y: auto; background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px;">
         <div class="modal-header-custom" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3 style="margin: 0; color: var(--text-main); font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">ADD NEW PROGRAMME</h3>
@@ -913,15 +1143,28 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div style="grid-column: span 2;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Programme Name *</label>
-                    <input type="text" name="programme_name" required placeholder="e.g. Annual Student Meet 2026" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <select name="programme_name" id="orphan_add_prog_name_select" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" onchange="if(typeof toggleSpecifyProgrammeField === 'function') toggleSpecifyProgrammeField(this, 'orphan_add_prog_other_name_wrapper', 'orphan_add_prog_other_name_input')">
+                        <option value="" disabled selected>-- Select Programme --</option>
+                        <option value="Cluster Camp">Cluster Camp</option>
+                        <option value="Report Collection Programme">Report Collection Programme</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+                <div id="orphan_add_prog_other_name_wrapper" style="grid-column: span 2; display: none;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Specify Programme Name *</label>
+                    <input type="text" id="orphan_add_prog_other_name_input" name="other_programme_name" placeholder="Enter custom programme name..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
                 <div>
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
-                    <input type="date" name="date" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date *</label>
+                    <input type="date" name="date" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
                 <div>
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
                     <input type="text" name="place" placeholder="e.g. Main Auditorium" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Remarks</label>
+                    <input type="text" name="remarks" placeholder="Enter remarks (optional)..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
             </div>
 
@@ -962,6 +1205,12 @@
     </div>
 </div>
 
+<script>
+function openStageDetailsModal(id, type, projectIdCode) {
+    window.location.href = `/admin/projects/${id}?type=${type}`;
+}
+window.openStageDetailsModal = openStageDetailsModal;
+</script>
 
 @endsection
 

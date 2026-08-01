@@ -10,6 +10,8 @@ class Cluster extends Model
         'code',
         'name',
         'institution_name',
+        'head_of_institution',
+        'head_contact_number',
         'place',
         'po',
         'village',

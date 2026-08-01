@@ -373,7 +373,7 @@
                             </button>
 
                             <!-- PDF Report Button -->
-                            <a href="{{ route('admin.reports.single_project', [$project->id, 'category' => 'differently-abled']) }}?print=1" target="_blank" class="btn-action-icon btn-pdf" title="PDF / Print Report">
+                            <a href="{{ route('projects.pdf', [$project->id, 'category' => 'differently-abled']) }}" onclick="downloadDirectPdf(event, this.href)" class="btn-action-icon btn-pdf" title="Download PDF Report">
                                 <i class="bx bxs-file-pdf"></i>
                             </a>
 
@@ -390,7 +390,7 @@
                             </button>
                             @endif
 
-                            <button type="button" onclick="openAddProgrammeModal({{ json_encode($project) }})" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
+                            <button type="button" data-id="{{ $project->id }}" data-name="{{ $project->project_name ?? '' }}" data-agency="{{ $project->agency_project_no ?? '' }}" onclick="openAddProgrammeModal(this)" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
                                 <i class="bx bx-plus-circle"></i>
                             </button>
 
@@ -901,17 +901,42 @@
 
 
 
-    window.openAddProgrammeModal = function openAddProgrammeModal(project) {
+    window.openAddProgrammeModal = function openAddProgrammeModal(param) {
+        let projectId, projectName, agencyNo;
+
+        if (param && param.dataset) {
+            projectId = param.dataset.id;
+            projectName = param.dataset.name;
+            agencyNo = param.dataset.agency;
+        } else if (typeof param === 'object' && param !== null) {
+            projectId = param.id;
+            projectName = param.project_name;
+            agencyNo = param.agency_project_no;
+        } else {
+            projectId = param;
+        }
+
+        if (!projectId) return;
+
         const form = document.getElementById('addProgrammeForm');
-        form.action = `/admin/projects/differently-abled/${project.id}/add-programme`;
+        if (form) {
+            form.action = `/admin/projects/differently-abled/${projectId}/add-programme`;
+            form.reset();
+        }
 
-        document.getElementById('prog_modal_student_name').textContent = project.project_name || 'N/A';
-        document.getElementById('prog_modal_agency_no').textContent = project.agency_project_no || 'N/A';
+        const nameElem = document.getElementById('prog_modal_student_name');
+        if (nameElem) nameElem.textContent = projectName || 'N/A';
 
-        form.reset();
+        const agencyElem = document.getElementById('prog_modal_agency_no');
+        if (agencyElem) agencyElem.textContent = agencyNo || 'N/A';
 
         const modal = document.getElementById('addProgrammeModal');
-        if (modal) modal.style.display = 'flex';
+        if (modal) {
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+        }
     }
 
     function closeAddProgrammeModal() {
@@ -970,7 +995,7 @@
 </script>
 
 <!-- Add Programme Modal -->
-<div class="modal-overlay" id="addProgrammeModal" style="display: none;" onclick="if(event.target === this) closeAddProgrammeModal()">
+<div class="modal-overlay" id="addProgrammeModal" style="display: none;">
     <div class="modal-content-custom" style="max-width: 600px; max-height: 90vh; overflow-y: auto; background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px;">
         <div class="modal-header-custom" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3 style="margin: 0; color: var(--text-main); font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">ADD NEW PROGRAMME</h3>
@@ -994,15 +1019,28 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div style="grid-column: span 2;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Programme Name *</label>
-                    <input type="text" name="programme_name" required placeholder="e.g. Annual Student Meet 2026" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <select name="programme_name" id="diff_add_prog_name_select" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" onchange="if(typeof toggleSpecifyProgrammeField === 'function') toggleSpecifyProgrammeField(this, 'diff_add_prog_other_name_wrapper', 'diff_add_prog_other_name_input')">
+                        <option value="" disabled selected>-- Select Programme --</option>
+                        <option value="Cluster Camp">Cluster Camp</option>
+                        <option value="Report Collection Programme">Report Collection Programme</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+                <div id="diff_add_prog_other_name_wrapper" style="grid-column: span 2; display: none;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Specify Programme Name *</label>
+                    <input type="text" id="diff_add_prog_other_name_input" name="other_programme_name" placeholder="Enter custom programme name..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
                 <div>
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
-                    <input type="date" name="date" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date *</label>
+                    <input type="date" name="date" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
                 <div>
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Place</label>
                     <input type="text" name="place" placeholder="e.g. Main Auditorium" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Remarks</label>
+                    <input type="text" name="remarks" placeholder="Enter remarks (optional)..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
             </div>
 

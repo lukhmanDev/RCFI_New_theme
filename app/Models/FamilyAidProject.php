@@ -47,7 +47,7 @@ class FamilyAidProject extends Model
 
     public function programmes()
     {
-        return $this->hasMany(FamilyAidProgramme::class, 'family_aid_project_id');
+        return $this->hasMany(FamilyAidProgramme::class, 'family_aid_project_id')->latest();
     }
 
     public function funds()

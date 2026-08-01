@@ -1015,7 +1015,7 @@ class ProjectController extends Controller
         return redirect()->route('projects.show', $id)->with('success', 'Project completely approved and finalized by COO!');
     }
 
-    public function export($category)
+    public function export(Request $request, $category)
     {
         if (!array_key_exists($category, $this->categories)) {
             abort(404);
@@ -1025,59 +1025,385 @@ class ProjectController extends Controller
         $model = $config['model'];
         $user = auth()->user();
         $isOrphanCare = ($category === 'orphan-care');
-        $relations = $isOrphanCare ? [] : ['donor', 'projectManager'];
+        $isSocialAid = in_array($category, ['orphan-care', 'differently-abled', 'family-aid']);
+
+        $relations = ['application.cluster', 'application.address', 'donor', 'projectManager', 'funds'];
         $projects = $this->scopeProjectsForUser($model::with($relations), $user)->get();
 
-        $headers = $isOrphanCare ? [
-            'Project ID',
-            'Project Name',
-            'Sponsor',
-            'Agency Project No',
-            'Remarks',
-            'Stage',
-            'Status',
-            'Created At'
-        ] : [
-            'Project ID',
-            'Agency Project No',
-            'Donor Name',
-            'Project Manager',
-            'Available Budget',
-            'Type of Project',
-            'Remarks',
-            'Stage',
-            'Status',
-            'Created At'
-        ];
+        // Apply filters if passed from frontend
+        if ($request->filled('state') && strtolower($request->state) !== 'all') {
+            $stFilter = strtolower(trim($request->state));
+            $projects = $projects->filter(function($p) use ($stFilter) {
+                $app = $p->application;
+                $meta = $app->meta ?? [];
+                $st = strtolower(trim($app?->address?->state ?? ($app?->state ?? ($meta['state'] ?? ''))));
+                return $st === $stFilter;
+            });
+        }
 
-        $callback = function() use ($projects, $headers, $isOrphanCare) {
+        if ($request->filled('district') && strtolower($request->district) !== 'all') {
+            $dtFilter = strtolower(trim($request->district));
+            $projects = $projects->filter(function($p) use ($dtFilter) {
+                $app = $p->application;
+                $meta = $app->meta ?? [];
+                $dt = strtolower(trim($app?->address?->district ?? ($app?->district ?? ($meta['district'] ?? ''))));
+                return $dt === $dtFilter;
+            });
+        }
+
+        if ($request->filled('agency') && strtolower($request->agency) !== 'all') {
+            $agFilter = strtolower(trim($request->agency));
+            $projects = $projects->filter(function($p) use ($agFilter) {
+                $app = $p->application;
+                $meta = $app->meta ?? [];
+                $ag = strtolower(trim(
+                    $app?->agency_name 
+                    ?? ($meta['agency_name'] ?? null) 
+                    ?? ($p->donor?->name ?? null) 
+                    ?? ($p->agency ?? null) 
+                    ?? ($p->funds?->first()?->donor ?? null) 
+                    ?? ($p->funds?->first()?->agency ?? null) 
+                    ?? ($p->sponsor && $p->sponsor !== 'Sponsored' ? $p->sponsor : '')
+                ));
+                return $ag === $agFilter;
+            });
+        }
+
+        if ($request->filled('cluster') && strtolower($request->cluster) !== 'all') {
+            $clFilter = strtolower(trim($request->cluster));
+            $projects = $projects->filter(function($p) use ($clFilter) {
+                $app = $p->application;
+                $meta = $app->meta ?? [];
+                $cl = strtolower(trim($app?->cluster?->name ?? ($meta['cluster'] ?? '')));
+                return $cl === $clFilter;
+            });
+        }
+
+        if ($request->filled('gender') && strtolower($request->gender) !== 'all') {
+            $gnFilter = strtolower(trim($request->gender));
+            $projects = $projects->filter(function($p) use ($gnFilter) {
+                $app = $p->application;
+                $meta = $app->meta ?? [];
+                $gn = strtolower(trim($app?->gender ?? ($meta['gender'] ?? '')));
+                return $gn === $gnFilter;
+            });
+        }
+
+        if ($request->filled('search')) {
+            $searchTerm = strtolower(trim($request->search));
+            $projects = $projects->filter(function($p) use ($searchTerm) {
+                $app = $p->application;
+                $meta = $app->meta ?? [];
+                $searchable = strtolower(implode(' ', array_filter([
+                    $p->project_id,
+                    $p->project_name,
+                    $p->agency_project_no,
+                    $p->sponsor,
+                    $p->remarks,
+                    $app?->applicant_name,
+                    $app?->father_name ?? ($meta['father_name'] ?? null),
+                    $app?->mother_name ?? ($meta['mother_name'] ?? null),
+                    $app?->place ?? ($meta['place'] ?? null),
+                    $app?->district ?? ($meta['district'] ?? null),
+                    $app?->state ?? ($meta['state'] ?? null),
+                    $app?->mobile_1 ?? ($meta['mobile_1'] ?? null),
+                ])));
+                return str_contains($searchable, $searchTerm);
+            });
+        }
+
+        if ($isOrphanCare) {
+            $headers = [
+                'Project ID',
+                'Agency Project No',
+                'Agency Name',
+                'Orphan / Beneficiary Name',
+                'Application ID',
+                'Application Date',
+                'Father Name',
+                'Father Death Date',
+                'Father Death Cause',
+                'Grandfather Name',
+                'Mother Name',
+                'Mother Alive Status',
+                'Mother Death Date',
+                'Mother Death Cause',
+                'Mother Remarried Status',
+                "Mother's Father Name",
+                'Guardian Name',
+                'Guardian Relation',
+                'Gender',
+                'Age',
+                'Date of Birth',
+                'Mobile 1',
+                'Mobile 2',
+                'WhatsApp Number',
+                'Contact Email',
+                'Aadhar Number',
+                'House Name',
+                'House Type',
+                'Place',
+                'Post Office',
+                'Pin Code',
+                'Town',
+                'District',
+                'State',
+                'Cluster',
+                'School Name',
+                'School Class',
+                'Madrassa Name',
+                'Madrassa Class',
+                'Not Studying Reason',
+                'Health Status',
+                'Monthly Income',
+                'Monthly Expense',
+                'Siblings Male',
+                'Siblings Female',
+                'Siblings Total',
+                'Amount Requested',
+                'Sponsorship Details',
+                'Sponsor Status',
+                'Current Beneficiaries',
+                'Recommender Name',
+                'Recommender Org',
+                'Recommender Phone',
+                'Recommender Position',
+                'Additional Note',
+                'Theme',
+                'Subtheme',
+                'Activity',
+                'Project Spec',
+                'Unit',
+                'Stage',
+                'Status',
+                'Remarks',
+                'Created At'
+            ];
+        } elseif ($isSocialAid) {
+            $headers = [
+                'Project ID',
+                'Agency Project No',
+                'Agency Name',
+                'Orphan / Beneficiary Name',
+                'Application ID',
+                'Father Name',
+                'Mother Name',
+                'Guardian Name',
+                'Guardian Relation',
+                'Gender',
+                'Age',
+                'Date of Birth',
+                'Mobile 1',
+                'Mobile 2',
+                'WhatsApp Number',
+                'Contact Email',
+                'Aadhar Number',
+                'House Name',
+                'Place',
+                'Post Office',
+                'Pin Code',
+                'Town',
+                'District',
+                'State',
+                'Cluster',
+                'School Name',
+                'School Class',
+                'Madrassa Name',
+                'Madrassa Class',
+                'Health Status',
+                'Monthly Income',
+                'Monthly Expense',
+                'Sponsor Status',
+                'Theme',
+                'Subtheme',
+                'Activity',
+                'Project Spec',
+                'Unit',
+                'Stage',
+                'Status',
+                'Remarks',
+                'Created At'
+            ];
+        } else {
+            $headers = [
+                'Project ID',
+                'Agency Project No',
+                'Project Name',
+                'Donor Name',
+                'Project Manager',
+                'Available Budget',
+                'Type of Project',
+                'Application ID',
+                'Applicant Name',
+                'Father Name',
+                'Mother Name',
+                'Mobile',
+                'Place',
+                'District',
+                'State',
+                'Cluster',
+                'Remarks',
+                'Stage',
+                'Status',
+                'Created At'
+            ];
+        }
+
+        $callback = function() use ($projects, $headers, $isSocialAid, $isOrphanCare, $config) {
             $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, $headers);
 
             foreach ($projects as $project) {
+                $app = $project->application;
+                $appMeta = $app->meta ?? [];
+
+                $agencyName = $app?->agency_name 
+                    ?? ($appMeta['agency_name'] ?? null) 
+                    ?? ($project->donor?->name ?? null) 
+                    ?? ($project->agency ?? null) 
+                    ?? ($project->funds?->first()?->donor ?? null) 
+                    ?? ($project->funds?->first()?->agency ?? null) 
+                    ?? ($project->sponsor && $project->sponsor !== 'Sponsored' ? $project->sponsor : 'N/A');
+
                 if ($isOrphanCare) {
+                    $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
+                    $addr = $app?->address;
                     fputcsv($file, [
                         $project->project_id,
-                        $project->project_name ?? 'N/A',
-                        $project->sponsor ?? 'N/A',
-                        $project->agency_project_no ?? 'N/A',
-                        $project->remarks ?? 'N/A',
+                        $project->agency_project_no ?? ($app?->agency_number ?? ($appMeta['agency_number'] ?? 'N/A')),
+                        $agencyName,
+                        $project->project_name ?? ($app?->applicant_name ?? ($appMeta['applicant_name'] ?? 'N/A')),
+                        $appId,
+                        $app?->application_date ?? ($appMeta['application_date'] ?? ($app?->created_at ? $app->created_at->format('Y-m-d') : 'N/A')),
+                        $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                        $app?->father_death_date ?? ($appMeta['father_death_date'] ?? 'N/A'),
+                        $app?->father_death_cause ?? ($appMeta['father_death_cause'] ?? 'N/A'),
+                        $app?->grandfather_name ?? ($appMeta['grandfather_name'] ?? 'N/A'),
+                        $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                        $app?->mother_alive_status ?? ($appMeta['mother_alive_status'] ?? 'N/A'),
+                        $app?->mother_death_date ?? ($appMeta['mother_death_date'] ?? 'N/A'),
+                        $app?->mother_death_cause ?? ($appMeta['mother_death_cause'] ?? 'N/A'),
+                        $app?->mother_remarried_status ?? ($appMeta['mother_remarried_status'] ?? 'N/A'),
+                        $app?->mothers_father_name ?? ($appMeta['mothers_father_name'] ?? 'N/A'),
+                        $app?->guardian_name ?? ($appMeta['guardian_name'] ?? 'N/A'),
+                        $app?->guardian_relation ?? ($appMeta['guardian_relation'] ?? 'N/A'),
+                        $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
+                        $app?->age ?? ($appMeta['age'] ?? 'N/A'),
+                        $app?->dob ?? ($appMeta['dob'] ?? 'N/A'),
+                        $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? 'N/A')),
+                        $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? 'N/A')),
+                        $app?->whatsapp_number ?? ($appMeta['whatsapp_number'] ?? 'N/A'),
+                        $app?->contact_email ?? ($appMeta['contact_email'] ?? 'N/A'),
+                        $app?->aadhar_number ?? ($appMeta['aadhar_number'] ?? 'N/A'),
+                        $addr?->house_name ?? ($app?->house_name ?? ($appMeta['house_name'] ?? 'N/A')),
+                        $app?->house_type ?? ($appMeta['house_type'] ?? 'N/A'),
+                        $addr?->place ?? ($app?->place ?? ($appMeta['place'] ?? 'N/A')),
+                        $addr?->post_office ?? ($app?->post_office ?? ($appMeta['post_office'] ?? 'N/A')),
+                        $addr?->pin_code ?? ($app?->pin_code ?? ($appMeta['pin_code'] ?? 'N/A')),
+                        $app?->town ?? ($appMeta['town'] ?? 'N/A'),
+                        $addr?->district ?? ($app?->district ?? ($appMeta['district'] ?? 'N/A')),
+                        $addr?->state ?? ($app?->state ?? ($appMeta['state'] ?? 'N/A')),
+                        $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
+                        $app?->school_name ?? ($appMeta['school_name'] ?? 'N/A'),
+                        $app?->school_class ?? ($appMeta['school_class'] ?? 'N/A'),
+                        $app?->madrassa_name ?? ($appMeta['madrassa_name'] ?? 'N/A'),
+                        $app?->madrassa_class ?? ($appMeta['madrassa_class'] ?? 'N/A'),
+                        $app?->not_studying_reason ?? ($appMeta['not_studying_reason'] ?? 'N/A'),
+                        $app?->health_status ?? ($appMeta['health_status'] ?? 'N/A'),
+                        $app?->monthly_income ?? ($appMeta['monthly_income'] ?? 'N/A'),
+                        $app?->monthly_expense ?? ($appMeta['monthly_expense'] ?? 'N/A'),
+                        $app?->siblings_male ?? ($appMeta['siblings_male'] ?? 'N/A'),
+                        $app?->siblings_female ?? ($appMeta['siblings_female'] ?? 'N/A'),
+                        $app?->siblings_total ?? ($appMeta['siblings_total'] ?? 'N/A'),
+                        $app?->amount_requested ?? ($appMeta['amount_requested'] ?? 'N/A'),
+                        $app?->sponsorship_details ?? ($appMeta['sponsorship_details'] ?? 'N/A'),
+                        $app?->sponsor_status ?? ($project->sponsor ?? 'N/A'),
+                        $app?->current_beneficiaries ?? ($appMeta['current_beneficiaries'] ?? 'N/A'),
+                        $app?->recommender_name ?? ($appMeta['recommender_name'] ?? 'N/A'),
+                        $app?->recommender_org ?? ($appMeta['recommender_org'] ?? 'N/A'),
+                        $app?->recommender_phone ?? ($appMeta['recommender_phone'] ?? 'N/A'),
+                        $app?->recommender_position ?? ($appMeta['recommender_position'] ?? 'N/A'),
+                        $app?->additional_note ?? ($appMeta['additional_note'] ?? 'N/A'),
+                        $project->theme ?? 'N/A',
+                        $project->subtheme ?? 'N/A',
+                        $project->activity ?? 'N/A',
+                        $project->project_spec ?? 'N/A',
+                        $project->unit ?? 'N/A',
                         'Stage ' . $project->stage,
-                        $project->status,
-                        $project->created_at
+                        $project->status ?? 'Active',
+                        $project->remarks ?? 'N/A',
+                        $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
+                    ]);
+                } elseif ($isSocialAid) {
+                    $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
+                    fputcsv($file, [
+                        $project->project_id,
+                        $project->agency_project_no ?? ($app?->agency_number ?? ($appMeta['agency_number'] ?? 'N/A')),
+                        $agencyName,
+                        $project->project_name ?? ($app?->applicant_name ?? ($appMeta['applicant_name'] ?? 'N/A')),
+                        $appId,
+                        $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                        $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                        $appMeta['guardian_name'] ?? 'N/A',
+                        $appMeta['guardian_relation'] ?? 'N/A',
+                        $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
+                        $appMeta['age'] ?? 'N/A',
+                        $appMeta['dob'] ?? 'N/A',
+                        $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? 'N/A')),
+                        $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? 'N/A')),
+                        $appMeta['whatsapp_number'] ?? 'N/A',
+                        $appMeta['contact_email'] ?? 'N/A',
+                        $appMeta['aadhar_number'] ?? 'N/A',
+                        $appMeta['house_name'] ?? 'N/A',
+                        $app?->place ?? ($appMeta['place'] ?? 'N/A'),
+                        $appMeta['post_office'] ?? 'N/A',
+                        $appMeta['pin_code'] ?? 'N/A',
+                        $appMeta['town'] ?? 'N/A',
+                        $app?->district ?? ($appMeta['district'] ?? 'N/A'),
+                        $app?->state ?? ($appMeta['state'] ?? 'N/A'),
+                        $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
+                        $appMeta['school_name'] ?? 'N/A',
+                        $appMeta['school_class'] ?? 'N/A',
+                        $appMeta['madrassa_name'] ?? 'N/A',
+                        $appMeta['madrassa_class'] ?? 'N/A',
+                        $appMeta['health_status'] ?? 'N/A',
+                        $appMeta['monthly_income'] ?? 'N/A',
+                        $appMeta['monthly_expense'] ?? 'N/A',
+                        $app?->sponsor_status ?? ($project->sponsor ?? 'N/A'),
+                        $project->theme ?? 'N/A',
+                        $project->subtheme ?? 'N/A',
+                        $project->activity ?? 'N/A',
+                        $project->project_spec ?? 'N/A',
+                        $project->unit ?? 'N/A',
+                        'Stage ' . $project->stage,
+                        $project->status ?? 'Active',
+                        $project->remarks ?? 'N/A',
+                        $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
                     ]);
                 } else {
+                    $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
                     fputcsv($file, [
                         $project->project_id,
                         $project->agency_project_no ?? 'N/A',
-                        $project->donor ? $project->donor->name : 'N/A',
+                        $project->project_name ?? 'N/A',
+                        $project->donor ? $project->donor->name : ($agencyName !== 'N/A' ? $agencyName : 'N/A'),
                         $project->projectManager ? $project->projectManager->name : 'N/A',
-                        $project->available_budget,
-                        $project->type_of_project,
+                        $project->available_budget ?? '0',
+                        $project->type_of_project ?? $config['name'],
+                        $appId,
+                        $app?->applicant_name ?? ($project->project_name ?? 'N/A'),
+                        $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                        $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                        $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? 'N/A'),
+                        $app?->place ?? ($appMeta['place'] ?? 'N/A'),
+                        $app?->district ?? ($appMeta['district'] ?? 'N/A'),
+                        $app?->state ?? ($appMeta['state'] ?? 'N/A'),
+                        $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
                         $project->remarks ?? 'N/A',
                         'Stage ' . $project->stage,
-                        $project->status,
-                        $project->created_at
+                        $project->status ?? 'Active',
+                        $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
                     ]);
                 }
             }
@@ -1085,10 +1411,10 @@ class ProjectController extends Controller
             fclose($file);
         };
 
-        $filename = str_replace(' ', '_', strtolower($config['name'])) . '_projects_' . date('Ymd_His') . '.csv';
+        $filename = str_replace(' ', '_', strtolower($config['name'])) . '_projects_full_' . date('Ymd_His') . '.csv';
 
         return response()->stream($callback, 200, [
-            "Content-type"        => "text/csv",
+            "Content-type"        => "text/csv; charset=UTF-8",
             "Content-Disposition" => "attachment; filename=$filename",
             "Pragma"              => "no-cache",
             "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
@@ -2288,6 +2614,16 @@ class ProjectController extends Controller
 
     public function socialAidDeletePhoto(Request $request, $id)
     {
+        $user = auth()->user();
+        $designationLower = strtolower($user->designation ?? '');
+        $isSuperAdmin = ($user && ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin'));
+        $isCoo = ($user && ($user->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
+        $isHod = ($user && ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+
+        if (!$isSuperAdmin && !$isCoo && !$isHod) {
+            return redirect()->back()->with('error', 'Unauthorized Action: Only HOD, COO, and Super Admin can delete photos.');
+        }
+
         [$project, $application] = $this->getSocialAidProjectAndApp($id);
         if (!$project) {
             abort(404);
@@ -2316,66 +2652,176 @@ class ProjectController extends Controller
         if (!$project) {
             abort(404);
         }
-        if (!$application) {
-            return redirect()->back()->with('error', 'No application is linked to this project.');
-        }
 
-        $data = $request->validate([
+        $validatedData = $request->validate([
+            'applicant_name' => 'nullable|string|max:255',
+            'gender' => 'nullable|string|max:255',
+            'dob' => 'nullable|string|max:255',
+            'age' => 'nullable|string|max:255',
+            'aadhar_number' => 'nullable|string|max:255',
+            'health_status' => 'nullable|string|max:255',
+            'father_name' => 'nullable|string|max:255',
+            'grandfather_name' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'mothers_father_name' => 'nullable|string|max:255',
+            'guardian_name' => 'nullable|string|max:255',
+            'guardian_relation' => 'nullable|string|max:255',
+            'father_death_date' => 'nullable|string|max:255',
+            'father_death_cause' => 'nullable|string|max:255',
+            'mother_alive_status' => 'nullable|string|max:255',
+            'mother_remarried_status' => 'nullable|string|max:255',
+            'mother_death_date' => 'nullable|string|max:255',
+            'mother_death_cause' => 'nullable|string|max:255',
+            'siblings_male' => 'nullable|string|max:255',
+            'siblings_female' => 'nullable|string|max:255',
+            'siblings_total' => 'nullable|string|max:255',
+            'current_beneficiaries' => 'nullable|string|max:255',
+            'monthly_income' => 'nullable|string|max:255',
+            'monthly_expense' => 'nullable|string|max:255',
+            'sponsorship_details' => 'nullable|string|max:255',
+            'house_type' => 'nullable|string|max:255',
+            'school_name' => 'nullable|string|max:255',
+            'school_class' => 'nullable|string|max:255',
+            'madrassa_name' => 'nullable|string|max:255',
+            'madrassa_class' => 'nullable|string|max:255',
+            'not_studying_reason' => 'nullable|string|max:255',
             'house_name' => 'nullable|string|max:255',
             'place' => 'nullable|string|max:255',
+            'location' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string',
+            'additional_note' => 'nullable|string',
             'post_office' => 'nullable|string|max:255',
             'village' => 'nullable|string|max:255',
             'panchayat' => 'nullable|string|max:255',
             'district' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
+            'pin_code' => 'nullable|string|max:255',
             'mobile_1' => 'nullable|string|max:255',
             'mobile_2' => 'nullable|string|max:255',
+            'whatsapp_number' => 'nullable|string|max:255',
             'contact_number_1' => 'nullable|string|max:255',
             'contact_number_2' => 'nullable|string|max:255',
             'mobile' => 'nullable|string|max:255',
+            'recommender_name' => 'nullable|string|max:255',
+            'recommender_org' => 'nullable|string|max:255',
+            'recommender_position' => 'nullable|string|max:255',
+            'recommender_phone' => 'nullable|string|max:255',
+            'agency_number' => 'nullable|string|max:255',
+            'agency_name' => 'nullable|string|max:255',
+            'application_date' => 'nullable|string|max:255',
         ]);
 
-        $contact1 = $request->input('mobile_1') ?? ($request->input('contact_number_1') ?? $request->input('mobile'));
-        $contact2 = $request->input('mobile_2') ?? $request->input('contact_number_2');
-
-        $table = $application->getTable();
-        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'mobile_1')) {
-            $data['mobile_1'] = $contact1;
-        }
-        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'mobile_2')) {
-            $data['mobile_2'] = $contact2;
-        }
-        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'mobile')) {
-            $data['mobile'] = $contact1;
-        }
-        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'contact_number_1')) {
-            $data['contact_number_1'] = $contact1;
-        }
-        if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'contact_number_2')) {
-            $data['contact_number_2'] = $contact2;
+        // 1. Update Project Level fields
+        $projTable = $project->getTable();
+        if ($request->has('location')) {
+            $locVal = $request->input('location');
+            if (\Illuminate\Support\Facades\Schema::hasColumn($projTable, 'location')) {
+                $project->location = $locVal;
+            }
+            $project->save();
         }
 
-        $application->update($data);
+        $noteVal = $request->input('remarks') ?? $request->input('additional_note');
+        if ($noteVal !== null) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn($projTable, 'remarks')) {
+                $project->remarks = $noteVal;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn($projTable, 'additional_note')) {
+                $project->additional_note = $noteVal;
+            }
+            $project->save();
+        }
 
-        if (method_exists($application, 'applicantAddress') && $application->applicantAddress) {
-            $application->applicantAddress->update([
-                'contact_number_1' => $contact1,
-                'contact_number_2' => $contact2,
-                'house_name' => $data['house_name'] ?? $application->applicantAddress->house_name,
-                'place' => $data['place'] ?? $application->applicantAddress->place,
-                'post_office' => $data['post_office'] ?? $application->applicantAddress->post_office,
-                'village' => $data['village'] ?? $application->applicantAddress->village,
-                'panchayat' => $data['panchayat'] ?? $application->applicantAddress->panchayat,
-                'district' => $data['district'] ?? $application->applicantAddress->district,
-                'state' => $data['state'] ?? $application->applicantAddress->state,
+        // 2. Update Application Level fields if application exists
+        if ($application) {
+            $contact1 = $request->input('mobile_1') ?? ($request->input('contact_number_1') ?? $request->input('mobile'));
+            $contact2 = $request->input('mobile_2') ?? $request->input('contact_number_2');
+
+            $table = $application->getTable();
+            $updateData = [];
+            foreach ($validatedData as $key => $val) {
+                if ($val !== null && \Illuminate\Support\Facades\Schema::hasColumn($table, $key)) {
+                    $updateData[$key] = $val;
+                }
+            }
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'mobile_1')) {
+                $updateData['mobile_1'] = $contact1;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'mobile_2')) {
+                $updateData['mobile_2'] = $contact2;
+            }
+
+            if ($noteVal !== null) {
+                if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'remarks')) {
+                    $updateData['remarks'] = $noteVal;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'additional_note')) {
+                    $updateData['additional_note'] = $noteVal;
+                }
+            }
+
+            if (!empty($updateData)) {
+                $application->update($updateData);
+            }
+            if (method_exists($application, 'setMetaAttribute')) {
+                $currentMeta = $application->meta ?? [];
+                $application->meta = array_merge($currentMeta, array_filter($validatedData, fn($v) => $v !== null));
+                $application->save();
+            }
+
+            if (method_exists($application, 'address')) {
+                $application->address()->updateOrCreate([], array_filter([
+                    'contact_number_1' => $contact1,
+                    'contact_number_2' => $contact2,
+                    'house_name' => $validatedData['house_name'] ?? null,
+                    'place' => $validatedData['place'] ?? null,
+                    'post_office' => $validatedData['post_office'] ?? null,
+                    'village' => $validatedData['village'] ?? null,
+                    'panchayat' => $validatedData['panchayat'] ?? null,
+                    'district' => $validatedData['district'] ?? null,
+                    'state' => $validatedData['state'] ?? null,
+                ], fn($v) => $v !== null));
+            }
+        }
+
+        if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            $project->refresh();
+            if ($application) {
+                $application->refresh();
+            }
+            $loc = $project->location ?? ($application->location ?? null);
+            $rem = $project->remarks ?? ($application->remarks ?? null);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Details updated successfully!',
+                'location' => $loc,
+                'remarks' => $rem,
+                'project' => $project,
+                'application' => $application,
             ]);
         }
 
-        return redirect()->back()->with('success', 'Address updated successfully!');
+        return redirect()->back()->with('success', 'Details updated successfully!');
     }
 
     public function socialAidAddFund(Request $request, $id)
     {
+        $user = auth()->user();
+        $designationLower = strtolower($user->designation ?? '');
+        $isSuperAdmin = ($user && ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin'));
+        $isCoo = ($user && ($user->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
+        $isHod = ($user && ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+        $isSocialAid = ($user && ((method_exists($user, 'isSocialAid') ? $user->isSocialAid() : false) || in_array($user->role, [8, '8', 'social_aid', 'Social Aid', 'Social Aid Manager']) || str_contains($designationLower, 'social aid')));
+
+        if (!$isSuperAdmin && !$isCoo && !$isHod) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Unauthorized: Only HOD, COO, and Super Admin can add financial data.'], 403);
+            }
+            return back()->with('error', 'Unauthorized Action: Only HOD, COO, and Super Admin can add financial data.');
+        }
+
         [$project, $application] = $this->getSocialAidProjectAndApp($id);
         if (!$project) {
             abort(404);
@@ -2389,6 +2835,9 @@ class ProjectController extends Controller
         $request->validate([
             'date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
+            'account_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|numeric',
+            'ifsc_number' => 'nullable|string|max:255',
         ]);
 
         if (empty($donorVal)) {
@@ -2410,6 +2859,9 @@ class ProjectController extends Controller
                 'date' => $request->input('date'),
                 'amount' => (float)$request->input('amount'),
                 'donor' => $donorVal,
+                'account_name' => $request->input('account_name'),
+                'account_number' => $request->input('account_number'),
+                'ifsc_number' => $request->input('ifsc_number'),
                 'agency_project_no' => $project->agency_project_no ?? null,
             ]);
         }
@@ -2430,6 +2882,19 @@ class ProjectController extends Controller
 
     public function socialAidDeleteFund(Request $request, $id, $fundId)
     {
+        $user = auth()->user();
+        $designationLower = strtolower($user->designation ?? '');
+        $isSuperAdmin = ($user && ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin'));
+        $isCoo = ($user && ($user->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
+        $isHod = ($user && ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+
+        if (!$isSuperAdmin && !$isCoo && !$isHod) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Unauthorized: Only HOD, COO, and Super Admin can delete financial records.'], 403);
+            }
+            return back()->with('error', 'Unauthorized Action: Only HOD, COO, and Super Admin can delete financial records.');
+        }
+
         [$project, $application] = $this->getSocialAidProjectAndApp($id);
         if (!$project) {
             abort(404);
@@ -2460,15 +2925,30 @@ class ProjectController extends Controller
             return redirect()->back();
         }
 
-        $request->validate([
-            'programme_name' => 'required|string|max:255',
-            'date' => 'nullable|date',
-            'place' => 'nullable|string|max:255',
-        ]);
+        $programmeName = $request->input('programme_name');
+        if ($programmeName === 'Others' && $request->filled('other_programme_name')) {
+            $programmeName = trim($request->input('other_programme_name'));
+        }
+
+        if ($request->input('programme_name') === 'Others') {
+            $request->validate([
+                'other_programme_name' => 'required|string|max:255',
+                'date' => 'required|date',
+                'place' => 'nullable|string|max:255',
+                'remarks' => 'nullable|string',
+            ]);
+        } else {
+            $request->validate([
+                'programme_name' => 'required|string|max:255',
+                'date' => 'required|date',
+                'place' => 'nullable|string|max:255',
+                'remarks' => 'nullable|string',
+            ]);
+        }
 
         // Prevent rapid duplicate submissions within 5 seconds
         $existingDuplicate = $project->programmes()
-            ->where('programme_name', $request->input('programme_name'))
+            ->where('programme_name', $programmeName)
             ->where('created_at', '>=', now()->subSeconds(5))
             ->first();
 
@@ -2492,9 +2972,10 @@ class ProjectController extends Controller
         $tickStatuses['present_ticked'] = $request->has('present_ticked');
 
         $prog = $project->programmes()->create(array_merge([
-            'programme_name' => $request->input('programme_name'),
+            'programme_name' => $programmeName,
             'date' => $request->input('date'),
             'place' => $request->input('place'),
+            'remarks' => $request->input('remarks'),
         ], $tickStatuses));
 
         if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
@@ -2518,11 +2999,26 @@ class ProjectController extends Controller
 
         $programme = $project->programmes()->findOrFail($programme_id);
 
-        $request->validate([
-            'programme_name' => 'required|string|max:255',
-            'date' => 'nullable|date',
-            'place' => 'nullable|string|max:255',
-        ]);
+        $programmeName = $request->input('programme_name');
+        if ($programmeName === 'Others' && $request->filled('other_programme_name')) {
+            $programmeName = trim($request->input('other_programme_name'));
+        }
+
+        if ($request->input('programme_name') === 'Others') {
+            $request->validate([
+                'other_programme_name' => 'required|string|max:255',
+                'date' => 'required|date',
+                'place' => 'nullable|string|max:255',
+                'remarks' => 'nullable|string',
+            ]);
+        } else {
+            $request->validate([
+                'programme_name' => 'required|string|max:255',
+                'date' => 'required|date',
+                'place' => 'nullable|string|max:255',
+                'remarks' => 'nullable|string',
+            ]);
+        }
 
         $fileKeys = ['photo', 'marklist', 'thanks_letter', 'report_form', 'medical_certificate', 'other_document'];
         $tickUpdates = [];
@@ -2533,9 +3029,10 @@ class ProjectController extends Controller
         $tickUpdates['present_ticked'] = $request->has('present_ticked');
 
         $programme->update(array_merge([
-            'programme_name' => $request->input('programme_name'),
+            'programme_name' => $programmeName,
             'date' => $request->input('date'),
             'place' => $request->input('place'),
+            'remarks' => $request->input('remarks'),
         ], $tickUpdates));
 
         if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {

@@ -24,10 +24,15 @@ class FamilyAidApplication extends Model
     {
         $projectExists = \App\Models\FamilyAidProject::where('application_id', $application->id)->exists();
         if (!$projectExists) {
+            $year = date('y');
+            $idString = str_pad($application->id, 3, '0', STR_PAD_LEFT);
+            $tempId = 'RCFI/' . $year . '-FA' . $idString;
+
             \App\Models\FamilyAidProject::create([
                 'application_id' => $application->id,
-                'project_name' => $application->applicant_name,
+                'project_name' => $application->applicant_name ?? 'Family Aid Project',
                 'agency_project_no' => $application->agency_number,
+                'project_id' => $tempId,
                 'type_of_project' => 'Family Aid',
                 'sponsor' => 'Sponsored',
                 'stage' => 1,
@@ -36,8 +41,8 @@ class FamilyAidApplication extends Model
         } else {
             $project = \App\Models\FamilyAidProject::where('application_id', $application->id)->first();
             if ($project) {
-                $project->project_name = $application->applicant_name;
-                $project->agency_project_no = $application->agency_number;
+                if (!empty($application->applicant_name)) $project->project_name = $application->applicant_name;
+                if (!empty($application->agency_number)) $project->agency_project_no = $application->agency_number;
                 $project->save();
             }
         }

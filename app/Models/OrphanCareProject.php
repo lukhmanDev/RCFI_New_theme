@@ -50,7 +50,7 @@ class OrphanCareProject extends Model
 
     public function programmes()
     {
-        return $this->hasMany(OrphanCareProgramme::class, 'orphan_care_project_id');
+        return $this->hasMany(OrphanCareProgramme::class, 'orphan_care_project_id')->latest();
     }
 
     public function funds()

@@ -47,7 +47,7 @@ class DifferentlyAbledProject extends Model
 
     public function programmes()
     {
-        return $this->hasMany(DifferentlyAbledProgramme::class, 'differently_abled_project_id');
+        return $this->hasMany(DifferentlyAbledProgramme::class, 'differently_abled_project_id')->latest();
     }
 
     public function funds()

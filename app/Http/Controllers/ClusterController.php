@@ -22,7 +22,54 @@ class ClusterController extends Controller
     {
         $clusters = Cluster::orderBy('created_at', 'desc')->get();
         $canManage = $this->canManageClusters(auth()->user());
-        return view('admin.clusters', compact('clusters', 'canManage'));
+        $isSuperAdmin = auth()->user() && auth()->user()->isSuperAdmin();
+        return view('admin.clusters', compact('clusters', 'canManage', 'isSuperAdmin'));
+    }
+
+    public function exportExcel()
+    {
+        if (!$this->canManageClusters(auth()->user())) {
+            return redirect()->back()->with('error', 'Unauthorized action.');
+        }
+
+        $clusters = Cluster::orderBy('created_at', 'desc')->get();
+
+        $csvHeaders = [
+            'Code', 'Cluster Name', 'Institution Name', 'Head of Institute', 'Head Contact No',
+            'Place', 'Post Office', 'Village', 'Panchayath', 'District', 'State',
+            'Contact No', 'Coordinator Name', 'Coordinator Contact', 'Remarks',
+        ];
+
+        $rows = [];
+        $rows[] = implode(',', array_map(fn($h) => '"' . $h . '"', $csvHeaders));
+
+        foreach ($clusters as $c) {
+            $row = [
+                $c->code,
+                $c->name,
+                $c->institution_name,
+                $c->head_of_institution,
+                $c->head_contact_number,
+                $c->place,
+                $c->po,
+                $c->village,
+                $c->panjayath,
+                $c->dist,
+                $c->state,
+                $c->contact_no,
+                $c->cordinator_name,
+                $c->cordinator_contact_number,
+                $c->remarks,
+            ];
+            $rows[] = implode(',', array_map(fn($v) => '"' . str_replace('"', '""', $v ?? '') . '"', $row));
+        }
+
+        $csvContent = implode("\n", $rows);
+
+        return response($csvContent, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="clusters_' . date('Y-m-d') . '.csv"',
+        ]);
     }
 
     public function store(Request $request)
@@ -32,19 +79,21 @@ class ClusterController extends Controller
         }
 
         $data = $request->validate([
-            'code' => ['nullable', 'string', 'max:255'],
-            'name' => ['required', 'string', 'max:255'],
-            'institution_name' => ['nullable', 'string', 'max:255'],
-            'place' => ['nullable', 'string', 'max:255'],
-            'po' => ['nullable', 'string', 'max:255'],
-            'village' => ['nullable', 'string', 'max:255'],
-            'panjayath' => ['nullable', 'string', 'max:255'],
-            'dist' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'max:255'],
-            'contact_no' => ['nullable', 'string', 'max:255'],
-            'cordinator_name' => ['nullable', 'string', 'max:255'],
+            'code'                      => ['nullable', 'string', 'max:255'],
+            'name'                      => ['required', 'string', 'max:255'],
+            'institution_name'          => ['nullable', 'string', 'max:255'],
+            'head_of_institution'       => ['nullable', 'string', 'max:255'],
+            'head_contact_number'       => ['nullable', 'string', 'max:255'],
+            'place'                     => ['nullable', 'string', 'max:255'],
+            'po'                        => ['nullable', 'string', 'max:255'],
+            'village'                   => ['nullable', 'string', 'max:255'],
+            'panjayath'                 => ['nullable', 'string', 'max:255'],
+            'dist'                      => ['nullable', 'string', 'max:255'],
+            'state'                     => ['nullable', 'string', 'max:255'],
+            'contact_no'                => ['nullable', 'string', 'max:255'],
+            'cordinator_name'           => ['nullable', 'string', 'max:255'],
             'cordinator_contact_number' => ['nullable', 'string', 'max:255'],
-            'remarks' => ['nullable', 'string'],
+            'remarks'                   => ['nullable', 'string'],
         ]);
 
         Cluster::create($data);
@@ -54,26 +103,28 @@ class ClusterController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (!$this->canManageClusters(auth()->user())) {
-            return redirect()->back()->with('error', 'Unauthorized action.');
+        if (!auth()->user() || !auth()->user()->isSuperAdmin()) {
+            return redirect()->back()->with('error', 'Only Super Admin can edit clusters.');
         }
 
         $cluster = Cluster::findOrFail($id);
 
         $data = $request->validate([
-            'code' => ['nullable', 'string', 'max:255'],
-            'name' => ['required', 'string', 'max:255'],
-            'institution_name' => ['nullable', 'string', 'max:255'],
-            'place' => ['nullable', 'string', 'max:255'],
-            'po' => ['nullable', 'string', 'max:255'],
-            'village' => ['nullable', 'string', 'max:255'],
-            'panjayath' => ['nullable', 'string', 'max:255'],
-            'dist' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'max:255'],
-            'contact_no' => ['nullable', 'string', 'max:255'],
-            'cordinator_name' => ['nullable', 'string', 'max:255'],
+            'code'                      => ['nullable', 'string', 'max:255'],
+            'name'                      => ['required', 'string', 'max:255'],
+            'institution_name'          => ['nullable', 'string', 'max:255'],
+            'head_of_institution'       => ['nullable', 'string', 'max:255'],
+            'head_contact_number'       => ['nullable', 'string', 'max:255'],
+            'place'                     => ['nullable', 'string', 'max:255'],
+            'po'                        => ['nullable', 'string', 'max:255'],
+            'village'                   => ['nullable', 'string', 'max:255'],
+            'panjayath'                 => ['nullable', 'string', 'max:255'],
+            'dist'                      => ['nullable', 'string', 'max:255'],
+            'state'                     => ['nullable', 'string', 'max:255'],
+            'contact_no'                => ['nullable', 'string', 'max:255'],
+            'cordinator_name'           => ['nullable', 'string', 'max:255'],
             'cordinator_contact_number' => ['nullable', 'string', 'max:255'],
-            'remarks' => ['nullable', 'string'],
+            'remarks'                   => ['nullable', 'string'],
         ]);
 
         $cluster->update($data);
@@ -83,8 +134,8 @@ class ClusterController extends Controller
 
     public function destroy($id)
     {
-        if (!$this->canManageClusters(auth()->user())) {
-            return redirect()->back()->with('error', 'Unauthorized action.');
+        if (!auth()->user() || !auth()->user()->isSuperAdmin()) {
+            return redirect()->back()->with('error', 'Only Super Admin can delete clusters.');
         }
 
         $cluster = Cluster::findOrFail($id);

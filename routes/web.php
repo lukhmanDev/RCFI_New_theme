@@ -44,6 +44,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::get('/admin/reports/social-aid-funds', [AdminController::class, 'socialAidFundReport'])->name('admin.reports.social_aid_funds');
     Route::get('/admin/reports/projects', [AdminController::class, 'projectReport'])->name('admin.reports.projects');
     Route::get('/admin/reports/single-project/{id?}', [AdminController::class, 'singleProjectReport'])->name('admin.reports.single_project');
+    Route::get('/admin/projects/{id}/pdf', [AdminController::class, 'projectPdf'])->name('projects.pdf');
 
     // Donors / Partners routes
     Route::get('/admin/donors', [DonorController::class, 'index'])->name('donors.index');
@@ -58,6 +59,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::delete('/admin/contractors/{id}', [ContractorController::class, 'destroy'])->name('contractors.destroy');
 
     // Clusters routes
+    Route::get('/admin/clusters/export', [ClusterController::class, 'exportExcel'])->name('clusters.export');
     Route::get('/admin/clusters', [ClusterController::class, 'index'])->name('clusters.index');
     Route::post('/admin/clusters', [ClusterController::class, 'store'])->name('clusters.store');
     Route::put('/admin/clusters/{id}', [ClusterController::class, 'update'])->name('clusters.update');
