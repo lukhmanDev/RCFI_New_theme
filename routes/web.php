@@ -229,15 +229,21 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
         $states = $records->pluck('state_name')->filter()->map($toTitleCase)->unique()->values()->toArray();
         $divisions = $records->pluck('division_name')->filter()->map($toTitleCase)->unique()->values()->toArray();
 
+        $mainPO = $postOffices[0] ?? '';
+        $cleanName = trim(preg_replace('/\s+(BO|SO|HO|GPO|B\.O|S\.O|H\.O)$/i', '', $mainPO));
+        if (!$cleanName) {
+            $cleanName = $divisions[0] ?? $mainPO;
+        }
+
         return response()->json([
             'success' => true,
             'pincode' => $pincode,
             'district' => $districts[0] ?? '',
             'state' => $states[0] ?? '',
-            'post_office' => $postOffices[0] ?? '',
+            'post_office' => $mainPO,
             'post_offices' => $postOffices,
-            'place' => $postOffices[0] ?? ($divisions[0] ?? ''),
-            'village' => $postOffices[0] ?? ($divisions[0] ?? ''),
+            'place' => $cleanName,
+            'village' => $cleanName,
         ]);
     })->name('pincode.lookup');
 });

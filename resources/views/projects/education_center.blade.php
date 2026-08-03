@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Education Center Project List')
 
@@ -343,7 +343,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Add Education Center Project</h3>
-            <button onclick="closeModal()" class="modal-close-btn">&times;</button>
+            
         </div>
         <form action="{{ route('projects.store') }}" method="POST">
             @csrf
@@ -457,7 +457,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Edit Education Center Project</h3>
-            <button onclick="closeEditModal()" class="modal-close-btn">&times;</button>
+            
         </div>
         <form id="editProjectForm" method="POST">
             @csrf

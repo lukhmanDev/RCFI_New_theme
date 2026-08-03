@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'House Applications')
 
@@ -297,16 +297,20 @@
                             <input type="text" class="form-control-dark" id="house_name" name="meta[house_name]" value="{{ old('meta.house_name') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="place">Place *</label>
-                            <input type="text" class="form-control-dark" id="place" name="meta[place]" value="{{ old('meta.place') }}" required>
+                            <label class="form-label" for="pin_code">Pin Code *</label>
+                            <input type="tel" class="form-control-dark" id="pin_code" name="meta[pin_code]" value="{{ old('meta.pin_code') }}" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="village">Village *</label>
-                            <input type="text" class="form-control-dark" id="village" name="meta[village]" value="{{ old('meta.village') }}" required>
+                            <label class="form-label" for="place">Place *</label>
+                            <input type="text" class="form-control-dark" id="place" name="meta[place]" value="{{ old('meta.place') }}" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="village">Village *</label>
+                            <input type="text" class="form-control-dark" id="village" name="meta[village]" value="{{ old('meta.village') }}" required>
+                        </div>
                         <div>
                             <label class="form-label" for="post">P.O. *</label>
                             <input type="text" class="form-control-dark" id="post" name="meta[post]" value="{{ old('meta.post') }}" required>
@@ -314,10 +318,6 @@
                         <div>
                             <label class="form-label" for="panchayath">Panchayath *</label>
                             <input type="text" class="form-control-dark" id="panchayath" name="meta[panchayath]" value="{{ old('meta.panchayath') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="pin_code">Pin Code *</label>
-                            <input type="text" class="form-control-dark" id="pin_code" name="meta[pin_code]" value="{{ old('meta.pin_code') }}" required>
                         </div>
                     </div>
 
@@ -342,11 +342,11 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="contact_number_1">Mobile 1 *</label>
-                            <input type="text" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" required>
+                            <input type="tel" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                         <div>
                             <label class="form-label" for="contact_number_2">Mobile 2 *</label>
-                            <input type="text" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}" required>
+                            <input type="tel" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                     </div>
 
@@ -480,11 +480,15 @@
                             <input type="number" class="form-control-dark" id="proposed_budget" name="amount_requested" placeholder="Amount" value="{{ old('amount_requested') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="legal_approvals_status">Permission? (Yes/No) *</label>
-                            <select class="form-select-dark" id="legal_approvals_status" name="meta[legal_approvals_status]" required>
-                                <option value="Yes">Yes</option>
-                                <option value="No">No</option>
-                            </select>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Permission? *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="legal_approvals_status_yes" name="meta[legal_approvals_status]" value="Yes" checked required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="legal_approvals_status_no" name="meta[legal_approvals_status]" value="No" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
                             <label class="form-label" for="intended_house_form">Form of Intended House *</label>
@@ -519,8 +523,40 @@
                     <input type="hidden" name="status" value="Pending">
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
+
+                <!-- Recommendation Details Section -->
+                <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="recommendation_name">Recommender Name</label>
+                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommendation_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="recommendation_organization">Organization</label>
+                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
+                                <option value="">-- Select Organization --</option>
+                                <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
+                                <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
+                                <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
+                                <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
+                            </select>
+                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommendation_organization_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="recommendation_phone">Phone</label>
+                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommendation_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
+                        </div>
+                        <div>
+                            <label class="form-label" for="recommendation_position">Position / Designation</label>
+                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommendation_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Submit Application
                 </button>
             </form>
@@ -577,16 +613,20 @@
                             <input type="text" class="form-control-dark" id="edit_house_name" name="meta[house_name]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_place">Place *</label>
-                            <input type="text" class="form-control-dark" id="edit_place" name="meta[place]" required>
+                            <label class="form-label" for="edit_pin_code">Pin Code *</label>
+                            <input type="tel" class="form-control-dark" id="edit_pin_code" name="meta[pin_code]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_village">Village *</label>
-                            <input type="text" class="form-control-dark" id="edit_village" name="meta[village]" required>
+                            <label class="form-label" for="edit_place">Place *</label>
+                            <input type="text" class="form-control-dark" id="edit_place" name="meta[place]" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_village">Village *</label>
+                            <input type="text" class="form-control-dark" id="edit_village" name="meta[village]" required>
+                        </div>
                         <div>
                             <label class="form-label" for="edit_post">P.O. *</label>
                             <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
@@ -594,10 +634,6 @@
                         <div>
                             <label class="form-label" for="edit_panchayath">Panchayath *</label>
                             <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_pin_code">Pin Code *</label>
-                            <input type="text" class="form-control-dark" id="edit_pin_code" name="meta[pin_code]" required>
                         </div>
                     </div>
 
@@ -622,11 +658,11 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_contact_number_1">Mobile 1 *</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" required>
+                            <input type="tel" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_contact_number_2">Mobile 2 *</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]" required>
+                            <input type="tel" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                     </div>
 
@@ -760,11 +796,15 @@
                             <input type="number" class="form-control-dark" id="edit_proposed_budget" name="amount_requested" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_legal_approvals_status">Permission? (Yes/No) *</label>
-                            <select class="form-select-dark" id="edit_legal_approvals_status" name="meta[legal_approvals_status]" required>
-                                <option value="Yes">Yes</option>
-                                <option value="No">No</option>
-                            </select>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Permission? *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_legal_approvals_status_yes" name="meta[legal_approvals_status]" value="Yes" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_legal_approvals_status_no" name="meta[legal_approvals_status]" value="No" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
                             <label class="form-label" for="edit_intended_house_form">Form of Intended House *</label>
@@ -796,8 +836,40 @@
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
+
+                <!-- Edit Recommendation Details Section -->
+                <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommendation_name]" placeholder="Full name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_recommendation_organization">Organization</label>
+                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
+                                <option value="">-- Select Organization --</option>
+                                <option value="KMJ">KMJ</option>
+                                <option value="SYS">SYS</option>
+                                <option value="SSF">SSF</option>
+                                <option value="Others">Others</option>
+                            </select>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommendation_organization_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_recommendation_phone">Phone</label>
+                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommendation_phone]" placeholder="Phone number">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommendation_position]" placeholder="Job title / Designation">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Save Changes
                 </button>
             </form>
@@ -815,6 +887,7 @@
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
+    window.openModal = openModal;
     window.closeModal = closeModal;
 
         // Edit Application Modal Toggle
@@ -866,13 +939,38 @@
 
             document.getElementById('edit_desired_model').value = meta.desired_model || '';
             document.getElementById('edit_building_area_sq').value = meta.building_area_sq || '';
-            document.getElementById('edit_legal_approvals_status').value = meta.legal_approvals_status || 'Yes';
+            const legalVal = (meta.legal_approvals_status || 'Yes').toLowerCase();
+            const legalYes = document.getElementById('edit_legal_approvals_status_yes');
+            const legalNo = document.getElementById('edit_legal_approvals_status_no');
+            if (legalVal === 'yes') { if (legalYes) legalYes.checked = true; }
+            else { if (legalNo) legalNo.checked = true; }
             document.getElementById('edit_intended_house_form').value = meta.intended_house_form || 'Sheet';
             document.getElementById('edit_office_build_house').value = meta.office_build_house || 'Build house';
+
+            if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || '';
+            if (document.getElementById('edit_recommendation_organization')) {
+                const orgSel = document.getElementById('edit_recommendation_organization');
+                orgSel.value = meta.recommendation_organization || '';
+                const orgOtherInput = document.getElementById('edit_recommendation_organization_other');
+                if (orgOtherInput) {
+                    orgOtherInput.value = meta.recommendation_organization_other || '';
+                    orgOtherInput.style.display = meta.recommendation_organization === 'Others' ? 'block' : 'none';
+                }
+            }
+            if (document.getElementById('edit_recommendation_phone')) document.getElementById('edit_recommendation_phone').value = meta.recommendation_phone || '';
+            if (document.getElementById('edit_recommendation_position')) document.getElementById('edit_recommendation_position').value = meta.recommendation_position || '';
 
             document.getElementById('editAppModal').style.display = 'flex';
         }
 
+
+        function toggleOrgOther(selectEl, otherId) {
+            const otherInput = document.getElementById(otherId);
+            if (otherInput) {
+                otherInput.style.display = selectEl.value === 'Others' ? 'block' : 'none';
+                if (selectEl.value !== 'Others') otherInput.value = '';
+            }
+        }
         function closeEditModal() {
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
@@ -1003,6 +1101,16 @@
                         ${appItem.details ? appItem.details : 'No additional notes provided.'}
                     </p>
                 </div>
+                ${(meta.recommendation_name || meta.recommendation_organization || meta.recommendation_phone || meta.recommendation_position) ? `
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details:</h5>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        ${meta.recommendation_name ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px;">Name:</td><td>${meta.recommendation_name}</td></tr>` : ''}
+                        ${meta.recommendation_organization ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Organization:</td><td>${meta.recommendation_organization === 'Others' ? (meta.recommendation_organization_other || 'Others') : meta.recommendation_organization}</td></tr>` : ''}
+                        ${meta.recommendation_phone ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Phone:</td><td>${meta.recommendation_phone}</td></tr>` : ''}
+                        ${meta.recommendation_position ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Position:</td><td>${meta.recommendation_position}</td></tr>` : ''}
+                    </table>
+                </div>` : ''}
             `;
             
             document.getElementById('details_content').innerHTML = html;

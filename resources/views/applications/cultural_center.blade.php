@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Cultural Center Applications')
 
@@ -281,12 +281,16 @@
                             <input type="text" class="form-control-dark" id="reg_number" name="meta[reg_number]" value="{{ old('meta.reg_number') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="year">Year *</label>
-                            <input type="number" class="form-control-dark" id="year" name="meta[year]" value="{{ old('meta.year') }}" required>
+                            <label class="form-label" for="year">Registration Year *</label>
+                            <input type="number" class="form-control-dark" id="year" name="meta[year]" value="{{ old('meta.year') }}" placeholder="YYYY" min="1900" max="2099" oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4);" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="pin_code">Pin Code *</label>
+                            <input type="tel" class="form-control-dark" id="pin_code" name="meta[pin_code]" value="{{ old('meta.pin_code') }}" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+                        </div>
                         <div>
                             <label class="form-label" for="location">Place *</label>
                             <input type="text" class="form-control-dark" id="location" name="meta[location]" value="{{ old('meta.location') }}" required>
@@ -295,13 +299,13 @@
                             <label class="form-label" for="village">Village *</label>
                             <input type="text" class="form-control-dark" id="village" name="meta[village]" value="{{ old('meta.village') }}" required>
                         </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="post">Post *</label>
                             <input type="text" class="form-control-dark" id="post" name="meta[post]" value="{{ old('meta.post') }}" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="panchayath">Panchayath *</label>
                             <input type="text" class="form-control-dark" id="panchayath" name="meta[panchayath]" value="{{ old('meta.panchayath') }}" required>
@@ -310,47 +314,72 @@
                             <label class="form-label" for="district">District *</label>
                             <input type="text" class="form-control-dark" id="district" name="meta[district]" value="{{ old('meta.district') }}" required>
                         </div>
-                        <div>
-                            <label class="form-label" for="state">State *</label>
-                            <input type="text" class="form-control-dark" id="state" name="meta[state]" value="{{ old('meta.state') }}" required>
-                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
+                            <label class="form-label" for="state">State *</label>
+                            <input type="text" class="form-control-dark" id="state" name="meta[state]" value="{{ old('meta.state') }}" required>
+                        </div>
+                        <div>
                             <label class="form-label" for="contact_number_1">Contact Number 1 *</label>
-                            <input type="text" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" required>
+                            <input type="tel" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                         <div>
                             <label class="form-label" for="contact_number_2">Contact Number 2 *</label>
-                            <input type="text" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="pin_code">Pin Code *</label>
-                            <input type="text" class="form-control-dark" id="pin_code" name="meta[pin_code]" value="{{ old('meta.pin_code') }}" required>
+                            <input type="tel" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start;">
                         <div>
-                            <label class="form-label" for="submitted_before">Have you submitted any applications before? *</label>
-                            <input type="text" class="form-control-dark" id="submitted_before" name="meta[submitted_before]" value="{{ old('meta.submitted_before') }}" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Has any application been submitted to RCFI? *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" name="meta[submitted_before]" value="Yes" required {{ old('meta.submitted_before') == 'Yes' ? 'checked' : '' }} style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" name="meta[submitted_before]" value="No" required {{ old('meta.submitted_before') == 'No' || !old('meta.submitted_before') ? 'checked' : '' }} style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
-                            <label class="form-label" for="received_support_before">Have they received any financial support from RCFI? *</label>
-                            <input type="text" class="form-control-dark" id="received_support_before" name="meta[received_support_before]" value="{{ old('meta.received_support_before') }}" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Received financial support from RCFI *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" name="meta[received_support_before]" value="Yes" onchange="toggleFinancialSupportPurpose(this)" required {{ old('meta.received_support_before') == 'Yes' ? 'checked' : '' }} style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" name="meta[received_support_before]" value="No" onchange="toggleFinancialSupportPurpose(this)" required {{ old('meta.received_support_before') == 'No' || !old('meta.received_support_before') ? 'checked' : '' }} style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="financial-support-purpose-wrapper" style="margin-top: 1rem; display: {{ old('meta.received_support_before') == 'Yes' ? 'block' : 'none' }};">
+                        <label class="form-label">For which project or purpose did you receive financial assistance? *</label>
+                        <input type="text" class="form-control-dark financial-support-purpose-input" name="meta[financial_support_purpose]" value="{{ old('meta.financial_support_purpose') }}" placeholder="Enter project or purpose details" {{ old('meta.received_support_before') == 'Yes' ? 'required' : '' }}>
                     </div>
                 </div>
 
                 <!-- Form Section 2: Details of Locality -->
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">2. Details of Proposed Locality</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin: 0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">2. Details of Proposed Locality</h4>
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--accent-cyan); font-size: 0.82rem; font-weight: 600; cursor: pointer; user-select: none;">
+                            <input type="checkbox" onchange="copyApplicantAddressToLocality(this)" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-cyan);">
+                            Same as Applicant Address
+                        </label>
+                    </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="mahallu_name">Name of the Mahallu *</label>
                             <input type="text" class="form-control-dark" id="mahallu_name" name="meta[mahallu_name]" value="{{ old('meta.mahallu_name') }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="locality_pin_code">Pin Code *</label>
+                            <input type="tel" class="form-control-dark" id="locality_pin_code" name="meta[locality_pin_code]" value="{{ old('meta.locality_pin_code') }}" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
                             <label class="form-label" for="locality_location">Place *</label>
@@ -364,6 +393,17 @@
                             <input type="text" class="form-control-dark" id="locality_village" name="meta[locality_village]" value="{{ old('meta.locality_village') }}" required>
                         </div>
                         <div>
+                            <label class="form-label" for="locality_post">Post *</label>
+                            <input type="text" class="form-control-dark" id="locality_post" name="meta[locality_post]" value="{{ old('meta.locality_post') }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="locality_panchayath">Panchayath *</label>
+                            <input type="text" class="form-control-dark" id="locality_panchayath" name="meta[locality_panchayath]" value="{{ old('meta.locality_panchayath') }}" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                        <div>
                             <label class="form-label" for="locality_district">District *</label>
                             <input type="text" class="form-control-dark" id="locality_district" name="meta[locality_district]" value="{{ old('meta.locality_district') }}" required>
                         </div>
@@ -371,19 +411,9 @@
                             <label class="form-label" for="locality_state">State *</label>
                             <input type="text" class="form-control-dark" id="locality_state" name="meta[locality_state]" value="{{ old('meta.locality_state') }}" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="families_in_mahallu">No of Families in Mahallu *</label>
                             <input type="number" class="form-control-dark" id="families_in_mahallu" name="meta[families_in_mahallu]" value="{{ old('meta.families_in_mahallu') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="requirement">Requirement *</label>
-                            <select class="form-select-dark" id="requirement" name="meta[requirement]" required>
-                                <option value="New construction">New construction</option>
-                                <option value="Repairing">Repairing</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -392,17 +422,33 @@
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">3. Current Status & Details</h4>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: start;">
                         <div>
-                            <label class="form-label" for="site_has_building">Does the proposed site already have a building? *</label>
-                            <select class="form-select-dark" id="site_has_building" name="meta[site_has_building]" required>
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                            </select>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Proposed Site Has Building *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="site_has_building_yes" name="meta[site_has_building]" value="Yes" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="site_has_building_no" name="meta[site_has_building]" value="No" checked required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
-                            <label class="form-label" for="status_of_current_building">Status of Current Building (If yes)</label>
-                            <input type="text" class="form-control-dark" id="status_of_current_building" name="meta[status_of_current_building]" placeholder="dilapidated, semi-completed, etc." value="{{ old('meta.status_of_current_building') }}">
+                            <label class="form-label" for="status_of_current_building">Current Status *</label>
+                            <select class="form-select-dark" id="status_of_current_building" name="meta[status_of_current_building]" onchange="toggleCurrentStatusOther(this)" required>
+                                <option value="">Select Current Status</option>
+                                <option value="Not Started">Not Started</option>
+                                <option value="Under Construction">Under Construction</option>
+                                <option value="Partially Completed">Partially Completed</option>
+                                <option value="Under Renovation">Under Renovation</option>
+                                <option value="Old Building Demolished">Old Building Demolished</option>
+                                <option value="Not adequate facility">Not adequate facility</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div class="current-status-other-wrapper" style="margin-top: 0.5rem; display: none;">
+                                <input type="text" class="form-control-dark current-status-other-input" id="status_of_current_building_other" name="meta[status_of_current_building_other]" placeholder="Specify other status details">
+                            </div>
                         </div>
                     </div>
 
@@ -442,34 +488,51 @@
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="building_area_sq">Area of proposed project - building (Sqft) *</label>
-                            <input type="text" class="form-control-dark" id="building_area_sq" name="meta[building_area_sq]" value="{{ old('meta.building_area_sq') }}" required>
+                            <label class="form-label" for="requirement">Requirement *</label>
+                            <select class="form-select-dark" id="requirement" name="meta[requirement]" required>
+                                <option value="New construction">New construction</option>
+                                <option value="Repairing">Repairing</option>
+                            </select>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="land_area_sq">Land Area (Sqft) *</label>
-                            <input type="text" class="form-control-dark" id="land_area_sq" name="meta[land_area_sq]" value="{{ old('meta.land_area_sq') }}" required>
+                            <label class="form-label" for="building_area_sq">Area of proposed project - building (Sqft) *</label>
+                            <input type="number" step="any" min="0" class="form-control-dark" id="building_area_sq" name="meta[building_area_sq]" value="{{ old('meta.building_area_sq') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="num_beneficiaries">Proposed Beneficiary (Household) *</label>
-                            <input type="number" class="form-control-dark" id="num_beneficiaries" name="meta[num_beneficiaries]" value="{{ old('meta.num_beneficiaries') }}" required>
+                            <label class="form-label" for="land_area_sq">Land Area (Cent) *</label>
+                            <input type="number" step="any" min="0" class="form-control-dark" id="land_area_sq" name="meta[land_area_sq]" value="{{ old('meta.land_area_sq') }}" required>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="proposed_budget">Proposed Budget (₹) *</label>
                             <input type="number" class="form-control-dark" id="proposed_budget" name="amount_requested" placeholder="Total Budget" value="{{ old('amount_requested') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="legal_approvals_status">Status of Legal Approvals *</label>
-                            <input type="text" class="form-control-dark" id="legal_approvals_status" name="meta[legal_approvals_status]" value="{{ old('meta.legal_approvals_status') }}" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Status of Legal Approvals *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="legal_approvals_status_yes" name="meta[legal_approvals_status]" value="Yes" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="legal_approvals_status_no" name="meta[legal_approvals_status]" value="No" checked required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="permitted_type">Type of Permit Received</label>
+                            <input type="text" class="form-control-dark" id="permitted_type" name="meta[permitted_type]" value="{{ old('meta.permitted_type') }}" placeholder="Enter type of permit received">
                         </div>
                         <div>
-                            <label class="form-label" for="area">Area *</label>
-                            <input type="text" class="form-control-dark" id="area" name="meta[area]" value="{{ old('meta.area') }}" required>
+                            <label class="form-label" for="area">Permitted Area *</label>
+                            <input type="text" class="form-control-dark" id="area" name="meta[area]" value="{{ old('meta.area') }}" placeholder="Enter permitted area" required>
                         </div>
                     </div>
 
@@ -479,8 +542,40 @@
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
+
+                <!-- Recommendation Details Section -->
+                <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="recommendation_name">Recommender Name</label>
+                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommendation_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="recommendation_organization">Organization</label>
+                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
+                                <option value="">-- Select Organization --</option>
+                                <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
+                                <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
+                                <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
+                                <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
+                            </select>
+                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommendation_organization_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="recommendation_phone">Phone</label>
+                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommendation_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
+                        </div>
+                        <div>
+                            <label class="form-label" for="recommendation_position">Position / Designation</label>
+                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommendation_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Submit Application
                 </button>
             </form>
@@ -526,12 +621,16 @@
                             <input type="text" class="form-control-dark" id="edit_reg_number" name="meta[reg_number]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_year">Year *</label>
-                            <input type="number" class="form-control-dark" id="edit_year" name="meta[year]" required>
+                            <label class="form-label" for="edit_year">Registration Year *</label>
+                            <input type="number" class="form-control-dark" id="edit_year" name="meta[year]" placeholder="YYYY" min="1900" max="2099" oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4);" required>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_pin_code">Pin Code *</label>
+                            <input type="tel" class="form-control-dark" id="edit_pin_code" name="meta[pin_code]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+                        </div>
                         <div>
                             <label class="form-label" for="edit_location">Place *</label>
                             <input type="text" class="form-control-dark" id="edit_location" name="meta[location]" required>
@@ -540,13 +639,13 @@
                             <label class="form-label" for="edit_village">Village *</label>
                             <input type="text" class="form-control-dark" id="edit_village" name="meta[village]" required>
                         </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_post">Post *</label>
                             <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_panchayath">Panchayath *</label>
                             <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
@@ -555,47 +654,72 @@
                             <label class="form-label" for="edit_district">District *</label>
                             <input type="text" class="form-control-dark" id="edit_district" name="meta[district]" required>
                         </div>
-                        <div>
-                            <label class="form-label" for="edit_state">State *</label>
-                            <input type="text" class="form-control-dark" id="edit_state" name="meta[state]" required>
-                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
+                            <label class="form-label" for="edit_state">State *</label>
+                            <input type="text" class="form-control-dark" id="edit_state" name="meta[state]" required>
+                        </div>
+                        <div>
                             <label class="form-label" for="edit_contact_number_1">Contact Number 1 *</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" required>
+                            <input type="tel" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_contact_number_2">Contact Number 2 *</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_pin_code">Pin Code *</label>
-                            <input type="text" class="form-control-dark" id="edit_pin_code" name="meta[pin_code]" required>
+                            <input type="tel" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start;">
                         <div>
-                            <label class="form-label" for="edit_submitted_before">Have you submitted any applications before? *</label>
-                            <input type="text" class="form-control-dark" id="edit_submitted_before" name="meta[submitted_before]" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Has any application been submitted to RCFI? *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_submitted_before_yes" name="meta[submitted_before]" value="Yes" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_submitted_before_no" name="meta[submitted_before]" value="No" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_received_support_before">Have they received any financial support from RCFI? *</label>
-                            <input type="text" class="form-control-dark" id="edit_received_support_before" name="meta[received_support_before]" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Received financial support from RCFI *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_received_support_before_yes" name="meta[received_support_before]" value="Yes" onchange="toggleFinancialSupportPurpose(this)" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_received_support_before_no" name="meta[received_support_before]" value="No" onchange="toggleFinancialSupportPurpose(this)" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="financial-support-purpose-wrapper" style="margin-top: 1rem; display: none;">
+                        <label class="form-label">For which project or purpose did you receive financial assistance? *</label>
+                        <input type="text" class="form-control-dark financial-support-purpose-input" id="edit_financial_support_purpose" name="meta[financial_support_purpose]" placeholder="Enter project or purpose details">
                     </div>
                 </div>
 
                 <!-- Form Section 2: Details of Locality -->
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">2. Details of Proposed Locality</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin: 0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">2. Details of Proposed Locality</h4>
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--accent-cyan); font-size: 0.82rem; font-weight: 600; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="edit_same_as_applicant" onchange="copyApplicantAddressToLocality(this)" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-cyan);">
+                            Same as Applicant Address
+                        </label>
+                    </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_mahallu_name">Name of the Mahallu *</label>
                             <input type="text" class="form-control-dark" id="edit_mahallu_name" name="meta[mahallu_name]" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_locality_pin_code">Pin Code *</label>
+                            <input type="tel" class="form-control-dark" id="edit_locality_pin_code" name="meta[locality_pin_code]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_locality_location">Place *</label>
@@ -609,6 +733,17 @@
                             <input type="text" class="form-control-dark" id="edit_locality_village" name="meta[locality_village]" required>
                         </div>
                         <div>
+                            <label class="form-label" for="edit_locality_post">Post *</label>
+                            <input type="text" class="form-control-dark" id="edit_locality_post" name="meta[locality_post]" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_locality_panchayath">Panchayath *</label>
+                            <input type="text" class="form-control-dark" id="edit_locality_panchayath" name="meta[locality_panchayath]" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                        <div>
                             <label class="form-label" for="edit_locality_district">District *</label>
                             <input type="text" class="form-control-dark" id="edit_locality_district" name="meta[locality_district]" required>
                         </div>
@@ -616,19 +751,9 @@
                             <label class="form-label" for="edit_locality_state">State *</label>
                             <input type="text" class="form-control-dark" id="edit_locality_state" name="meta[locality_state]" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_families_in_mahallu">No of Families in Mahallu *</label>
                             <input type="number" class="form-control-dark" id="edit_families_in_mahallu" name="meta[families_in_mahallu]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_requirement">Requirement *</label>
-                            <select class="form-select-dark" id="edit_requirement" name="meta[requirement]" required>
-                                <option value="New construction">New construction</option>
-                                <option value="Repairing">Repairing</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -637,17 +762,33 @@
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">3. Current Status & Details</h4>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: start;">
                         <div>
-                            <label class="form-label" for="edit_site_has_building">Does the proposed site already have a building? *</label>
-                            <select class="form-select-dark" id="edit_site_has_building" name="meta[site_has_building]" required>
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                            </select>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Proposed Site Has Building *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_site_has_building_yes" name="meta[site_has_building]" value="Yes" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_site_has_building_no" name="meta[site_has_building]" value="No" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_status_of_current_building">Status of Current Building (If yes)</label>
-                            <input type="text" class="form-control-dark" id="edit_status_of_current_building" name="meta[status_of_current_building]">
+                            <label class="form-label" for="edit_status_of_current_building">Current Status *</label>
+                            <select class="form-select-dark" id="edit_status_of_current_building" name="meta[status_of_current_building]" onchange="toggleCurrentStatusOther(this)" required>
+                                <option value="">Select Current Status</option>
+                                <option value="Not Started">Not Started</option>
+                                <option value="Under Construction">Under Construction</option>
+                                <option value="Partially Completed">Partially Completed</option>
+                                <option value="Under Renovation">Under Renovation</option>
+                                <option value="Old Building Demolished">Old Building Demolished</option>
+                                <option value="Not adequate facility">Not adequate facility</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div class="current-status-other-wrapper" style="margin-top: 0.5rem; display: none;">
+                                <input type="text" class="form-control-dark current-status-other-input" id="edit_status_of_current_building_other" name="meta[status_of_current_building_other]" placeholder="Specify other status details">
+                            </div>
                         </div>
                     </div>
 
@@ -685,34 +826,56 @@
                             </select>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_building_area_sq">Area of proposed project - building (Sqft) *</label>
-                            <input type="text" class="form-control-dark" id="edit_building_area_sq" name="meta[building_area_sq]" required>
+                            <label class="form-label" for="edit_requirement">Requirement *</label>
+                            <select class="form-select-dark" id="edit_requirement" name="meta[requirement]" required>
+                                <option value="New construction">New construction</option>
+                                <option value="Repairing">Repairing</option>
+                            </select>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_land_area_sq">Land Area (Sqft) *</label>
-                            <input type="text" class="form-control-dark" id="edit_land_area_sq" name="meta[land_area_sq]" required>
+                            <label class="form-label" for="edit_building_area_sq">Area of proposed project - building (Sqft) *</label>
+                            <input type="number" step="any" min="0" class="form-control-dark" id="edit_building_area_sq" name="meta[building_area_sq]" required>
                         </div>
+                        <div>
+                            <label class="form-label" for="edit_land_area_sq">Land Area (Cent) *</label>
+                            <input type="number" step="any" min="0" class="form-control-dark" id="edit_land_area_sq" name="meta[land_area_sq]" required>
+                        </div>
+                    </div>
                         <div>
                             <label class="form-label" for="edit_num_beneficiaries">Proposed Beneficiary (Household) *</label>
                             <input type="number" class="form-control-dark" id="edit_num_beneficiaries" name="meta[num_beneficiaries]" required>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_proposed_budget">Proposed Budget (₹) *</label>
                             <input type="number" class="form-control-dark" id="edit_proposed_budget" name="amount_requested" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_legal_approvals_status">Status of Legal Approvals *</label>
-                            <input type="text" class="form-control-dark" id="edit_legal_approvals_status" name="meta[legal_approvals_status]" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Status of Legal Approvals *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_legal_approvals_status_yes" name="meta[legal_approvals_status]" value="Yes" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_legal_approvals_status_no" name="meta[legal_approvals_status]" value="No" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_permitted_type">Type of Permit Received</label>
+                            <input type="text" class="form-control-dark" id="edit_permitted_type" name="meta[permitted_type]" placeholder="Enter type of permit received">
                         </div>
                         <div>
-                            <label class="form-label" for="edit_area">Area *</label>
-                            <input type="text" class="form-control-dark" id="edit_area" name="meta[area]" required>
+                            <label class="form-label" for="edit_area">Permitted Area *</label>
+                            <input type="text" class="form-control-dark" id="edit_area" name="meta[area]" placeholder="Enter permitted area" required>
                         </div>
                     </div>
 
@@ -722,8 +885,40 @@
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
+
+                <!-- Edit Recommendation Details Section -->
+                <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommendation_name]" placeholder="Full name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_recommendation_organization">Organization</label>
+                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
+                                <option value="">-- Select Organization --</option>
+                                <option value="KMJ">KMJ</option>
+                                <option value="SYS">SYS</option>
+                                <option value="SSF">SSF</option>
+                                <option value="Others">Others</option>
+                            </select>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommendation_organization_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_recommendation_phone">Phone</label>
+                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommendation_phone]" placeholder="Phone number">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommendation_position]" placeholder="Job title / Designation">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Save Changes
                 </button>
             </form>
@@ -741,6 +936,7 @@
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
+    window.openModal = openModal;
     window.closeModal = closeModal;
 
         // Edit Application Modal Toggle
@@ -772,19 +968,63 @@
             document.getElementById('edit_pin_code').value = meta.pin_code || meta.pin || appItem.pin_code || '';
             document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
             document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
-            document.getElementById('edit_submitted_before').value = meta.submitted_before || '';
-            document.getElementById('edit_received_support_before').value = meta.received_support_before || '';
+            const subVal = (meta.submitted_before || '').toLowerCase();
+            const subYes = document.getElementById('edit_submitted_before_yes');
+            const subNo = document.getElementById('edit_submitted_before_no');
+            if (subVal === 'yes') { if (subYes) subYes.checked = true; }
+            else { if (subNo) subNo.checked = true; }
+
+            const recVal = (meta.received_support_before || '').toLowerCase();
+            const recYes = document.getElementById('edit_received_support_before_yes');
+            const recNo = document.getElementById('edit_received_support_before_no');
+            if (recVal === 'yes') {
+                if (recYes) {
+                    recYes.checked = true;
+                    toggleFinancialSupportPurpose(recYes);
+                }
+            } else {
+                if (recNo) {
+                    recNo.checked = true;
+                    toggleFinancialSupportPurpose(recNo);
+                }
+            }
+            const editPurp = document.getElementById('edit_financial_support_purpose');
+            if (editPurp) { editPurp.value = meta.financial_support_purpose || ''; }
             
             document.getElementById('edit_mahallu_name').value = meta.mahallu_name || '';
+            if (document.getElementById('edit_locality_pin_code')) { document.getElementById('edit_locality_pin_code').value = meta.locality_pin_code || meta.locality_pin || ''; }
             document.getElementById('edit_locality_location').value = meta.locality_location || '';
             document.getElementById('edit_locality_village').value = meta.locality_village || '';
+            if (document.getElementById('edit_locality_post')) { document.getElementById('edit_locality_post').value = meta.locality_post || meta.locality_post_office || ''; }
+            if (document.getElementById('edit_locality_panchayath')) { document.getElementById('edit_locality_panchayath').value = meta.locality_panchayath || meta.locality_panchayat || ''; }
             document.getElementById('edit_locality_district').value = meta.locality_district || '';
             document.getElementById('edit_locality_state').value = meta.locality_state || '';
             document.getElementById('edit_families_in_mahallu').value = meta.families_in_mahallu || '';
             document.getElementById('edit_requirement').value = meta.requirement || 'New construction';
 
-            document.getElementById('edit_site_has_building').value = meta.site_has_building || 'No';
-            document.getElementById('edit_status_of_current_building').value = meta.status_of_current_building || '';
+            const siteHasVal = (meta.site_has_building || 'No').toLowerCase();
+            const siteHasYes = document.getElementById('edit_site_has_building_yes');
+            const siteHasNo = document.getElementById('edit_site_has_building_no');
+            if (siteHasVal === 'yes') { if (siteHasYes) siteHasYes.checked = true; }
+            else { if (siteHasNo) siteHasNo.checked = true; }
+
+            const statusSelect = document.getElementById('edit_status_of_current_building');
+            const statusOtherInput = document.getElementById('edit_status_of_current_building_other');
+            const statusVal = meta.status_of_current_building || '';
+            const presets = ['Not Started', 'Under Construction', 'Partially Completed', 'Under Renovation', 'Old Building Demolished', 'Not adequate facility'];
+            if (statusSelect) {
+                if (presets.includes(statusVal)) {
+                    statusSelect.value = statusVal;
+                    toggleCurrentStatusOther(statusSelect);
+                } else if (statusVal || meta.status_of_current_building_other) {
+                    statusSelect.value = 'Other';
+                    toggleCurrentStatusOther(statusSelect);
+                    if (statusOtherInput) statusOtherInput.value = meta.status_of_current_building_other || statusVal;
+                } else {
+                    statusSelect.value = '';
+                    toggleCurrentStatusOther(statusSelect);
+                }
+            }
             document.getElementById('edit_cultural_center_nearby').value = meta.cultural_center_nearby || meta.education_center_nearby || '';
             document.getElementById('edit_distance_cultural_centre').value = meta.distance_cultural_centre || '';
             document.getElementById('edit_benefited_households').value = meta.benefited_households || '';
@@ -793,12 +1033,38 @@
             document.getElementById('edit_building_area_sq').value = meta.building_area_sq || '';
             document.getElementById('edit_land_area_sq').value = meta.land_area_sq || '';
             document.getElementById('edit_num_beneficiaries').value = meta.num_beneficiaries || '';
-            document.getElementById('edit_legal_approvals_status').value = meta.legal_approvals_status || '';
+            const legalVal = (meta.legal_approvals_status || 'No').toLowerCase();
+            const legalYes = document.getElementById('edit_legal_approvals_status_yes');
+            const legalNo = document.getElementById('edit_legal_approvals_status_no');
+            if (legalVal === 'yes') { if (legalYes) legalYes.checked = true; }
+            else { if (legalNo) legalNo.checked = true; }
+            if (document.getElementById('edit_permitted_type')) { document.getElementById('edit_permitted_type').value = meta.permitted_type || ''; }
             document.getElementById('edit_area').value = meta.area || '';
+
+            if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || '';
+            if (document.getElementById('edit_recommendation_organization')) {
+                const orgSel = document.getElementById('edit_recommendation_organization');
+                orgSel.value = meta.recommendation_organization || '';
+                const orgOtherInput = document.getElementById('edit_recommendation_organization_other');
+                if (orgOtherInput) {
+                    orgOtherInput.value = meta.recommendation_organization_other || '';
+                    orgOtherInput.style.display = meta.recommendation_organization === 'Others' ? 'block' : 'none';
+                }
+            }
+            if (document.getElementById('edit_recommendation_phone')) document.getElementById('edit_recommendation_phone').value = meta.recommendation_phone || '';
+            if (document.getElementById('edit_recommendation_position')) document.getElementById('edit_recommendation_position').value = meta.recommendation_position || '';
 
             document.getElementById('editAppModal').style.display = 'flex';
         }
 
+
+        function toggleOrgOther(selectEl, otherId) {
+            const otherInput = document.getElementById(otherId);
+            if (otherInput) {
+                otherInput.style.display = selectEl.value === 'Others' ? 'block' : 'none';
+                if (selectEl.value !== 'Others') otherInput.value = '';
+            }
+        }
         function closeEditModal() {
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
@@ -865,7 +1131,7 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Applicant Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Committee Name:</td><td>${formatVal(meta.committee_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Reg. Number:</td><td>${formatVal(meta.reg_number)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Year:</td><td>${formatVal(meta.year)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Reg. Year:</td><td>${formatVal(meta.year)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(meta.location)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.village)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.post)}</td></tr>
@@ -874,13 +1140,14 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact 1 / 2:</td><td>${formatVal(meta.contact_number_1)} / ${formatVal(meta.contact_number_2)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Submitted Before?</td><td>${formatVal(meta.submitted_before)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">RCFI Support?</td><td>${formatVal(meta.received_support_before)}</td></tr>
+                            ${meta.financial_support_purpose ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Support Purpose:</td><td>${formatVal(meta.financial_support_purpose)}</td></tr>` : ''}
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Mahallu Name:</td><td>${formatVal(meta.mahallu_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(meta.locality_location)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.locality_village)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin / Place / Village:</td><td>${formatVal(meta.locality_pin_code || meta.locality_pin)} / ${formatVal(meta.locality_location)} / ${formatVal(meta.locality_village)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post / Panchayath:</td><td>${formatVal(meta.locality_post)} / ${formatVal(meta.locality_panchayath)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State:</td><td>${formatVal(meta.locality_district)} / ${formatVal(meta.locality_state)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Families Count:</td><td>${formatVal(meta.families_in_mahallu)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Requirement:</td><td>${formatVal(meta.requirement)}</td></tr>
@@ -892,7 +1159,7 @@
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Current Status & Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Has Building?</td><td>${formatVal(meta.site_has_building)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Building Status:</td><td>${formatVal(meta.status_of_current_building)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Current Status:</td><td>${formatVal(meta.status_of_current_building_other || meta.status_of_current_building)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">CC Nearby?</td><td>${formatVal(meta.cultural_center_nearby || meta.education_center_nearby)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Distance to CC (KM):</td><td>${formatVal(meta.distance_cultural_centre)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Benefited Households:</td><td>${formatVal(meta.benefited_households)}</td></tr>
@@ -902,11 +1169,12 @@
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Project Type:</td><td style="text-transform: capitalize; font-weight: 600; color: #ffffff;">${formatVal(meta.project_type)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Building Area (Sqft):</td><td>${formatVal(meta.building_area_sq)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Land Area (Sqft):</td><td>${formatVal(meta.land_area_sq)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Land Area (Cent):</td><td>${formatVal(meta.land_area_sq)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">${appItem.amount_requested ? '₹' + Number(appItem.amount_requested).toLocaleString() : 'N/A'}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Beneficiary (Household):</td><td>${formatVal(meta.num_beneficiaries)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Legal Approvals:</td><td>${formatVal(meta.legal_approvals_status)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Area:</td><td>${formatVal(meta.area)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Type of Permit:</td><td>${formatVal(meta.permitted_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Permitted Area:</td><td>${formatVal(meta.area)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
                         </table>
                     </div>
@@ -927,6 +1195,16 @@
                         ${appItem.details ? appItem.details : 'No additional notes provided.'}
                     </p>
                 </div>
+                ${(meta.recommendation_name || meta.recommendation_organization || meta.recommendation_phone || meta.recommendation_position) ? `
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details:</h5>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        ${meta.recommendation_name ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px;">Name:</td><td>${meta.recommendation_name}</td></tr>` : ''}
+                        ${meta.recommendation_organization ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Organization:</td><td>${meta.recommendation_organization === 'Others' ? (meta.recommendation_organization_other || 'Others') : meta.recommendation_organization}</td></tr>` : ''}
+                        ${meta.recommendation_phone ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Phone:</td><td>${meta.recommendation_phone}</td></tr>` : ''}
+                        ${meta.recommendation_position ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Position:</td><td>${meta.recommendation_position}</td></tr>` : ''}
+                    </table>
+                </div>` : ''}
             `;
             
             document.getElementById('details_content').innerHTML = html;

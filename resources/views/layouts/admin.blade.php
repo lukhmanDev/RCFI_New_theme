@@ -1686,6 +1686,12 @@
             const currentContent = document.querySelector('.content-container');
             
             if (newContent && currentContent) {
+                // Clean up any modal overlays that were moved to document.body by the previous page
+                document.querySelectorAll('body > .modal-overlay, body > [id$="Modal"], body > [id$="modal"]').forEach(el => {
+                    if (!el.closest('.content-container') && !el.closest('#sidebar') && !el.closest('header') && !el.id.includes('pjax')) {
+                        el.remove();
+                    }
+                });
                 currentContent.innerHTML = newContent.innerHTML;
             }
             
@@ -2713,25 +2719,54 @@
                             }
                         };
 
-                        const findField = (keys) => {
-                            for (let key of keys) {
-                                let el = parent.querySelector(`[name*="${key}"], [id*="${key}"]`);
+                        const targetId = (inputEl.id || '').toLowerCase();
+                        const targetName = (inputEl.name || '').toLowerCase();
+                        const isLocality = targetId.includes('locality_') || targetName.includes('locality_');
+                        const isLandOwner = targetId.includes('land_owner_') || targetName.includes('land_owner_');
+                        const isEdit = targetId.startsWith('edit_') || targetName.startsWith('edit_') || !!parent.querySelector('#edit_applicant_name');
+
+                        const getScopedField = (fieldName) => {
+                            let candidateIds = [];
+                            if (isLocality) {
+                                if (fieldName === 'post') candidateIds = [isEdit ? 'edit_locality_post' : 'locality_post', isEdit ? 'edit_locality_post_office' : 'locality_post_office'];
+                                else if (fieldName === 'village') candidateIds = [isEdit ? 'edit_locality_village' : 'locality_village'];
+                                else if (fieldName === 'place') candidateIds = [isEdit ? 'edit_locality_location' : 'locality_location', isEdit ? 'edit_locality_place' : 'locality_place'];
+                                else if (fieldName === 'district') candidateIds = [isEdit ? 'edit_locality_district' : 'locality_district'];
+                                else if (fieldName === 'state') candidateIds = [isEdit ? 'edit_locality_state' : 'locality_state'];
+                            } else if (isLandOwner) {
+                                if (fieldName === 'post') candidateIds = [isEdit ? 'edit_land_owner_post' : 'land_owner_post'];
+                                else if (fieldName === 'village') candidateIds = [isEdit ? 'edit_land_owner_village' : 'land_owner_village'];
+                                else if (fieldName === 'place') candidateIds = [isEdit ? 'edit_land_owner_place' : 'land_owner_place'];
+                                else if (fieldName === 'district') candidateIds = [isEdit ? 'edit_land_owner_district' : 'land_owner_district'];
+                                else if (fieldName === 'state') candidateIds = [isEdit ? 'edit_land_owner_state' : 'land_owner_state'];
+                            } else {
+                                if (fieldName === 'post') candidateIds = [isEdit ? 'edit_post' : 'post', isEdit ? 'edit_post_office' : 'post_office'];
+                                else if (fieldName === 'village') candidateIds = [isEdit ? 'edit_village' : 'village'];
+                                else if (fieldName === 'place') candidateIds = [isEdit ? 'edit_location' : 'location', isEdit ? 'edit_place' : 'place'];
+                                else if (fieldName === 'district') candidateIds = [isEdit ? 'edit_district' : 'district'];
+                                else if (fieldName === 'state') candidateIds = [isEdit ? 'edit_state' : 'state'];
+                            }
+
+                            for (let cid of candidateIds) {
+                                let el = parent.querySelector('#' + cid) ||
+                                         parent.querySelector(`[name="meta[${cid}]"]`) ||
+                                         parent.querySelector(`[name="${cid}"]`);
                                 if (el) return el;
                             }
                             return null;
                         };
 
                         // Auto-fill State & District (Always update when pincode matched)
-                        const stateEl = findField(['state']);
+                        const stateEl = getScopedField('state');
                         setFieldValue(stateEl, data.state, true);
 
-                        const districtEl = findField(['district']);
+                        const districtEl = getScopedField('district');
                         setFieldValue(districtEl, data.district, true);
 
                         // Auto-fill Post Office
-                        const poEl = findField(['post_office', 'postoffice', '_po']);
+                        const poEl = getScopedField('post');
                         if (poEl) {
-                            setFieldValue(poEl, data.post_office, false);
+                            setFieldValue(poEl, data.post_office, true);
 
                             // Create datalist for post office options if multiple exist
                             if (data.post_offices && data.post_offices.length > 0) {
@@ -2748,10 +2783,10 @@
                         }
 
                         // Auto-fill Place & Village if empty
-                        const placeEl = findField(['place']);
+                        const placeEl = getScopedField('place');
                         setFieldValue(placeEl, data.place, false);
 
-                        const villageEl = findField(['village']);
+                        const villageEl = getScopedField('village');
                         setFieldValue(villageEl, data.village, false);
 
                         // Success visual feedback on Pin Code input field
@@ -2993,7 +3028,7 @@
             document.head.appendChild(style);
         })();
 
-        // Global Numeric Enforcer for Mobile, Phone, and Pin Code Fields (0-9 Digits Only)
+        // Global Numeric Enforcer for Mobile, Phone, and Pin Code Fields (0-9 Digits Only, 6 Digits for Pin, 10 Digits for Phone)
         (function() {
             function isNumericOnlyField(input) {
                 if (!input || input.tagName !== 'INPUT') return false;
@@ -3003,14 +3038,53 @@
                 return type === 'tel' || 
                        id.includes('mobile') || name.includes('mobile') || 
                        id.includes('phone') || name.includes('phone') || 
-                       id.includes('contact_number') || name.includes('contact_number') ||
+                       id.includes('contact') || name.includes('contact') || 
+                       id.includes('whatsapp') || name.includes('whatsapp') ||
                        id.includes('pincode') || name.includes('pincode') || 
-                       id.includes('pin_code') || name.includes('pin_code');
+                       id.includes('pin_code') || name.includes('pin_code') ||
+                       id === 'pin' || name === 'pin' || id.endsWith('_pin') || name.endsWith('[pin]');
+            }
+
+            function isPinCodeField(input) {
+                if (!input || input.tagName !== 'INPUT') return false;
+                const id = (input.id || '').toLowerCase();
+                const name = (input.name || '').toLowerCase();
+                return id.includes('pincode') || name.includes('pincode') || 
+                       id.includes('pin_code') || name.includes('pin_code') ||
+                       id === 'pin' || name === 'pin' || id.endsWith('_pin') || name.endsWith('[pin]');
+            }
+
+            function isPhoneField(input) {
+                if (!input || input.tagName !== 'INPUT') return false;
+                const id = (input.id || '').toLowerCase();
+                const name = (input.name || '').toLowerCase();
+                return id.includes('mobile') || name.includes('mobile') || 
+                       id.includes('phone') || name.includes('phone') || 
+                       id.includes('contact') || name.includes('contact') || 
+                       id.includes('whatsapp') || name.includes('whatsapp');
             }
 
             function enforceNumericInput(input) {
                 if (!isNumericOnlyField(input)) return;
-                const cleaned = input.value.replace(/[^0-9]/g, '');
+                
+                let maxLen = null;
+                if (isPinCodeField(input)) {
+                    maxLen = 6;
+                } else if (isPhoneField(input)) {
+                    maxLen = 10;
+                }
+
+                if (maxLen) {
+                    input.setAttribute('maxlength', maxLen.toString());
+                    input.setAttribute('pattern', '[0-9]{' + maxLen + '}');
+                    input.setAttribute('inputmode', 'numeric');
+                }
+
+                let cleaned = input.value.replace(/[^0-9]/g, '');
+                if (maxLen && cleaned.length > maxLen) {
+                    cleaned = cleaned.slice(0, maxLen);
+                }
+
                 if (input.value !== cleaned) {
                     input.value = cleaned;
                 }
@@ -3018,6 +3092,12 @@
 
             document.addEventListener('input', function(e) {
                 enforceNumericInput(e.target);
+            });
+
+            document.addEventListener('focusin', function(e) {
+                if (isNumericOnlyField(e.target)) {
+                    enforceNumericInput(e.target);
+                }
             });
 
             document.addEventListener('keypress', function(e) {
@@ -3028,7 +3108,167 @@
                     }
                 }
             });
+
+            function applyAttributesToAll() {
+                const inputs = document.querySelectorAll('input');
+                inputs.forEach(input => {
+                    if (isPinCodeField(input)) {
+                        input.setAttribute('maxlength', '6');
+                        input.setAttribute('pattern', '[0-9]{6}');
+                        input.setAttribute('inputmode', 'numeric');
+                    } else if (isPhoneField(input)) {
+                        input.setAttribute('maxlength', '10');
+                        input.setAttribute('pattern', '[0-9]{10}');
+                        input.setAttribute('inputmode', 'numeric');
+                    }
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', applyAttributesToAll);
+            const observer = new MutationObserver(applyAttributesToAll);
+            observer.observe(document.body, { childList: true, subtree: true });
         })();
+
+        // Global Copy Applicant Address to Locality/Land Handler
+        window.copyApplicantAddressToLocality = function(checkbox) {
+            if (!checkbox) return;
+            const container = checkbox.closest('form') || checkbox.closest('.modal') || checkbox.closest('.panel') || document;
+            if (!checkbox.checked) return;
+
+            function getFieldValue(ids) {
+                for (let id of ids) {
+                    const el = container.querySelector('#' + id) || 
+                               container.querySelector('[name="meta[' + id + ']"]') || 
+                               container.querySelector('[name="' + id + '"]');
+                    if (el && el.value !== undefined && el.value !== '') return el.value;
+                }
+                return '';
+            }
+
+            function setFieldValue(ids, val) {
+                for (let id of ids) {
+                    const el = container.querySelector('#' + id) || 
+                               container.querySelector('[name="meta[' + id + ']"]') || 
+                               container.querySelector('[name="' + id + '"]');
+                    if (el) {
+                        el.value = val;
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            }
+
+            const isEdit = (checkbox.id && checkbox.id.startsWith('edit_')) || 
+                           (checkbox.name && checkbox.name.startsWith('edit_')) || 
+                           !!container.querySelector('#edit_applicant_name') || 
+                           !!container.querySelector('#edit_pin_code');
+
+            if (isEdit) {
+                const pin = getFieldValue(['edit_pin_code', 'edit_pin', 'pin_code', 'pin']);
+                const place = getFieldValue(['edit_location', 'edit_place', 'location', 'place']);
+                const village = getFieldValue(['edit_village', 'village']);
+                const post = getFieldValue(['edit_post', 'edit_post_office', 'post', 'post_office']);
+                const panchayat = getFieldValue(['edit_panchayath', 'edit_panchayat', 'panchayath', 'panchayat']);
+                const district = getFieldValue(['edit_district', 'district']);
+                const state = getFieldValue(['edit_state', 'state']);
+
+                setFieldValue(['edit_locality_pin_code', 'edit_locality_pin', 'edit_land_pin_code', 'edit_land_pin', 'edit_land_owner_pin'], pin);
+                setFieldValue(['edit_locality_location', 'edit_locality_place', 'edit_land_location', 'edit_land_place', 'edit_land_owner_place'], place);
+                setFieldValue(['edit_locality_village', 'edit_land_village', 'edit_land_owner_village'], village);
+                setFieldValue(['edit_locality_post', 'edit_locality_post_office', 'edit_land_post', 'edit_land_owner_post'], post);
+                setFieldValue(['edit_locality_panchayath', 'edit_locality_panchayat', 'edit_land_panchayath', 'edit_land_owner_panchayath'], panchayat);
+                setFieldValue(['edit_locality_district', 'edit_land_district', 'edit_land_owner_district'], district);
+                setFieldValue(['edit_locality_state', 'edit_land_state', 'edit_land_owner_state'], state);
+            } else {
+                const pin = getFieldValue(['pin_code', 'pin']);
+                const place = getFieldValue(['location', 'place']);
+                const village = getFieldValue(['village']);
+                const post = getFieldValue(['post', 'post_office']);
+                const panchayat = getFieldValue(['panchayath', 'panchayat']);
+                const district = getFieldValue(['district']);
+                const state = getFieldValue(['state']);
+
+                setFieldValue(['locality_pin_code', 'locality_pin', 'land_pin_code', 'land_pin', 'land_owner_pin'], pin);
+                setFieldValue(['locality_location', 'locality_place', 'land_location', 'land_place', 'land_owner_place'], place);
+                setFieldValue(['locality_village', 'land_village', 'land_owner_village'], village);
+                setFieldValue(['locality_post', 'locality_post_office', 'land_post', 'land_owner_post'], post);
+                setFieldValue(['locality_panchayath', 'locality_panchayat', 'land_panchayath', 'land_owner_panchayath'], panchayat);
+                setFieldValue(['locality_district', 'land_district', 'land_owner_district'], district);
+            }
+        };
+
+        window.toggleFinancialSupportPurpose = function(radio) {
+            if (!radio) return;
+            const container = radio.closest('form') || radio.closest('.panel') || radio.closest('.modal') || document;
+            const wrapper = container.querySelector('.financial-support-purpose-wrapper');
+            const input = container.querySelector('.financial-support-purpose-input');
+            
+            if (radio.value === 'Yes' && radio.checked) {
+                if (wrapper) wrapper.style.display = 'block';
+                if (input) input.setAttribute('required', 'required');
+            } else {
+                if (wrapper) wrapper.style.display = 'none';
+                if (input) {
+                    input.removeAttribute('required');
+                }
+            }
+        };
+
+        window.toggleCurrentStatusOther = function(select) {
+            if (!select) return;
+            const container = select.closest('div');
+            if (!container) return;
+            const wrapper = container.querySelector('.current-status-other-wrapper');
+            const input = container.querySelector('.current-status-other-input');
+            
+            if (select.value === 'Other') {
+                if (wrapper) wrapper.style.display = 'block';
+                if (input) input.setAttribute('required', 'required');
+            } else {
+                if (wrapper) wrapper.style.display = 'none';
+                if (input) {
+                    input.removeAttribute('required');
+                }
+            }
+        };
+
+        window.calculateTotalStudents = function(inputEl) {
+            if (!inputEl) return;
+            const container = inputEl.closest('form') || inputEl.closest('.modal') || inputEl.closest('.panel') || document;
+            const boysInput = container.querySelector('#students_boys, #edit_students_boys');
+            const girlsInput = container.querySelector('#students_girls, #edit_students_girls');
+            const totalInput = container.querySelector('.total-students-input');
+            
+            if (totalInput) {
+                const boysVal = boysInput ? boysInput.value.trim() : '';
+                const girlsVal = girlsInput ? girlsInput.value.trim() : '';
+                
+                if (boysVal !== '' || girlsVal !== '') {
+                    const boys = parseInt(boysVal) || 0;
+                    const girls = parseInt(girlsVal) || 0;
+                    totalInput.value = boys + girls;
+                } else {
+                    totalInput.value = '';
+                }
+            }
+        };
+
+        window.toggleEducationCenterNearby = function(radio) {
+            if (!radio) return;
+            const container = radio.closest('form') || radio.closest('.modal') || radio.closest('.panel') || document;
+            const wrapper = container.querySelector('.distance-ec-wrapper');
+            const input = container.querySelector('.distance-ec-input');
+            
+            if (radio.value === 'Yes' && radio.checked) {
+                if (wrapper) wrapper.style.display = 'block';
+                if (input) input.setAttribute('required', 'required');
+            } else {
+                if (wrapper) wrapper.style.display = 'none';
+                if (input) {
+                    input.removeAttribute('required');
+                }
+            }
+        };
     </script>
 
     <!-- Modern Premium Custom Confirm Modal HTML -->

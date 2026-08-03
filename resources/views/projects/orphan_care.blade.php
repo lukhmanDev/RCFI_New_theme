@@ -549,7 +549,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Add Orphan Care Project</h3>
-            <button onclick="closeModal()" class="modal-close-btn">&times;</button>
+            
         </div>
         <form action="{{ route('projects.store') }}" method="POST">
             @csrf
@@ -621,7 +621,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Edit Orphan Care Project</h3>
-            <button onclick="closeEditModal()" class="modal-close-btn">&times;</button>
+            
         </div>
         <form id="editProjectForm" method="POST">
             @csrf
@@ -1056,9 +1056,6 @@
 
         const modal = document.getElementById('addProgrammeModal');
         if (modal) {
-            if (modal.parentElement !== document.body) {
-                document.body.appendChild(modal);
-            }
             modal.style.display = 'flex';
         }
     }
@@ -1123,7 +1120,7 @@
     <div class="modal-content-custom" style="max-width: 600px; max-height: 90vh; overflow-y: auto; background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px;">
         <div class="modal-header-custom" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3 style="margin: 0; color: var(--text-main); font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">ADD NEW PROGRAMME</h3>
-            <button type="button" onclick="closeAddProgrammeModal()" class="modal-close-btn" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            
         </div>
 
         <form id="addProgrammeForm" method="POST" action="" onsubmit="handleAddProgrammeSubmit(event); return false;">

@@ -1,4 +1,4 @@
-@php
+﻿@php
     $authUser = auth()->user();
     $isCoo = ($authUser && ($authUser->isCoo() || strtolower($authUser->designation ?? '') === 'coo'));
     $isHod = ($authUser && ($authUser->isHod() || strtolower($authUser->designation ?? '') === 'hod'));
@@ -358,7 +358,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Add Cultural Center Project</h3>
-            <button onclick="closeModal()" class="modal-close-btn">&times;</button>
+            
         </div>
         <form action="{{ route('projects.store') }}" method="POST">
             @csrf
@@ -464,7 +464,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Edit Cultural Center Project</h3>
-            <button onclick="closeEditModal()" class="modal-close-btn">&times;</button>
+            
         </div>
         <form id="editProjectForm" method="POST">
             @csrf

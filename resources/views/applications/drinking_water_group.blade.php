@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Drinking Water - Group Level Applications')
 
@@ -303,10 +303,14 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="aadhar_number">Aadhaar Number *</label>
                             <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" placeholder="XXXX XXXX XXXX" maxlength="14" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="pin">Pin Code *</label>
+                            <input type="tel" class="form-control-dark" id="pin" name="meta[pin]" value="{{ old('meta.pin') }}" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
                             <label class="form-label" for="location">Place *</label>
@@ -334,7 +338,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="district">District *</label>
                             <input type="text" class="form-control-dark" id="district" name="meta[district]" value="{{ old('meta.district') }}" required>
@@ -343,20 +347,16 @@
                             <label class="form-label" for="state">State *</label>
                             <input type="text" class="form-control-dark" id="state" name="meta[state]" value="{{ old('meta.state') }}" required>
                         </div>
-                        <div>
-                            <label class="form-label" for="pin">Pin *</label>
-                            <input type="text" class="form-control-dark" id="pin" name="meta[pin]" value="{{ old('meta.pin') }}" required>
-                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="contact_number_1">Contact 1 *</label>
-                            <input type="text" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" required>
+                            <input type="tel" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                         <div>
                             <label class="form-label" for="contact_number_2">Contact 2</label>
-                            <input type="text" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}">
+                            <input type="tel" class="form-control-dark" id="contact_number_2" name="meta[contact_number_2]" value="{{ old('meta.contact_number_2') }}" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
                         </div>
                     </div>
                 </div>
@@ -395,7 +395,13 @@
 
                 <!-- Form Section 3: Owner of the Proposed Land -->
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">3. Owner of the Proposed Land</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin: 0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">3. Owner of the Proposed Land</h4>
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--accent-cyan); font-size: 0.82rem; font-weight: 600; cursor: pointer; user-select: none;">
+                            <input type="checkbox" onchange="copyApplicantAddressToLocality(this)" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-cyan);">
+                            Same as Applicant Address
+                        </label>
+                    </div>
                     
                     <div style="margin-bottom: 1rem;">
                         <label class="form-label" for="land_owner_name">Owner of the Proposed Land *</label>
@@ -477,8 +483,40 @@
                     <input type="hidden" name="status" value="Pending">
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
+
+                <!-- Recommendation Details Section -->
+                <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="recommendation_name">Recommender Name</label>
+                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommendation_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="recommendation_organization">Organization</label>
+                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
+                                <option value="">-- Select Organization --</option>
+                                <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
+                                <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
+                                <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
+                                <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
+                            </select>
+                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommendation_organization_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="recommendation_phone">Phone</label>
+                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommendation_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
+                        </div>
+                        <div>
+                            <label class="form-label" for="recommendation_position">Position / Designation</label>
+                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommendation_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Submit Application
                 </button>
             </form>
@@ -548,10 +586,14 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_aadhar_number">Aadhaar Number *</label>
                             <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" placeholder="XXXX XXXX XXXX" maxlength="14" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_pin">Pin Code *</label>
+                            <input type="tel" class="form-control-dark" id="edit_pin" name="meta[pin]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_location">Place *</label>
@@ -579,7 +621,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_district">District *</label>
                             <input type="text" class="form-control-dark" id="edit_district" name="meta[district]" required>
@@ -588,20 +630,16 @@
                             <label class="form-label" for="edit_state">State *</label>
                             <input type="text" class="form-control-dark" id="edit_state" name="meta[state]" required>
                         </div>
-                        <div>
-                            <label class="form-label" for="edit_pin">Pin *</label>
-                            <input type="text" class="form-control-dark" id="edit_pin" name="meta[pin]" required>
-                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_contact_number_1">Contact 1 *</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" required>
+                            <input type="tel" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_contact_number_2">Contact 2</label>
-                            <input type="text" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]">
+                            <input type="tel" class="form-control-dark" id="edit_contact_number_2" name="meta[contact_number_2]" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
                         </div>
                     </div>
                 </div>
@@ -640,7 +678,13 @@
 
                 <!-- Form Section 3: Owner of the Proposed Land -->
                 <div style="border-bottom: 1px solid var(--panel-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">3. Owner of the Proposed Land</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin: 0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">3. Owner of the Proposed Land</h4>
+                        <label style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--accent-cyan); font-size: 0.82rem; font-weight: 600; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="edit_same_as_applicant" onchange="copyApplicantAddressToLocality(this)" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-cyan);">
+                            Same as Applicant Address
+                        </label>
+                    </div>
                     
                     <div style="margin-bottom: 1rem;">
                         <label class="form-label" for="edit_land_owner_name">Owner of the Proposed Land *</label>
@@ -722,8 +766,40 @@
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
+
+                <!-- Edit Recommendation Details Section -->
+                <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommendation_name]" placeholder="Full name">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_recommendation_organization">Organization</label>
+                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
+                                <option value="">-- Select Organization --</option>
+                                <option value="KMJ">KMJ</option>
+                                <option value="SYS">SYS</option>
+                                <option value="SSF">SSF</option>
+                                <option value="Others">Others</option>
+                            </select>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommendation_organization_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="edit_recommendation_phone">Phone</label>
+                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommendation_phone]" placeholder="Phone number">
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
+                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommendation_position]" placeholder="Job title / Designation">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Save Changes
                 </button>
             </form>
@@ -792,6 +868,7 @@
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
+    window.openModal = openModal;
     window.closeModal = closeModal;
 
         // Edit Application Modal Toggle
@@ -846,9 +923,30 @@
             document.getElementById('edit_well_depth').value = meta.well_depth || '';
             document.getElementById('edit_legal_permissions').value = meta.legal_permissions || 'Yes';
 
+            if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || '';
+            if (document.getElementById('edit_recommendation_organization')) {
+                const orgSel = document.getElementById('edit_recommendation_organization');
+                orgSel.value = meta.recommendation_organization || '';
+                const orgOtherInput = document.getElementById('edit_recommendation_organization_other');
+                if (orgOtherInput) {
+                    orgOtherInput.value = meta.recommendation_organization_other || '';
+                    orgOtherInput.style.display = meta.recommendation_organization === 'Others' ? 'block' : 'none';
+                }
+            }
+            if (document.getElementById('edit_recommendation_phone')) document.getElementById('edit_recommendation_phone').value = meta.recommendation_phone || '';
+            if (document.getElementById('edit_recommendation_position')) document.getElementById('edit_recommendation_position').value = meta.recommendation_position || '';
+
             document.getElementById('editAppModal').style.display = 'flex';
         }
 
+
+        function toggleOrgOther(selectEl, otherId) {
+            const otherInput = document.getElementById(otherId);
+            if (otherInput) {
+                otherInput.style.display = selectEl.value === 'Others' ? 'block' : 'none';
+                if (selectEl.value !== 'Others') otherInput.value = '';
+            }
+        }
         function closeEditModal() {
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
@@ -962,6 +1060,16 @@
                         ${appItem.details ? appItem.details : 'No additional notes provided.'}
                     </p>
                 </div>
+                ${(meta.recommendation_name || meta.recommendation_organization || meta.recommendation_phone || meta.recommendation_position) ? `
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details:</h5>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                        ${meta.recommendation_name ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px;">Name:</td><td>${meta.recommendation_name}</td></tr>` : ''}
+                        ${meta.recommendation_organization ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Organization:</td><td>${meta.recommendation_organization === 'Others' ? (meta.recommendation_organization_other || 'Others') : meta.recommendation_organization}</td></tr>` : ''}
+                        ${meta.recommendation_phone ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Phone:</td><td>${meta.recommendation_phone}</td></tr>` : ''}
+                        ${meta.recommendation_position ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Position:</td><td>${meta.recommendation_position}</td></tr>` : ''}
+                    </table>
+                </div>` : ''}
             `;
             
             document.getElementById('details_content').innerHTML = html;
