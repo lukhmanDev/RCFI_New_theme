@@ -68,17 +68,34 @@ trait HasCategoryMeta
         }
         $meta['rejected_reason'] = $this->getAttribute('rejected_reason');
 
-        $aliases = [
+                $aliases = [
             'post' => 'post_office',
+            'post_office' => 'post',
             'panchayath' => 'panchayat',
+            'panchayat' => 'panchayath',
             'location' => 'place',
+            'place' => 'location',
             'mobile' => 'contact_number_1',
             'mobile_1' => 'contact_number_1',
             'mobile_2' => 'contact_number_2',
+            'contact_number_1' => 'mobile_1',
+            'contact_number_2' => 'mobile_2',
+            'pin' => 'pin_code',
+            'pin_code' => 'pin',
+            'recommender_name' => 'recommendation_name',
+            'recommendation_name' => 'recommender_name',
+            'recommender_org' => 'recommendation_organization',
+            'recommendation_organization' => 'recommender_org',
+            'recommender_org_other' => 'recommendation_organization_other',
+            'recommendation_organization_other' => 'recommender_org_other',
+            'recommender_phone' => 'recommendation_phone',
+            'recommendation_phone' => 'recommender_phone',
+            'recommender_position' => 'recommendation_position',
+            'recommendation_position' => 'recommender_position',
         ];
         foreach ($aliases as $aliasKey => $targetKey) {
-            if (!isset($meta[$aliasKey])) {
-                $meta[$aliasKey] = $meta[$targetKey] ?? ($this->attributes[$aliasKey] ?? null);
+            if (!isset($meta[$aliasKey]) || $meta[$aliasKey] === '' || $meta[$aliasKey] === null) {
+                $meta[$aliasKey] = $meta[$targetKey] ?? ($this->getAttribute($targetKey) ?? ($this->getAttribute($aliasKey) ?? ($this->attributes[$aliasKey] ?? null)));
             }
         }
 
@@ -102,14 +119,30 @@ trait HasCategoryMeta
                     if (\Illuminate\Support\Facades\Schema::hasColumn($table, $key)) {
                         $this->setAttribute($key, $val);
                     } else {
-                        $addressFields = ['house_name', 'place', 'post_office', 'post', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'pincode', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
-                        if (in_array($key, $addressFields)) {
-                            $this->setAttribute($key, $val);
+                        $aliasMap = [
+                            'recommendation_name' => 'recommender_name',
+                            'recommendation_organization' => 'recommender_org',
+                            'recommendation_organization_other' => 'recommender_org_other',
+                            'recommendation_phone' => 'recommender_phone',
+                            'recommendation_position' => 'recommender_position',
+                            'recommender_name' => 'recommendation_name',
+                            'recommender_org' => 'recommendation_organization',
+                            'recommender_org_other' => 'recommendation_organization_other',
+                            'recommender_phone' => 'recommendation_phone',
+                            'recommender_position' => 'recommendation_position',
+                        ];
+                        if (isset($aliasMap[$key]) && \Illuminate\Support\Facades\Schema::hasColumn($table, $aliasMap[$key])) {
+                            $this->setAttribute($aliasMap[$key], $val);
                         } else {
-                            $vMeta = is_array($this->virtualMeta) ? $this->virtualMeta : [];
-                            $vMeta[$key] = $val;
-                            $this->virtualMeta = $vMeta;
-                            unset($this->attributes['virtualMeta']);
+                            $addressFields = ['house_name', 'place', 'post_office', 'post', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'pincode', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
+                            if (in_array($key, $addressFields)) {
+                                $this->setAttribute($key, $val);
+                            } else {
+                                $vMeta = is_array($this->virtualMeta) ? $this->virtualMeta : [];
+                                $vMeta[$key] = $val;
+                                $this->virtualMeta = $vMeta;
+                                unset($this->attributes['virtualMeta']);
+                            }
                         }
                     }
                 }
@@ -205,6 +238,11 @@ trait HasCategoryMeta
         return ($this->pendingAddressData['post_office'] ?? null) ?? ($addr ? $addr->post_office : ($this->attributes['post_office'] ?? ($this->attributes['post'] ?? null)));
     }
 
+    public function getPostAttribute()
+    {
+        return $this->getPostOfficeAttribute();
+    }
+
     public function setPostOfficeAttribute($value)
     {
         $this->setAddressField('post_office', $value);
@@ -230,6 +268,11 @@ trait HasCategoryMeta
     {
         $addr = $this->getApplicantAddressObject();
         return ($this->pendingAddressData['panchayat'] ?? null) ?? ($addr ? $addr->panchayat : ($this->attributes['panchayat'] ?? ($this->attributes['panchayath'] ?? null)));
+    }
+
+    public function getPanchayathAttribute()
+    {
+        return $this->getPanchayatAttribute();
     }
 
     public function setPanchayatAttribute($value)
@@ -268,6 +311,11 @@ trait HasCategoryMeta
     {
         $addr = $this->getApplicantAddressObject();
         return ($this->pendingAddressData['pin_code'] ?? null) ?? ($addr ? $addr->pin_code : ($this->attributes['pin_code'] ?? ($this->attributes['pin'] ?? null)));
+    }
+
+    public function getPinAttribute()
+    {
+        return $this->getPinCodeAttribute();
     }
 
     public function setPinCodeAttribute($value)

@@ -1,4 +1,4 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'General Applications')
 
@@ -9,8 +9,7 @@
         <a href="{{ route('applications.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
             <i class="bx bx-left-arrow-alt"></i> Back to Dashboard
         </a>
-        <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600;">General Applications Registry</h3>
-    </div>
+            </div>
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
@@ -97,8 +96,8 @@
                         <th>Name</th>
                         <th>Institute / Org &amp; Unit</th>
                         <th>Place</th>
-                        <th>Village</th>
-                        <th>Panchayath</th>
+                        <th>District</th>
+                        <th>Project Type</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
@@ -120,6 +119,8 @@
                                 $orgName,
                                 $unitVal,
                                 $appItem->place ?? '',
+                                $appItem->district ?? $meta['district'] ?? '',
+                                $meta['project_type'] ?? $appItem->project_type ?? '',
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
@@ -166,12 +167,11 @@
                             <!-- Place -->
                             <td>{{ $appItem->place ?? 'N/A' }}</td>
 
+                            <!-- District -->
+                            <td>{{ $appItem->district ?? $meta['district'] ?? $meta['locality_district'] ?? 'N/A' }}</td>
 
-                            <!-- Village -->
-                            <td>{{ $appItem->village ?? $appItem->town ?? 'N/A' }}</td>
-
-                            <!-- Panchayath -->
-                            <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? 'N/A' }}</td>
+                            <!-- Project Type -->
+                            <td>{{ !empty($meta['project_type']) ? ucwords($meta['project_type']) : (!empty($appItem->application_type) ? ucwords($appItem->application_type) : (!empty($meta['application_type']) ? ucwords($meta['application_type']) : 'N/A')) }}</td>
 
                             <!-- Status -->
                             <td style="text-align: center;">
@@ -212,7 +212,7 @@
                                     @endif
                                 @endif
 
-                                @if($appItem->status !== 'Approved' && (Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess())))
+                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
                                     <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
                                         @csrf
                                         @method('DELETE')
@@ -454,28 +454,28 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommendation_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommender_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
+                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
                                 <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
                                 <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
                                 <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommendation_organization_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
+                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommender_org_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommendation_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommender_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommendation_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommender_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
@@ -674,28 +674,28 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommendation_name]" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommender_name]" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
+                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ">KMJ</option>
                                 <option value="SYS">SYS</option>
                                 <option value="SSF">SSF</option>
                                 <option value="Others">Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommendation_organization_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommender_org_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommendation_phone]" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommender_phone]" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommendation_position]" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommender_position]" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
@@ -817,38 +817,62 @@
             document.getElementById('edit_details').value = appItem.details || '';
 
             // Meta fields mapping
-            const meta = appItem.meta || {};
+                        const meta = appItem.meta || {};
+            
+            const getVal = (primary, alts = []) => {
+                if (meta[primary] !== undefined && meta[primary] !== null && meta[primary] !== '') return meta[primary];
+                if (appItem[primary] !== undefined && appItem[primary] !== null && appItem[primary] !== '') return appItem[primary];
+                for (let a of alts) {
+                    if (meta[a] !== undefined && meta[a] !== null && meta[a] !== '') return meta[a];
+                    if (appItem[a] !== undefined && appItem[a] !== null && appItem[a] !== '') return appItem[a];
+                }
+                return '';
+            };
 
-            const appType = meta.application_type || appItem.application_type || 'Individual';
-            if (appType === 'Group') {
-                if (document.getElementById('edit_app_type_group')) document.getElementById('edit_app_type_group').checked = true;
-            } else {
-                if (document.getElementById('edit_app_type_individual')) document.getElementById('edit_app_type_individual').checked = true;
-            }
-            if (document.getElementById('edit_organization_name')) document.getElementById('edit_organization_name').value = meta.organization_name || appItem.organization_name || '';
-            if (document.getElementById('edit_unit')) document.getElementById('edit_unit').value = meta.unit || appItem.unit || '';
-            toggleGroupFields('edit');
+            const setField = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
 
-            document.getElementById('edit_age').value = meta.age || '';
-            const addr = appItem.address || {};
-            const houseName = meta.house_name || addr.house_name || appItem.house_name || '';
-            const placeName = meta.place || addr.place || appItem.place || meta.address || '';
-            const villageName = meta.village || addr.village || appItem.village || '';
-            const postOffice = meta.post_office || meta.post || addr.post_office || appItem.post_office || '';
-            const panchayatName = meta.panchayat || addr.panchayat || appItem.panchayat || meta.panchayat_municipality_corporation || '';
-            const districtName = meta.district || addr.district || appItem.district || '';
-            const stateName = meta.state || addr.state || appItem.state || '';
-            const pinCode = meta.pin_code || meta.pincode || meta.pin || addr.pin_code || appItem.pin_code || '';
-            const mob1 = meta.mobile_1 || meta.mobile || meta.contact_number_1 || addr.contact_number_1 || addr.mobile_1 || appItem.mobile_1 || '';
-            const mob2 = meta.mobile_2 || meta.contact_number_2 || addr.contact_number_2 || addr.mobile_2 || appItem.mobile_2 || '';
+            setField('edit_house_name', getVal('house_name'));
+            setField('edit_location', getVal('location', ['place']));
+            setField('edit_place', getVal('place', ['location']));
+            setField('edit_village', getVal('village'));
+            setField('edit_post', getVal('post', ['post_office']));
+            setField('edit_post_office', getVal('post_office', ['post']));
+            setField('edit_panchayath', getVal('panchayath', ['panchayat']));
+            setField('edit_panchayat', getVal('panchayat', ['panchayath']));
+            setField('edit_district', getVal('district'));
+            setField('edit_state', getVal('state'));
+            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code']));
+            setField('edit_pin', getVal('pin', ['pin_code']));
 
-            if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = houseName; }
-            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = placeName; }
-            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = villageName; }
-            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = postOffice; }
-            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = panchayatName; }
-            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = districtName; }
-            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = stateName; }
+            setField('edit_committee_name', getVal('committee_name'));
+            setField('edit_reg_number', getVal('reg_number'));
+            setField('edit_year', getVal('year'));
+            setField('edit_permitted_type', getVal('permitted_type'));
+            setField('edit_area', getVal('area'));
+            setField('edit_details', appItem.details || appItem.additional_note || meta.details || meta.additional_note || '');
+
+            const recName = getVal('recommendation_name', ['recommender_name']);
+            setField('edit_recommendation_name', recName);
+            setField('edit_recommender_name', recName);
+
+            const recOrg = getVal('recommendation_organization', ['recommender_org']);
+            setField('edit_recommendation_organization', recOrg);
+            setField('edit_recommender_org', recOrg);
+
+            const recOrgOther = getVal('recommendation_organization_other', ['recommender_org_other']);
+            setField('edit_recommendation_organization_other', recOrgOther);
+
+            const recPhone = getVal('recommendation_phone', ['recommender_phone']);
+            setField('edit_recommendation_phone', recPhone);
+            setField('edit_recommender_phone', recPhone);
+
+            const recPos = getVal('recommendation_position', ['recommender_position']);
+            setField('edit_recommendation_position', recPos);
+            setField('edit_recommender_position', recPos);
+
             if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = pinCode; }
             if (document.getElementById('edit_mobile_1')) { document.getElementById('edit_mobile_1').value = mob1; }
             if (document.getElementById('edit_mobile_2')) { document.getElementById('edit_mobile_2').value = mob2; }

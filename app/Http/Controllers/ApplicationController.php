@@ -243,27 +243,30 @@ class ApplicationController extends Controller
                 }
             }
 
-            $addressFields = ['house_name', 'place', 'post_office', 'town', 'village', 'panchayat', 'district', 'state', 'pin_code', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
-            
-            $rawAddress = [];
-            foreach ($addressFields as $af) {
-                if ($request->filled($af)) {
-                    $rawAddress[$af] = $request->input($af);
-                } elseif ($request->filled("meta.{$af}")) {
-                    $rawAddress[$af] = $request->input("meta.{$af}");
-                }
-            }
+            $placeVal = $request->input('place') ?? ($request->input('location') ?? ($request->input('meta.place') ?? $request->input('meta.location')));
+            $postVal = $request->input('post_office') ?? ($request->input('post') ?? ($request->input('meta.post_office') ?? $request->input('meta.post')));
+            $panchayatVal = $request->input('panchayat') ?? ($request->input('panchayath') ?? ($request->input('meta.panchayat') ?? $request->input('meta.panchayath')));
+            $pinVal = $request->input('pin_code') ?? ($request->input('pin') ?? ($request->input('meta.pin_code') ?? ($request->input('meta.pin') ?? $request->input('meta.locality_pin_code'))));
+            $villageVal = $request->input('village') ?? $request->input('meta.village');
+            $districtVal = $request->input('district') ?? $request->input('meta.district');
+            $stateVal = $request->input('state') ?? $request->input('meta.state');
+            $houseVal = $request->input('house_name') ?? $request->input('meta.house_name');
+            $c1Val = $request->input('contact_number_1') ?? ($request->input('mobile_1') ?? ($request->input('mobile') ?? ($request->input('meta.contact_number_1') ?? ($request->input('meta.mobile_1') ?? $request->input('meta.mobile')))));
+            $c2Val = $request->input('contact_number_2') ?? ($request->input('mobile_2') ?? ($request->input('meta.contact_number_2') ?? $request->input('meta.mobile_2')));
 
-            $dbAddressFields = ['house_name', 'place', 'post_office', 'village', 'panchayat', 'district', 'state', 'pin_code', 'contact_number_1', 'contact_number_2'];
-            $addressData = array_intersect_key($rawAddress, array_flip($dbAddressFields));
-            if (!isset($addressData['contact_number_1'])) {
-                $mob = $rawAddress['mobile_1'] ?? ($rawAddress['mobile'] ?? null);
-                if ($mob) { $addressData['contact_number_1'] = $mob; }
-            }
-            if (!isset($addressData['contact_number_2'])) {
-                $mob2 = $rawAddress['mobile_2'] ?? null;
-                if ($mob2) { $addressData['contact_number_2'] = $mob2; }
-            }
+            $addressData = array_filter([
+                'house_name' => $houseVal,
+                'place' => $placeVal,
+                'post_office' => $postVal,
+                'village' => $villageVal,
+                'panchayat' => $panchayatVal,
+                'district' => $districtVal,
+                'state' => $stateVal,
+                'pin_code' => $pinVal,
+                'contact_number_1' => $c1Val,
+                'contact_number_2' => $c2Val,
+            ]);
+            $addressFields = ['house_name', 'place', 'location', 'post_office', 'post', 'town', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
 
             if (isset($data['details']) && !isset($data['additional_note'])) {
                 $data['additional_note'] = $data['details'];
@@ -418,27 +421,30 @@ class ApplicationController extends Controller
                 }
             }
 
-            $addressFields = ['house_name', 'place', 'post_office', 'town', 'village', 'panchayat', 'district', 'state', 'pin_code', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
-            
-            $rawAddress = [];
-            foreach ($addressFields as $af) {
-                if ($request->filled($af)) {
-                    $rawAddress[$af] = $request->input($af);
-                } elseif ($request->filled("meta.{$af}")) {
-                    $rawAddress[$af] = $request->input("meta.{$af}");
-                }
-            }
+            $placeVal = $request->input('place') ?? ($request->input('location') ?? ($request->input('meta.place') ?? $request->input('meta.location')));
+            $postVal = $request->input('post_office') ?? ($request->input('post') ?? ($request->input('meta.post_office') ?? $request->input('meta.post')));
+            $panchayatVal = $request->input('panchayat') ?? ($request->input('panchayath') ?? ($request->input('meta.panchayat') ?? $request->input('meta.panchayath')));
+            $pinVal = $request->input('pin_code') ?? ($request->input('pin') ?? ($request->input('meta.pin_code') ?? ($request->input('meta.pin') ?? $request->input('meta.locality_pin_code'))));
+            $villageVal = $request->input('village') ?? $request->input('meta.village');
+            $districtVal = $request->input('district') ?? $request->input('meta.district');
+            $stateVal = $request->input('state') ?? $request->input('meta.state');
+            $houseVal = $request->input('house_name') ?? $request->input('meta.house_name');
+            $c1Val = $request->input('contact_number_1') ?? ($request->input('mobile_1') ?? ($request->input('mobile') ?? ($request->input('meta.contact_number_1') ?? ($request->input('meta.mobile_1') ?? $request->input('meta.mobile')))));
+            $c2Val = $request->input('contact_number_2') ?? ($request->input('mobile_2') ?? ($request->input('meta.contact_number_2') ?? $request->input('meta.mobile_2')));
 
-            $dbAddressFields = ['house_name', 'place', 'post_office', 'village', 'panchayat', 'district', 'state', 'pin_code', 'contact_number_1', 'contact_number_2'];
-            $addressData = array_intersect_key($rawAddress, array_flip($dbAddressFields));
-            if (!isset($addressData['contact_number_1'])) {
-                $mob = $rawAddress['mobile_1'] ?? ($rawAddress['mobile'] ?? null);
-                if ($mob) { $addressData['contact_number_1'] = $mob; }
-            }
-            if (!isset($addressData['contact_number_2'])) {
-                $mob2 = $rawAddress['mobile_2'] ?? null;
-                if ($mob2) { $addressData['contact_number_2'] = $mob2; }
-            }
+            $addressData = array_filter([
+                'house_name' => $houseVal,
+                'place' => $placeVal,
+                'post_office' => $postVal,
+                'village' => $villageVal,
+                'panchayat' => $panchayatVal,
+                'district' => $districtVal,
+                'state' => $stateVal,
+                'pin_code' => $pinVal,
+                'contact_number_1' => $c1Val,
+                'contact_number_2' => $c2Val,
+            ]);
+            $addressFields = ['house_name', 'place', 'location', 'post_office', 'post', 'town', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
 
             if (isset($data['details']) && !isset($data['additional_note'])) {
                 $data['additional_note'] = $data['details'];
@@ -918,6 +924,183 @@ class ApplicationController extends Controller
             }
         }
 
+        // Fetch dropdown options for filters
+        $pmUserIds = [];
+        foreach ($projectModels as $pCatKey => $pModelClass) {
+            if (class_exists($pModelClass)) {
+                $pTbl = (new $pModelClass)->getTable();
+                if (\Illuminate\Support\Facades\Schema::hasColumn($pTbl, 'project_manager_id')) {
+                    $foundPmIds = \Illuminate\Support\Facades\DB::table($pTbl)->whereNotNull('project_manager_id')->pluck('project_manager_id')->toArray();
+                    $pmUserIds = array_merge($pmUserIds, $foundPmIds);
+                }
+            }
+        }
+        $pmUserIds = array_values(array_unique(array_filter($pmUserIds)));
+
+        $projectManagers = \App\Models\User::where(function($q) use ($pmUserIds) {
+            $q->whereIn('role', ['project_manager', 'engineer', 'super_admin', '3', '6', '1', 'Project Manager', 'Engineer', 'Super Admin'])
+              ->orWhereIn('id', $pmUserIds);
+        })->orderBy('name', 'asc')->get();
+
+        $addressStates = [];
+        $addressDistricts = [];
+        $selectedState = $request->input('state', 'all');
+
+        foreach ($this->categories as $catKey => $catConf) {
+            $catModel = $catConf['model'];
+            if (class_exists($catModel)) {
+                $tbl = (new $catModel)->getTable();
+                if (\Illuminate\Support\Facades\Schema::hasColumn($tbl, 'state')) {
+                    $st = \Illuminate\Support\Facades\DB::table($tbl)->whereNotNull('state')->where('state', '!=', '')->pluck('state')->toArray();
+                    $addressStates = array_merge($addressStates, $st);
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn($tbl, 'district')) {
+                    $dtQ = \Illuminate\Support\Facades\DB::table($tbl)->whereNotNull('district')->where('district', '!=', '');
+                    if ($selectedState !== 'all' && !empty($selectedState) && \Illuminate\Support\Facades\Schema::hasColumn($tbl, 'state')) {
+                        $dtQ->where('state', $selectedState);
+                    }
+                    $addressDistricts = array_merge($addressDistricts, $dtQ->pluck('district')->toArray());
+                }
+            }
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('addresses')) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('addresses', 'state')) {
+                $st = \Illuminate\Support\Facades\DB::table('addresses')->whereNotNull('state')->where('state', '!=', '')->pluck('state')->toArray();
+                $addressStates = array_merge($addressStates, $st);
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('addresses', 'district')) {
+                $dtQ = \Illuminate\Support\Facades\DB::table('addresses')->whereNotNull('district')->where('district', '!=', '');
+                if ($selectedState !== 'all' && !empty($selectedState) && \Illuminate\Support\Facades\Schema::hasColumn('addresses', 'state')) {
+                    $dtQ->where('state', $selectedState);
+                }
+                $addressDistricts = array_merge($addressDistricts, $dtQ->pluck('district')->toArray());
+            }
+        }
+
+        $states = array_values(array_unique(array_filter($addressStates)));
+        sort($states);
+
+        $districts = array_values(array_unique(array_filter($addressDistricts)));
+        sort($districts);
+
+        $agencyNames = [];
+        foreach ($this->categories as $catKey => $catConf) {
+            $catModel = $catConf['model'];
+            if (class_exists($catModel)) {
+                $tbl = (new $catModel)->getTable();
+                if (\Illuminate\Support\Facades\Schema::hasColumn($tbl, 'agency_name')) {
+                    $agencyNames = array_merge($agencyNames, \Illuminate\Support\Facades\DB::table($tbl)->whereNotNull('agency_name')->where('agency_name', '!=', '')->pluck('agency_name')->toArray());
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn($tbl, 'agency_number')) {
+                    $agencyNames = array_merge($agencyNames, \Illuminate\Support\Facades\DB::table($tbl)->whereNotNull('agency_number')->where('agency_number', '!=', '')->pluck('agency_number')->toArray());
+                }
+            }
+        }
+        $agencies = array_values(array_unique(array_filter($agencyNames)));
+        sort($agencies);
+
+        $pTypes = [];
+        foreach ($projectModels as $pCatKey => $pModelClass) {
+            if (class_exists($pModelClass)) {
+                $pTbl = (new $pModelClass)->getTable();
+                if (\Illuminate\Support\Facades\Schema::hasColumn($pTbl, 'type_of_project')) {
+                    $pTypes = array_merge($pTypes, \Illuminate\Support\Facades\DB::table($pTbl)->whereNotNull('type_of_project')->where('type_of_project', '!=', '')->pluck('type_of_project')->toArray());
+                }
+            }
+        }
+        $projectTypes = array_values(array_unique(array_filter($pTypes)));
+        sort($projectTypes);
+
+        // Apply filters to applications list
+        $pmIdParam = $request->input('pm_id', 'all');
+        $agencyParam = $request->input('agency', 'all');
+        $stateParam = $request->input('state', 'all');
+        $districtParam = $request->input('district', 'all');
+        $projectTypeParam = $request->input('type_of_project', 'all');
+        $runningProjectParam = $request->input('running_project', 'all');
+
+        $applications = $applications->filter(function ($appItem) use (
+            $projectsMap,
+            $pmIdParam,
+            $agencyParam,
+            $stateParam,
+            $districtParam,
+            $projectTypeParam,
+            $runningProjectParam
+        ) {
+            $project = $projectsMap[$appItem->id] ?? null;
+            $addr = $appItem->address ?? null;
+
+            // 1. Project Manager Filter
+            if ($pmIdParam !== 'all' && !empty($pmIdParam)) {
+                if (!$project || (string)$project->project_manager_id !== (string)$pmIdParam) {
+                    return false;
+                }
+            }
+
+            // 2. Agency Filter
+            if ($agencyParam !== 'all' && !empty($agencyParam)) {
+                $agencyVal = strtolower(trim($agencyParam));
+                $appAgencyName = strtolower(trim($appItem->agency_name ?? ''));
+                $appAgencyNum = strtolower(trim($appItem->agency_number ?? ''));
+                $appAgency = strtolower(trim($appItem->agency ?? ''));
+                $projAgency = strtolower(trim($project->agency ?? ''));
+
+                if ($appAgencyName !== $agencyVal && $appAgencyNum !== $agencyVal && $appAgency !== $agencyVal && $projAgency !== $agencyVal) {
+                    return false;
+                }
+            }
+
+            // 3. State Filter
+            if ($stateParam !== 'all' && !empty($stateParam)) {
+                $stateVal = strtolower(trim($stateParam));
+                $appState = strtolower(trim($addr->state ?? ($appItem->state ?? '')));
+                if ($appState !== $stateVal) {
+                    return false;
+                }
+            }
+
+            // 4. District Filter
+            if ($districtParam !== 'all' && !empty($districtParam)) {
+                $districtVal = strtolower(trim($districtParam));
+                $appDistrict = strtolower(trim($addr->district ?? ($appItem->district ?? '')));
+                if ($appDistrict !== $districtVal) {
+                    return false;
+                }
+            }
+
+            // 5. Type of Project Filter
+            if ($projectTypeParam !== 'all' && !empty($projectTypeParam)) {
+                $pTypeVal = strtolower(trim($projectTypeParam));
+                $projType = strtolower(trim($project->type_of_project ?? ($appItem->type_of_project ?? '')));
+                if ($projType !== $pTypeVal) {
+                    return false;
+                }
+            }
+
+            // 6. Running Project Filter
+            if ($runningProjectParam !== 'all' && !empty($runningProjectParam)) {
+                $statusVal = strtolower(trim($project->status ?? ''));
+
+                if ($runningProjectParam === 'completed') {
+                    if (!$project || $statusVal !== 'completed') {
+                        return false;
+                    }
+                } elseif ($runningProjectParam === 'running') {
+                    if (!$project || empty($statusVal) || in_array($statusVal, ['completed', 'not set', 'not_set', 'none'])) {
+                        return false;
+                    }
+                } elseif (in_array($runningProjectParam, ['not_set', 'not set'])) {
+                    if ($project && !empty($statusVal) && !in_array($statusVal, ['not set', 'not_set', 'none'])) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        })->values();
+
         $viewName = str_replace('applications.', 'approved_applications.', $config['view']);
 
         $clusters = [];
@@ -926,7 +1109,7 @@ class ApplicationController extends Controller
         }
         $donors = \App\Models\Donor::orderBy('name', 'asc')->get();
 
-        return view($viewName, compact('applications', 'categoryName', 'categorySlug', 'projectsMap', 'clusters', 'donors'));
+        return view($viewName, compact('applications', 'categoryName', 'categorySlug', 'projectsMap', 'clusters', 'donors', 'projectManagers', 'agencies', 'states', 'districts', 'projectTypes'));
     }
 
     public function exportApproved(Request $request)
@@ -997,22 +1180,124 @@ class ApplicationController extends Controller
             }
         }
 
-        if ($searchParam !== '') {
-            $allApprovedApps = $allApprovedApps->filter(function($app) use ($searchParam) {
-                $metaStr = is_array($app->meta) ? implode(' ', array_filter($app->meta, 'is_scalar')) : '';
-                $searchable = strtolower(implode(' ', array_filter([
-                    $app->applicant_name,
-                    $app->agency_number,
-                    $app->place,
-                    $app->district,
-                    $app->state,
-                    $app->contact_email,
-                    $app->contact_number_1,
-                    $metaStr
-                ])));
-                return str_contains($searchable, $searchParam);
-            });
+        // Filter inputs for export
+        $pmIdParam = $request->input('pm_id', 'all');
+        $agencyParam = $request->input('agency', 'all');
+        $stateParam = $request->input('state', 'all');
+        $districtParam = $request->input('district', 'all');
+        $projectTypeParam = $request->input('type_of_project', 'all');
+        $runningProjectParam = $request->input('running_project', 'all');
+
+        // Load project mappings for export items
+        $projectModels = [
+            'education-center' => \App\Models\EducationCenterProject::class,
+            'cultural-center' => \App\Models\CulturalCenterProject::class,
+            'hospital-or-clinics' => \App\Models\HospitalClinicProject::class,
+            'shops-and-others' => \App\Models\ShopOtherProject::class,
+            'house' => \App\Models\HouseProject::class,
+            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupProject::class,
+            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualProject::class,
+            'orphan-care' => \App\Models\OrphanCareProject::class,
+            'differently-abled' => \App\Models\DifferentlyAbledProject::class,
+            'family-aid' => \App\Models\FamilyAidProject::class,
+            'general' => \App\Models\GeneralProject::class,
+        ];
+
+        $projectsMap = [];
+        $user = auth()->user();
+        foreach ($allApprovedApps->groupBy('category_slug') as $catGroupSlug => $catApps) {
+            $pModel = $projectModels[$catGroupSlug] ?? null;
+            if ($pModel) {
+                $appIds = $catApps->pluck('id')->toArray();
+                $q = $pModel::with(['donor', 'projectManager'])->whereIn('application_id', $appIds);
+                $catProjects = $this->scopeProjectsForUser($q, $user)->get()->keyBy('application_id');
+                foreach ($catProjects as $appIdKey => $pObj) {
+                    $projectsMap[$catGroupSlug . '_' . $appIdKey] = $pObj;
+                }
+            }
         }
+
+        // Apply filters to export records
+        $allApprovedApps = $allApprovedApps->filter(function ($appItem) use (
+            $projectsMap,
+            $pmIdParam,
+            $agencyParam,
+            $stateParam,
+            $districtParam,
+            $projectTypeParam,
+            $runningProjectParam
+        ) {
+            $project = $projectsMap[$appItem->category_slug . '_' . $appItem->id] ?? null;
+            $addr = $appItem->address ?? null;
+
+            // 1. Project Manager Filter
+            if ($pmIdParam !== 'all' && !empty($pmIdParam)) {
+                if (!$project || (string)$project->project_manager_id !== (string)$pmIdParam) {
+                    return false;
+                }
+            }
+
+            // 2. Agency Filter
+            if ($agencyParam !== 'all' && !empty($agencyParam)) {
+                $agencyVal = strtolower(trim($agencyParam));
+                $appAgencyName = strtolower(trim($appItem->agency_name ?? ''));
+                $appAgencyNum = strtolower(trim($appItem->agency_number ?? ''));
+                $appAgency = strtolower(trim($appItem->agency ?? ''));
+                $projAgency = strtolower(trim($project->agency ?? ''));
+
+                if ($appAgencyName !== $agencyVal && $appAgencyNum !== $agencyVal && $appAgency !== $agencyVal && $projAgency !== $agencyVal) {
+                    return false;
+                }
+            }
+
+            // 3. State Filter
+            if ($stateParam !== 'all' && !empty($stateParam)) {
+                $stateVal = strtolower(trim($stateParam));
+                $appState = strtolower(trim($addr->state ?? ($appItem->state ?? '')));
+                if ($appState !== $stateVal) {
+                    return false;
+                }
+            }
+
+            // 4. District Filter
+            if ($districtParam !== 'all' && !empty($districtParam)) {
+                $districtVal = strtolower(trim($districtParam));
+                $appDistrict = strtolower(trim($addr->district ?? ($appItem->district ?? '')));
+                if ($appDistrict !== $districtVal) {
+                    return false;
+                }
+            }
+
+            // 5. Type of Project Filter
+            if ($projectTypeParam !== 'all' && !empty($projectTypeParam)) {
+                $pTypeVal = strtolower(trim($projectTypeParam));
+                $projType = strtolower(trim($project->type_of_project ?? ($appItem->type_of_project ?? '')));
+                if ($projType !== $pTypeVal) {
+                    return false;
+                }
+            }
+
+            // 6. Running Project Filter
+            if ($runningProjectParam !== 'all' && !empty($runningProjectParam)) {
+                $statusVal = strtolower(trim($project->status ?? ''));
+
+                if ($runningProjectParam === 'completed') {
+                    if (!$project || $statusVal !== 'completed') {
+                        return false;
+                    }
+                } elseif ($runningProjectParam === 'running') {
+                    if (!$project || empty($statusVal) || in_array($statusVal, ['completed', 'not set', 'not_set', 'none'])) {
+                        return false;
+                    }
+                } elseif (in_array($runningProjectParam, ['not_set', 'not set'])) {
+                    if ($project && !empty($statusVal) && !in_array($statusVal, ['not set', 'not_set', 'none'])) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        })->values();
 
         // 1. Fast gathering of metadata keys using array keys set
         $metaKeysSet = [];

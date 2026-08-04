@@ -326,12 +326,12 @@
                 @endif
 
                 <div class="details-grid">
-                    <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
+                    <div class="details-label">RCFI ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
                     <div class="details-label">Project Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->project_name ?? 'N/A' }}</div>
                     <div class="details-label">Sponsor</div><div class="details-colon">:</div><div class="details-value">{{ $project->sponsor ?? 'N/A' }}</div>
                     <div class="details-label">Project Spec</div><div class="details-colon">:</div><div class="details-value" style="white-space: pre-wrap;">{{ $project->project_spec ?? 'N/A' }}</div>
                     <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value">{{ $project->agency_project_no ?? 'N/A' }}</div>
-                    <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
+                    <div class="details-label">Agency Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
                     <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
                     <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
                     <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
@@ -578,8 +578,11 @@
                                     @endif
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location / Address:</td><td>{!! $formatVal($metaData['location'] ?? $metaData['place'] ?? null) !!} {!! !empty($metaData['address']) ? '/ ' . $metaData['address'] : '' !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village / Post / Panch:</td><td>{!! $formatVal($metaData['village'] ?? null) !!} / {!! $formatVal($metaData['post'] ?? null) !!} / {!! $formatVal($metaData['panchayath'] ?? $metaData['panchayat'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State / Pin:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!} {!! !empty($metaData['pin']) ? '/ ' . $metaData['pin'] : '' !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? $metaData['contact1'] ?? $metaData['mobile'] ?? null) !!} {!! !empty($metaData['contact_number_2']) ? '/ ' . $metaData['contact_number_2'] : '' !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>{!! $formatVal($metaData['district'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">State:</td><td>{!! $formatVal($metaData['state'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pin Code:</td><td>{!! $formatVal($metaData['pin_code'] ?? ($metaData['pin'] ?? null)) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 1:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 2:</td><td>{!! $formatVal($metaData['contact_number_2'] ?? null) !!}</td></tr>
                                 </table>
 
                                 <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Beneficiary Details Summary</h4>
@@ -621,6 +624,27 @@
                                 {{ $application->details ? $application->details : 'No additional notes provided.' }}
                             </p>
                         </div>
+                        @php
+                            $recName = $metaData['recommender_name'] ?? ($metaData['recommendation_name'] ?? null);
+                            $recOrg = $metaData['recommender_org'] ?? ($metaData['recommendation_organization'] ?? null);
+                            $recOrgOther = $metaData['recommender_org_other'] ?? ($metaData['recommendation_organization_other'] ?? null);
+                            $recPhone = $metaData['recommender_phone'] ?? ($metaData['recommendation_phone'] ?? null);
+                            $recPos = $metaData['recommender_position'] ?? ($metaData['recommendation_position'] ?? null);
+                            $displayOrg = ($recOrg === 'Others') ? ($recOrgOther ?: 'Others') : $recOrg;
+                        @endphp
+
+                        @if($recName || $recOrg || $recPhone || $recPos)
+                        <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                            <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details</h5>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                                @if($recName)<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Recommender Name:</td><td>{!! $formatVal($recName) !!}</td></tr>@endif
+                                @if($recOrg)<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; color: var(--text-muted);">Organization:</td><td>{!! $formatVal($displayOrg) !!}</td></tr>@endif
+                                @if($recPhone)<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; color: var(--text-muted);">Phone:</td><td>{!! $formatVal($recPhone) !!}</td></tr>@endif
+                                @if($recPos)<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; color: var(--text-muted);">Position / Designation:</td><td>{!! $formatVal($recPos) !!}</td></tr>@endif
+                            </table>
+                        </div>
+                        @endif
+
                     @else
                         <div style="text-align: center; padding: 3rem; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--panel-border); margin: 2rem 0;">
                             <i class="bx bx-link-external" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
@@ -667,8 +691,9 @@
                     <thead>
                         <tr>
                             <th>Document Name</th>
-                            <th style="width: 250px;">Ticked At</th>
-                            <th style="width: 150px; text-align: center;">Action</th>
+                            <th>Remark</th>
+                            <th style="width: 200px;">Ticked At</th>
+                            <th style="width: 120px; text-align: center;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -679,11 +704,13 @@
                                 'Copy of the land document ( water tank site)',
                                 'No objection certificate of both land owners for implementing community drinking water project in their land',
                                 '3 Quotations of the well, tank, pump house and house connection works',
-                                'Site study report',
                                 'Agreement with committee',
-                                'Agreement with contractor'
+                                'Agreement with contractor',
+                                'Site study report'
                             ];
                             $docRecord = $project->files_with_timestamps;
+                            $pFiles = $project->files ?? [];
+                            $siteStudyData = $project->projectSiteStudy ?? null;
                         @endphp
                         @foreach($docs as $doc)
                             @php
@@ -696,9 +723,38 @@
                                 if ($filePath === '0') {
                                     $filePath = null;
                                 }
+
+                                $docKey = str_replace(' ', '_', strtolower($doc));
+                                $docRemark = $pFiles['doc_remarks'][$docKey] ?? ($pFiles['checklist'][$docKey]['remarks'] ?? '');
                             @endphp
                             <tr>
-                                <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $doc }}</td>
+                                <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">
+                                    {{ $doc }}
+                                    @if($doc === 'Site study' || $doc === 'Site study report')
+                                        <button type="button" 
+                                                onclick="openSiteStudyModal()" 
+                                                title="View/Edit Full Site Study Report (1000+ words supported)"
+                                                style="background: #0d9488; color: white; border: none; padding: 0.25rem 0.55rem; border-radius: 4px; font-size: 0.78rem; cursor: pointer; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                            <i class="bx bx-file"></i> Open Report (1000+ words)
+                                        </button>
+                                    @endif
+                                </td>
+                                <td style="vertical-align: middle;" id="remark-cell-{{ str_replace(' ', '_', $doc) }}">
+                                    @if($isProjectManager && !$isLockedForEditing)
+                                        @if(!empty($filePath))
+                                            <span style="font-size: 0.85rem; color: var(--text-main);">{{ $docRemark ?: '-' }}</span>
+                                        @else
+                                            <input type="text" 
+                                                   id="remark-input-{{ str_replace(' ', '_', $doc) }}"
+                                                   value="{{ $docRemark }}" 
+                                                   placeholder="Add remark..." 
+                                                   onchange="saveDocRemark('{{ $doc }}', this.value, this)"
+                                                   style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.35rem 0.65rem; border-radius: 4px; font-size: 0.85rem; width: 100%; max-width: 260px; outline: none;">
+                                        @endif
+                                    @else
+                                        <span style="font-size: 0.85rem; color: var(--text-main);">{{ $docRemark ?: '-' }}</span>
+                                    @endif
+                                </td>
                                 <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
                                     {{ $tickedAt ?? '-' }}
                                 </td>
@@ -1484,13 +1540,13 @@
                     $locationMapLink = $docRecord ? $docRecord->location_map_link : null;
                     
                     $pFiles = $project->files ?? [];
-                    $beforePhotos = $pFiles['photos_before'] ?? [];
-                    $startingPhotos = $pFiles['photos_starting'] ?? [];
-                    $inbetweenPhotos = $pFiles['photos_inbetween'] ?? [];
-                    $afterPhotos = $pFiles['photos_after'] ?? ($pFiles['photos'] ?? []);
-                    $bannerPhotos = $pFiles['photos_banner'] ?? [];
-                    $stonePhotos = $pFiles['photos_stone'] ?? [];
-                    $inaugurationPhotos = $pFiles['photos_inauguration'] ?? [];
+                    $beforePhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_before'] ?? []), (array)($pFiles['before_photos'] ?? []), (array)($pFiles['before'] ?? [])))));
+                    $startingPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_starting'] ?? []), (array)($pFiles['starting_photos'] ?? []), (array)($pFiles['starting'] ?? [])))));
+                    $inbetweenPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_inbetween'] ?? []), (array)($pFiles['inbetween_photos'] ?? []), (array)($pFiles['inbetween'] ?? [])))));
+                    $afterPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_after'] ?? ($pFiles['photos'] ?? [])), (array)($pFiles['after_photos'] ?? []), (array)($pFiles['after'] ?? [])))));
+                    $bannerPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_banner'] ?? []), (array)($pFiles['banner_photos'] ?? []), (array)($pFiles['banner'] ?? [])))));
+                    $stonePhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_stone'] ?? []), (array)($pFiles['stone_photos'] ?? []), (array)($pFiles['stone'] ?? [])))));
+                    $inaugurationPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_inauguration'] ?? []), (array)($pFiles['inauguration_photos'] ?? []), (array)($pFiles['inauguration'] ?? [])))));
                     $compDetails = $pFiles['completion_details'] ?? [];
                 @endphp
 
@@ -1584,7 +1640,7 @@
                                 @if($isProjectManager && !$isLockedForEditing)
                                     <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                                         @csrf
-                                        <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
+                                        <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
                                         <button type="submit" class="btn-custom" style="padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
                                             <i class="bx bx-save"></i> Save Link
                                         </button>
@@ -1701,7 +1757,7 @@
                                         <input type="hidden" name="category" value="{{ $key }}">
                                         <input type="file" name="photo" accept="image/*" required style="font-size: 0.75rem; color: var(--text-muted); width: 100%;">
                                         <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; width: 100%;">
-                                            <i class="bx bx-upload"></i> Upload Photo
+                                            <i class="bx bx-upload"></i> {{ !empty($colData['photos']) ? 'Replace Photo' : 'Upload Photo' }}
                                         </button>
                                     </form>
                                 @endif
@@ -2186,8 +2242,42 @@
         window.toggleChecklistDocument = toggleChecklistDocument;
         window.performToggleChecklistDocument = performToggleChecklistDocument;
 
+        async function saveDocRemark(docName, remarkText, inputEl) {
+            const csrfToken = "{{ csrf_token() }}";
+            const updateUrl = "{{ route('projects.update_doc_remark', $project->id) }}";
+
+            try {
+                const response = await fetch(updateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        document_name: docName,
+                        remark: remarkText
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    if (inputEl) {
+                        inputEl.style.borderColor = '#10b981';
+                        setTimeout(() => { inputEl.style.borderColor = '#cccccc'; }, 1500);
+                    }
+                }
+            } catch (e) {
+                console.error("Error saving remark:", e);
+            }
+        }
+        window.saveDocRemark = saveDocRemark;
+
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
+            const docKey = docName.replace(/ /g, '_');
+            const remarkInput = document.getElementById('remark-input-' + docKey);
+            const remarkVal = remarkInput ? remarkInput.value : null;
+
             try {
                 const response = await fetch("{{ route('projects.toggle_file', $project->id) }}", {
                     method: "POST",
@@ -2196,7 +2286,10 @@
                         "X-CSRF-TOKEN": "{{ csrf_token() }}",
                         "Accept": "application/json"
                     },
-                    body: JSON.stringify({ document_name: docName })
+                    body: JSON.stringify({ 
+                        document_name: docName,
+                        remark: remarkVal
+                    })
                 });
                 
                 const data = await response.json();
@@ -2210,10 +2303,19 @@
                         icon.style.color = 'var(--text-muted)';
                     }
 
-                    const cellId = 'ticked-at-' + docName.replace(/ /g, '_');
+                    const cellId = 'ticked-at-' + docKey;
                     const cell = document.getElementById(cellId);
                     if (cell) {
                         cell.innerText = data.ticked_at ? data.ticked_at : '-';
+                    }
+
+                    const remarkCell = document.getElementById('remark-cell-' + docKey);
+                    if (remarkCell) {
+                        if (data.ticked) {
+                            remarkCell.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-main);">${data.remark || '-'}</span>`;
+                        } else {
+                            remarkCell.innerHTML = `<input type="text" id="remark-input-${docKey}" value="${data.remark || ''}" placeholder="Add remark..." onchange="saveDocRemark('${docName}', this.value, this)" style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.35rem 0.65rem; border-radius: 4px; font-size: 0.85rem; width: 100%; max-width: 260px; outline: none;">`;
+                        }
                     }
 
                     if (typeof showToast === 'function') {
@@ -2379,11 +2481,12 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Gender / Age:</td><td>${gender} / ${age} yrs</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father Name:</td><td>${fatherName}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Name:</td><td>${motherName}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>${location}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>${location}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village / Post:</td><td>${village} / ${post}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>${panchayath}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>${districtState}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>${contact}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 1:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 2:</td><td>{!! $formatVal($metaData['contact_number_2'] ?? null) !!}</td></tr>
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Land Owner Details</h4>
@@ -3028,5 +3131,108 @@
         </div>
     </div>
 @endif
+
+<!-- Site Study Modal -->
+<div id="siteStudyModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: var(--bg-card, #ffffff); border-radius: 8px; width: 90%; max-width: 850px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden;">
+        <div style="padding: 1rem 1.5rem; background: #0d9488; color: white; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; font-size: 1.1rem; color: white; display: flex; align-items: center; gap: 0.5rem;"><i class="bx bx-file-find"></i> Site Study Report (1000+ Words Supported)</h4>
+            <button type="button" onclick="closeSiteStudyModal()" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <form id="siteStudyForm" onsubmit="saveSiteStudyReport(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; flex: 1;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">Comprehensive Site Study Report</label>
+                    <span id="siteStudyWordCount" style="font-size: 0.8rem; color: #0d9488; font-weight: 600;">Words: 0</span>
+                </div>
+                <textarea id="siteStudyReportText" 
+                          name="report" 
+                          rows="14" 
+                          oninput="updateSiteStudyWordCount()"
+                          placeholder="Type or paste comprehensive site study report here (supports 1000+ words)..." 
+                          style="width: 100%; border: 1px solid #cccccc; border-radius: 6px; padding: 0.75rem; font-size: 0.9rem; font-family: inherit; color: #000000 !important; background-color: #ffffff !important; outline: none; line-height: 1.5; resize: vertical;">{{ $siteStudyData->report ?? '' }}</textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between;">
+                <div style="flex: 1;">
+                    <label style="font-weight: 600; color: var(--text-main); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Attach Site Study File (Optional)</label>
+                    <input type="file" name="file" id="siteStudyFileInput" style="font-size: 0.85rem;">
+                    @if(!empty($siteStudyData->file_path))
+                        <div style="font-size: 0.8rem; margin-top: 0.35rem;">
+                            <a href="{{ asset($siteStudyData->file_path) }}" target="_blank" style="color: #0d9488; text-decoration: underline;"><i class="bx bx-download"></i> View Attached Site Study File</a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; border-top: 1px solid #eeeeee; padding-top: 1rem;">
+                <button type="button" onclick="closeSiteStudyModal()" style="background: #e5e7eb; color: #374151; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; font-weight: 500; cursor: pointer;">Cancel</button>
+                <button type="submit" id="siteStudySubmitBtn" style="background: #0d9488; color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <i class="bx bx-save"></i> Save Site Study Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openSiteStudyModal() {
+        const modal = document.getElementById('siteStudyModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            updateSiteStudyWordCount();
+        }
+    }
+    function closeSiteStudyModal() {
+        const modal = document.getElementById('siteStudyModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    function updateSiteStudyWordCount() {
+        const text = document.getElementById('siteStudyReportText')?.value || '';
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const countEl = document.getElementById('siteStudyWordCount');
+        if (countEl) {
+            countEl.innerText = `Words: ${words}`;
+        }
+    }
+    async function saveSiteStudyReport(e) {
+        e.preventDefault();
+        const btn = document.getElementById('siteStudySubmitBtn');
+        if (btn) btn.disabled = true;
+        const formData = new FormData(document.getElementById('siteStudyForm'));
+        const csrfToken = "{{ csrf_token() }}";
+        
+        try {
+            const response = await fetch("{{ route('projects.update_site_study', $project->id) }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (typeof showToast === 'function') {
+                    showToast(data.message, 'success');
+                } else {
+                    alert(data.message);
+                }
+                closeSiteStudyModal();
+                const cell = document.getElementById('ticked-at-Site_study') || document.getElementById('ticked-at-Site_study_report');
+                if (cell && data.ticked_at) {
+                    cell.innerText = data.ticked_at;
+                }
+            } else {
+                alert(data.message || 'Failed to save site study report.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error occurred while saving site study report.');
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+</script>
 
 @endsection

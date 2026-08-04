@@ -410,7 +410,7 @@
             <thead>
                 <tr>
                     <th style="width: 60px; text-align: center;">S.No</th>
-                    <th>Project ID</th>
+                    <th>RCFI ID</th>
                     <th>Agency ID</th>
                     <th>Agency</th>
                     <th>Name of Orphan</th>

@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Donors & Partners')
+@section('title', 'Agencies')
 
 @section('content')
 
@@ -24,10 +24,10 @@
     <!-- Donors List Panel -->
     <div class="panel" style="width: 100%;">
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 class="panel-title">Partners & Donors</h2>
+            <h2 class="panel-title">Agencies</h2>
             @if(Auth::user()->hasAdminAccess())
             <button onclick="openModal()" class="btn-custom">
-                <i class="bx bx-plus-circle"></i> Add Partner
+                <i class="bx bx-plus-circle"></i> Add Agency
             </button>
             @endif
         </div>
@@ -36,8 +36,8 @@
             <table class="table-custom">
                 <thead>
                     <tr>
-                        <th>Partner Details</th>
-                        <th>Type of Partner</th>
+                        <th>Agency Details</th>
+                        <th>Type of Agency</th>
                         <th>Type of Fund</th>
                         <th>Contact Details</th>
                         <th style="text-align: center;">Initiated At</th>
@@ -51,7 +51,7 @@
                     @forelse($donors as $donor)
                         <tr>
 
-                            <!-- Partner Details -->
+                            <!-- Agency Details -->
                             <td>
                                 <div style="font-weight: 600; ">{{ $donor->name }}</div>
                                 @if($donor->short_name)
@@ -59,7 +59,7 @@
                                 @endif
                             </td>
 
-                            <!-- Type of Partner -->
+                            <!-- Type of Agency -->
                             <td>{{ str_replace('-', ' ', $donor->type_of_partner) }}</td>
 
                             <!-- Type of Fund -->
@@ -104,7 +104,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ Auth::user()->hasAdminAccess() ? 8 : 7 }}" style="text-align: center; padding: 2rem;">No registered partners/donors found.</td>
+                            <td colspan="{{ Auth::user()->hasAdminAccess() ? 8 : 7 }}" style="text-align: center; padding: 2rem;">No registered agencies found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -112,45 +112,45 @@
         </div>
     </div>
 
-    <!-- Add Partner Modal Dialog -->
+    <!-- Add Agency Modal Dialog -->
     <div id="addPartnerModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto;" onclick="closeModal()">
         <div class="panel" style="width: 100%; max-width: 500px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547;" onclick="event.stopPropagation()">
             
             <button onclick="closeModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
             <div class="panel-header" style="margin-bottom: 1.5rem;">
-                <h2 class="panel-title" style="font-size: 1.25rem;">Add Partner</h2>
+                <h2 class="panel-title" style="font-size: 1.25rem;">Add Agency</h2>
             </div>
 
             <form action="{{ route('donors.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                <!-- Partner Name -->
+                <!-- Agency Name -->
                 <div style="margin-bottom: 1rem;">
-                    <label class="form-label" for="name">Partner Name</label>
+                    <label class="form-label" for="name">Agency Name</label>
                     <input type="text" class="form-control-dark" id="name" name="name" placeholder="Enter partner name" value="{{ old('name') }}" required>
                 </div>
 
-                <!-- Short Name of Partner -->
+                <!-- Short Name of Agency -->
                 <div style="margin-bottom: 1rem;">
-                    <label class="form-label" for="short_name">Short Name of Partner</label>
+                    <label class="form-label" for="short_name">Short Name of Agency</label>
                     <input type="text" class="form-control-dark" id="short_name" name="short_name" placeholder="Enter short name" value="{{ old('short_name') }}">
                 </div>
 
-                <!-- Partner Website -->
+                <!-- Agency Website -->
                 <div style="margin-bottom: 1rem;">
-                    <label class="form-label" for="website">Partner Website</label>
+                    <label class="form-label" for="website">Agency Website</label>
                     <input type="url" class="form-control-dark" id="website" name="website" placeholder="https://example.com" value="{{ old('website') }}">
                 </div>
 
-                <!-- Split Row: Type of Partner & Fund -->
+                <!-- Split Row: Type of Agency & Fund -->
                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                     <div style="flex: 1;">
-                        <label class="form-label" for="type_of_partner">Type of Partner</label>
+                        <label class="form-label" for="type_of_partner">Type of Agency</label>
                         <select class="form-select-dark" id="type_of_partner" name="type_of_partner" required>
                             <option value="">Select</option>
-                            <option value="Finacial-Partner" {{ old('type_of_partner') == 'Finacial-Partner' ? 'selected' : '' }}>Finacial Partner </option>
-                            <option value="Non-Financial-Partner" {{ old('type_of_partner') == 'Non-Financial-Partner' ? 'selected' : '' }}>Non-Financial Partner</option>
+                            <option value="Financial-Agency" {{ old('type_of_partner') == 'Financial-Agency' ? 'selected' : '' }}>Financial Agency </option>
+                            <option value="Non-Financial-Agency" {{ old('type_of_partner') == 'Non-Financial-Agency' ? 'selected' : '' }}>Non-Financial Agency</option>
                         </select>
                     </div>  
                     <div style="flex: 1;">
@@ -191,58 +191,58 @@
 
                 <!-- Image Details / Logo Upload -->
                 <div style="margin-bottom: 1.5rem;">
-                    <label class="form-label" for="image">Partner Logo / Image</label>
+                    <label class="form-label" for="image">Agency Logo / Image</label>
                     <input type="file" class="form-control-dark" id="image" name="image" accept="image/*">
                     <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.25rem;">Supported formats: JPEG, PNG, JPG. Max 2MB.</span>
                 </div>
 
                 <!-- Submit Button -->
                 <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
-                    Add Partner
+                    Add Agency
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Edit Partner Modal Dialog -->
+    <!-- Edit Agency Modal Dialog -->
     <div id="editPartnerModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto;" onclick="closeEditModal()">
         <div class="panel" style="width: 100%; max-width: 500px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547;" onclick="event.stopPropagation()">
             
             <button onclick="closeEditModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
             <div class="panel-header" style="margin-bottom: 1.5rem;">
-                <h2 class="panel-title" style="font-size: 1.25rem;">Edit Partner Details</h2>
+                <h2 class="panel-title" style="font-size: 1.25rem;">Edit Agency Details</h2>
             </div>
 
             <form id="editPartnerForm" action="" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
-                <!-- Partner Name -->
+                <!-- Agency Name -->
                 <div style="margin-bottom: 1rem;">
-                    <label class="form-label" for="edit_name">Partner Name</label>
+                    <label class="form-label" for="edit_name">Agency Name</label>
                     <input type="text" class="form-control-dark" id="edit_name" name="name" required>
                 </div>
 
-                <!-- Short Name of Partner -->
+                <!-- Short Name of Agency -->
                 <div style="margin-bottom: 1rem;">
-                    <label class="form-label" for="edit_short_name">Short Name of Partner</label>
+                    <label class="form-label" for="edit_short_name">Short Name of Agency</label>
                     <input type="text" class="form-control-dark" id="edit_short_name" name="short_name">
                 </div>
 
-                <!-- Partner Website -->
+                <!-- Agency Website -->
                 <div style="margin-bottom: 1rem;">
-                    <label class="form-label" for="edit_website">Partner Website</label>
+                    <label class="form-label" for="edit_website">Agency Website</label>
                     <input type="url" class="form-control-dark" id="edit_website" name="website">
                 </div>
 
-                <!-- Split Row: Type of Partner & Fund -->
+                <!-- Split Row: Type of Agency & Fund -->
                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                     <div style="flex: 1;">
-                        <label class="form-label" for="edit_type_of_partner">Type of Partner</label>
+                        <label class="form-label" for="edit_type_of_partner">Type of Agency</label>
                         <select class="form-select-dark" id="edit_type_of_partner" name="type_of_partner" required>
-                            <option value="Finacial-Partner">Finacial Partner</option>
-                            <option value="Non-Financial-Partner">Non-Financial Partner</option>
+                            <option value="Financial-Agency">Financial Agency</option>
+                            <option value="Non-Financial-Agency">Non-Financial Agency</option>
                         </select>
                     </div>
                     <div style="flex: 1;">
@@ -287,7 +287,7 @@
 
                 <!-- Image Details / Logo Upload -->
                 <div style="margin-bottom: 1.5rem;">
-                    <label class="form-label" for="edit_image">Replace Partner Logo / Image</label>
+                    <label class="form-label" for="edit_image">Replace Agency Logo / Image</label>
                     <input type="file" class="form-control-dark" id="edit_image" name="image" accept="image/*">
                     <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.25rem;">Leave blank to keep current logo.</span>
                 </div>
@@ -302,7 +302,7 @@
 
     <!-- Modal Scripts -->
     <script>
-        // Add Partner Modal Toggle
+        // Add Agency Modal Toggle
         function openModal() {
             document.getElementById('addPartnerModal').style.display = 'flex';
         }
@@ -315,7 +315,7 @@
         }
         window.closeModal = closeModal;
 
-        // Edit Partner Modal Toggle
+        // Edit Agency Modal Toggle
         function openEditModal(donor) {
             const form = document.getElementById('editPartnerForm');
             form.action = '/admin/donors/' + donor.id;

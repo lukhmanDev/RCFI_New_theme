@@ -144,7 +144,7 @@
     <div class="coo-stats-grid">
         <div class="coo-stat-card">
             <div>
-                <h3>Registered Partners</h3>
+                <h3>Registered Agencies</h3>
                 <p class="coo-stat-value">{{ $donorsCount }}</p>
                 <div class="coo-stat-trend up"><i class="bx bx-trending-up"></i> Active network</div>
             </div>

@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', $categoryName . ' Project List')
 
@@ -274,38 +274,38 @@
         <div style="overflow-x: auto;">
             <table class="table-custom" id="projectsTable">
                 <thead>
-                    <tr>
-                        <th style="width: 60px; text-align: center;">S.No</th>
-                        <th>Project ID</th>
-                        <th>Project Name</th>
-                        <th>Sponsor</th>
-                        <th class="col-agency">Agency Project No</th>
-                        <th class="col-donor">Donor Name</th>
-                        <th class="col-manager">Project Manager</th>
-                        <th class="col-budget" style="text-align: right;">Available Budget</th>
-                        <th class="col-remarks">Remarks</th>
-                        <th style="text-align: center; width: 180px;">Action</th>
-                    </tr>
-                </thead>
+                <tr>
+                    <th style="width: 60px; text-align: center;">S.NO</th>
+                    <th>RCFI ID</th>
+                    <th class="col-agency">AGENCY NO</th>
+                    <th class="col-agency-name">AGENCY NAME</th>
+                    <th class="col-activity">ACTIVITY</th>
+                    <th class="col-place">PLACE</th>
+                    <th class="col-district">DISTRICT</th>
+                    <th class="col-manager">PROJECT MANAGER</th>
+                    <th class="col-allocated" style="text-align: right;">TOTAL ALLOCATED</th>
+                    <th class="col-balance" style="text-align: right;">TOTAL BALANCE</th>
+                    <th style="text-align: center; width: 180px;">ACTION</th>
+                </tr>
+            </thead>
                 <tbody>
                     @forelse($projects as $index => $project)
                         <tr>
                             <td style="text-align: center;">{{ $index + 1 }}</td>
-                            <td style="font-weight: 600; color: var(--accent-cyan);">
-                                {{ $project->project_id }}
-                            </td>
-                            <td>{{ $project->project_name ?? 'N/A' }}</td>
-                            <td>{{ $project->sponsor ?? 'N/A' }}</td>
-                            <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
-                            <td class="col-donor">{{ $project->donor ? $project->donor->name : 'N/A' }}</td>
-                            <td class="col-manager">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</td>
-                            <td class="col-budget" style="text-align: right;">₹{{ number_format($project->available_budget, 2) }}</td>
-                            <td class="col-remarks" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                {{ $project->remarks ?? 'N/A' }}
-                            </td>
-                            <td style="text-align: center; white-space: nowrap;">
+                        <td style="font-weight: 600; color: var(--accent-cyan);">
+                            {{ $project->project_id }}
+                        </td>
+                        <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
+                        <td class="col-agency-name">{{ $project->sponsor ?? ($project->donor ? $project->donor->name : ($project->agency_name ?? 'N/A')) }}</td>
+                        <td class="col-activity">{{ $project->activity ?? $project->project_name ?? $project->type_of_project ?? 'N/A' }}</td>
+                        <td class="col-place">{{ $project->place ?? $project->location ?? ($project->application ? ($project->application->place ?? $project->application->location ?? 'N/A') : 'N/A') }}</td>
+                        <td class="col-district">{{ $project->district ?? ($project->application ? ($project->application->district ?? ($project->application->meta['district'] ?? ($project->application->meta['locality_district'] ?? 'N/A'))) : 'N/A') }}</td>
+                        <td class="col-manager">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</td>
+                        <td class="col-allocated" style="text-align: right;">₹{{ number_format($project->available_budget ?? 0, 2) }}</td>
+                        <td class="col-balance" style="text-align: right;">₹{{ number_format($project->available_budget ?? 0, 2) }}</td>
+                        <td style="text-align: center; white-space: nowrap;">
                                 <!-- Details Button -->
-                                <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nName: {{ $project->project_name ?? 'N/A' }}\nSponsor: {{ $project->sponsor ?? 'N/A' }}\nSpec: {{ $project->project_spec ?? 'N/A' }}\nAgency No: {{ $project->agency_project_no }}\nDonor: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
+                                <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nName: {{ $project->project_name ?? 'N/A' }}\nSponsor: {{ $project->sponsor ?? 'N/A' }}\nSpec: {{ $project->project_spec ?? 'N/A' }}\nAgency No: {{ $project->agency_project_no }}\nAgency: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
                                     <i class="bx bx-dots-horizontal-rounded"></i>
                                 </button>
 
@@ -370,11 +370,11 @@
                         <input type="text" name="agency_project_no" id="agency_project_no" required placeholder="Enter agency project number">
                     </div>
 
-                    <!-- Donor Name -->
+                    <!-- Agency Name -->
                     <div class="form-group-custom">
-                        <label for="donor_id">Donor Name</label>
+                        <label for="donor_id">Agency Name</label>
                         <select name="donor_id" id="donor_id" required>
-                            <option value="">Select a donor</option>
+                            <option value="">Select an agency</option>
                             @foreach($donors as $donor)
                                 <option value="{{ $donor->id }}">{{ $donor->name }}</option>
                             @endforeach
@@ -465,11 +465,11 @@
                         <input type="text" name="agency_project_no" id="edit_agency_project_no" required>
                     </div>
 
-                    <!-- Donor Name -->
+                    <!-- Agency Name -->
                     <div class="form-group-custom">
-                        <label for="edit_donor_id">Donor Name</label>
+                        <label for="edit_donor_id">Agency Name</label>
                         <select name="donor_id" id="edit_donor_id" required>
-                            <option value="">Select a donor</option>
+                            <option value="">Select an agency</option>
                             @foreach($donors as $donor)
                                 <option value="{{ $donor->id }}">{{ $donor->name }}</option>
                             @endforeach

@@ -1,4 +1,4 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Orphan Care Applications')
 
@@ -99,7 +99,7 @@
                         <th>Age</th>
                         <th>Place</th>
                         <th>District</th>
-                        <th>State</th>
+                        <th>Project Type</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
@@ -159,8 +159,8 @@
                             <!-- District -->
                             <td>{{ $appItem->district ?? $meta['district'] ?? 'N/A' }}</td>
 
-                            <!-- State -->
-                            <td>{{ $appItem->state ?? $meta['state'] ?? 'N/A' }}</td>
+                            <!-- Project Type -->
+                            <td>{{ !empty($meta['project_type']) ? ucwords($meta['project_type']) : (!empty($appItem->project_type) ? ucwords($appItem->project_type) : 'Orphan Care') }}</td>
 
                             <!-- Status -->
                             <td style="text-align: center;">
@@ -588,7 +588,7 @@
                         <div>
                             <label class="form-label" for="agency_name">Agency Name (Donor)</label>
                             <select class="form-select-dark" id="agency_name" name="meta[agency_name]" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
-                                <option value="">-- Select Agency / Donor --</option>
+                                <option value="">-- Select Agency --</option>
                                 @php
                                     $donorsList = $donors ?? \App\Models\Donor::orderBy('name', 'asc')->get();
                                 @endphp
@@ -613,28 +613,28 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommendation_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommender_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
+                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
                                 <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
                                 <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
                                 <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommendation_organization_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
+                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommender_org_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommendation_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommender_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommendation_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommender_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
@@ -979,7 +979,7 @@
                         <div>
                             <label class="form-label" for="edit_agency_name">Agency Name (Donor)</label>
                             <select class="form-select-dark" id="edit_agency_name" name="meta[agency_name]" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
-                                <option value="">-- Select Agency / Donor --</option>
+                                <option value="">-- Select Agency --</option>
                                 @php
                                     $donorsList = $donors ?? \App\Models\Donor::orderBy('name', 'asc')->get();
                                 @endphp
@@ -1004,28 +1004,28 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommendation_name]" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommender_name]" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
+                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ">KMJ</option>
                                 <option value="SYS">SYS</option>
                                 <option value="SSF">SSF</option>
                                 <option value="Others">Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommendation_organization_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommender_org_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommendation_phone]" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommender_phone]" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommendation_position]" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommender_position]" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
@@ -1116,110 +1116,62 @@
             document.getElementById('edit_details').value = appItem.details || '';
 
             // Meta fields mapping
-            const meta = appItem.meta || {};
-            const photoVal = meta.student_photo || '';
-            const editImg = document.getElementById('edit_photo_img');
-            const editIcon = document.getElementById('edit_photo_icon');
-            const editText = document.getElementById('edit_photo_text');
-            const editHidden = document.getElementById('edit_photo_hidden');
-
-            if (photoVal) {
-                if (editImg) { editImg.src = photoVal; editImg.style.display = 'block'; }
-                if (editIcon) editIcon.style.display = 'none';
-                if (editText) editText.style.display = 'none';
-                if (editHidden) editHidden.value = photoVal;
-                const removeBtn = document.getElementById('edit_photo_remove_btn');
-                const trashOverlay = document.getElementById('edit_photo_trash_overlay');
-                if (removeBtn) removeBtn.style.display = 'inline-flex';
-                if (trashOverlay) trashOverlay.style.display = 'flex';
-            } else {
-                if (editImg) { editImg.src = ''; editImg.style.display = 'none'; }
-                if (editIcon) editIcon.style.display = 'block';
-                if (editText) editText.style.display = 'block';
-                if (editHidden) editHidden.value = '';
-                const removeBtn = document.getElementById('edit_photo_remove_btn');
-                const trashOverlay = document.getElementById('edit_photo_trash_overlay');
-                if (removeBtn) removeBtn.style.display = 'none';
-                if (trashOverlay) trashOverlay.style.display = 'none';
-            }
-
-            document.getElementById('edit_father_name').value = meta.father_name || '';
-            document.getElementById('edit_grandfather_name').value = meta.grandfather_name || '';
-            document.getElementById('edit_mother_name').value = meta.mother_name || '';
-            document.getElementById('edit_mothers_father_name').value = meta.mothers_father_name || '';
-            if (meta.gender === 'Female' || meta.gender === 'female') {
-                document.getElementById('edit_gender_female').checked = true;
-            } else {
-                document.getElementById('edit_gender_male').checked = true;
-            }
-            document.getElementById('edit_dob').value = meta.dob || '';
-            document.getElementById('edit_age').value = meta.age || '';
-            document.getElementById('edit_aadhar_number').value = meta.aadhar_number || '';
-            document.getElementById('edit_guardian_name').value = meta.guardian_name || '';
-            document.getElementById('edit_guardian_relation').value = meta.guardian_relation || '';
-
-            document.getElementById('edit_father_death_date').value = meta.father_death_date || '';
-            document.getElementById('edit_father_death_cause').value = meta.father_death_cause || '';
+                        const meta = appItem.meta || {};
             
-            if (meta.mother_alive_status === 'No' || meta.mother_alive_status === 'no' || meta.mother_alive_status === 'Not' || meta.mother_alive_status === 'not') {
-                document.getElementById('edit_mother_alive_no').checked = true;
-            } else {
-                document.getElementById('edit_mother_alive_yes').checked = true;
-            }
-            toggleMotherDeathFieldsEdit();
+            const getVal = (primary, alts = []) => {
+                if (meta[primary] !== undefined && meta[primary] !== null && meta[primary] !== '') return meta[primary];
+                if (appItem[primary] !== undefined && appItem[primary] !== null && appItem[primary] !== '') return appItem[primary];
+                for (let a of alts) {
+                    if (meta[a] !== undefined && meta[a] !== null && meta[a] !== '') return meta[a];
+                    if (appItem[a] !== undefined && appItem[a] !== null && appItem[a] !== '') return appItem[a];
+                }
+                return '';
+            };
 
-            document.getElementById('edit_mother_death_date').value = meta.mother_death_date || '';
-            document.getElementById('edit_mother_death_cause').value = meta.mother_death_cause || '';
-            
-            document.getElementById('edit_mother_remarried_status').value = meta.mother_remarried_status || '';
-            document.getElementById('edit_siblings_male').value = meta.siblings_male || '';
-            document.getElementById('edit_siblings_female').value = meta.siblings_female || '';
-            document.getElementById('edit_siblings_total').value = meta.siblings_total || '';
-            document.getElementById('edit_current_beneficiaries').value = meta.current_beneficiaries || '';
-            document.getElementById('edit_monthly_income').value = meta.monthly_income || '';
-            document.getElementById('edit_monthly_expense').value = meta.monthly_expense || '';
+            const setField = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
 
-            // Radio buttons mapping
-            if (meta.house_type === 'Own House') {
-                document.getElementById('edit_house_own').checked = true;
-            } else if (meta.house_type === 'Family House') {
-                document.getElementById('edit_house_family').checked = true;
-            } else if (meta.house_type === 'Rental') {
-                document.getElementById('edit_house_rental').checked = true;
-            } else if (meta.house_type === 'Flat') {
-                document.getElementById('edit_house_flat').checked = true;
-            } else if (meta.house_type === 'Others') {
-                document.getElementById('edit_house_others').checked = true;
-            }
+            setField('edit_house_name', getVal('house_name'));
+            setField('edit_location', getVal('location', ['place']));
+            setField('edit_place', getVal('place', ['location']));
+            setField('edit_village', getVal('village'));
+            setField('edit_post', getVal('post', ['post_office']));
+            setField('edit_post_office', getVal('post_office', ['post']));
+            setField('edit_panchayath', getVal('panchayath', ['panchayat']));
+            setField('edit_panchayat', getVal('panchayat', ['panchayath']));
+            setField('edit_district', getVal('district'));
+            setField('edit_state', getVal('state'));
+            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code']));
+            setField('edit_pin', getVal('pin', ['pin_code']));
 
-            document.getElementById('edit_school_name').value = meta.school_name || '';
-            document.getElementById('edit_school_class').value = meta.school_class || '';
-            document.getElementById('edit_madrassa_name').value = meta.madrassa_name || '';
-            document.getElementById('edit_madrassa_class').value = meta.madrassa_class || '';
-            document.getElementById('edit_not_studying_reason').value = meta.not_studying_reason || '';
-            document.getElementById('edit_health_status').value = meta.health_status || '';
-            document.getElementById('edit_sponsorship_details').value = meta.sponsorship_details || '';
+            setField('edit_committee_name', getVal('committee_name'));
+            setField('edit_reg_number', getVal('reg_number'));
+            setField('edit_year', getVal('year'));
+            setField('edit_permitted_type', getVal('permitted_type'));
+            setField('edit_area', getVal('area'));
+            setField('edit_details', appItem.details || appItem.additional_note || meta.details || meta.additional_note || '');
 
-            const addr = appItem.address || {};
-            const houseName = meta.house_name || addr.house_name || appItem.house_name || '';
-            const placeName = meta.place || addr.place || appItem.place || '';
-            const postOffice = meta.post_office || addr.post_office || appItem.post_office || '';
-            const villageName = meta.village || addr.village || appItem.village || '';
-            const panchayatName = meta.panchayat || addr.panchayat || appItem.panchayat || '';
-            const districtName = meta.district || addr.district || appItem.district || '';
-            const stateName = meta.state || addr.state || appItem.state || '';
-            const pinCode = meta.pin_code || addr.pin_code || appItem.pin_code || '';
-            const mob1 = meta.mobile_1 || meta.mobile || addr.contact_number_1 || addr.mobile_1 || appItem.mobile_1 || '';
-            const mob2 = meta.mobile_2 || addr.contact_number_2 || addr.mobile_2 || appItem.mobile_2 || '';
-            const whatsappNum = meta.whatsapp_number || addr.whatsapp_number || appItem.whatsapp_number || '';
+            const recName = getVal('recommendation_name', ['recommender_name']);
+            setField('edit_recommendation_name', recName);
+            setField('edit_recommender_name', recName);
 
-            if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = houseName; }
-            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = placeName; }
-            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = postOffice; }
-            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = villageName; }
-            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = panchayatName; }
-            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = districtName; }
-            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = stateName; }
+            const recOrg = getVal('recommendation_organization', ['recommender_org']);
+            setField('edit_recommendation_organization', recOrg);
+            setField('edit_recommender_org', recOrg);
+
+            const recOrgOther = getVal('recommendation_organization_other', ['recommender_org_other']);
+            setField('edit_recommendation_organization_other', recOrgOther);
+
+            const recPhone = getVal('recommendation_phone', ['recommender_phone']);
+            setField('edit_recommendation_phone', recPhone);
+            setField('edit_recommender_phone', recPhone);
+
+            const recPos = getVal('recommendation_position', ['recommender_position']);
+            setField('edit_recommendation_position', recPos);
+            setField('edit_recommender_position', recPos);
+
             if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = pinCode; }
             if (document.getElementById('edit_mobile_1')) { document.getElementById('edit_mobile_1').value = mob1; }
             if (document.getElementById('edit_mobile_2')) { document.getElementById('edit_mobile_2').value = mob2; }

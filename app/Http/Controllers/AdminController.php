@@ -465,7 +465,7 @@ class AdminController extends Controller
                     $subQuery->orWhere('mahallu_name', 'LIKE', "%{$q}%");
                 }
 
-                foreach (['place', 'village', 'panchayat', 'district', 'state', 'post_office', 'house_name', 'locality_location', 'locality_village', 'locality_district', 'locality_state'] as $col) {
+                foreach (['place', 'village', 'panchayat', 'district', 'state', 'post_office', 'house_name', 'locality_place', 'locality_village', 'locality_district', 'locality_state'] as $col) {
                     if (\Illuminate\Support\Facades\Schema::hasColumn($table, $col)) {
                         $subQuery->orWhere($col, 'LIKE', "%{$q}%");
                     }
@@ -495,7 +495,7 @@ class AdminController extends Controller
                 $addr = method_exists($app, 'address') ? $app->address : null;
                 $phone = $addr->contact_number_1 ?? $addr->contact_number_2 ?? $app->contact_number_1 ?? 'N/A';
                 $locParts = array_filter([
-                    $addr->place ?? $app->place ?? $app->locality_location ?? null,
+                    $addr->place ?? $app->place ?? $app->locality_place ?? null,
                     $addr->village ?? $app->village ?? $app->locality_village ?? null,
                     $addr->district ?? $app->district ?? $app->locality_district ?? null,
                     $addr->state ?? $app->state ?? $app->locality_state ?? null

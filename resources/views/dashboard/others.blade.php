@@ -14,10 +14,10 @@
 
     <!-- Stats overview grid -->
     <div class="stats-grid" style="margin-bottom: 2.5rem;">
-        <!-- Registered Donors / Partners Card -->
+        <!-- Registered Agencies Card -->
         <div class="stat-card">
             <div class="stat-details">
-                <h3>Registered Partners</h3>
+                <h3>Registered Agencies</h3>
                 <p>{{ $donorsCount }}</p>
             </div>
             <div class="stat-icon purple">

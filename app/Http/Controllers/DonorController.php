@@ -43,7 +43,7 @@ class DonorController extends Controller
 
         Donor::create($data);
 
-        return redirect()->route('donors.index')->with('success', 'Donor / Partner registered successfully!');
+        return redirect()->route('donors.index')->with('success', 'Agency registered successfully!');
     }
 
     public function update(Request $request, $id)
@@ -82,7 +82,7 @@ class DonorController extends Controller
 
         $donor->update($data);
 
-        return redirect()->route('donors.index')->with('success', 'Donor / Partner details updated successfully!');
+        return redirect()->route('donors.index')->with('success', 'Agency details updated successfully!');
     }
 
     public function destroy($id)
@@ -100,6 +100,6 @@ class DonorController extends Controller
 
         $donor->delete();
 
-        return redirect()->route('donors.index')->with('success', 'Donor / Partner details deleted successfully.');
+        return redirect()->route('donors.index')->with('success', 'Agency details deleted successfully.');
     }
 }

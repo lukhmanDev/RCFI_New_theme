@@ -1,3 +1,17 @@
+@php
+    $isApprovedApps = request()->is('admin/applications/approved*') || request()->routeIs('applications.approved.*');
+    $isApplications = (request()->is('admin/applications*') || request()->routeIs('applications.*')) && !$isApprovedApps;
+    $isProjects = request()->is('admin/projects*') || request()->routeIs('projects.*');
+    $isAgencies = request()->is('admin/donors*') || request()->routeIs('donors.*');
+    $isContractors = request()->is('admin/contractors*') || request()->routeIs('contractors.*');
+    $isClusters = request()->is('admin/clusters*') || request()->routeIs('clusters.*');
+    $isThemes = request()->is('admin/themes*') || request()->is('admin/subthemes*') || request()->routeIs('themes.*') || request()->routeIs('subthemes.*');
+    $isStaffs = request()->is('admin/users*') || request()->routeIs('users.*') || Route::currentRouteName() === 'users';
+    $isSocialAidFundReport = request()->is('admin/reports/social-aid-funds*') || request()->routeIs('admin.reports.social_aid_funds');
+    $isProjectReport = request()->is('admin/reports/projects*') || request()->is('admin/reports/single-project*') || request()->routeIs('admin.reports.projects') || request()->routeIs('admin.reports.single_project');
+    $isDashboard = request()->is('dashboard') || request()->is('admin/dashboard') || Route::currentRouteName() === 'admin.home';
+@endphp
+
 <!-- Sidebar Drawer -->
 <nav class="sidebar" id="sidebar">
     <div class="sidebar-brand">
@@ -11,14 +25,14 @@
             <span>Main Menu</span>
         </li>
         <li>
-            <a href="{{ route('admin.home') }}" class="{{ Route::currentRouteName() === 'admin.home' ? 'active' : '' }}">
+            <a href="{{ route('admin.home') }}" class="{{ $isDashboard ? 'active' : '' }}">
                 <i class="bx bxs-grid-alt"></i>
                 <span>Dashboard</span>
             </a>
         </li>
 
         <li>
-            <a href="{{ route('applications.index') }}" class="{{ (request()->routeIs('applications.*') && !request()->routeIs('applications.approved.*')) ? 'active' : '' }}">
+            <a href="{{ route('applications.index') }}" class="{{ $isApplications ? 'active' : '' }}">
                 <i class="bx bxs-file-doc"></i>
                 <span>Applications</span>
             </a>
@@ -26,14 +40,14 @@
 
         @if(!Auth::user() || !Auth::user()->isReception())
         <li>
-            <a href="{{ route('applications.approved.index') }}" class="approved-link {{ request()->routeIs('applications.approved.*') ? 'active' : '' }}">
+            <a href="{{ route('applications.approved.index') }}" class="approved-link {{ $isApprovedApps ? 'active' : '' }}">
                 <i class="bx bxs-check-circle icon-approved"></i>
                 <span>Approved Applications</span>
             </a>
         </li>
 
         <li>
-            <a href="{{ route('projects.index') }}" class="{{ request()->routeIs('projects.*') ? 'active' : '' }}">
+            <a href="{{ route('projects.index') }}" class="{{ $isProjects ? 'active' : '' }}">
                 <i class="bx bxs-briefcase"></i>
                 <span>Projects</span>
             </a>
@@ -44,44 +58,44 @@
         </li>
         @if(Auth::user() && Auth::user()->isSuperAdmin())
         <li>
-            <a href="{{ route('users') }}" class="{{ Route::currentRouteName() === 'users' ? 'active' : '' }}">
+            <a href="{{ route('users') }}" class="{{ $isStaffs ? 'active' : '' }}">
                 <i class="bx bxs-id-card"></i>
                 <span>Staffs</span>
             </a>
         </li>
         <li>
-            <a href="{{ route('admin.reports.social_aid_funds') }}" class="{{ request()->routeIs('admin.reports.social_aid_funds') ? 'active' : '' }}">
+            <a href="{{ route('admin.reports.social_aid_funds') }}" class="{{ $isSocialAidFundReport ? 'active' : '' }}">
                 <i class="bx bxs-report"></i>
                 <span>Social Aid Fund Report</span>
             </a>
         </li>
         <li>
-            <a href="{{ route('admin.reports.projects') }}" class="{{ request()->routeIs('admin.reports.projects') ? 'active' : '' }}">
+            <a href="{{ route('admin.reports.projects') }}" class="{{ $isProjectReport ? 'active' : '' }}">
                 <i class="bx bxs-briefcase-alt-2"></i>
                 <span>Project Detail Report</span>
             </a>
         </li>
         @endif
         <li>
-            <a href="{{ route('donors.index') }}" class="{{ request()->routeIs('donors.*') ? 'active' : '' }}">
+            <a href="{{ route('donors.index') }}" class="{{ $isAgencies ? 'active' : '' }}">
                 <i class="bx bxs-heart"></i>
-                <span>Donors</span>
+                <span>Agencies</span>
             </a>
         </li>
         <li>
-            <a href="{{ route('contractors.index') }}" class="{{ request()->routeIs('contractors.*') ? 'active' : '' }}">
+            <a href="{{ route('contractors.index') }}" class="{{ $isContractors ? 'active' : '' }}">
                 <i class="bx bxs-hard-hat"></i>
                 <span>Contractors</span>
             </a>
         </li>
         <li>
-            <a href="{{ route('clusters.index') }}" class="{{ request()->routeIs('clusters.*') ? 'active' : '' }}">
+            <a href="{{ route('clusters.index') }}" class="{{ $isClusters ? 'active' : '' }}">
                 <i class="bx bxs-group"></i>
                 <span>Clusters</span>
             </a>
         </li>
         <li>
-            <a href="{{ route('themes.index') }}" class="{{ request()->routeIs('themes.*') ? 'active' : '' }}">
+            <a href="{{ route('themes.index') }}" class="{{ $isThemes ? 'active' : '' }}">
                 <i class="bx bxs-category"></i>
                 <span>Themes & Subthemes</span>
             </a>

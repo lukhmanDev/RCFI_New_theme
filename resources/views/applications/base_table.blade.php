@@ -3,8 +3,7 @@
     <a href="{{ route('applications.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
         <i class="bx bx-left-arrow-alt"></i> Back to Dashboard
     </a>
-    <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600;">{{ $categoryName }} Registry</h3>
-</div>
+    </div>
 
 <!-- Success & Error Alert Panels -->
 @if (session('success'))

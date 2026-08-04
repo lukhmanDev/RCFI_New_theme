@@ -11,6 +11,7 @@ use App\Models\ProjectStatus;
 use App\Models\ProjectCommunityContribution;
 use App\Models\ProjectCompletionDetail;
 use App\Models\ProjectInspection;
+use App\Models\ProjectSiteStudy;
 use Illuminate\Support\Facades\DB;
 
 trait HasProjectColumns
@@ -63,6 +64,11 @@ trait HasProjectColumns
     public function projectInspections()
     {
         return $this->morphMany(ProjectInspection::class, 'project');
+    }
+
+    public function projectSiteStudy()
+    {
+        return $this->morphOne(ProjectSiteStudy::class, 'project');
     }
 
     // Accessor for $project->files

@@ -1,4 +1,4 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Drinking Water - Individual Level Applications')
 
@@ -9,8 +9,7 @@
         <a href="{{ route('applications.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
             <i class="bx bx-left-arrow-alt"></i> Back to Dashboard
         </a>
-        <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600;">Drinking Water - Individual Level Registry</h3>
-    </div>
+            </div>
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
@@ -95,8 +94,8 @@
                         <th>Application ID</th>
                         <th>Name of Applicant</th>
                         <th>Place</th>
-                        <th>Village</th>
-                        <th>Panchayath</th>
+                        <th>District</th>
+                        <th>Project Type</th>
                         <th>Well Type</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
@@ -113,6 +112,8 @@
                                 $appId,
                                 $appItem->applicant_name ?? '',
                                 $appItem->place ?? '',
+                                $appItem->district ?? $meta['district'] ?? '',
+                                $meta['project_type'] ?? $meta['well_type'] ?? $appItem->project_type ?? '',
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
@@ -140,11 +141,11 @@
                             <!-- Place -->
                             <td>{{ $appItem->place ?? 'N/A' }}</td>
 
-                            <!-- Village -->
-                            <td>{{ $appItem->village ?? $appItem->town ?? 'N/A' }}</td>
+                            <!-- District -->
+                            <td>{{ $appItem->district ?? $meta['district'] ?? $meta['locality_district'] ?? 'N/A' }}</td>
 
-                            <!-- Panchayath -->
-                            <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? 'N/A' }}</td>
+                            <!-- Project Type -->
+                            <td>{{ !empty($meta['project_type']) ? ucwords($meta['project_type']) : (!empty($meta['well_type']) ? ucwords($meta['well_type']) : (!empty($appItem->project_type) ? ucwords($appItem->project_type) : 'N/A')) }}</td>
 
                             <!-- Well Type -->
                             <td>{{ $meta['well_type'] ?? 'N/A' }}</td>
@@ -187,7 +188,7 @@
                                     @endif
                                 @endif
 
-                                @if($appItem->status !== 'Approved' && (Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess())))
+                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
                                     <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
                                         @csrf
                                         @method('DELETE')
@@ -485,28 +486,28 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommendation_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommender_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
+                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
                                 <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
                                 <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
                                 <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommendation_organization_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
+                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommender_org_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommendation_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommender_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommendation_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommender_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
@@ -757,28 +758,28 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommendation_name]" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommender_name]" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
+                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ">KMJ</option>
                                 <option value="SYS">SYS</option>
                                 <option value="SSF">SSF</option>
                                 <option value="Others">Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommendation_organization_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommender_org_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommendation_phone]" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommender_phone]" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommendation_position]" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommender_position]" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
@@ -856,14 +857,62 @@
             document.getElementById('edit_details').value = appItem.details || '';
 
             // Meta fields mapping
-            const meta = appItem.meta || {};
-                        if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = appItem.house_name || ''; }
-            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = appItem.place || ''; }
-            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = appItem.post_office || ''; }
-            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = appItem.village || ''; }
-            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = appItem.panchayat || ''; }
-            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = appItem.district || ''; }
-            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = appItem.state || ''; }
+                        const meta = appItem.meta || {};
+            
+            const getVal = (primary, alts = []) => {
+                if (meta[primary] !== undefined && meta[primary] !== null && meta[primary] !== '') return meta[primary];
+                if (appItem[primary] !== undefined && appItem[primary] !== null && appItem[primary] !== '') return appItem[primary];
+                for (let a of alts) {
+                    if (meta[a] !== undefined && meta[a] !== null && meta[a] !== '') return meta[a];
+                    if (appItem[a] !== undefined && appItem[a] !== null && appItem[a] !== '') return appItem[a];
+                }
+                return '';
+            };
+
+            const setField = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
+
+            setField('edit_house_name', getVal('house_name'));
+            setField('edit_location', getVal('location', ['place']));
+            setField('edit_place', getVal('place', ['location']));
+            setField('edit_village', getVal('village'));
+            setField('edit_post', getVal('post', ['post_office']));
+            setField('edit_post_office', getVal('post_office', ['post']));
+            setField('edit_panchayath', getVal('panchayath', ['panchayat']));
+            setField('edit_panchayat', getVal('panchayat', ['panchayath']));
+            setField('edit_district', getVal('district'));
+            setField('edit_state', getVal('state'));
+            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code']));
+            setField('edit_pin', getVal('pin', ['pin_code']));
+
+            setField('edit_committee_name', getVal('committee_name'));
+            setField('edit_reg_number', getVal('reg_number'));
+            setField('edit_year', getVal('year'));
+            setField('edit_permitted_type', getVal('permitted_type'));
+            setField('edit_area', getVal('area'));
+            setField('edit_details', appItem.details || appItem.additional_note || meta.details || meta.additional_note || '');
+
+            const recName = getVal('recommendation_name', ['recommender_name']);
+            setField('edit_recommendation_name', recName);
+            setField('edit_recommender_name', recName);
+
+            const recOrg = getVal('recommendation_organization', ['recommender_org']);
+            setField('edit_recommendation_organization', recOrg);
+            setField('edit_recommender_org', recOrg);
+
+            const recOrgOther = getVal('recommendation_organization_other', ['recommender_org_other']);
+            setField('edit_recommendation_organization_other', recOrgOther);
+
+            const recPhone = getVal('recommendation_phone', ['recommender_phone']);
+            setField('edit_recommendation_phone', recPhone);
+            setField('edit_recommender_phone', recPhone);
+
+            const recPos = getVal('recommendation_position', ['recommender_position']);
+            setField('edit_recommendation_position', recPos);
+            setField('edit_recommender_position', recPos);
+
             if (document.getElementById('edit_pin')) { document.getElementById('edit_pin').value = meta.pin || meta.pin_code || appItem.pin_code || ''; }
             document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
             document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
@@ -1008,8 +1057,11 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.village)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.post)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.panchayath)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact 1 / 2:</td><td>${formatVal(meta.contact_number_1)} / ${formatVal(meta.contact_number_2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District:</td><td>${formatVal(meta.district)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State:</td><td>${formatVal(meta.state)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(meta.pin_code || meta.pin)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Number 1:</td><td>${formatVal(meta.contact_number_1)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Number 2:</td><td>${formatVal(meta.contact_number_2)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Job / Income:</td><td>${formatVal(meta.job)} / ${meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
                         </table>
 
@@ -1028,7 +1080,8 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Land Owner Name:</td><td>${formatVal(meta.land_owner_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Land Owner Address:</td><td>${formatVal(meta.land_owner_address)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(meta.land_owner_place)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post / Panchayath:</td><td>${formatVal(meta.land_owner_post)} / ${formatVal(meta.land_owner_panchayath)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.locality_post)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.locality_panchayath || meta.locality_panchayat)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / Mobile:</td><td>${formatVal(meta.land_owner_district)} / ${formatVal(meta.land_owner_mobile)}</td></tr>
                         </table>
 

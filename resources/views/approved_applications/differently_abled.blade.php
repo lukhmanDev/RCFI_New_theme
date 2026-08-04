@@ -9,8 +9,7 @@
         <a href="{{ route('applications.approved.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
             <i class="bx bx-left-arrow-alt"></i> Back to Approved Dashboard
         </a>
-        <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600;">Approved Differently Abled Registry</h3>
-    </div>
+            </div>
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
@@ -25,48 +24,7 @@
         </div>
         
         <!-- Filter & Export Toolbar -->
-        <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; background: #f8fafc; padding: 0.85rem 1.25rem; border-radius: 10px; border: 1px solid #e2e8f0;">
-            <!-- Filter Form -->
-            <form method="GET" action="{{ route('applications.approved.category', $categorySlug) }}" id="filterForm" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 0;">
-                <!-- Cluster Filter -->
-                @if(!empty($clusters) && count($clusters) > 0)
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                    <label for="clusterFilterSelect" style="font-size: 0.825rem; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Cluster:</label>
-                    <select name="cluster_id" id="clusterFilterSelect" onchange="filterTable(); this.form.submit();" style="height: 38px; border-radius: 8px; padding: 0 0.85rem; font-size: 0.85rem; font-weight: 500; background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
-                        <option value="all">All Clusters</option>
-                        @foreach($clusters as $c)
-                            <option value="{{ $c->id }}" {{ request('cluster_id') == $c->id ? 'selected' : '' }}>
-                                [{{ $c->code }}] {{ $c->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                @endif
-
-                <!-- Sponsor Status Filter -->
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                    <label for="sponsorFilterSelect" style="font-size: 0.825rem; font-weight: 600; color: #475569; margin: 0; white-space: nowrap;">Sponsor Status:</label>
-                    <select name="sponsor_status" id="sponsorFilterSelect" onchange="filterTable(); this.form.submit();" style="height: 38px; border-radius: 8px; padding: 0 0.85rem; font-size: 0.85rem; font-weight: 500; background: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer;">
-                        <option value="all">All Status</option>
-                        <option value="sponsored" {{ strtolower(request('sponsor_status')) === 'sponsored' ? 'selected' : '' }}>Sponsored</option>
-                        <option value="not sponsored" {{ in_array(strtolower(request('sponsor_status')), ['not sponsored', 'un-sponsored', 'unsponsored']) ? 'selected' : '' }}>Not Sponsored</option>
-                    </select>
-                </div>
-            </form>
-
-            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: nowrap;">
-                <!-- Search Input -->
-                <div style="position: relative; width: 100%; min-width: 200px; max-width: 240px;">
-                    <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; pointer-events: none;"><i class="bx bx-search"></i></span>
-                    <input type="text" id="tableSearchInput" placeholder="Search applications..." style="width: 100%; height: 38px; padding: 0 1rem 0 2.25rem; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; color: #1e293b; font-size: 0.875rem; outline: none;" onkeyup="filterTable()">
-                </div>
-
-                <!-- Export Excel Button -->
-                <a id="excelExportBtn" href="{{ route('applications.approved.export', ['category' => $categorySlug, 'cluster_id' => request('cluster_id', 'all'), 'sponsor_status' => request('sponsor_status', 'all')]) }}" class="btn-custom" style="height: 38px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; padding: 0 1.1rem; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2); white-space: nowrap;" title="Download Excel report with all data">
-                    <i class="bx bxs-file-export" style="font-size: 1.1rem;"></i> Export Excel
-                </a>
-            </div>
-        </div>
+        @include('approved_applications.partials.filter_toolbar')
 
         <div style="overflow-x: auto;">
             <table class="table-custom">
@@ -78,7 +36,7 @@
                         <th>Gender</th>
                         <th>Age</th>
                         <th>Disability Type</th>
-                        <th>Panchayath</th>
+                        <th>District</th>
                         <th>Sponsor Status</th>
                         <th style="text-align: center;">Action</th>
                     </tr>
@@ -125,12 +83,12 @@
                                     {{ $appId }}
                                 </a>
                             </td>
-                            <td>{{ $appItem->applicant_name }}</td>
-                            <td>{{ $meta['father_name'] ?? '-' }}</td>
+                            <td title="{{ $appItem->applicant_name }}">{{ \Illuminate\Support\Str::limit($appItem->applicant_name, 15, '...') }}</td>
+                            <td title="{{ $meta['father_name'] ?? '-' }}">{{ \Illuminate\Support\Str::limit($meta['father_name'] ?? '-', 15, '...') }}</td>
                             <td>{{ $meta['gender'] ?? '-' }}</td>
                             <td>{{ $meta['age'] ?? '-' }}</td>
-                            <td>{{ $meta['disability_type'] ?? '-' }}</td>
-                            <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? '-' }}</td>
+                            <td title="{{ $meta['disability_type'] ?? '-' }}">{{ \Illuminate\Support\Str::limit($meta['disability_type'] ?? '-', 15, '...') }}</td>
+                            <td title="{{ $appItem->district ?? $meta['district'] ?? $meta['locality_district'] ?? '-' }}">{{ \Illuminate\Support\Str::limit($appItem->district ?? $meta['district'] ?? $meta['locality_district'] ?? '-', 15, '...') }}</td>
                             <td>
                                 @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
                                     <span style="background-color: #d1fae5; color: #065f46; border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;">

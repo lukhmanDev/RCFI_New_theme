@@ -1,4 +1,4 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Shops and Others Applications')
 
@@ -9,8 +9,7 @@
         <a href="{{ route('applications.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
             <i class="bx bx-left-arrow-alt"></i> Back to Dashboard
         </a>
-        <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 600;">Shops and Others Registry</h3>
-    </div>
+            </div>
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
@@ -95,8 +94,8 @@
                         <th>Application ID</th>
                         <th>Name of Applicant</th>
                         <th>Place</th>
-                        <th>Village</th>
-                        <th>Panchayath</th>
+                        <th>District</th>
+                        <th>Project Type</th>
                         <th>Room Count</th>
                         <th style="text-align: center;">Status</th>
                         <th style="text-align: center;">Action</th>
@@ -113,6 +112,8 @@
                                 $appId,
                                 $appItem->applicant_name ?? '',
                                 $appItem->place ?? '',
+                                $appItem->district ?? $meta['district'] ?? '',
+                                $meta['project_type'] ?? $appItem->project_type ?? '',
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
@@ -140,11 +141,11 @@
                             <!-- Place -->
                             <td>{{ $appItem->place ?? 'N/A' }}</td>
 
-                            <!-- Village -->
-                            <td>{{ $appItem->village ?? $appItem->town ?? 'N/A' }}</td>
+                            <!-- District -->
+                            <td>{{ $appItem->district ?? $meta['district'] ?? $meta['locality_district'] ?? 'N/A' }}</td>
 
-                            <!-- Panchayath -->
-                            <td>{{ $appItem->panchayat ?? $appItem->panchayath ?? 'N/A' }}</td>
+                            <!-- Project Type -->
+                            <td>{{ !empty($meta['project_type']) ? ucwords($meta['project_type']) : (!empty($appItem->project_type) ? ucwords($appItem->project_type) : 'N/A') }}</td>
 
                             <!-- Room Count -->
                             <td>{{ $meta['num_rooms'] ?? 'N/A' }}</td>
@@ -187,7 +188,7 @@
                                     @endif
                                 @endif
 
-                                @if($appItem->status !== 'Approved' && (Auth::user()->isSuperAdmin() || ($appItem->status === 'Pending' && Auth::user()->hasAdminAccess())))
+                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
                                     <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
                                         @csrf
                                         @method('DELETE')
@@ -352,8 +353,8 @@
                             <input type="tel" class="form-control-dark" id="locality_pin_code" name="meta[locality_pin_code]" value="{{ old('meta.locality_pin_code') }}" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="locality_location">Location *</label>
-                            <input type="text" class="form-control-dark" id="locality_location" name="meta[locality_location]" value="{{ old('meta.locality_location') }}" required>
+                            <label class="form-label" for="locality_place">Location *</label>
+                            <input type="text" class="form-control-dark" id="locality_place" name="meta[locality_place]" value="{{ old('meta.locality_place') }}" required>
                         </div>
                     </div>
 
@@ -495,28 +496,28 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommendation_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommender_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
+                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
                                 <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
                                 <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
                                 <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommendation_organization_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
+                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommender_org_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommendation_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommender_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommendation_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommender_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
@@ -638,8 +639,8 @@
                             <input type="tel" class="form-control-dark" id="edit_locality_pin_code" name="meta[locality_pin_code]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_locality_location">Location *</label>
-                            <input type="text" class="form-control-dark" id="edit_locality_location" name="meta[locality_location]" required>
+                            <label class="form-label" for="edit_locality_place">Location *</label>
+                            <input type="text" class="form-control-dark" id="edit_locality_place" name="meta[locality_place]" required>
                         </div>
                     </div>
 
@@ -778,28 +779,28 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommendation_name]" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommender_name]" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
+                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ">KMJ</option>
                                 <option value="SYS">SYS</option>
                                 <option value="SSF">SSF</option>
                                 <option value="Others">Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommendation_organization_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommender_org_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommendation_phone]" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommender_phone]" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommendation_position]" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommender_position]" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
@@ -844,19 +845,28 @@
             document.getElementById('edit_committee_name').value = meta.committee_name || '';
             document.getElementById('edit_reg_number').value = meta.reg_number || '';
             document.getElementById('edit_year').value = meta.year || '';
-            document.getElementById('edit_place').value = meta.place || '';
-            document.getElementById('edit_village').value = meta.village || '';
-            document.getElementById('edit_post').value = meta.post || '';
-            document.getElementById('edit_panchayath').value = meta.panchayath || '';
-            document.getElementById('edit_district').value = meta.district || '';
-            document.getElementById('edit_state').value = meta.state || '';
+            const locVal = meta.location || meta.place || appItem.location || appItem.place || '';
+            if (document.getElementById('edit_location')) document.getElementById('edit_location').value = locVal;
+            if (document.getElementById('edit_place')) document.getElementById('edit_place').value = locVal;
+            const vilVal = meta.village || appItem.village || '';
+            if (document.getElementById('edit_village')) document.getElementById('edit_village').value = vilVal;
+            const postVal = meta.post || meta.post_office || appItem.post || appItem.post_office || '';
+            if (document.getElementById('edit_post')) document.getElementById('edit_post').value = postVal;
+            if (document.getElementById('edit_post_office')) document.getElementById('edit_post_office').value = postVal;
+            const panVal = meta.panchayath || meta.panchayat || appItem.panchayath || appItem.panchayat || '';
+            if (document.getElementById('edit_panchayath')) document.getElementById('edit_panchayath').value = panVal;
+            if (document.getElementById('edit_panchayat')) document.getElementById('edit_panchayat').value = panVal;
+            const distVal = meta.district || appItem.district || '';
+            if (document.getElementById('edit_district')) document.getElementById('edit_district').value = distVal;
+            const stVal = meta.state || appItem.state || '';
+            if (document.getElementById('edit_state')) document.getElementById('edit_state').value = stVal;
             document.getElementById('edit_pin_code').value = meta.pin_code || meta.pin || appItem.pin_code || '';
             document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
             document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
             
             document.getElementById('edit_mahallu_name').value = meta.mahallu_name || '';
             if (document.getElementById('edit_locality_pin_code')) { document.getElementById('edit_locality_pin_code').value = meta.locality_pin_code || meta.locality_pin || ''; }
-            document.getElementById('edit_locality_location').value = meta.locality_location || '';
+            document.getElementById('edit_locality_place').value = meta.locality_place || '';
             document.getElementById('edit_locality_village').value = meta.locality_village || '';
             if (document.getElementById('edit_locality_post')) { document.getElementById('edit_locality_post').value = meta.locality_post || meta.locality_post_office || ''; }
             if (document.getElementById('edit_locality_panchayath')) { document.getElementById('edit_locality_panchayath').value = meta.locality_panchayath || meta.locality_panchayat || ''; }
@@ -994,16 +1004,23 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.village)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.post)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayat:</td><td>${formatVal(meta.panchayath)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin_code)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile 1 / 2:</td><td>${formatVal(meta.contact_number_1)} / ${formatVal(meta.contact_number_2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District:</td><td>${formatVal(meta.district)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State:</td><td>${formatVal(meta.state)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(meta.pin_code || meta.pin)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Number 1:</td><td>${formatVal(meta.contact_number_1)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Number 2:</td><td>${formatVal(meta.contact_number_2)}</td></tr>
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Description of the project site</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Name of Mahal:</td><td>${formatVal(meta.mahallu_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin / Place / Village:</td><td>${formatVal(meta.locality_pin_code || meta.locality_pin)} / ${formatVal(meta.locality_location)} / ${formatVal(meta.locality_village)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post / Panchayath:</td><td>${formatVal(meta.locality_post)} / ${formatVal(meta.locality_panchayath)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State:</td><td>${formatVal(meta.locality_district)} / ${formatVal(meta.locality_state)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(meta.locality_pin_code || meta.locality_pin)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(meta.locality_place)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.locality_village)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.locality_post)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.locality_panchayath || meta.locality_panchayat)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District:</td><td>${formatVal(meta.locality_district || meta.district)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State:</td><td>${formatVal(meta.locality_state || meta.state)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Has Building?</td><td>${formatVal(meta.site_has_building)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Current Status:</td><td>${formatVal(meta.status_of_current_building_other || meta.status_of_current_building)}</td></tr>
                         </table>

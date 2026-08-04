@@ -171,7 +171,7 @@
                 <thead>
                     <tr style="background: rgba(148, 163, 184, 0.05); border-bottom: 1px solid var(--panel-border); font-size: 0.82rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">
                         <th style="padding: 0.85rem 1rem; text-align: center; width: 50px;"># SL</th>
-                        <th style="padding: 0.85rem 1rem; text-align: left;">Project ID</th>
+                        <th style="padding: 0.85rem 1rem; text-align: left;">RCFI ID</th>
                         <th style="padding: 0.85rem 1rem; text-align: left;">Project Name</th>
                         <th style="padding: 0.85rem 1rem; text-align: left;">Category</th>
                         <th style="padding: 0.85rem 1rem; text-align: left;">Agency No</th>

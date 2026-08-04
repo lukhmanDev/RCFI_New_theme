@@ -248,7 +248,7 @@
                         <th>Created Date</th>
                         <th>Category</th>
                         <th>Agency Project No</th>
-                        <th>Project ID</th>
+                        <th>RCFI ID</th>
                         <th>Beneficiary / Applicant</th>
                         <th>Agency / Sponsor</th>
                         <th style="text-align: right;">Amount (₹)</th>
@@ -341,7 +341,7 @@
     <!-- Agency Breakdown Panel -->
     <div id="panelAgency" class="panel" style="width: 100%; display: none;">
         <div class="panel-header">
-            <h2 class="panel-title" style="font-size: 1.1rem; color: #1e293b; font-weight: 700;">Agency / Donor Funding Summary</h2>
+            <h2 class="panel-title" style="font-size: 1.1rem; color: #1e293b; font-weight: 700;">Agency Funding Summary</h2>
         </div>
 
         <div style="overflow-x: auto;">

@@ -7,7 +7,7 @@
         </div>
 
         <div style="padding: 0 1.5rem 1rem; color: var(--text-main); line-height: 1.6;">
-            <p id="deleteConfirmationText" style="margin: 0; font-weight: 600;">Are you sure you want to delete this partner/donor?</p>
+            <p id="deleteConfirmationText" style="margin: 0; font-weight: 600;">Are you sure you want to delete this agency?</p>
             <p style="margin: 0.75rem 0 0; color: var(--text-muted); font-size: 0.95rem;">This action cannot be undone.</p>
         </div>
 

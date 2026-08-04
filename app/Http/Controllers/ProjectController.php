@@ -1229,7 +1229,7 @@ class ProjectController extends Controller
                 'Project ID',
                 'Agency Project No',
                 'Project Name',
-                'Donor Name',
+                'Agency Name',
                 'Project Manager',
                 'Available Budget',
                 'Type of Project',
@@ -1544,6 +1544,14 @@ class ProjectController extends Controller
         $fileChecklist = $files['checklist'] ?? [];
         $docKey = str_replace(' ', '_', strtolower($docName));
 
+        if ($request->has('remark')) {
+            $docRemarks = $files['doc_remarks'] ?? [];
+            $docRemarks[$docKey] = $request->input('remark');
+            $files['doc_remarks'] = $docRemarks;
+        }
+
+        $savedRemark = $files['doc_remarks'][$docKey] ?? ($fileChecklist[$docKey]['remarks'] ?? '');
+
         if (!$msg) {
             $currentStatus = isset($fileChecklist[$docKey]) ? ($fileChecklist[$docKey]['ticked'] ?? false) : false;
             $ticked = !$currentStatus;
@@ -1555,7 +1563,8 @@ class ProjectController extends Controller
             'name' => $docName,
             'ticked' => $ticked,
             'ticked_at' => $tickedAtStr,
-            'ticked_by' => $ticked ? ($user->name ?? 'Admin') : null
+            'ticked_by' => $ticked ? ($user->name ?? 'Admin') : null,
+            'remarks' => $savedRemark
         ];
         $files['checklist'] = $fileChecklist;
         $project->files = $files;
@@ -1575,7 +1584,8 @@ class ProjectController extends Controller
                 'message' => $msg, 
                 'ticked' => $ticked,
                 'is_ticked' => $ticked,
-                'ticked_at' => $tickedAtStr ?: '-'
+                'ticked_at' => $tickedAtStr ?: '-',
+                'remark' => $savedRemark
             ]);
         }
 
@@ -1612,6 +1622,49 @@ class ProjectController extends Controller
         $docRecord->save();
 
         return redirect()->back()->with('success', 'Location map link updated successfully!');
+    }
+
+    public function updateDocRemark(Request $request, $id)
+    {
+        $project = $this->getProjectInstance($request, $id, true);
+        if (!$project) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Project not found.'], 404);
+            }
+            abort(404);
+        }
+
+        $user = auth()->user();
+        if (!$this->isPmOrEngineer($user, $project)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+            }
+            return redirect()->back()->with('error', 'Only authorized staff are allowed to update remarks.');
+        }
+
+        $docName = $request->input('document_name');
+        $remark = $request->input('remark');
+
+        if (!$docName) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Document name is required.'], 400);
+            }
+            return redirect()->back()->with('error', 'Document name is required.');
+        }
+
+        $docKey = str_replace(' ', '_', strtolower($docName));
+        $files = $project->files ?? [];
+        $docRemarks = $files['doc_remarks'] ?? [];
+        $docRemarks[$docKey] = $remark;
+        $files['doc_remarks'] = $docRemarks;
+        $project->files = $files;
+        $project->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Remark updated successfully.']);
+        }
+
+        return redirect()->back()->with('success', 'Remark updated successfully.');
     }
 
     public function updatePhase(Request $request, $id)
@@ -2067,11 +2120,18 @@ class ProjectController extends Controller
             }
             $key = 'photos_' . $category;
             
-            // Enforce maximum 1 photo per column (replace previous photo if present)
-            $existing = array_merge((array)($files[$key] ?? []), (array)($files[$category . '_photos'] ?? []));
+            // Delete old photos in this category (strictly 1 photo allowed per section, replace old image)
+            $existing = array_unique(array_filter(array_merge(
+                (array)($files[$key] ?? []),
+                (array)($files[$category . '_photos'] ?? []),
+                (array)($files[$category] ?? [])
+            )));
             foreach ($existing as $oldPhotoPath) {
-                if ($oldPhotoPath && file_exists(public_path($oldPhotoPath))) {
-                    @unlink(public_path($oldPhotoPath));
+                if ($oldPhotoPath && is_string($oldPhotoPath)) {
+                    $oldFullPath = public_path($oldPhotoPath);
+                    if ($oldFullPath !== $targetPath && file_exists($oldFullPath)) {
+                        @unlink($oldFullPath);
+                    }
                 }
             }
 
@@ -2187,29 +2247,39 @@ class ProjectController extends Controller
             }
         }
 
-        $photoPaths = array_values(array_unique($photoPaths));
+        $photoPaths = array_values(array_unique(array_filter($photoPaths)));
 
-        // Delete physical files found
-        foreach ($photoPaths as $photoPath) {
-            $filepath = public_path($photoPath);
-            if (file_exists($filepath)) {
-                @unlink($filepath);
+        // Target specific photo index if valid, else delete all in category
+        $targetIndex = is_numeric($index) ? intval($index) : -1;
+        if ($targetIndex >= 0 && isset($photoPaths[$targetIndex])) {
+            $toDelete = $photoPaths[$targetIndex];
+            if ($toDelete && file_exists(public_path($toDelete))) {
+                @unlink(public_path($toDelete));
             }
+            unset($photoPaths[$targetIndex]);
+            $photoPaths = array_values($photoPaths);
+        } else {
+            foreach ($photoPaths as $photoPath) {
+                $filepath = public_path($photoPath);
+                if ($filepath && file_exists($filepath)) {
+                    @unlink($filepath);
+                }
+            }
+            $photoPaths = [];
         }
 
-        // Wipe out key across $files array
+        // Save re-indexed remaining photo paths back to files array
         foreach ($possibleKeys as $pk) {
-            $files[$pk] = [];
+            $files[$pk] = $photoPaths;
         }
 
         $project->files = $files;
         $project->save();
 
-        // Directly clear columns on ProjectPhoto model
         if ($projectPhoto) {
             foreach ($possibleKeys as $pk) {
                 if (\Illuminate\Support\Facades\Schema::hasColumn('project_photos', $pk)) {
-                    $projectPhoto->$pk = null;
+                    $projectPhoto->$pk = empty($photoPaths) ? null : json_encode($photoPaths);
                 }
             }
             $projectPhoto->save();
@@ -3271,6 +3341,82 @@ class ProjectController extends Controller
 
         $redirectUrl = $request->input('redirect_back') ?: route('projects.category', $routeSlug);
         return redirect($redirectUrl)->with('success', $message);
+    }
+
+    public function updateSiteStudy(Request $request, $id)
+    {
+        $project = $this->findProjectInAnyModel($id);
+        if (!$project) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Project not found'], 404);
+            }
+            return redirect()->back()->with('error', 'Project not found');
+        }
+
+        $reportText = $request->input('report');
+        $remarks = $request->input('remarks');
+
+        $siteStudy = \App\Models\ProjectSiteStudy::firstOrNew([
+            'project_id' => $project->id,
+            'project_type' => get_class($project)
+        ]);
+
+        if ($request->has('report')) {
+            $siteStudy->report = $reportText;
+        }
+
+        if ($request->has('remarks')) {
+            $siteStudy->remarks = $remarks;
+        }
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/site_studies'), $fileName);
+            $siteStudy->file_path = 'uploads/site_studies/' . $fileName;
+        }
+
+        $siteStudy->status = ($siteStudy->report || $siteStudy->file_path) ? 'completed' : 'pending';
+        if ($siteStudy->status === 'completed' && !$siteStudy->ticked_at) {
+            $siteStudy->ticked_at = now();
+        }
+        $siteStudy->updated_by = auth()->id();
+        if (!$siteStudy->exists) {
+            $siteStudy->created_by = auth()->id();
+        }
+        $siteStudy->save();
+
+        // Also update project_documents site_study column
+        $column = \App\Models\ProjectDocument::$docColumnMap['Site study'] ?? 'site_study';
+        if ($column && method_exists($project, 'projectDocument')) {
+            try {
+                $docRecord = $project->projectDocument;
+                if (!$docRecord) {
+                    $docRecord = $project->projectDocument()->create();
+                }
+                $docRecord->$column = $siteStudy->file_path ?: '1';
+                $timeCol = $column . '_ticked_at';
+                $docRecord->$timeCol = now();
+                $docRecord->save();
+            } catch (\Exception $e) {}
+        }
+
+        $wordCount = $siteStudy->report ? str_word_count(strip_tags($siteStudy->report)) : 0;
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Site study report updated successfully',
+                'report' => $siteStudy->report,
+                'remarks' => $siteStudy->remarks,
+                'file_path' => $siteStudy->file_path ? asset($siteStudy->file_path) : null,
+                'word_count' => $wordCount,
+                'status' => $siteStudy->status,
+                'ticked_at' => $siteStudy->ticked_at ? $siteStudy->ticked_at->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Site study report saved successfully.');
     }
 }
 

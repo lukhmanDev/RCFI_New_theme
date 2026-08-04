@@ -213,7 +213,7 @@
                 </div>
             </td>
             <td class="meta-box">
-                <div><strong>Project ID:</strong> {{ $projectObj->project_id ?? ($project->project_id ?? 'N/A') }}</div>
+                <div><strong>RCFI ID:</strong> {{ $projectObj->project_id ?? ($project->project_id ?? 'N/A') }}</div>
                 <div><strong>Generated Date:</strong> {{ date('d M Y') }}</div>
                 <div><strong>Status:</strong> {{ $projectObj->status ?? ($project->status ?? 'Active') }}</div>
             </td>
@@ -234,13 +234,13 @@
         <div class="section-body">
             <table class="data-table">
                 <tr>
-                    <th>Project ID</th>
+                    <th>RCFI ID</th>
                     <td>{{ $projectObj->project_id ?? ($project->project_id ?? 'N/A') }}</td>
                     <th>Project Name</th>
                     <td>{{ $projectObj->project_name ?? ($project->project_name ?? 'N/A') }}</td>
                 </tr>
                 <tr>
-                    <th>Agency / Donor</th>
+                    <th>Agency</th>
                     <td>{{ $projectObj->agency ?? ($project->agency ?? ($projectObj->sponsor ?? 'N/A')) }}</td>
                     <th>Agency Project No</th>
                     <td>{{ $projectObj->agency_project_no ?? ($project->agency_project_no ?? 'N/A') }}</td>

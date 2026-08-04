@@ -181,7 +181,7 @@ class User extends Authenticatable
 
     public function canDeleteApplications(): bool
     {
-        return $this->isSuperAdmin();
+        return false;
     }
 
     public function canManageSponsorship(): bool

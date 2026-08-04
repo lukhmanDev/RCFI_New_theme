@@ -886,7 +886,7 @@
                         $spDateRaw = $project->sponsored_date ?? $project->sponsor_date ?? $application->sponsored_date ?? $project->created_at;
                         $sponsoredDate = !empty($spDateRaw) ? date('d-M-Y', strtotime($spDateRaw)) : 'N/A';
 
-                        $projectLocation = $project->location ?? ($project->place ?? ($application->location ?? ($application->place ?? ($application->locality_location ?? ($application->meta['location'] ?? 'N/A')))));
+                        $projectLocation = $project->location ?? ($project->place ?? ($application->location ?? ($application->place ?? ($application->locality_place ?? ($application->meta['location'] ?? 'N/A')))));
                         $remarks = $project->remarks ?? $project->additional_note ?? 'N/A';
                     @endphp
 
@@ -895,7 +895,7 @@
                             <i class="bx bx-id-card" style="font-size: 1.1rem; vertical-align: middle; margin-right: 0.35rem;"></i> Project &amp; Agency Details
                         </h4>
                         <div class="details-grid">
-                            <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $project->project_id ?? 'N/A' }}</div>
+                            <div class="details-label">RCFI ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $project->project_id ?? 'N/A' }}</div>
                             <div class="details-label">Agency Name</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $agencyName ?? 'N/A' }}</div>
                             <div class="details-label">Agency ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan); font-weight: 700;">{{ $agencyId }}</div>
                             <div class="details-label">Cluster Name</div><div class="details-colon">:</div><div class="details-value" style="color: #ffffff; font-weight: 600;">{{ $clusterName }}</div>
@@ -1170,9 +1170,12 @@
                                 <div style="color: var(--text-muted); font-weight: 500;">House Name</div><div>:</div><div>{{ $application->house_name ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Place</div><div>:</div><div>{{ $application->place ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Post Office</div><div>:</div><div>{{ $application->post_office ?? 'N/A' }}</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">Village / Panchayat</div><div>:</div><div>{{ $application->village ?? 'N/A' }} / {{ $application->panchayat ?? 'N/A' }}</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">District / State</div><div>:</div><div>{{ $application->district ?? 'N/A' }}, {{ $application->state ?? 'N/A' }}</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">Contact Numbers</div><div>:</div><div>{{ $application->mobile_1 ?? $application->contact_number_1 ?? 'N/A' }} {{ !empty($application->mobile_2 ?? $application->contact_number_2) ? '/ ' . ($application->mobile_2 ?? $application->contact_number_2) : '' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Village</div><div>:</div><div>{{ $application->village ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Panchayat</div><div>:</div><div>{{ $application->panchayat ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">District</div><div>:</div><div>{{ $application->district ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">State</div><div>:</div><div>{{ $application->state ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Mobile 1</div><div>:</div><div>{{ $application->mobile_1 ?? $application->contact_number_1 ?? 'N/A' }}</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Mobile 2</div><div>:</div><div>{{ $application->mobile_2 ?? $application->contact_number_2 ?? 'N/A' }}</div>
                                 @if(!empty($application->school_name) || !empty($application->school_class))
                                     <div style="color: var(--text-muted); font-weight: 500;">School Education</div><div>:</div><div>{{ $application->school_name ?? 'N/A' }} @if(!empty($application->school_class))(Class: {{ $application->school_class }})@endif</div>
                                 @endif
@@ -1212,12 +1215,12 @@
                     </script>
                 @else
                     <div class="details-grid">
-                        <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
+                        <div class="details-label">RCFI ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
                         <div class="details-label">Project Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->project_name ?? 'N/A' }}</div>
                         <div class="details-label">Sponsor</div><div class="details-colon">:</div><div class="details-value">{{ $project->sponsor ?? 'N/A' }}</div>
                         <div class="details-label">Project Spec</div><div class="details-colon">:</div><div class="details-value" style="white-space: pre-wrap;">{{ $project->project_spec ?? 'N/A' }}</div>
                         <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value">{{ $project->agency_project_no ?? 'N/A' }}</div>
-                        <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
+                        <div class="details-label">Agency Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
                         <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
                         <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
                         <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
@@ -1501,9 +1504,9 @@
                                         $donorsList = \App\Models\Donor::orderBy('name')->get();
                                     @endphp
                                     <div class="form-group-custom" style="margin-bottom: 0 !important;">
-                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Agency / Donor</label>
+                                        <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Agency</label>
                                         <select name="donor" required class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.6rem; border-radius: 6px; outline: none;">
-                                            <option value="">Select Agency / Donor...</option>
+                                            <option value="">Select Agency...</option>
                                             @foreach($donorsList as $dItem)
                                                 <option value="{{ $dItem->name }}">{{ $dItem->name }} {{ $dItem->short_name ? '('.$dItem->short_name.')' : '' }}</option>
                                             @endforeach
@@ -1874,10 +1877,15 @@
 
                                     <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                                     <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>{!! $formatVal($metaData['house_name'] ?? null) !!} / {!! $formatVal($application->place ?? null) !!}</td></tr>
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Town / Post Office:</td><td>{!! $formatVal($metaData['town'] ?? null) !!} / {!! $formatVal($metaData['post_office'] ?? null) !!}</td></tr>
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State / Pin:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!} / {!! $formatVal($metaData['pin_code'] ?? null) !!}</td></tr>
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1 / 2:</td><td>{!! $formatVal($metaData['mobile_1'] ?? null) !!} / {!! $formatVal($metaData['mobile_2'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name:</td><td>{!! $formatVal($metaData['house_name'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>{!! $formatVal($application->place ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Town:</td><td>{!! $formatVal($metaData['town'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post Office:</td><td>{!! $formatVal($metaData['post_office'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>{!! $formatVal($metaData['district'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">State:</td><td>{!! $formatVal($metaData['state'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">PIN Code:</td><td>{!! $formatVal($metaData['pin_code'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1:</td><td>{!! $formatVal($metaData['mobile_1'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 2:</td><td>{!! $formatVal($metaData['mobile_2'] ?? null) !!}</td></tr>
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">{{ $application->status }}</td></tr>
                                     </table>
                                 </div>
@@ -1926,9 +1934,12 @@
 
                                     <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                                     <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>{!! $formatVal($metaData['house_name'] ?? null) !!} / {!! $formatVal($application->place ?? null) !!}</td></tr>
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayat / District:</td><td>{!! $formatVal($metaData['panchayat'] ?? null) !!} / {!! $formatVal($metaData['district'] ?? null) !!}</td></tr>
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pincode / Mobile:</td><td>{!! $formatVal($metaData['pincode'] ?? null) !!} / {!! $formatVal($metaData['mobile'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name:</td><td>{!! $formatVal($metaData['house_name'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>{!! $formatVal($application->place ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayat:</td><td>{!! $formatVal($metaData['panchayat'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>{!! $formatVal($metaData['district'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pincode:</td><td>{!! $formatVal($metaData['pincode'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile:</td><td>{!! $formatVal($metaData['mobile'] ?? null) !!}</td></tr>
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">{{ $application->status }}</td></tr>
                                     </table>
                                 </div>
@@ -1945,9 +1956,14 @@
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>{!! $formatVal($metaData['father_name'] ?? null) !!}</td></tr>
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Father:</td><td>{!! $formatVal($metaData['fathers_father'] ?? null) !!}</td></tr>
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>{!! $formatVal($metaData['mother_name'] ?? null) !!}</td></tr>
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">House / Location:</td><td>{!! $formatVal($metaData['house_name'] ?? null) !!} / {!! $formatVal($metaData['location'] ?? null) !!}</td></tr>
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">PO / Panchayat / Dist:</td><td>{!! $formatVal($metaData['post_office'] ?? null) !!} / {!! $formatVal($metaData['panchayat'] ?? null) !!} / {!! $formatVal($metaData['district'] ?? null) !!}</td></tr>
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pin Code / Contact:</td><td>Pin: {!! $formatVal($metaData['pin_code'] ?? null) !!} / Mob: {!! $formatVal($metaData['mobile_1'] ?? null) !!} {{ !empty($metaData['mobile_2']) ? ', ' . $metaData['mobile_2'] : '' }}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">House Name:</td><td>{!! $formatVal($metaData['house_name'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>{!! $formatVal($metaData['location'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post Office:</td><td>{!! $formatVal($metaData['post_office'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayat:</td><td>{!! $formatVal($metaData['panchayat'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>{!! $formatVal($metaData['district'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">PIN Code:</td><td>{!! $formatVal($metaData['pin_code'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1:</td><td>{!! $formatVal($metaData['mobile_1'] ?? null) !!}</td></tr>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 2:</td><td>{!! $formatVal($metaData['mobile_2'] ?? null) !!}</td></tr>
                                     </table>
 
                                     <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Family & Income Details</h4>
@@ -2002,7 +2018,7 @@
             <div class="detail-header-panel" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>{{ $isSocialAidProject ? 'PROGRAMME DETAILS' : 'FILES' }}</h2>
                 @if($isSocialAidProject && $isProjectManager && !$isLockedForEditing)
-                    <button type="button" id="btn-add-programme-main" onclick="openAddProgrammeModal(); return false;" class="btn-custom btn-add-programme-trigger" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                    <button type="button" id="btn-add-programme-main" onclick="if(typeof window.openAddProgrammeModal==='function'){window.openAddProgrammeModal(this);}else{window.location.href=window.location.pathname+'?open_modal=add_programme';}" class="btn-custom btn-add-programme-trigger" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #ffffff; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
                         <i class="bx bx-plus-circle" style="font-size: 1.1rem;"></i> Add Programme
                     </button>
                 @endif
@@ -2132,8 +2148,9 @@
                         <thead>
                             <tr>
                                 <th>Document Name</th>
-                                <th style="width: 250px;">Ticked At</th>
-                                <th style="width: 150px; text-align: center;">Action</th>
+                                <th>Remark</th>
+                                <th style="width: 200px;">Ticked At</th>
+                                <th style="width: 120px; text-align: center;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2141,21 +2158,24 @@
                                 $docs = [
                                     'Land document', 
                                     'Possession certificate', 
+                                    'Tax receipt',
                                     'Recommendation letter',
                                     'Committee minutes', 
                                     'Permit copy', 
                                     'Plan', 
                                     'Tender schedule sheet',
-                                    'Site study', 
                                     'Quotations', 
                                     'Quotations approval form',
                                     'Work order letter',
                                     'Meeting minutes copy',
                                     'Agreement with contractor',
                                     'Agreement with committee',
-                                    'Project summary form'
+                                    'Project summary form',
+                                    'Site study'
                                 ];
                                 $docRecord = $project->files_with_timestamps;
+                                $pFiles = $project->files ?? [];
+                                $siteStudyData = $project->projectSiteStudy ?? null;
                             @endphp
                             @foreach($docs as $doc)
                                 @php
@@ -2168,9 +2188,38 @@
                                     if ($filePath === '0') {
                                         $filePath = null;
                                     }
+
+                                    $docKey = str_replace(' ', '_', strtolower($doc));
+                                    $docRemark = $pFiles['doc_remarks'][$docKey] ?? ($pFiles['checklist'][$docKey]['remarks'] ?? '');
                                 @endphp
                                 <tr>
-                                    <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $doc }}</td>
+                                    <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">
+                                        {{ $doc }}
+                                        @if($doc === 'Site study' || $doc === 'Site study report')
+                                            <button type="button" 
+                                                    onclick="openSiteStudyModal()" 
+                                                    title="View/Edit Full Site Study Report (1000+ words supported)"
+                                                    style="background: #0d9488; color: white; border: none; padding: 0.25rem 0.55rem; border-radius: 4px; font-size: 0.78rem; cursor: pointer; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                                <i class="bx bx-file"></i> Open Report (1000+ words)
+                                            </button>
+                                        @endif
+                                    </td>
+                                    <td style="vertical-align: middle;" id="remark-cell-{{ str_replace(' ', '_', $doc) }}">
+                                        @if($isProjectManager && !$isLockedForEditing)
+                                            @if(!empty($filePath))
+                                                <span style="font-size: 0.85rem; color: var(--text-main);">{{ $docRemark ?: '-' }}</span>
+                                            @else
+                                                <input type="text" 
+                                                       id="remark-input-{{ str_replace(' ', '_', $doc) }}"
+                                                       value="{{ $docRemark }}" 
+                                                       placeholder="Add remark..." 
+                                                       onchange="saveDocRemark('{{ $doc }}', this.value, this)"
+                                                       style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.35rem 0.65rem; border-radius: 4px; font-size: 0.85rem; width: 100%; max-width: 260px; outline: none;">
+                                            @endif
+                                        @else
+                                            <span style="font-size: 0.85rem; color: var(--text-main);">{{ $docRemark ?: '-' }}</span>
+                                        @endif
+                                    </td>
                                     <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
                                         {{ $tickedAt ?? '-' }}
                                     </td>
@@ -2957,170 +3006,119 @@
                     $locationMapLink = $docRecord ? $docRecord->location_map_link : null;
                     
                     $pFiles = $project->files ?? [];
-                    $beforePhotos = $pFiles['photos_before'] ?? [];
-                    $startingPhotos = $pFiles['photos_starting'] ?? [];
-                    $inbetweenPhotos = $pFiles['photos_inbetween'] ?? [];
-                    $afterPhotos = $pFiles['photos_after'] ?? ($pFiles['photos'] ?? []);
-                    $bannerPhotos = $pFiles['photos_banner'] ?? [];
-                    $stonePhotos = $pFiles['photos_stone'] ?? [];
-                    $inaugurationPhotos = $pFiles['photos_inauguration'] ?? [];
+                    $beforePhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_before'] ?? []), (array)($pFiles['before_photos'] ?? []), (array)($pFiles['before'] ?? [])))));
+                    $startingPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_starting'] ?? []), (array)($pFiles['starting_photos'] ?? []), (array)($pFiles['starting'] ?? [])))));
+                    $inbetweenPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_inbetween'] ?? []), (array)($pFiles['inbetween_photos'] ?? []), (array)($pFiles['inbetween'] ?? [])))));
+                    $afterPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_after'] ?? ($pFiles['photos'] ?? [])), (array)($pFiles['after_photos'] ?? []), (array)($pFiles['after'] ?? [])))));
+                    $bannerPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_banner'] ?? []), (array)($pFiles['banner_photos'] ?? []), (array)($pFiles['banner'] ?? [])))));
+                    $stonePhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_stone'] ?? []), (array)($pFiles['stone_photos'] ?? []), (array)($pFiles['stone'] ?? [])))));
+                    $inaugurationPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_inauguration'] ?? []), (array)($pFiles['inauguration_photos'] ?? []), (array)($pFiles['inauguration'] ?? [])))));
                     $compDetails = $pFiles['completion_details'] ?? [];
                 @endphp
 
-                <!-- Completion Documents (Stage 6 Upload/Reference) -->
+                <!-- Completion Documents (Stage 6 Checklist/Reference) -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
                     <h3 style="color: var(--text-main); font-size: 1rem; margin-top: 0; margin-bottom: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.75rem;">Completion Documents</h3>
 
-                    @if($project->status === 'Completed' || $project->status === 'Approved')
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-weight: 600;">Completion Certificate:</span>
+                    <!-- Completion Certificate row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Completion Certificate</span>
+                            <span id="ticked-at-Completion_Certificate" style="font-size: 0.75rem; color: var(--text-muted);">
+                                @if($compCertTime) Checked at: {{ $compCertTime }} @endif
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            @if($isProjectManager && !$isLockedForEditing)
+                                <button type="button" onclick="toggleChecklistDocument(this, 'Completion Certificate')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                    @if(!empty($compCert))
+                                        <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
+                                    @else
+                                        <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
+                                    @endif
+                                </button>
+                            @else
                                 @if(!empty($compCert))
-                                    <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); text-decoration: none;">View Certificate</a>
+                                    <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
+                                    </span>
                                 @else
-                                    <span style="color: var(--accent-red); font-weight: 600;">Pending</span>
+                                    <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
+                                    </span>
                                 @endif
-                            </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-weight: 600;">Measurement Book:</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Measurement Book row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Measurement Book</span>
+                            <span id="ticked-at-Measurement_Book" style="font-size: 0.75rem; color: var(--text-muted);">
+                                @if($measBookTime) Checked at: {{ $measBookTime }} @endif
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            @if($isProjectManager && !$isLockedForEditing)
+                                <button type="button" onclick="toggleChecklistDocument(this, 'Measurement Book')" style="background: transparent; border: none; cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">
+                                    @if(!empty($measBook))
+                                        <i class="bx bxs-checkbox-checked" style="color: var(--accent-green); font-size: 2.2rem;"></i>
+                                    @else
+                                        <i class="bx bx-checkbox" style="color: var(--text-muted); font-size: 2.2rem;"></i>
+                                    @endif
+                                </button>
+                            @else
                                 @if(!empty($measBook))
-                                    <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); text-decoration: none;">View Book</a>
+                                    <span style="color: var(--accent-green); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bx bx-check-circle" style="font-size: 1rem;"></i> Completed
+                                    </span>
                                 @else
-                                    <span style="color: var(--accent-red); font-weight: 600;">Pending</span>
+                                    <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
+                                        <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending
+                                    </span>
                                 @endif
-                            </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <span style="font-weight: 600;">Location Map Link:</span>
-                                @if(!empty($locationMapLink))
-                                    <a href="{{ $locationMapLink }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); text-decoration: none;">
-                                        <i class="bx bx-map-alt"></i> Open Map
-                                    </a>
-                                @else
-                                    <span style="color: var(--text-muted); font-style: italic;">Not added</span>
-                                @endif
-                            </div>
+                            @endif
                         </div>
-                    @else
-                        <!-- Completion Certificate row -->
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--panel-border);">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Completion Certificate</span>
-                                @if($compCertTime)
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $compCertTime }}</span>
-                                @endif
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if(!empty($compCert) && $compCert !== "1")
-                                    <a href="{{ asset($compCert) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                        <i class="bx bx-show"></i> View Certificate
-                                    </a>
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Completion Certificate">
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
-                                                <i class="bx bx-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    @endif
-                                @else
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Completion Certificate">
-                                            <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                            <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                                <i class="bx bx-upload"></i> Upload
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending Upload
-                                        </span>
-                                    @endif
-                                @endif
-                            </div>
-                        </div>
+                    </div>
 
-                        <!-- Measurement Book row -->
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0;">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Measurement Book</span>
-                                @if($measBookTime)
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Uploaded at: {{ $measBookTime }}</span>
-                                @endif
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if(!empty($measBook) && $measBook !== "1")
-                                    <a href="{{ asset($measBook) }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                        <i class="bx bx-show"></i> View Book
-                                    </a>
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.toggle_file', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Measurement Book">
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete File">
-                                                <i class="bx bx-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    @endif
-                                @else
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.upload_file', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                            @csrf
-                                            <input type="hidden" name="document_name" value="Measurement Book">
-                                            <input type="file" name="file" required style="font-size: 0.8rem; max-width: 220px; color: var(--text-muted);">
-                                            <button type="submit" class="btn-custom" style="padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                                <i class="bx bx-upload"></i> Upload
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span style="color: var(--accent-red); font-weight: 500; display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.8rem;">
-                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Pending Upload
-                                        </span>
-                                    @endif
-                                @endif
-                            </div>
+                    <!-- Location Map Link row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--panel-border);">
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Location Map Link</span>
+                            @if(!empty($locationMapLink))
+                                <span style="font-size: 0.75rem; color: var(--text-muted); overflow-wrap: anywhere; word-break: break-all; max-width: 400px; display: inline-block;">Current: <a href="{{ $locationMapLink }}" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">{{ $locationMapLink }}</a></span>
+                            @else
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Not added yet</span>
+                            @endif
                         </div>
-
-                        <!-- Location Map Link row -->
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--panel-border);">
-                            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                <span style="font-weight: 600; color: var(--text-main); min-width: 200px;">Location Map Link</span>
-                                @if(!empty($locationMapLink))
-                                    <span style="font-size: 0.75rem; color: var(--text-muted); overflow-wrap: anywhere; word-break: break-all; max-width: 400px; display: inline-block;">Current: <a href="{{ $locationMapLink }}" target="_blank" style="color: var(--accent-cyan); text-decoration: underline;">{{ $locationMapLink }}</a></span>
-                                @else
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Not added yet</span>
-                                @endif
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                                @if(!empty($locationMapLink))
-                                    <a href="{{ $locationMapLink }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
-                                        <i class="bx bx-map-alt"></i> Open Map
-                                    </a>
-                                    @if($isProjectManager && !$isLockedForEditing)
-                                        <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
-                                            @csrf
-                                            <input type="hidden" name="location_map_link" value="">
-                                            <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete Link">
-                                                <i class="bx bx-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    @endif
-                                @endif
-                                
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            @if(!empty($locationMapLink))
+                                <a href="{{ $locationMapLink }}" target="_blank" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none;">
+                                    <i class="bx bx-map-alt"></i> Open Map
+                                </a>
                                 @if($isProjectManager && !$isLockedForEditing)
-                                    <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex;">
                                         @csrf
-                                        <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
-                                        <button type="submit" class="btn-custom" style="padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                                            <i class="bx bx-save"></i> Save Link
+                                        <input type="hidden" name="location_map_link" value="">
+                                        <button type="submit" class="btn-danger-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="Delete Link">
+                                            <i class="bx bx-trash"></i> Delete
                                         </button>
                                     </form>
                                 @endif
-                            </div>
+                            @endif
+                            
+                            @if($isProjectManager && !$isLockedForEditing)
+                                <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    @csrf
+                                    <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
+                                    <button type="submit" class="btn-custom" style="padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                        <i class="bx bx-save"></i> Save Link
+                                    </button>
+                                </form>
+                            @endif
                         </div>
-                    @endif
+                    </div>
                 </div>
 
                 <style>
@@ -3229,7 +3227,7 @@
                                         <input type="hidden" name="category" value="{{ $key }}">
                                         <input type="file" name="photo" accept="image/*" required style="font-size: 0.75rem; color: var(--text-muted); width: 100%;">
                                         <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; width: 100%;">
-                                            <i class="bx bx-upload"></i> Upload Photo
+                                            <i class="bx bx-upload"></i> {{ !empty($colData['photos']) ? 'Replace Photo' : 'Upload Photo' }}
                                         </button>
                                     </form>
                                 @endif
@@ -3706,8 +3704,42 @@
         window.toggleChecklistDocument = toggleChecklistDocument;
         window.performToggleChecklistDocument = performToggleChecklistDocument;
 
+        async function saveDocRemark(docName, remarkText, inputEl) {
+            const csrfToken = "{{ csrf_token() }}";
+            const updateUrl = "{{ route('projects.update_doc_remark', $project->id) }}";
+
+            try {
+                const response = await fetch(updateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        document_name: docName,
+                        remark: remarkText
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    if (inputEl) {
+                        inputEl.style.borderColor = '#10b981';
+                        setTimeout(() => { inputEl.style.borderColor = '#cccccc'; }, 1500);
+                    }
+                }
+            } catch (e) {
+                console.error("Error saving remark:", e);
+            }
+        }
+        window.saveDocRemark = saveDocRemark;
+
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
+            const docKey = docName.replace(/ /g, '_');
+            const remarkInput = document.getElementById('remark-input-' + docKey);
+            const remarkVal = remarkInput ? remarkInput.value : null;
+
             try {
                 const response = await fetch("{{ route('projects.toggle_file', $project->id) }}", {
                     method: "POST",
@@ -3716,7 +3748,10 @@
                         "X-CSRF-TOKEN": "{{ csrf_token() }}",
                         "Accept": "application/json"
                     },
-                    body: JSON.stringify({ document_name: docName })
+                    body: JSON.stringify({ 
+                        document_name: docName,
+                        remark: remarkVal
+                    })
                 });
                 
                 const data = await response.json();
@@ -3730,10 +3765,19 @@
                         icon.style.color = 'var(--text-muted)';
                     }
 
-                    const cellId = 'ticked-at-' + docName.replace(/ /g, '_');
+                    const cellId = 'ticked-at-' + docKey;
                     const cell = document.getElementById(cellId);
                     if (cell) {
                         cell.innerText = data.ticked_at ? data.ticked_at : '-';
+                    }
+
+                    const remarkCell = document.getElementById('remark-cell-' + docKey);
+                    if (remarkCell) {
+                        if (data.ticked) {
+                            remarkCell.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-main);">${data.remark || '-'}</span>`;
+                        } else {
+                            remarkCell.innerHTML = `<input type="text" id="remark-input-${docKey}" value="${data.remark || ''}" placeholder="Add remark..." onchange="saveDocRemark('${docName}', this.value, this)" style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.35rem 0.65rem; border-radius: 4px; font-size: 0.85rem; width: 100%; max-width: 260px; outline: none;">`;
+                        }
                     }
 
                     if (typeof showToast === 'function') {
@@ -3899,10 +3943,15 @@
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>${formatVal(meta.house_name)} / ${formatVal(app.place)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Town / Post Office:</td><td>${formatVal(meta.town)} / ${formatVal(meta.post_office)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin_code)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1 / 2:</td><td>${formatVal(meta.mobile_1)} / ${formatVal(meta.mobile_2)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name:</td><td>${formatVal(meta.house_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>${formatVal(app.place)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Town:</td><td>${formatVal(meta.town)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post Office:</td><td>${formatVal(meta.post_office)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>${formatVal(meta.district)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">State:</td><td>${formatVal(meta.state)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">PIN Code:</td><td>${formatVal(meta.pin_code)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1:</td><td>${formatVal(meta.mobile_1)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 2:</td><td>${formatVal(meta.mobile_2)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">${app.status}</td></tr>
                             </table>
                         </div>
@@ -3922,17 +3971,21 @@
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)} (${formatVal(meta.gender)})</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>${formatVal(meta.dob)} / ${formatVal(meta.age)} yrs</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhaar / Marital Status:</td><td>${formatVal(meta.aadhar_number)} / ${formatVal(meta.marital_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth:</td><td>${formatVal(meta.dob)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Age:</td><td>${formatVal(meta.age)} yrs</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhaar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Marital Status:</td><td>${formatVal(meta.marital_status)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Father:</td><td>${formatVal(meta.fathers_father)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian / Relation:</td><td>${formatVal(meta.guardian_name)} (${formatVal(meta.guardian_relation)})</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian Name:</td><td>${formatVal(meta.guardian_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Guardian Relation:</td><td>${formatVal(meta.guardian_relation)}</td></tr>
                             </table>
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Family & Economic Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Male / Female Members:</td><td>M: ${formatVal(meta.male_members)} / F: ${formatVal(meta.female_members)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Male Members:</td><td>${formatVal(meta.male_members)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Female Members:</td><td>${formatVal(meta.female_members)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Total Members:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.total_members)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">People with Disabilities:</td><td>${formatVal(meta.people_with_disabilities)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Monthly Income:</td><td>${incomeText}</td></tr>
@@ -3958,9 +4011,12 @@
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name / Place:</td><td>${formatVal(meta.house_name)} / ${formatVal(app.place)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayat / District:</td><td>${formatVal(meta.panchayat)} / ${formatVal(meta.district)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pincode / Mobile:</td><td>${formatVal(meta.pincode)} / ${formatVal(meta.mobile)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">House Name:</td><td>${formatVal(meta.house_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>${formatVal(app.place)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayat:</td><td>${formatVal(meta.panchayat)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>${formatVal(meta.district)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pincode:</td><td>${formatVal(meta.pincode)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile:</td><td>${formatVal(meta.mobile)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">${app.status}</td></tr>
                             </table>
                         </div>
@@ -3980,14 +4036,20 @@
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">${formatVal(app.applicant_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth / Age:</td><td>${formatVal(meta.dob)} / ${formatVal(meta.age)} yrs</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Date of Birth:</td><td>${formatVal(meta.dob)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Age:</td><td>${formatVal(meta.age)} yrs</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Aadhaar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father's Father:</td><td>${formatVal(meta.fathers_father)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">House / Location:</td><td>${formatVal(meta.house_name)} / ${formatVal(meta.location)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">PO / Panchayat / Dist:</td><td>${formatVal(meta.post_office)} / ${formatVal(meta.panchayat)} / ${formatVal(meta.district)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pin Code / Contact:</td><td>Pin: ${formatVal(meta.pin_code)} / Mob: ${formatVal(meta.mobile_1)} ${meta.mobile_2 ? ', ' + meta.mobile_2 : ''}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">House Name:</td><td>${formatVal(meta.house_name)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>${formatVal(meta.location)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post Office:</td><td>${formatVal(meta.post_office)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayat:</td><td>${formatVal(meta.panchayat)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>${formatVal(meta.district)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">PIN Code:</td><td>${formatVal(meta.pin_code)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 1:</td><td>${formatVal(meta.mobile_1)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mobile 2:</td><td>${meta.mobile_2 || 'N/A'}</td></tr>
                             </table>
 
                             <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Family & Income Details</h4>
@@ -4008,7 +4070,8 @@
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Chronic Patients:</td><td>${formatVal(meta.chronic_patients_description)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Residence Information:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.residence_info)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Own House Condition:</td><td>${formatVal(meta.own_house_condition)}</td></tr>
-                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Own Place / Size:</td><td>Place: ${formatVal(meta.own_place_status)} / Size: ${formatVal(meta.own_place_size)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Own Place Status:</td><td>${formatVal(meta.own_place_status)}</td></tr>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Own Place Size:</td><td>${formatVal(meta.own_place_size)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Is there a sequel?</td><td>${formatVal(meta.sequel_status)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Welfare Areas:</td><td>${formatVal(meta.welfare_assistance_areas)}</td></tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">${app.status}</td></tr>
@@ -4927,19 +4990,45 @@
         }
         window.toggleSpecifyProgrammeField = toggleSpecifyProgrammeField;
 
-        window.openAddProgrammeModal = function openAddProgrammeModal() {
+        window.openAddProgrammeModal = function openAddProgrammeModal(btnElement) {
             const modal = document.getElementById('addProgrammeModal');
             if (modal) {
                 document.body.appendChild(modal);
                 modal.style.setProperty('z-index', '999999', 'important');
                 modal.style.setProperty('display', 'flex', 'important');
+
+                if (btnElement && typeof btnElement.getAttribute === 'function') {
+                    const pId = btnElement.getAttribute('data-id');
+                    if (pId && document.getElementById('add_prog_project_id')) {
+                        document.getElementById('add_prog_project_id').value = pId;
+                    }
+                }
+
                 const selectElem = document.getElementById('add_prog_name_select');
                 if (selectElem) {
                     selectElem.selectedIndex = 0;
                     toggleSpecifyProgrammeField(selectElem, 'add_prog_other_name_wrapper', 'add_prog_other_name_input');
                 }
+            } else {
+                const targetUrl = new URL(window.location.href);
+                targetUrl.searchParams.set('open_modal', 'add_programme');
+                window.location.href = targetUrl.toString();
             }
         };
+
+        try {
+            const currentParams = new URLSearchParams(window.location.search);
+            if (currentParams.get('open_modal') === 'add_programme') {
+                const cleanUrl = new URL(window.location.href);
+                cleanUrl.searchParams.delete('open_modal');
+                window.history.replaceState({}, '', cleanUrl.toString());
+                setTimeout(function() {
+                    if (typeof window.openAddProgrammeModal === 'function') {
+                        window.openAddProgrammeModal();
+                    }
+                }, 150);
+            }
+        } catch (e) {}
         function closeAddProgrammeModal() {
             const modal = document.getElementById("addProgrammeModal");
             if (modal) modal.style.setProperty('display', 'none', 'important');
@@ -4999,6 +5088,94 @@
             if (modal) modal.style.display = 'none';
         }
 
+        function appendProgrammeRow(prog, formattedDate) {
+            const tbody = document.getElementById('social-aid-programmes-tbody');
+            if (!tbody) return;
+
+            const noRow = document.getElementById('no-programmes-row');
+            if (noRow) noRow.remove();
+
+            const dateStr = formattedDate || (prog.date ? new Date(prog.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-') : '-');
+            const isPm = @json($isProjectManager && !$isLockedForEditing);
+            const isAdmin = @json($isSuperAdmin || $isHod || $isCoo);
+            const progJson = JSON.stringify(prog).replace(/"/g, '&quot;');
+            const deleteRoute = `/admin/projects/{{ $projectRouteKey }}/{{ $project->id }}/delete-programme/${prog.id}`;
+
+            const items = [
+                { key: 'present', label: 'Present' },
+                { key: 'photo', label: 'Photo' },
+                { key: 'marklist', label: 'Marklist' },
+                { key: 'thanks_letter', label: 'Thanks Letter' },
+                { key: 'report_form', label: 'Report Form' },
+                { key: 'other_document', label: 'Other Doc' }
+            ];
+
+            let checklistHtml = '<div style="display: flex; gap: 0.3rem; flex-wrap: nowrap; justify-content: center; align-items: center; white-space: nowrap; margin: 0 auto;">';
+            items.forEach(item => {
+                const isTicked = !!prog[item.key + '_ticked'];
+                const badgeStyle = isTicked 
+                    ? 'background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #059669;' 
+                    : 'background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #d97706;';
+                const iconClass = isTicked ? 'bxs-check-circle' : 'bx-circle';
+                
+                if (isPm) {
+                    checklistHtml += `<button type="button" onclick="toggleProgrammeChecklistTick(this, ${prog.id}, '${item.key}')"
+                        title="${item.label}: ${isTicked ? 'Ticked (Click to untick)' : 'Not ticked (Click to tick)'}"
+                        style="display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.25rem 0.5rem; border-radius: 20px; font-size: 0.73rem; font-weight: 600; cursor: pointer; transition: all 0.2s; outline: none; white-space: nowrap; flex-shrink: 0; ${badgeStyle}">
+                        <i class="bx ${iconClass}" style="font-size: 0.8rem;"></i>
+                        ${item.label}
+                    </button>`;
+                } else {
+                    checklistHtml += `<span style="display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.25rem 0.5rem; border-radius: 20px; font-size: 0.73rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; ${badgeStyle}">
+                        <i class="bx ${iconClass}" style="font-size: 0.8rem;"></i>
+                        ${item.label}
+                    </span>`;
+                }
+            });
+            checklistHtml += '</div>';
+
+            let actionsHtml = `<button type="button" onclick="openViewProgrammeModal(this)" data-prog="${progJson}" style="background: transparent; border: none; color: #10b981; cursor: pointer; padding: 0.3rem; margin-right: 0.25rem; border-radius: 4px; transition: background 0.2s;" title="View Details" onmouseover="this.style.background='rgba(16, 185, 129, 0.1)'" onmouseout="this.style.background='transparent'">
+                <i class="bx bx-show" style="font-size: 1.15rem; vertical-align: middle;"></i>
+            </button>`;
+
+            if (isPm) {
+                actionsHtml += `<button type="button" onclick="openEditProgrammeModal(this)" data-prog="${progJson}" style="background: transparent; border: none; color: #0284c7; cursor: pointer; padding: 0.3rem; margin-right: 0.25rem; border-radius: 4px; transition: background 0.2s;" title="Edit Programme" onmouseover="this.style.background='rgba(2, 132, 199, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <i class="bx bx-pencil" style="font-size: 1.15rem; vertical-align: middle;"></i>
+                </button>`;
+            }
+
+            if (isAdmin) {
+                actionsHtml += `<button type="button" onclick="handleDeleteProgramme(this, ${prog.id}, '${deleteRoute}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.3rem; border-radius: 4px; transition: background 0.2s;" title="Delete Programme" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='transparent'">
+                    <i class="bx bx-trash" style="font-size: 1.15rem; vertical-align: middle;"></i>
+                </button>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.id = `programme-row-${prog.id}`;
+            tr.className = 'programme-table-row';
+            tr.style.cssText = 'border-bottom: 1px solid var(--panel-border); font-size: 0.875rem; transition: all 0.3s ease; animation: fadeIn 0.4s ease;';
+            tr.onmouseover = function() { this.style.backgroundColor = 'rgba(255,255,255,0.02)'; };
+            tr.onmouseout = function() { this.style.backgroundColor = 'transparent'; };
+
+            tr.innerHTML = `
+                <td class="serial-no-cell" style="padding: 0.85rem 1rem; text-align: center; font-weight: 600; color: var(--text-muted); vertical-align: middle;">1</td>
+                <td style="padding: 0.85rem 1rem; font-weight: 700; color: var(--text-main); vertical-align: middle;">${prog.programme_name || 'Untitled Programme'}</td>
+                <td style="padding: 0.85rem 1rem; color: var(--text-main); white-space: nowrap; vertical-align: middle;">${dateStr}</td>
+                <td style="padding: 0.85rem 1rem; color: var(--text-main); vertical-align: middle;">${prog.place || '-'}</td>
+                <td style="padding: 0.85rem 1rem; color: var(--text-main); vertical-align: middle;">${prog.remarks || '-'}</td>
+                <td style="padding: 0.85rem 1rem; text-align: center; vertical-align: middle;">${checklistHtml}</td>
+                <td style="padding: 0.85rem 1rem; text-align: center; white-space: nowrap; vertical-align: middle;">${actionsHtml}</td>
+            `;
+
+            tbody.insertBefore(tr, tbody.firstChild);
+
+            const rows = tbody.querySelectorAll('.programme-table-row');
+            rows.forEach((row, i) => {
+                const cell = row.querySelector('.serial-no-cell');
+                if (cell) cell.innerText = i + 1;
+            });
+        }
+
         async function handleAddProgrammeSubmit(e) {
             if (e) {
                 e.preventDefault();
@@ -5033,20 +5210,19 @@
                 if (response.ok && data.success) {
                     closeAddProgrammeModal();
                     form.reset();
+                    if (data.programme) {
+                        appendProgrammeRow(data.programme, data.formatted_date);
+                    }
                     if (typeof showToast === 'function') {
                         showToast(data.message || 'Programme added successfully!', 'success');
                     }
-                    window.location.reload();
                 } else {
                     alert(data.error || 'Failed to add programme.');
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = 'Add Programme';
-                    }
                 }
             } catch (err) {
                 console.error(err);
                 alert('An error occurred while submitting.');
+            } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Add Programme';
@@ -5247,5 +5423,108 @@
         }
     </script>
 @endif
+
+<!-- Site Study Modal -->
+<div id="siteStudyModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: var(--bg-card, #ffffff); border-radius: 8px; width: 90%; max-width: 850px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden;">
+        <div style="padding: 1rem 1.5rem; background: #0d9488; color: white; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin: 0; font-size: 1.1rem; color: white; display: flex; align-items: center; gap: 0.5rem;"><i class="bx bx-file-find"></i> Site Study Report (1000+ Words Supported)</h4>
+            <button type="button" onclick="closeSiteStudyModal()" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <form id="siteStudyForm" onsubmit="saveSiteStudyReport(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; flex: 1;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">Comprehensive Site Study Report</label>
+                    <span id="siteStudyWordCount" style="font-size: 0.8rem; color: #0d9488; font-weight: 600;">Words: 0</span>
+                </div>
+                <textarea id="siteStudyReportText" 
+                          name="report" 
+                          rows="14" 
+                          oninput="updateSiteStudyWordCount()"
+                          placeholder="Type or paste comprehensive site study report here (supports 1000+ words)..." 
+                          style="width: 100%; border: 1px solid #cccccc; border-radius: 6px; padding: 0.75rem; font-size: 0.9rem; font-family: inherit; color: #000000 !important; background-color: #ffffff !important; outline: none; line-height: 1.5; resize: vertical;">{{ $siteStudyData->report ?? '' }}</textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between;">
+                <div style="flex: 1;">
+                    <label style="font-weight: 600; color: var(--text-main); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Attach Site Study File (Optional)</label>
+                    <input type="file" name="file" id="siteStudyFileInput" style="font-size: 0.85rem;">
+                    @if(!empty($siteStudyData->file_path))
+                        <div style="font-size: 0.8rem; margin-top: 0.35rem;">
+                            <a href="{{ asset($siteStudyData->file_path) }}" target="_blank" style="color: #0d9488; text-decoration: underline;"><i class="bx bx-download"></i> View Attached Site Study File</a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; border-top: 1px solid #eeeeee; padding-top: 1rem;">
+                <button type="button" onclick="closeSiteStudyModal()" style="background: #e5e7eb; color: #374151; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; font-weight: 500; cursor: pointer;">Cancel</button>
+                <button type="submit" id="siteStudySubmitBtn" style="background: #0d9488; color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
+                    <i class="bx bx-save"></i> Save Site Study Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openSiteStudyModal() {
+        const modal = document.getElementById('siteStudyModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            updateSiteStudyWordCount();
+        }
+    }
+    function closeSiteStudyModal() {
+        const modal = document.getElementById('siteStudyModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    function updateSiteStudyWordCount() {
+        const text = document.getElementById('siteStudyReportText')?.value || '';
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const countEl = document.getElementById('siteStudyWordCount');
+        if (countEl) {
+            countEl.innerText = `Words: ${words}`;
+        }
+    }
+    async function saveSiteStudyReport(e) {
+        e.preventDefault();
+        const btn = document.getElementById('siteStudySubmitBtn');
+        if (btn) btn.disabled = true;
+        const formData = new FormData(document.getElementById('siteStudyForm'));
+        const csrfToken = "{{ csrf_token() }}";
+        
+        try {
+            const response = await fetch("{{ route('projects.update_site_study', $project->id) }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (typeof showToast === 'function') {
+                    showToast(data.message, 'success');
+                } else {
+                    alert(data.message);
+                }
+                closeSiteStudyModal();
+                const cell = document.getElementById('ticked-at-Site_study') || document.getElementById('ticked-at-Site_study_report');
+                if (cell && data.ticked_at) {
+                    cell.innerText = data.ticked_at;
+                }
+            } else {
+                alert(data.message || 'Failed to save site study report.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error occurred while saving site study report.');
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+</script>
 
 @endsection

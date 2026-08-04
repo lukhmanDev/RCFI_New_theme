@@ -298,12 +298,12 @@
                 @endif
 
                 <div class="details-grid">
-                    <div class="details-label">Project ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
+                    <div class="details-label">RCFI ID</div><div class="details-colon">:</div><div class="details-value" style="color: var(--accent-cyan);">{{ $project->project_id }}</div>
                     <div class="details-label">Project Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->project_name ?? 'N/A' }}</div>
                     <div class="details-label">Sponsor</div><div class="details-colon">:</div><div class="details-value">{{ $project->sponsor ?? 'N/A' }}</div>
                     <div class="details-label">Project Spec</div><div class="details-colon">:</div><div class="details-value" style="white-space: pre-wrap;">{{ $project->project_spec ?? 'N/A' }}</div>
                     <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value">{{ $project->agency_project_no ?? 'N/A' }}</div>
-                    <div class="details-label">Donor Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
+                    <div class="details-label">Agency Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
                     <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
                     <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
                     <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
@@ -625,12 +625,14 @@
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>{!! $formatVal($metaData['committee_name'] ?? $metaData['mahallu_name'] ?? $metaData['place'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>{!! $formatVal($metaData['reg_number'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>{!! $formatVal($metaData['year'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['location'] ?? $metaData['place'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>{!! $formatVal($metaData['location'] ?? $metaData['place'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['village'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>{!! $formatVal($metaData['post'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>{!! $formatVal($metaData['panchayath'] ?? $metaData['panchayat'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['district'] ?? null) !!} / {!! $formatVal($metaData['state'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? $metaData['contact1'] ?? $metaData['mobile'] ?? null) !!} / {!! $formatVal($metaData['contact_number_2'] ?? $metaData['contact2'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>{!! $formatVal($metaData['locality_district'] ?? ($metaData['district'] ?? null)) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">State:</td><td>{!! $formatVal($metaData['locality_state'] ?? ($metaData['state'] ?? null)) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 1:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 2:</td><td>{!! $formatVal($metaData['contact_number_2'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>{!! $formatVal($metaData['submitted_before'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>{!! $formatVal($metaData['received_support_before'] ?? null) !!}</td></tr>
                                 </table>
@@ -638,9 +640,10 @@
                                 <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td>{!! $formatVal($metaData['mahallu_name'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>{!! $formatVal($metaData['locality_location'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>{!! $formatVal($metaData['locality_place'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>{!! $formatVal($metaData['locality_village'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>{!! $formatVal($metaData['locality_district'] ?? null) !!} / {!! $formatVal($metaData['locality_state'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>{!! $formatVal($metaData['locality_district'] ?? ($metaData['district'] ?? null)) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">State:</td><td>{!! $formatVal($metaData['locality_state'] ?? ($metaData['state'] ?? null)) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td>{!! $formatVal($metaData['families_in_mahallu'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Requirement:</td><td>{!! $formatVal($metaData['requirement'] ?? null) !!}</td></tr>
                                 </table>
@@ -680,6 +683,27 @@
                                 {{ $application->details ? $application->details : 'No additional notes provided.' }}
                             </p>
                         </div>
+                        @php
+                            $recName = $metaData['recommender_name'] ?? ($metaData['recommendation_name'] ?? null);
+                            $recOrg = $metaData['recommender_org'] ?? ($metaData['recommendation_organization'] ?? null);
+                            $recOrgOther = $metaData['recommender_org_other'] ?? ($metaData['recommendation_organization_other'] ?? null);
+                            $recPhone = $metaData['recommender_phone'] ?? ($metaData['recommendation_phone'] ?? null);
+                            $recPos = $metaData['recommender_position'] ?? ($metaData['recommendation_position'] ?? null);
+                            $displayOrg = ($recOrg === 'Others') ? ($recOrgOther ?: 'Others') : $recOrg;
+                        @endphp
+
+                        @if($recName || $recOrg || $recPhone || $recPos)
+                        <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
+                            <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details</h5>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
+                                @if($recName)<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Recommender Name:</td><td>{!! $formatVal($recName) !!}</td></tr>@endif
+                                @if($recOrg)<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; color: var(--text-muted);">Organization:</td><td>{!! $formatVal($displayOrg) !!}</td></tr>@endif
+                                @if($recPhone)<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; color: var(--text-muted);">Phone:</td><td>{!! $formatVal($recPhone) !!}</td></tr>@endif
+                                @if($recPos)<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; color: var(--text-muted);">Position / Designation:</td><td>{!! $formatVal($recPos) !!}</td></tr>@endif
+                            </table>
+                        </div>
+                        @endif
+
                     @else
                         <div style="text-align: center; padding: 3rem; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px dashed var(--panel-border); margin: 2rem 0;">
                             <i class="bx bx-link-external" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
@@ -1433,13 +1457,13 @@
                     $locationMapLink = $docRecord ? $docRecord->location_map_link : null;
                     
                     $pFiles = $project->files ?? [];
-                    $beforePhotos = $pFiles['photos_before'] ?? [];
-                    $startingPhotos = $pFiles['photos_starting'] ?? [];
-                    $inbetweenPhotos = $pFiles['photos_inbetween'] ?? [];
-                    $afterPhotos = $pFiles['photos_after'] ?? ($pFiles['photos'] ?? []);
-                    $bannerPhotos = $pFiles['photos_banner'] ?? [];
-                    $stonePhotos = $pFiles['photos_stone'] ?? [];
-                    $inaugurationPhotos = $pFiles['photos_inauguration'] ?? [];
+                    $beforePhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_before'] ?? []), (array)($pFiles['before_photos'] ?? []), (array)($pFiles['before'] ?? [])))));
+                    $startingPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_starting'] ?? []), (array)($pFiles['starting_photos'] ?? []), (array)($pFiles['starting'] ?? [])))));
+                    $inbetweenPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_inbetween'] ?? []), (array)($pFiles['inbetween_photos'] ?? []), (array)($pFiles['inbetween'] ?? [])))));
+                    $afterPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_after'] ?? ($pFiles['photos'] ?? [])), (array)($pFiles['after_photos'] ?? []), (array)($pFiles['after'] ?? [])))));
+                    $bannerPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_banner'] ?? []), (array)($pFiles['banner_photos'] ?? []), (array)($pFiles['banner'] ?? [])))));
+                    $stonePhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_stone'] ?? []), (array)($pFiles['stone_photos'] ?? []), (array)($pFiles['stone'] ?? [])))));
+                    $inaugurationPhotos = array_values(array_unique(array_filter(array_merge((array)($pFiles['photos_inauguration'] ?? []), (array)($pFiles['inauguration_photos'] ?? []), (array)($pFiles['inauguration'] ?? [])))));
                     $compDetails = $pFiles['completion_details'] ?? [];
                 @endphp
 
@@ -1477,7 +1501,7 @@
                             @if($isProjectManager && !$isLockedForEditing)
                                 <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                                     @csrf
-                                    <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
+                                    <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
                                     <button type="submit" class="btn-custom" style="padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
                                         <i class="bx bx-save"></i> Save Link
                                     </button>
@@ -1589,7 +1613,7 @@
                                         <input type="hidden" name="category" value="{{ $key }}">
                                         <input type="file" name="photo" accept="image/*" required style="font-size: 0.75rem; color: var(--text-muted); width: 100%;">
                                         <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; width: 100%;">
-                                            <i class="bx bx-upload"></i> Upload Photo
+                                            <i class="bx bx-upload"></i> {{ !empty($colData['photos']) ? 'Replace Photo' : 'Upload Photo' }}
                                         </button>
                                     </form>
                                 @endif
@@ -2245,7 +2269,7 @@
             const rcfiSupport = formatVal(getVal(['received_support_before']));
 
             const mahalluName = formatVal(getVal(['mahallu_name']));
-            const localityLocation = formatVal(getVal(['locality_location', 'location']));
+            const localityLocation = formatVal(getVal(['locality_place', 'location']));
             const localityVillage = formatVal(getVal(['locality_village', 'village']));
             const lDist = getVal(['locality_district', 'district']);
             const lSt = getVal(['locality_state', 'state']);
@@ -2274,12 +2298,13 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Committee Name:</td><td>${committeeName}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Reg. Number:</td><td>${regNumber}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Year:</td><td>${year}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>${location}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>${location}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>${village}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>${post}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>${panchayath}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>${districtState}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact 1 / 2:</td><td>${contact}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 1:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? null) !!}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 2:</td><td>{!! $formatVal($metaData['contact_number_2'] ?? null) !!}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Submitted Before?</td><td>${submittedBefore}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">RCFI Support?</td><td>${rcfiSupport}</td></tr>
                         </table>
@@ -2287,7 +2312,7 @@
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Mahallu Locality Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Mahallu Name:</td><td>${mahalluName}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Location:</td><td>${localityLocation}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>${localityLocation}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>${localityVillage}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>${localityDistState}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Families Count:</td><td>${familiesCount}</td></tr>

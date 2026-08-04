@@ -1725,19 +1725,63 @@
 
         function updateActiveSidebar(urlStr) {
             try {
-                const url = new URL(urlStr);
+                const url = new URL(urlStr || window.location.href, window.location.origin);
                 const path = url.pathname;
                 
+                const isApprovedApps = path.startsWith('/admin/applications/approved');
+                const isApplications = path.startsWith('/admin/applications') && !isApprovedApps;
+                const isProjects = path.startsWith('/admin/projects');
+                const isAgencies = path.startsWith('/admin/donors');
+                const isContractors = path.startsWith('/admin/contractors');
+                const isClusters = path.startsWith('/admin/clusters');
+                const isThemes = path.startsWith('/admin/themes') || path.startsWith('/admin/subthemes');
+                const isStaffs = path.startsWith('/admin/users');
+                const isSocialAidFundReport = path.startsWith('/admin/reports/social-aid-funds');
+                const isProjectReport = path.startsWith('/admin/reports/projects') || path.startsWith('/admin/reports/single-project');
+                const isDashboard = path === '/dashboard' || path === '/admin/dashboard';
+
                 const sidebarLinks = document.querySelectorAll('.sidebar-menu a');
                 sidebarLinks.forEach(link => {
                     const linkUrl = new URL(link.href, window.location.origin);
-                    if (linkUrl.pathname === path) {
+                    const linkPath = linkUrl.pathname;
+                    
+                    let isActive = false;
+
+                    if (linkPath.includes('/admin/applications/approved')) {
+                        isActive = isApprovedApps;
+                    } else if (linkPath.includes('/admin/applications')) {
+                        isActive = isApplications;
+                    } else if (linkPath.includes('/admin/projects')) {
+                        isActive = isProjects;
+                    } else if (linkPath.includes('/admin/donors')) {
+                        isActive = isAgencies;
+                    } else if (linkPath.includes('/admin/contractors')) {
+                        isActive = isContractors;
+                    } else if (linkPath.includes('/admin/clusters')) {
+                        isActive = isClusters;
+                    } else if (linkPath.includes('/admin/themes')) {
+                        isActive = isThemes;
+                    } else if (linkPath.includes('/admin/users')) {
+                        isActive = isStaffs;
+                    } else if (linkPath.includes('/admin/reports/social-aid-funds')) {
+                        isActive = isSocialAidFundReport;
+                    } else if (linkPath.includes('/admin/reports/projects')) {
+                        isActive = isProjectReport;
+                    } else if (linkPath.includes('/dashboard')) {
+                        isActive = isDashboard;
+                    } else {
+                        isActive = (path === linkPath) || (linkPath !== '/' && path.startsWith(linkPath));
+                    }
+
+                    if (isActive) {
                         link.classList.add('active');
                     } else {
                         link.classList.remove('active');
                     }
                 });
-            } catch(e) {}
+            } catch(e) {
+                console.error('Error updating active sidebar:', e);
+            }
         }
 
         // Local PJAX cache map and prefetch timeout tracker
@@ -2060,6 +2104,26 @@
             document.body.addEventListener('click', handleLinkClick);
             document.body.addEventListener('mouseover', handleLinkHover);
             document.body.addEventListener('mouseout', handleLinkMouseout);
+            
+            // Global Event Delegation for dynamically appended buttons (e.g. Add Programme across tabs/PJAX)
+            document.body.addEventListener('click', function(e) {
+                const btn = e.target.closest('#btn-add-programme-main, .btn-add-programme-trigger, .btn-add-prog, [title="Add Programme"], [onclick*="openAddProgrammeModal"]');
+                if (btn) {
+                    if (typeof window.openAddProgrammeModal === 'function') {
+                        e.preventDefault();
+                        window.openAddProgrammeModal(btn);
+                    } else {
+                        const modal = document.getElementById('addProgrammeModal');
+                        if (modal) {
+                            e.preventDefault();
+                            document.body.appendChild(modal);
+                            modal.style.setProperty('z-index', '999999', 'important');
+                            modal.style.setProperty('display', 'flex', 'important');
+                        }
+                    }
+                }
+            });
+
             document.body.addEventListener('submit', function(e) {
                 if (e.target && e.target.tagName === 'FORM') {
                     handleFormSubmit(e);
@@ -2730,7 +2794,7 @@
                             if (isLocality) {
                                 if (fieldName === 'post') candidateIds = [isEdit ? 'edit_locality_post' : 'locality_post', isEdit ? 'edit_locality_post_office' : 'locality_post_office'];
                                 else if (fieldName === 'village') candidateIds = [isEdit ? 'edit_locality_village' : 'locality_village'];
-                                else if (fieldName === 'place') candidateIds = [isEdit ? 'edit_locality_location' : 'locality_location', isEdit ? 'edit_locality_place' : 'locality_place'];
+                                else if (fieldName === 'place') candidateIds = [isEdit ? 'edit_locality_place' : 'locality_place', isEdit ? 'edit_locality_place' : 'locality_place'];
                                 else if (fieldName === 'district') candidateIds = [isEdit ? 'edit_locality_district' : 'locality_district'];
                                 else if (fieldName === 'state') candidateIds = [isEdit ? 'edit_locality_state' : 'locality_state'];
                             } else if (isLandOwner) {
@@ -3173,7 +3237,7 @@
                 const state = getFieldValue(['edit_state', 'state']);
 
                 setFieldValue(['edit_locality_pin_code', 'edit_locality_pin', 'edit_land_pin_code', 'edit_land_pin', 'edit_land_owner_pin'], pin);
-                setFieldValue(['edit_locality_location', 'edit_locality_place', 'edit_land_location', 'edit_land_place', 'edit_land_owner_place'], place);
+                setFieldValue(['edit_locality_place', 'edit_locality_place', 'edit_land_location', 'edit_land_place', 'edit_land_owner_place'], place);
                 setFieldValue(['edit_locality_village', 'edit_land_village', 'edit_land_owner_village'], village);
                 setFieldValue(['edit_locality_post', 'edit_locality_post_office', 'edit_land_post', 'edit_land_owner_post'], post);
                 setFieldValue(['edit_locality_panchayath', 'edit_locality_panchayat', 'edit_land_panchayath', 'edit_land_owner_panchayath'], panchayat);
@@ -3189,7 +3253,7 @@
                 const state = getFieldValue(['state']);
 
                 setFieldValue(['locality_pin_code', 'locality_pin', 'land_pin_code', 'land_pin', 'land_owner_pin'], pin);
-                setFieldValue(['locality_location', 'locality_place', 'land_location', 'land_place', 'land_owner_place'], place);
+                setFieldValue(['locality_place', 'locality_place', 'land_location', 'land_place', 'land_owner_place'], place);
                 setFieldValue(['locality_village', 'land_village', 'land_owner_village'], village);
                 setFieldValue(['locality_post', 'locality_post_office', 'land_post', 'land_owner_post'], post);
                 setFieldValue(['locality_panchayath', 'locality_panchayat', 'land_panchayath', 'land_owner_panchayath'], panchayat);
