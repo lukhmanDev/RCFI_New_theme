@@ -2156,7 +2156,7 @@
                         <tbody>
                             @php
                                 $docs = [
-                                    'Land document', 
+                                    'Land document - Adhaaram', 
                                     'Possession certificate', 
                                     'Tax receipt',
                                     'Recommendation letter',
@@ -3736,7 +3736,7 @@
 
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
-            const docKey = docName.replace(/ /g, '_');
+            const docKey = docName.replace(/ /g, '_').toLowerCase();
             const remarkInput = document.getElementById('remark-input-' + docKey);
             const remarkVal = remarkInput ? remarkInput.value : null;
 
@@ -5282,11 +5282,37 @@
         // Laravel Reverb / Echo Realtime Broadcast Listener
         if (typeof window.Echo !== 'undefined') {
             window.Echo.channel('project.{{ $project->id }}')
-                .listen('.programme.updated', (e) => {
-                    if (typeof showToast === 'function') {
-                        showToast('Realtime update received', 'info');
+                .listen('.project.updated', (e) => {
+                    if (e.action === 'toggle_file' && e.payload) {
+                        const docName = e.payload.document_name;
+                        if (!docName) return;
+                        const docKey = docName.replace(/ /g, '_').toLowerCase();
+                        const tickedAtCell = document.getElementById('ticked-at-' + docKey);
+                        if (tickedAtCell) {
+                            tickedAtCell.innerText = e.payload.ticked ? (e.payload.ticked_at || '-') : '-';
+                        }
+                        document.querySelectorAll('button[onclick*="\'' + docName + '\'"]').forEach(btn => {
+                            const icon = btn.querySelector('i');
+                            if (icon) {
+                                if (e.payload.ticked) {
+                                    icon.className = 'bx bxs-checkbox-checked';
+                                    icon.style.color = 'var(--accent-green)';
+                                } else {
+                                    icon.className = 'bx bx-checkbox';
+                                    icon.style.color = 'var(--text-muted)';
+                                }
+                            }
+                        });
+                        if (e.user_id && e.user_id != {{ auth()->id() }}) {
+                            if (typeof showToast === 'function') {
+                                showToast((e.payload.ticked ? '✔ ' : '✘ ') + docName + ' updated by another user', 'info');
+                            }
+                        }
+                    } else if (e.action !== 'toggle_file') {
+                        if (typeof showToast === 'function') {
+                            showToast('Page has updates — refresh to see latest changes.', 'info');
+                        }
                     }
-                    window.location.reload();
                 });
         }
 

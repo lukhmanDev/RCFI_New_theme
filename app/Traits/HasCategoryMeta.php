@@ -21,34 +21,12 @@ trait HasCategoryMeta
     public function setAttribute($key, $value)
     {
         if ($key === 'pendingAddressData') {
-            $this->pendingAddressData = $value;
             unset($this->attributes['pendingAddressData']);
             return $this;
         }
         if ($key === 'virtualMeta') {
             $this->virtualMeta = $value;
             unset($this->attributes['virtualMeta']);
-            return $this;
-        }
-
-        $addressFields = ['house_name', 'place', 'post_office', 'post', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'pincode', 'location', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
-        if (in_array($key, $addressFields) && !str_starts_with($key, 'locality_')) {
-            $normalizedKey = match ($key) {
-                'post' => 'post_office',
-                'panchayath' => 'panchayat',
-                'pin', 'pincode' => 'pin_code',
-                'mobile', 'mobile_1' => 'contact_number_1',
-                'mobile_2' => 'contact_number_2',
-                default => $key,
-            };
-            $data = is_array($this->pendingAddressData) ? $this->pendingAddressData : [];
-            $data[$normalizedKey] = $value;
-            $this->pendingAddressData = $data;
-            unset($this->attributes['pendingAddressData']);
-
-            if (\Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), $key)) {
-                parent::setAttribute($key, $value);
-            }
             return $this;
         }
 
@@ -69,6 +47,8 @@ trait HasCategoryMeta
         $meta['rejected_reason'] = $this->getAttribute('rejected_reason');
 
                 $aliases = [
+            'locality_location' => 'locality_place',
+            'locality_place' => 'locality_location',
             'post' => 'post_office',
             'post_office' => 'post',
             'panchayath' => 'panchayat',
@@ -120,6 +100,8 @@ trait HasCategoryMeta
                         $this->setAttribute($key, $val);
                     } else {
                         $aliasMap = [
+                            'locality_location' => 'locality_place',
+                            'locality_place' => 'locality_location',
                             'recommendation_name' => 'recommender_name',
                             'recommendation_organization' => 'recommender_org',
                             'recommendation_organization_other' => 'recommender_org_other',
@@ -152,10 +134,7 @@ trait HasCategoryMeta
 
     protected function setAddressField($key, $value)
     {
-        $data = $this->pendingAddressData ?? [];
-        $data[$key] = $value;
-        $this->pendingAddressData = $data;
-        unset($this->attributes['pendingAddressData']);
+        $this->attributes[$key] = $value;
     }
 
     public static function bootHasCategoryMeta()
@@ -168,29 +147,13 @@ trait HasCategoryMeta
                 unset($model->attributes['virtualMeta']);
             }
         });
-
-        static::saved(function ($model) {
-            if (isset($model->pendingAddressData) && !empty(array_filter($model->pendingAddressData))) {
-                if (method_exists($model, 'address')) {
-                    $validAddressData = [];
-                    $addrTable = (new \App\Models\ApplicantAddress)->getTable();
-                    foreach ($model->pendingAddressData as $k => $v) {
-                        if (\Illuminate\Support\Facades\Schema::hasColumn($addrTable, $k)) {
-                            $validAddressData[$k] = $v;
-                        }
-                    }
-                    if (!empty($validAddressData)) {
-                        $model->address()->updateOrCreate([], $validAddressData);
-                    }
-                }
-                unset($model->pendingAddressData);
-                unset($model->attributes['pendingAddressData']);
-            }
-        });
     }
 
     protected function getApplicantAddressObject()
     {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
+            return null;
+        }
         $relation = $this->relationLoaded('address') ? $this->getRelationValue('address') : null;
         if (!$relation && method_exists($this, 'address')) {
             try {

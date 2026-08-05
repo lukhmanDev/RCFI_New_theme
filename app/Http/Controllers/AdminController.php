@@ -437,7 +437,7 @@ class AdminController extends Controller
             $table = $modelInstance->getTable();
 
             $query = $modelClass::query();
-            if (method_exists($modelInstance, 'address')) {
+            if (method_exists($modelInstance, 'address') && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
                 $query->with('address');
             }
 
@@ -471,7 +471,7 @@ class AdminController extends Controller
                     }
                 }
 
-                if (method_exists($modelInstance, 'address')) {
+                if (method_exists($modelInstance, 'address') && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
                     $subQuery->orWhereHas('address', function($addrQuery) use ($q) {
                         $addrQuery->where('place', 'LIKE', "%{$q}%")
                                   ->orWhere('village', 'LIKE', "%{$q}%")

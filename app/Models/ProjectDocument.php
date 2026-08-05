@@ -73,7 +73,7 @@ class ProjectDocument extends Model
     ];
 
     public static $docColumnMap = [
-        'Land document' => 'land_document',
+        'Land document - Adhaaram' => 'land_document',
         'Copy of the land document ( well site)' => 'land_document',
         'Possession certificate' => 'possession_certificate',
         'Tax receipt' => 'tax_receipt',

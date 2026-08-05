@@ -135,17 +135,21 @@ class ApplicationController extends Controller
             ELSE 4 
         END ASC";
 
-        if (in_array($categorySlug, ['orphan-care', 'differently-abled', 'family-aid'])) {
-            $applications = $model::with(['address', 'cluster'])
-                ->orderByRaw($statusOrderRaw)
-                ->orderBy('created_at', 'desc')
-                ->get();
-        } else {
-            $applications = $model::with('address')
-                ->orderByRaw($statusOrderRaw)
-                ->orderBy('created_at', 'desc')
-                ->get();
+        $relations = [];
+        if (in_array($categorySlug, ['orphan-care', 'differently-abled', 'family-aid']) && method_exists($model, 'cluster')) {
+            $relations[] = 'cluster';
         }
+        if (\Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
+            $relations[] = 'address';
+        }
+
+        $query = $model::query();
+        if (!empty($relations)) {
+            $query->with($relations);
+        }
+        $applications = $query->orderByRaw($statusOrderRaw)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         $projectModel = str_replace('Application', 'Project', $model);
         $projectsMap = [];
@@ -280,7 +284,7 @@ class ApplicationController extends Controller
             }
 
             $appItem = $model::create($data);
-            if (!empty(array_filter($addressData))) {
+            if (!empty(array_filter($addressData)) && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
                 $appItem->address()->updateOrCreate([], array_filter($addressData));
             }
 
@@ -458,7 +462,7 @@ class ApplicationController extends Controller
 
             $application = $model::findOrFail($id);
             $application->update($data);
-            if (!empty(array_filter($addressData))) {
+            if (!empty(array_filter($addressData)) && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
                 $application->address()->updateOrCreate([], array_filter($addressData));
             }
 
@@ -538,8 +542,11 @@ class ApplicationController extends Controller
             ];
 
             $projectModel = $projectModels[$redirectCategory] ?? null;
-            if ($projectModel) {
-                $projectModel::where('application_id', $application->id)->delete();
+            if ($projectModel && $projectModel::where('application_id', $application->id)->exists()) {
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'error' => 'Assigned applications connected to a project cannot be deleted.'], 403);
+                }
+                return redirect()->back()->with('error', 'Assigned applications connected to a project cannot be deleted.');
             }
 
             $application->delete();
@@ -743,6 +750,26 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'Sponsored applications cannot be rejected. Please remove sponsorship first.');
         }
 
+        // Block rejection if application is assigned/connected to a project
+        $projectModels = [
+            'education-center' => \App\Models\EducationCenterProject::class,
+            'cultural-center' => \App\Models\CulturalCenterProject::class,
+            'hospital-or-clinics' => \App\Models\HospitalClinicProject::class,
+            'shops-and-others' => \App\Models\ShopOtherProject::class,
+            'house' => \App\Models\HouseProject::class,
+            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupProject::class,
+            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualProject::class,
+            'orphan-care' => \App\Models\OrphanCareProject::class,
+            'differently-abled' => \App\Models\DifferentlyAbledProject::class,
+            'family-aid' => \App\Models\FamilyAidProject::class,
+            'general' => \App\Models\GeneralProject::class,
+        ];
+
+        $projectModel = $projectModels[$category] ?? null;
+        if ($projectModel && $projectModel::where('application_id', $app->id)->exists()) {
+            return redirect()->back()->with('error', 'Assigned applications connected to a project cannot be rejected.');
+        }
+
         $app->status = 'Rejected';
 
         $request->validate([
@@ -841,7 +868,7 @@ class ApplicationController extends Controller
         if (method_exists($dummyModel, 'cluster')) {
             $relations[] = 'cluster';
         }
-        if (method_exists($dummyModel, 'address')) {
+        if (method_exists($dummyModel, 'address') && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
             $relations[] = 'address';
         }
 
@@ -1145,7 +1172,7 @@ class ApplicationController extends Controller
             if (method_exists($dummyModel, 'cluster')) {
                 $relations[] = 'cluster';
             }
-            if (method_exists($dummyModel, 'address')) {
+            if (method_exists($dummyModel, 'address') && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
                 $relations[] = 'address';
             }
 

@@ -516,14 +516,14 @@
 
         // Add User Modal
         function openModal() {
-            document.getElementById('addUserModal').style.display = 'flex';
-        }
+        const modal = document.getElementById('addUserModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
+        if (modal) modal.style.display = "flex";
+    }
 
         function closeModal() {
             const modal = document.getElementById('addUserModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
             if (modal) modal.style.display = 'none';
         }
-        window.closeModal = closeModal;
 
         // Edit User Modal
         function openEditModal(user) {
@@ -551,7 +551,6 @@
             const modal = document.getElementById('editUserModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
             if (modal) modal.style.display = 'none';
         }
-        window.closeEditModal = closeEditModal;
 
         // View Details Modal
         function openViewModal(userId) {
@@ -644,7 +643,13 @@
             document.addEventListener("DOMContentLoaded", function() {
                 openModal();
             });
-        </script>
+        
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+    </script>
     @endif
 
 @endsection

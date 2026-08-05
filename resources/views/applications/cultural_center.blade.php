@@ -169,7 +169,7 @@
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
-                                    @if($appItem->status === 'Pending')
+                                    @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
                                         <!-- Approve -->
                                         <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
                                             @csrf
@@ -188,16 +188,7 @@
                                     @endif
                                 @endif
 
-                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
-                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
+
                             </td>
                         </tr>
                     @empty
@@ -453,24 +444,29 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="cultural_center_nearby">Cultural Center Nearby *</label>
-                            <input type="text" class="form-control-dark" id="cultural_center_nearby" name="meta[cultural_center_nearby]" value="{{ old('meta.cultural_center_nearby') ?? old('meta.education_center_nearby') }}" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Cultural Center Nearby *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="cultural_center_nearby_yes" name="meta[cultural_center_nearby]" value="Yes" onchange="toggleCulturalCenterNearby(this)" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="cultural_center_nearby_no" name="meta[cultural_center_nearby]" value="No" onchange="toggleCulturalCenterNearby(this)" checked required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
-                        <div>
-                            <label class="form-label" for="distance_cultural_centre">Distance to closest Cultural Center (KM) *</label>
-                            <input type="number" step="0.1" class="form-control-dark" id="distance_cultural_centre" name="meta[distance_cultural_centre]" value="{{ old('meta.distance_cultural_centre') }}" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="benefited_households">Total benefited households from current structure *</label>
                             <input type="number" class="form-control-dark" id="benefited_households" name="meta[benefited_households]" value="{{ old('meta.benefited_households') }}" required>
                         </div>
-                        <input type="hidden" name="status" value="Pending">
                     </div>
+
+                    <div class="distance-cc-wrapper" style="margin-bottom: 1rem; display: none;">
+                        <label class="form-label" for="distance_cultural_centre">Distance to closest Cultural Center (KM) *</label>
+                        <input type="number" step="0.1" class="form-control-dark distance-cc-input" id="distance_cultural_centre" name="meta[distance_cultural_centre]" placeholder="Enter distance in KM" value="{{ old('meta.distance_cultural_centre') }}">
+                    </div>
+                    <input type="hidden" name="status" value="Pending">
                 </div>
 
                 <!-- Form Section 4: Proposed Project Details -->
@@ -633,8 +629,8 @@
                             <input type="tel" class="form-control-dark" id="edit_pin_code" name="meta[pin_code]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_location">Place *</label>
-                            <input type="text" class="form-control-dark" id="edit_location" name="meta[location]" required>
+                            <label class="form-label" for="edit_place">Place *</label>
+                            <input type="text" class="form-control-dark" id="edit_place" name="meta[place]" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_village">Village *</label>
@@ -644,12 +640,12 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_post">Post *</label>
-                            <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
+                            <label class="form-label" for="edit_post_office">Post *</label>
+                            <input type="text" class="form-control-dark" id="edit_post_office" name="meta[post_office]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_panchayath">Panchayath *</label>
-                            <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
+                            <label class="form-label" for="edit_panchayat">Panchayath *</label>
+                            <input type="text" class="form-control-dark" id="edit_panchayat" name="meta[panchayat]" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_district">District *</label>
@@ -793,20 +789,27 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_cultural_center_nearby">Is there a cultural center nearby? *</label>
-                            <input type="text" class="form-control-dark" id="edit_cultural_center_nearby" name="meta[cultural_center_nearby]" required>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Is there a cultural center nearby? *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_cultural_center_nearby_yes" name="meta[cultural_center_nearby]" value="Yes" onchange="toggleCulturalCenterNearby(this)" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_cultural_center_nearby_no" name="meta[cultural_center_nearby]" value="No" onchange="toggleCulturalCenterNearby(this)" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_distance_cultural_centre">Distance to closest Cultural Center (KM) *</label>
-                            <input type="number" step="0.1" class="form-control-dark" id="edit_distance_cultural_centre" name="meta[distance_cultural_centre]" required>
+                            <label class="form-label" for="edit_benefited_households">Total benefited households from current structure *</label>
+                            <input type="number" class="form-control-dark" id="edit_benefited_households" name="meta[benefited_households]" required>
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="edit_benefited_households">Total benefited households from current structure *</label>
-                        <input type="number" class="form-control-dark" id="edit_benefited_households" name="meta[benefited_households]" required>
+                    <div class="edit-distance-cc-wrapper" style="margin-bottom: 1rem; display: none;">
+                        <label class="form-label" for="edit_distance_cultural_centre">Distance to closest Cultural Center (KM) *</label>
+                        <input type="number" step="0.1" class="form-control-dark edit-distance-cc-input" id="edit_distance_cultural_centre" name="meta[distance_cultural_centre]" placeholder="Enter distance in KM">
                     </div>
                     <input type="hidden" name="status" id="edit_status">
                 </div>
@@ -928,17 +931,33 @@
 
     <!-- Modal Scripts -->
     <script>
+        var projectsMap = @json($projectsMap ?? []); window.projectsMap = projectsMap;
+
+        function toggleCulturalCenterNearby(el) {
+            const isYes = el.value === 'Yes';
+            const form = el.closest('form');
+            const wrapper = form ? form.querySelector('.distance-cc-wrapper, .edit-distance-cc-wrapper') : null;
+            const input = form ? form.querySelector('.distance-cc-input, .edit-distance-cc-input') : null;
+            
+            if (wrapper) {
+                wrapper.style.display = isYes ? 'block' : 'none';
+            }
+            if (input) {
+                input.required = isYes;
+                if (!isYes) input.value = '';
+            }
+        }
+
         // Add Application Modal Toggle
         function openModal() {
-            document.getElementById('addAppModal').style.display = 'flex';
+            const modal = document.getElementById('addAppModal') || document.getElementById('addModal') || document.getElementById('createModal');
+            if (modal) modal.style.display = 'flex';
         }
 
         function closeModal() {
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
-    window.openModal = openModal;
-    window.closeModal = closeModal;
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
@@ -1071,8 +1090,20 @@
                     toggleCurrentStatusOther(statusSelect);
                 }
             }
-            document.getElementById('edit_cultural_center_nearby').value = meta.cultural_center_nearby || meta.education_center_nearby || '';
-            document.getElementById('edit_distance_cultural_centre').value = meta.distance_cultural_centre || '';
+            const ccNearVal = ((meta.cultural_center_nearby || meta.education_center_nearby || 'No').toString()).toLowerCase();
+            const ccNearYes = document.getElementById('edit_cultural_center_nearby_yes');
+            const ccNearNo = document.getElementById('edit_cultural_center_nearby_no');
+            if (ccNearYes && ccNearNo) {
+                if (ccNearVal === 'yes') {
+                    ccNearYes.checked = true;
+                    toggleCulturalCenterNearby(ccNearYes);
+                } else {
+                    ccNearNo.checked = true;
+                    toggleCulturalCenterNearby(ccNearNo);
+                }
+            }
+            const distCcInput = document.getElementById('edit_distance_cultural_centre');
+            if (distCcInput) distCcInput.value = meta.distance_cultural_centre || meta.distance_education_center || '';
             document.getElementById('edit_benefited_households').value = meta.benefited_households || '';
 
             document.getElementById('edit_project_type').value = meta.project_type || 'CC only';
@@ -1115,7 +1146,6 @@
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
     }
-    window.closeEditModal = closeEditModal;
 
         // View Details Modal Toggle
                 function openDetailsModal(appItem) {
@@ -1145,14 +1175,23 @@
                         </form>
                     `;
                 } else if (appItem.status === 'Approved') {
-                    statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-x"></i> Reject Application
-                            </button>
-                        </form>
-                    `;
+                    const isAssignedToProject = !!(typeof projectsMap !== 'undefined' && projectsMap[appItem.id]);
+                    if (isAssignedToProject) {
+                        statusHtml = `
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="bx bx-info-circle" style="font-size: 1.1rem;"></i> Application is assigned to a project and cannot be rejected.
+                            </div>
+                        `;
+                    } else {
+                        statusHtml = `
+                            <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
+                                <input type="hidden" name="_token" value="${csrfToken}">
+                                <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                    <i class="bx bx-x"></i> Reject Application
+                                </button>
+                            </form>
+                        `;
+                    }
                 } else if (appItem.status === 'Rejected') {
                     statusHtml = `
                         <form action="${approveUrl}" method="POST" style="display: inline-block;">
@@ -1212,9 +1251,8 @@
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Current Status & Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Has Building?</td><td>${formatVal(meta.site_has_building)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Current Status:</td><td>${formatVal(meta.status_of_current_building_other || meta.status_of_current_building)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">CC Nearby?</td><td>${formatVal(meta.cultural_center_nearby || meta.education_center_nearby)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Distance to CC (KM):</td><td>${formatVal(meta.distance_cultural_centre)}</td></tr>
+                            ${(meta.cultural_center_nearby || meta.education_center_nearby || '').toLowerCase() === 'yes' || meta.distance_cultural_centre ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Distance to CC (KM):</td><td>${formatVal(meta.distance_cultural_centre)}</td></tr>` : ''}
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Benefited Households:</td><td>${formatVal(meta.benefited_households)}</td></tr>
                         </table>
 
@@ -1353,6 +1391,16 @@
                 }
             });
         @endif
+    
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.openDetailsModal = openDetailsModal;
+        window.closeDetailsModal = closeDetailsModal;
+        window.toggleCulturalCenterNearby = toggleCulturalCenterNearby;
+        window.toggleOrgOther = toggleOrgOther;
     </script>
 
 @endsection

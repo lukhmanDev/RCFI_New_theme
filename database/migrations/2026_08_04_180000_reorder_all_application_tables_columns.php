@@ -475,9 +475,12 @@ return new class extends Migration
             'recommendation_organization',
             'recommendation_organization_other',
             'recommendation_phone',
-            'recommendation_position'
-        ],
-    ];;
+        ]
+    ];
+
+    if (DB::getDriverName() !== 'mysql') {
+        return;
+    }
 
         foreach ($tablesConfig as $tableName => $desiredOrder) {
             if (!DB::getSchemaBuilder()->hasTable($tableName)) {

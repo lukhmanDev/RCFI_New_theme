@@ -79,14 +79,7 @@
                             <button onclick="openEditModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit"><i class="bx bx-pencil"></i></button>
                             @endif
 
-                            @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
-                            <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" onsubmit="confirmApplicationDeletion(event, this); return false;" style="display: inline-block;">
-                                @csrf
-                                @method('DELETE')
-                                <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete"><i class="bx bx-trash"></i></button>
-                            </form>
-                            @endif
+
                         </td>
                     </tr>
                 @empty
@@ -214,14 +207,14 @@
 <script>
     // Add Application Modal Toggle
     function openModal() {
-        document.getElementById('addAppModal').style.display = 'flex';
-    }
+            const modal = document.getElementById('addAppModal') || document.getElementById("addAppModal") || document.getElementById("addModal");
+            if (modal) modal.style.display = "flex";
+        }
 
     function closeModal() {
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
-    window.closeModal = closeModal;
 
     // Edit Application Modal Toggle
     function openEditModal(appItem) {
@@ -241,7 +234,6 @@
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
     }
-    window.closeEditModal = closeEditModal;
 </script>
 
 <!-- Automatically open add modal if validation error occurs on creation -->
@@ -250,5 +242,11 @@
         document.addEventListener("DOMContentLoaded", function() {
             openModal();
         });
+    
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
     </script>
 @endif

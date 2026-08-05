@@ -181,7 +181,7 @@
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
-                                    @if($appItem->status === 'Pending')
+                                    @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
                                         <!-- Approve -->
                                         <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}', '{{ addslashes($meta['agency_name'] ?? '') }}', '{{ $meta['application_date'] ?? date('Y-m-d') }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
                                             <i class="bx bx-check"></i>
@@ -200,16 +200,7 @@
                                     @endif
                                 @endif
 
-                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
-                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
+
                             </td>
                         </tr>
                     @empty
@@ -1089,9 +1080,12 @@
 
     <!-- Modal Scripts -->
     <script>
+        var projectsMap = @json($projectsMap ?? []); window.projectsMap = projectsMap;
+
         // Add Application Modal Toggle
         function openModal() {
-            document.getElementById('addAppModal').style.display = 'flex';
+            const modal = document.getElementById('addAppModal') || document.getElementById('addModal') || document.getElementById('createModal');
+            if (modal) modal.style.display = 'flex';
         }
 
         // Close Modal Toggle
@@ -1099,8 +1093,6 @@
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
-    window.openModal = openModal;
-    window.closeModal = closeModal;
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
@@ -1238,7 +1230,6 @@
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
     }
-    window.closeEditModal = closeEditModal;
 
         // View Details Modal Toggle
         function openDetailsModal(appItem) {
@@ -1265,7 +1256,20 @@
                         </form>
                     `;
                 } else if (appItem.status === 'Approved') {
-                    if (appItem.sponsor_status !== 'Sponsored') {
+                    const isAssignedToProject = !!(typeof projectsMap !== 'undefined' && projectsMap[appItem.id]);
+                    if (isAssignedToProject) {
+                        statusHtml = `
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="bx bx-info-circle" style="font-size: 1.1rem;"></i> Application is assigned to a project and cannot be rejected.
+                            </div>
+                        `;
+                    } else if (appItem.sponsor_status === 'Sponsored') {
+                        statusHtml = `
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="bx bx-info-circle" style="font-size: 1.1rem;"></i> Sponsored application cannot be rejected.
+                            </div>
+                        `;
+                    } else {
                         statusHtml = `
                             <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
                                 <input type="hidden" name="_token" value="${csrfToken}">
@@ -1880,6 +1884,17 @@
                 }
             });
         @endif
+    
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.openDetailsModal = openDetailsModal;
+        window.closeDetailsModal = closeDetailsModal;
+        window.openApproveModal = openApproveModal;
+        window.closeApproveModal = closeApproveModal;
+        window.toggleOrgOther = toggleOrgOther;
     </script>
 
 @endsection

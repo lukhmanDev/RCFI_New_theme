@@ -113,6 +113,41 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $this->assertStringContainsString('Rejection Reason: Incomplete documents provided.', $freshApp->details);
     }
 
+    public function test_cannot_reject_application_assigned_to_project(): void
+    {
+        $superAdmin = User::create([
+            'name' => 'Super Admin Test',
+            'email' => 'admin_test_assigned@rcfi.org',
+            'mobile' => '9999999991',
+            'role' => 1,
+            'password' => bcrypt('password'),
+            'designation' => 'Super Admin',
+        ]);
+
+        $application = HouseApplication::create([
+            'category' => 'House',
+            'applicant_name' => 'Assigned Applicant',
+            'amount_requested' => 100000,
+            'status' => 'Approved',
+            'place' => 'Test Place',
+        ]);
+
+        \App\Models\HouseProject::create([
+            'application_id' => $application->id,
+            'project_name' => 'Assigned House Project',
+            'type_of_project' => 'House',
+            'stage' => 2,
+            'status' => 'Running',
+        ]);
+
+        $response = $this->actingAs($superAdmin)->post("/admin/applications/house/{$application->id}/reject", [
+            'remarks' => 'Attempting to reject assigned application.'
+        ]);
+
+        $response->assertSessionHas('error', 'Assigned applications connected to a project cannot be rejected.');
+        $this->assertEquals('Approved', $application->fresh()->status);
+    }
+
     public function test_applications_dashboard_shows_pending_counts(): void
     {
         $coo = User::create([
@@ -292,21 +327,21 @@ class ApplicationApprovalPermissionsTest extends TestCase
             'project_manager_id' => $pm->id,
         ]);
 
-        // Attempt to toggle "Land document" -> Should succeed
+        // Attempt to toggle "Land document - Adhaaram" -> Should succeed
         $response = $this->actingAs($pm)->post("/admin/projects/{$project->id}/toggle-file", [
-            'document_name' => 'Land document'
+            'document_name' => 'Land document - Adhaaram'
         ]);
 
         $response->assertSessionHas('success');
-        $this->assertEquals("1", $project->fresh()->files['Land document'] ?? null);
+        $this->assertTrue((bool)($project->fresh()->projectDocument->land_document ?? false));
 
         // Toggle again -> Should untick (unset)
         $response = $this->actingAs($pm)->post("/admin/projects/{$project->id}/toggle-file", [
-            'document_name' => 'Land document'
+            'document_name' => 'Land document - Adhaaram'
         ]);
 
         $response->assertSessionHas('success');
-        $this->assertArrayNotHasKey('Land document', $project->fresh()->files ?? []);
+        $this->assertFalse((bool)($project->fresh()->projectDocument->land_document ?? false));
 
         // Super Admin attempts to toggle "Possession certificate" -> Should succeed
         $superAdmin = User::where('role', 'super_admin')->first() ?: User::create([
@@ -354,16 +389,15 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $response = $this->actingAs($superAdmin)->delete("/admin/applications/{$approvedApp->id}", [
             'redirect_category' => 'house'
         ]);
-        $response->assertSessionHas('error', 'Approved applications cannot be deleted by any role.');
+        $response->assertSessionHas('error', 'You are not authorized to delete applications.');
         $this->assertNotNull(HouseApplication::find($approvedApp->id));
 
-        // 4. Try to delete the pending application -> should succeed
+        // 4. Try to delete the pending application -> should fail as deletion is disabled
         $response = $this->actingAs($superAdmin)->delete("/admin/applications/{$pendingApp->id}", [
             'redirect_category' => 'house'
         ]);
-        $response->assertRedirect('/admin/applications/category/house');
-        $response->assertSessionHas('success');
-        $this->assertNull(HouseApplication::find($pendingApp->id));
+        $response->assertSessionHas('error', 'You are not authorized to delete applications.');
+        $this->assertNotNull(HouseApplication::find($pendingApp->id));
     }
 
     public function test_orphan_care_cluster_and_agency_validation(): void
@@ -670,7 +704,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $response = $this->actingAs($superAdmin)->delete("/admin/applications/{$app->id}", [
             'redirect_category' => 'house',
         ]);
-        $response->assertSessionHas('error', 'Approved applications cannot be deleted by any role.');
+        $response->assertSessionHas('error', 'You are not authorized to delete applications.');
         $this->assertNotNull(HouseApplication::find($app->id));
     }
 }

@@ -242,6 +242,10 @@
                 }
             });
         }
+    
+        // Global Window Bindings
+        window.openDetailsModal = openDetailsModal;
+        window.closeDetailsModal = closeDetailsModal;
     </script>
 
 @endsection

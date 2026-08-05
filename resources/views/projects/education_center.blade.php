@@ -569,7 +569,8 @@
 
 <script>
     function openModal() {
-        document.getElementById('addProjectModal').style.display = 'flex';
+        const modal = document.getElementById('addProjectModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
+        if (modal) modal.style.display = "flex";
     }
 
     function closeModal() {
@@ -580,7 +581,6 @@
             document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
         }
     }
-    window.closeModal = closeModal;
 
     function openEditModal(project) {
         const form = document.getElementById('editProjectForm');
@@ -612,7 +612,6 @@
             document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
         }
     }
-    window.closeEditModal = closeEditModal;
 
     function filterTable() {
         const input = document.getElementById('tableSearch');
@@ -668,7 +667,13 @@
         }
     }
 
-</script>
+
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+    </script>
 
 
 @endsection

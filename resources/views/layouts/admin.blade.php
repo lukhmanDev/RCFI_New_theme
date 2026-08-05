@@ -1349,13 +1349,26 @@
 
         let activeConfirmCallback = null;
         let activeConfirmIsRejection = false;
+        const originalNativeConfirm = window.confirm;
+        window.originalNativeConfirm = originalNativeConfirm;
 
         function showCustomConfirm(message, callback, isRejection = false) {
-            document.getElementById('customConfirmMessage').innerText = message;
+            const modal = document.getElementById('customConfirmModal');
+            const msgEl = document.getElementById('customConfirmMessage');
+
+            // Fallback: if modal is not in DOM yet, use native confirm without recursion
+            if (!modal || !msgEl) {
+                const nativeConfirm = window.originalNativeConfirm || originalNativeConfirm;
+                if (nativeConfirm.call(window, message)) {
+                    if (typeof callback === 'function') callback();
+                }
+                return;
+            }
+
+            msgEl.innerText = message;
             activeConfirmCallback = callback;
             activeConfirmIsRejection = isRejection;
-            
-            const modal = document.getElementById('customConfirmModal');
+
             const panel = modal.querySelector('.confirm-panel');
             const iconBox = modal.querySelector('.confirm-icon-box');
             const icon = iconBox ? iconBox.querySelector('i') : null;
@@ -1541,23 +1554,13 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const confirmCancel = document.getElementById('customConfirmCancel');
-            const confirmOk = document.getElementById('customConfirmOk');
-            const confirmModal = document.getElementById('customConfirmModal');
-
-            if (confirmCancel) {
-                confirmCancel.addEventListener('click', () => closeCustomConfirm(false));
-            }
-            if (confirmOk) {
-                confirmOk.addEventListener('click', () => closeCustomConfirm(true));
-            }
-            if (confirmModal) {
-                confirmModal.addEventListener('click', (e) => {
-                    if (e.target.id === 'customConfirmModal') {
-                        closeCustomConfirm(false);
-                    }
-                });
+        document.body.addEventListener('click', function(e) {
+            if (e.target && (e.target.id === 'customConfirmCancel' || e.target.closest('#customConfirmCancel'))) {
+                closeCustomConfirm(false);
+            } else if (e.target && (e.target.id === 'customConfirmOk' || e.target.closest('#customConfirmOk'))) {
+                closeCustomConfirm(true);
+            } else if (e.target && e.target.id === 'customConfirmModal') {
+                closeCustomConfirm(false);
             }
         });
 
@@ -1678,6 +1681,62 @@
         }
 
         // Swap loaded HTML content into container and execute scripts
+        
+        // Global Fallback Modal Handlers
+        window.openModal = function() {
+            const modal = document.getElementById('addAppModal') || document.getElementById('addProjectModal') || document.getElementById('addModal') || document.getElementById('createModal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.closeModal = function() {
+            const modal = document.getElementById('addAppModal') || document.getElementById('addProjectModal') || document.getElementById('addModal') || document.getElementById('createModal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.closeEditModal = function() {
+            const modal = document.getElementById('editAppModal') || document.getElementById('editProjectModal') || document.getElementById('editModal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.closeDetailsModal = function() {
+            const modal = document.getElementById('detailsAppModal') || document.getElementById('detailsProjectModal') || document.getElementById('detailsModal');
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.toggleCulturalCenterNearby = function(el) {
+            if (!el) return;
+            const isYes = el.value === 'Yes';
+            const form = el.closest('form');
+            if (!form) return;
+            const wrapper = form.querySelector('.distance-cc-wrapper, .edit-distance-cc-wrapper');
+            const input = form.querySelector('.distance-cc-input, .edit-distance-cc-input');
+            
+            if (wrapper) {
+                wrapper.style.display = isYes ? 'block' : 'none';
+            }
+            if (input) {
+                input.required = isYes;
+                if (!isYes) input.value = '';
+            }
+        };
+
+        window.toggleEducationCenterNearby = function(el) {
+            if (!el) return;
+            const isYes = el.value === 'Yes';
+            const form = el.closest('form');
+            if (!form) return;
+            const wrapper = form.querySelector('.distance-ec-wrapper, .edit-distance-ec-wrapper');
+            const input = form.querySelector('.distance-ec-input, .edit-distance-ec-input');
+            
+            if (wrapper) {
+                wrapper.style.display = isYes ? 'block' : 'none';
+            }
+            if (input) {
+                input.required = isYes;
+                if (!isYes) input.value = '';
+            }
+        };
+
         function swapContent(html, url) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
@@ -1688,6 +1747,7 @@
             if (newContent && currentContent) {
                 // Clean up any modal overlays that were moved to document.body by the previous page
                 document.querySelectorAll('body > .modal-overlay, body > [id$="Modal"], body > [id$="modal"]').forEach(el => {
+                    if (el.id === 'customConfirmModal') return;
                     if (!el.closest('.content-container') && !el.closest('#sidebar') && !el.closest('header') && !el.id.includes('pjax')) {
                         el.remove();
                     }
@@ -3237,7 +3297,7 @@
                 const state = getFieldValue(['edit_state', 'state']);
 
                 setFieldValue(['edit_locality_pin_code', 'edit_locality_pin', 'edit_land_pin_code', 'edit_land_pin', 'edit_land_owner_pin'], pin);
-                setFieldValue(['edit_locality_place', 'edit_locality_place', 'edit_land_location', 'edit_land_place', 'edit_land_owner_place'], place);
+                setFieldValue(['edit_locality_place', 'edit_locality_location', 'edit_land_location', 'edit_land_place', 'edit_land_owner_place'], place);
                 setFieldValue(['edit_locality_village', 'edit_land_village', 'edit_land_owner_village'], village);
                 setFieldValue(['edit_locality_post', 'edit_locality_post_office', 'edit_land_post', 'edit_land_owner_post'], post);
                 setFieldValue(['edit_locality_panchayath', 'edit_locality_panchayat', 'edit_land_panchayath', 'edit_land_owner_panchayath'], panchayat);
@@ -3253,7 +3313,7 @@
                 const state = getFieldValue(['state']);
 
                 setFieldValue(['locality_pin_code', 'locality_pin', 'land_pin_code', 'land_pin', 'land_owner_pin'], pin);
-                setFieldValue(['locality_place', 'locality_place', 'land_location', 'land_place', 'land_owner_place'], place);
+                setFieldValue(['locality_place', 'locality_location', 'land_location', 'land_place', 'land_owner_place'], place);
                 setFieldValue(['locality_village', 'land_village', 'land_owner_village'], village);
                 setFieldValue(['locality_post', 'locality_post_office', 'land_post', 'land_owner_post'], post);
                 setFieldValue(['locality_panchayath', 'locality_panchayat', 'land_panchayath', 'land_owner_panchayath'], panchayat);
@@ -3310,9 +3370,10 @@
                 if (boysVal !== '' || girlsVal !== '') {
                     const boys = parseInt(boysVal) || 0;
                     const girls = parseInt(girlsVal) || 0;
-                    totalInput.value = boys + girls;
+                    const sum = boys + girls;
+                    if (totalInput) totalInput.value = sum;
                 } else {
-                    totalInput.value = '';
+                    if (totalInput) totalInput.value = '';
                 }
             }
         };

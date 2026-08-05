@@ -499,6 +499,9 @@
                 switchTab('subthemes');
             }
         });
+    
+        // Global Window Bindings
+        window.closeModal = closeModal;
     </script>
 
 @endsection

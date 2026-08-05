@@ -304,8 +304,9 @@
     <script>
         // Add Agency Modal Toggle
         function openModal() {
-            document.getElementById('addPartnerModal').style.display = 'flex';
-        }
+        const modal = document.getElementById('addPartnerModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
+        if (modal) modal.style.display = "flex";
+    }
 
         function closeModal() {
             const modal = document.getElementById('addPartnerModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
@@ -313,7 +314,6 @@
             const editModal = document.getElementById('editPartnerModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
             if (editModal) editModal.style.display = 'none';
         }
-        window.closeModal = closeModal;
 
         // Edit Agency Modal Toggle
         function openEditModal(donor) {
@@ -346,7 +346,6 @@
             const modal = document.getElementById('editPartnerModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
             if (modal) modal.style.display = 'none';
         }
-        window.closeEditModal = closeEditModal;
 
         function openDeleteModal(id, name) {
             const form = document.getElementById('deleteConfirmationForm');
@@ -368,7 +367,13 @@
             document.addEventListener("DOMContentLoaded", function() {
                 openModal();
             });
-        </script>
+        
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+    </script>
     @endif
 
 @endsection

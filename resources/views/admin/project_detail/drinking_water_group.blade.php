@@ -531,7 +531,7 @@
                                 $metaArr = is_array($application->meta) ? $application->meta : (json_decode($application->meta, true) ?? []);
                                 $metaData = array_merge($metaData, $metaArr);
                             }
-                            if (method_exists($application, 'address') && ($addrObj = $application->address()->first())) {
+                            if (method_exists($application, 'address') && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses') && ($addrObj = $application->address()->first())) {
                                 $metaData = array_merge($metaData, array_filter($addrObj->toArray()));
                             }
                         } elseif (is_array($application)) {
@@ -2274,7 +2274,7 @@
 
         async function performToggleChecklistDocument(button, docName) {
             button.disabled = true;
-            const docKey = docName.replace(/ /g, '_');
+            const docKey = docName.replace(/ /g, '_').toLowerCase();
             const remarkInput = document.getElementById('remark-input-' + docKey);
             const remarkVal = remarkInput ? remarkInput.value : null;
 
@@ -2453,12 +2453,11 @@
             const village = formatVal(getVal(['village']));
             const post = formatVal(getVal(['post', 'post_office']));
             const panchayath = formatVal(getVal(['panchayath', 'panchayat']));
-            const dist = getVal(['district']);
-            const st = getVal(['state']);
-            const districtState = (dist || st) ? `${formatVal(dist)} / ${formatVal(st)}` : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
-            const c1 = getVal(['contact_number_1', 'mobile_1', 'mobile']);
-            const c2 = getVal(['contact_number_2', 'mobile_2']);
-            const contact = (c1 || c2) ? `${formatVal(c1)} / ${formatVal(c2)}` : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
+            const dist = formatVal(getVal(['district']));
+            const st = formatVal(getVal(['state']));
+            const pinCode = formatVal(getVal(['pin_code', 'pin']));
+            const c1 = formatVal(getVal(['contact_number_1', 'mobile_1', 'mobile', 'contact1']));
+            const c2 = formatVal(getVal(['contact_number_2', 'mobile_2', 'contact2']));
 
             const landOwnerName = formatVal(getVal(['land_owner_name']));
             const landOwnerMobile = formatVal(getVal(['land_owner_mobile']));
@@ -2478,15 +2477,19 @@
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant & Contact Info</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main);">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px; color: var(--text-muted);">Applicant Name:</td><td style="color: var(--text-main); font-weight: 600;">${applicantName}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Gender / Age:</td><td>${gender} / ${age} yrs</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Gender:</td><td>${gender}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Age:</td><td>${age} yrs</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Father Name:</td><td>${fatherName}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Mother Name:</td><td>${motherName}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Place:</td><td>${location}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village / Post:</td><td>${village} / ${post}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Village:</td><td>${village}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Post:</td><td>${post}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Panchayath:</td><td>${panchayath}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District / State:</td><td>${districtState}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 1:</td><td>{!! $formatVal($metaData['contact_number_1'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 2:</td><td>{!! $formatVal($metaData['contact_number_2'] ?? null) !!}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">District:</td><td>${dist}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">State:</td><td>${st}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Pin Code:</td><td>${pinCode}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 1:</td><td>${c1}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Contact Number 2:</td><td>${c2}</td></tr>
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Land Owner Details</h4>
@@ -3233,6 +3236,42 @@
             if (btn) btn.disabled = false;
         }
     }
+        // Laravel Reverb / Echo Realtime Broadcast Listener
+        if (typeof window.Echo !== 'undefined') {
+            window.Echo.channel('project.{{ $project->id }}')
+                .listen('.project.updated', (e) => {
+                    if (e.action === 'toggle_file' && e.payload) {
+                        const docName = e.payload.document_name;
+                        if (!docName) return;
+                        const docKey = docName.replace(/ /g, '_').toLowerCase();
+                        const tickedAtCell = document.getElementById('ticked-at-' + docKey);
+                        if (tickedAtCell) {
+                            tickedAtCell.innerText = e.payload.ticked ? (e.payload.ticked_at || '-') : '-';
+                        }
+                        document.querySelectorAll('button[onclick*="\'' + docName + '\'"]').forEach(btn => {
+                            const icon = btn.querySelector('i');
+                            if (icon) {
+                                if (e.payload.ticked) {
+                                    icon.className = 'bx bxs-checkbox-checked';
+                                    icon.style.color = 'var(--accent-green)';
+                                } else {
+                                    icon.className = 'bx bx-checkbox';
+                                    icon.style.color = 'var(--text-muted)';
+                                }
+                            }
+                        });
+                        if (e.user_id && e.user_id != {{ auth()->id() }}) {
+                            if (typeof showToast === 'function') {
+                                showToast((e.payload.ticked ? '✔ ' : '✘ ') + docName + ' updated by another user', 'info');
+                            }
+                        }
+                    } else if (e.action !== 'toggle_file') {
+                        if (typeof showToast === 'function') {
+                            showToast('Page has updates — refresh to see latest changes.', 'info');
+                        }
+                    }
+                });
+        }
 </script>
 
 @endsection

@@ -172,7 +172,7 @@
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
-                                    @if($appItem->status === 'Pending')
+                                    @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
                                         <!-- Approve -->
                                         <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
                                             @csrf
@@ -192,16 +192,7 @@
                                     @endif
                                 @endif
 
-                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
-                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
+
                             </td>
                         </tr>
                     @empty
@@ -390,8 +381,8 @@
                             <input type="tel" class="form-control-dark" id="locality_pin_code" name="meta[locality_pin_code]" value="{{ old('meta.locality_pin_code') }}" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="locality_location">Place *</label>
-                            <input type="text" class="form-control-dark" id="locality_location" name="meta[locality_location]" value="{{ old('meta.locality_location') }}" required>
+                            <label class="form-label" for="locality_place">Place *</label>
+                            <input type="text" class="form-control-dark" id="locality_place" name="meta[locality_place]" value="{{ old('meta.locality_place') }}" required>
                         </div>
                     </div>
 
@@ -669,8 +660,8 @@
                             <input type="tel" class="form-control-dark" id="edit_pin_code" name="meta[pin_code]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_location">Place *</label>
-                            <input type="text" class="form-control-dark" id="edit_location" name="meta[location]" required>
+                            <label class="form-label" for="edit_place">Place *</label>
+                            <input type="text" class="form-control-dark" id="edit_place" name="meta[place]" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_village">Village *</label>
@@ -680,12 +671,12 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_post">Post *</label>
-                            <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
+                            <label class="form-label" for="edit_post_office">Post *</label>
+                            <input type="text" class="form-control-dark" id="edit_post_office" name="meta[post_office]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_panchayath">Panchayath *</label>
-                            <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
+                            <label class="form-label" for="edit_panchayat">Panchayath *</label>
+                            <input type="text" class="form-control-dark" id="edit_panchayat" name="meta[panchayat]" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_district">District *</label>
@@ -759,8 +750,8 @@
                             <input type="tel" class="form-control-dark" id="edit_locality_pin_code" name="meta[locality_pin_code]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_locality_location">Place *</label>
-                            <input type="text" class="form-control-dark" id="edit_locality_location" name="meta[locality_location]" required>
+                            <label class="form-label" for="edit_locality_place">Place *</label>
+                            <input type="text" class="form-control-dark" id="edit_locality_place" name="meta[locality_place]" required>
                         </div>
                     </div>
 
@@ -990,49 +981,47 @@
 
     <!-- Modal Scripts -->
     <script>
+        var projectsMap = @json($projectsMap ?? []); window.projectsMap = projectsMap;
+
+        function toggleEducationCenterNearby(el) {
+            if (!el) return;
+            const isYes = el.value === 'Yes';
+            const form = el.closest('form');
+            if (!form) return;
+            const wrapper = form.querySelector('.distance-ec-wrapper, .edit-distance-ec-wrapper');
+            const input = form.querySelector('.distance-ec-input, .edit-distance-ec-input');
+            
+            if (wrapper) {
+                wrapper.style.display = isYes ? 'block' : 'none';
+            }
+            if (input) {
+                input.required = isYes;
+                if (!isYes) input.value = '';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const boysInput = document.getElementById('students_boys');
             const girlsInput = document.getElementById('students_girls');
-            const totalInput = document.getElementById('num_students');
-
             const editBoysInput = document.getElementById('edit_students_boys');
             const editGirlsInput = document.getElementById('edit_students_girls');
-            const editTotalInput = document.getElementById('edit_num_students');
 
-            function calculateTotal() {
-                const boys = parseInt(boysInput.value) || 0;
-                const girls = parseInt(girlsInput.value) || 0;
-                totalInput.value = boys + girls;
-            }
-
-            function calculateEditTotal() {
-                const boys = parseInt(editBoysInput.value) || 0;
-                const girls = parseInt(editGirlsInput.value) || 0;
-                editTotalInput.value = boys + girls;
-            }
-
-            if (boysInput && girlsInput && totalInput) {
-                boysInput.addEventListener('input', calculateTotal);
-                girlsInput.addEventListener('input', calculateTotal);
-            }
-
-            if (editBoysInput && editGirlsInput && editTotalInput) {
-                editBoysInput.addEventListener('input', calculateEditTotal);
-                editGirlsInput.addEventListener('input', calculateEditTotal);
-            }
+            if (boysInput) boysInput.addEventListener('input', function() { calculateTotalStudents(this); });
+            if (girlsInput) girlsInput.addEventListener('input', function() { calculateTotalStudents(this); });
+            if (editBoysInput) editBoysInput.addEventListener('input', function() { calculateTotalStudents(this); });
+            if (editGirlsInput) editGirlsInput.addEventListener('input', function() { calculateTotalStudents(this); });
         });
 
         // Add Application Modal Toggle
         function openModal() {
-            document.getElementById('addAppModal').style.display = 'flex';
+            const modal = document.getElementById('addAppModal') || document.getElementById('addModal') || document.getElementById('createModal');
+            if (modal) modal.style.display = 'flex';
         }
 
         function closeModal() {
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
-    window.openModal = openModal;
-    window.closeModal = closeModal;
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
@@ -1054,16 +1043,23 @@
             document.getElementById('edit_committee_name').value = meta.committee_name || '';
             document.getElementById('edit_reg_number').value = meta.reg_number || '';
             document.getElementById('edit_year').value = meta.year || '';
-                        if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = appItem.house_name || ''; }
-            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = appItem.place || ''; }
-            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = appItem.post_office || ''; }
-            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = appItem.village || ''; }
-            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = appItem.panchayat || ''; }
-            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = appItem.district || ''; }
-            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = appItem.state || ''; }
-            document.getElementById('edit_pin_code').value = meta.pin_code || meta.pin || appItem.pin_code || '';
-            document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
-            document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
+                        const placeVal = appItem.place || meta.place || appItem.location || meta.location || '';
+            const postVal = appItem.post_office || meta.post_office || appItem.post || meta.post || '';
+            const panchayatVal = appItem.panchayat || meta.panchayat || appItem.panchayath || meta.panchayath || '';
+
+            if (document.getElementById('edit_house_name')) { document.getElementById('edit_house_name').value = appItem.house_name || meta.house_name || ''; }
+            if (document.getElementById('edit_place')) { document.getElementById('edit_place').value = placeVal; }
+            if (document.getElementById('edit_location')) { document.getElementById('edit_location').value = placeVal; }
+            if (document.getElementById('edit_post_office')) { document.getElementById('edit_post_office').value = postVal; }
+            if (document.getElementById('edit_post')) { document.getElementById('edit_post').value = postVal; }
+            if (document.getElementById('edit_village')) { document.getElementById('edit_village').value = appItem.village || meta.village || ''; }
+            if (document.getElementById('edit_panchayat')) { document.getElementById('edit_panchayat').value = panchayatVal; }
+            if (document.getElementById('edit_panchayath')) { document.getElementById('edit_panchayath').value = panchayatVal; }
+            if (document.getElementById('edit_district')) { document.getElementById('edit_district').value = appItem.district || meta.district || ''; }
+            if (document.getElementById('edit_state')) { document.getElementById('edit_state').value = appItem.state || meta.state || ''; }
+            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = appItem.pin_code || meta.pin_code || meta.pin || ''; }
+            if (document.getElementById('edit_contact_number_1')) { document.getElementById('edit_contact_number_1').value = appItem.contact_number_1 || meta.contact_number_1 || meta.mobile_1 || meta.mobile || ''; }
+            if (document.getElementById('edit_contact_number_2')) { document.getElementById('edit_contact_number_2').value = appItem.contact_number_2 || meta.contact_number_2 || meta.mobile_2 || ''; }
             const subVal = (meta.submitted_before || '').toLowerCase();
             const subYes = document.getElementById('edit_submitted_before_yes');
             const subNo = document.getElementById('edit_submitted_before_no');
@@ -1089,7 +1085,7 @@
             
             document.getElementById('edit_mahallu_name').value = meta.mahallu_name || '';
             if (document.getElementById('edit_locality_pin_code')) { document.getElementById('edit_locality_pin_code').value = meta.locality_pin_code || meta.locality_pin || ''; }
-            document.getElementById('edit_locality_location').value = meta.locality_location || '';
+            if (document.getElementById('edit_locality_place')) document.getElementById('edit_locality_place').value = meta.locality_place || meta.locality_location || '';
             document.getElementById('edit_locality_village').value = meta.locality_village || '';
             if (document.getElementById('edit_locality_post')) { document.getElementById('edit_locality_post').value = meta.locality_post || meta.locality_post_office || ''; }
             if (document.getElementById('edit_locality_panchayath')) { document.getElementById('edit_locality_panchayath').value = meta.locality_panchayath || meta.locality_panchayat || ''; }
@@ -1149,7 +1145,7 @@
             document.getElementById('edit_building_area_sq').value = meta.building_area_sq || '';
             document.getElementById('edit_land_area_sq').value = meta.land_area_sq || '';
             document.getElementById('edit_num_classrooms').value = meta.num_classrooms || '';
-            document.getElementById('edit_num_students').value = meta.num_students || '';
+            document.getElementById('edit_num_students').value = meta.num_students !== undefined && meta.num_students !== null ? meta.num_students : '';
             const legalVal = (meta.legal_approvals_status || 'No').toLowerCase();
             const legalYes = document.getElementById('edit_legal_approvals_status_yes');
             const legalNo = document.getElementById('edit_legal_approvals_status_no');
@@ -1185,7 +1181,6 @@
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
     }
-    window.closeEditModal = closeEditModal;
 
         // View Details Modal Toggle
                 function openDetailsModal(appItem) {
@@ -1215,14 +1210,23 @@
                         </form>
                     `;
                 } else if (appItem.status === 'Approved') {
-                    statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-x"></i> Reject Application
-                            </button>
-                        </form>
-                    `;
+                    const isAssignedToProject = !!(typeof projectsMap !== 'undefined' && projectsMap[appItem.id]);
+                    if (isAssignedToProject) {
+                        statusHtml = `
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="bx bx-info-circle" style="font-size: 1.1rem;"></i> Application is assigned to a project and cannot be rejected.
+                            </div>
+                        `;
+                    } else {
+                        statusHtml = `
+                            <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
+                                <input type="hidden" name="_token" value="${csrfToken}">
+                                <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                    <i class="bx bx-x"></i> Reject Application
+                                </button>
+                            </form>
+                        `;
+                    }
                 } else if (appItem.status === 'Rejected') {
                     statusHtml = `
                         <form action="${approveUrl}" method="POST" style="display: inline-block;">
@@ -1254,8 +1258,11 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.village)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.post)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.panchayath)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin_code)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact 1 / 2:</td><td>${formatVal(meta.contact_number_1)} / ${formatVal(meta.contact_number_2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District:</td><td>${formatVal(meta.district)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State:</td><td>${formatVal(meta.state)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(meta.pin_code || meta.pin)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Number 1:</td><td>${formatVal(meta.contact_number_1 || meta.contact1 || meta.mobile)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Number 2:</td><td>${formatVal(meta.contact_number_2 || meta.contact2)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Submitted Before?</td><td>${formatVal(meta.submitted_before)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">RCFI Support?</td><td>${formatVal(meta.received_support_before)}</td></tr>
                             ${meta.financial_support_purpose ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Support Purpose:</td><td>${formatVal(meta.financial_support_purpose)}</td></tr>` : ''}
@@ -1265,9 +1272,13 @@
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
 
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Mahallu Name:</td><td>${formatVal(meta.mahallu_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin / Place / Village:</td><td>${formatVal(meta.locality_pin_code || meta.locality_pin)} / ${formatVal(meta.locality_location)} / ${formatVal(meta.locality_village)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post / Panchayath:</td><td>${formatVal(meta.locality_post)} / ${formatVal(meta.locality_panchayath)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / State:</td><td>${formatVal(meta.locality_district)} / ${formatVal(meta.locality_state)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(meta.locality_place || meta.locality_location)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.locality_village)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.locality_post)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.locality_panchayath || meta.locality_panchayat)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District:</td><td>${formatVal(meta.locality_district || meta.district)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State:</td><td>${formatVal(meta.locality_state || meta.state)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(meta.locality_pin_code || meta.locality_pin)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Families Count:</td><td>${formatVal(meta.families_in_mahallu)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Requirement:</td><td>${formatVal(meta.requirement)}</td></tr>
 
@@ -1420,6 +1431,16 @@
                 }
             });
         @endif
+    
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.openDetailsModal = openDetailsModal;
+        window.closeDetailsModal = closeDetailsModal;
+        window.toggleEducationCenterNearby = toggleEducationCenterNearby;
+        window.toggleOrgOther = toggleOrgOther;
     </script>
 
 @endsection

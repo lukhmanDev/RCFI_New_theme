@@ -124,42 +124,53 @@ class User extends Authenticatable
 
     public function isSuperAdmin(): bool
     {
-        return in_array($this->role, ['super_admin', 'Super Admin', '1', 1]);
+        $roleLower = strtolower(trim($this->role ?? ''));
+        $desigLower = strtolower(trim($this->designation ?? ''));
+        return in_array($roleLower, ['super_admin', 'super admin', '1']) || str_contains($desigLower, 'super admin') || str_contains($desigLower, 'super_admin');
     }
 
     public function isCoo(): bool
     {
-        return in_array($this->role, ['coo', 'COO', '2', 2]);
+        $roleLower = strtolower(trim($this->role ?? ''));
+        $desigLower = strtolower(trim($this->designation ?? ''));
+        return in_array($roleLower, ['coo', 'chief operating officer', '2']) || str_contains($desigLower, 'coo') || str_contains($desigLower, 'chief operating officer');
     }
 
     public function isHod(): bool
     {
-        return in_array($this->role, ['hod', 'HOD', '4', 4]);
+        $roleLower = strtolower(trim($this->role ?? ''));
+        $desigLower = strtolower(trim($this->designation ?? ''));
+        return in_array($roleLower, ['hod', 'head of department', '4']) || str_contains($desigLower, 'hod') || str_contains($desigLower, 'head of department');
     }
 
     public function isPm(): bool
     {
-        return in_array($this->role, ['project_manager', 'Project Manager', '3', 3]);
+        $roleLower = strtolower(trim($this->role ?? ''));
+        return in_array($roleLower, ['project_manager', 'project manager', '3']);
     }
 
     public function isEngineer(): bool
     {
-        return in_array($this->role, ['engineer', 'Engineer', '6', 6]);
+        $roleLower = strtolower(trim($this->role ?? ''));
+        return in_array($roleLower, ['engineer', '6']);
     }
 
     public function isReception(): bool
     {
-        return in_array($this->role, ['reception', 'Reception', '7', 7]);
+        $roleLower = strtolower(trim($this->role ?? ''));
+        return in_array($roleLower, ['reception', '7']);
     }
 
     public function isSocialAid(): bool
     {
-        return in_array($this->role, ['social_aid', 'Social Aid', 'Social Aid Manager', '8', 8]);
+        $roleLower = strtolower(trim($this->role ?? ''));
+        return in_array($roleLower, ['social_aid', 'social aid', 'social aid manager', '8']);
     }
 
     public function hasAdminAccess(): bool
     {
-        return in_array($this->role, ['super_admin', 'coo', 'hod', 'reception', 'social_aid', 'Super Admin', 'COO', 'HOD', 'Reception', 'Social Aid', 1, 2, 4, 7, 8, '1', '2', '4', '7', '8']);
+        $roleLower = strtolower(trim($this->role ?? ''));
+        return in_array($roleLower, ['super_admin', 'super admin', 'coo', 'hod', 'reception', 'social_aid', '1', '2', '4', '7', '8']) || $this->isCoo() || $this->isHod() || $this->isSuperAdmin();
     }
 
     public function canApproveApplications(): bool
@@ -167,16 +178,12 @@ class User extends Authenticatable
         if ($this->isSocialAid()) {
             return false;
         }
-        $designationLower = strtolower($this->designation ?? '');
+        $designationLower = strtolower(trim($this->designation ?? ''));
         if (str_contains($designationLower, 'social aid') || str_contains($designationLower, 'social_aid')) {
             return false;
         }
 
-        $isDesigCoo = ($designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
-        $isDesigHod = ($designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
-        $isDesigSuperAdmin = ($designationLower === 'super admin' || str_contains($designationLower, 'super_admin'));
-
-        return $this->isCoo() || $this->isSuperAdmin() || $this->isHod() || $isDesigCoo || $isDesigHod || $isDesigSuperAdmin;
+        return $this->isCoo() || $this->isSuperAdmin() || $this->isHod();
     }
 
     public function canDeleteApplications(): bool

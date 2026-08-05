@@ -205,14 +205,14 @@
     <!-- Modal Controls Scripts -->
     <script>
         function openModal() {
-            document.getElementById('addContractorModal').style.display = 'flex';
-        }
+        const modal = document.getElementById('addContractorModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
+        if (modal) modal.style.display = "flex";
+    }
 
         function closeModal() {
             const modal = document.getElementById('addContractorModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
             if (modal) modal.style.display = 'none';
         }
-        window.closeModal = closeModal;
 
         function openEditModal(contractor) {
             const form = document.getElementById('editContractorForm');
@@ -231,6 +231,11 @@
             const modal = document.getElementById('editContractorModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
             if (modal) modal.style.display = 'none';
         }
+    
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
         window.closeEditModal = closeEditModal;
     </script>
 

@@ -173,7 +173,7 @@
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
-                                    @if($appItem->status === 'Pending')
+                                    @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
                                         <!-- Approve -->
                                         <form action="{{ route('applications.approve', [$categorySlug, $appItem->id]) }}" method="POST" style="display: inline-block;">
                                             @csrf
@@ -193,16 +193,7 @@
                                     @endif
                                 @endif
 
-                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
-                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
+
                             </td>
                         </tr>
                     @empty
@@ -442,22 +433,21 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="area">location *</label>
-                        <input type="text" class="form-control-dark" id="area" name="meta[area]" value="{{ old('meta.area') }}" required>
-                    </div>
-
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="proposed_budget">Expected Amount (₹) *</label>
                             <input type="number" class="form-control-dark" id="proposed_budget" name="amount_requested" placeholder="Amount" value="{{ old('amount_requested') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="is_pharmacy">Is pharmacy ? *</label>
-                            <select class="form-select-dark" id="is_pharmacy" name="meta[is_pharmacy]" required>
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                            </select>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Is pharmacy ? *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="is_pharmacy_yes" name="meta[is_pharmacy]" value="Yes" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="is_pharmacy_no" name="meta[is_pharmacy]" value="No" checked required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
                             <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Are legal permissions available? *</label>
@@ -478,12 +468,12 @@
                             <input type="text" class="form-control-dark" id="permitted_type" name="meta[permitted_type]" value="{{ old('meta.permitted_type') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="project_area">Area *</label>
+                            <label class="form-label" for="project_area">Permitted Area *</label>
                             <input type="text" class="form-control-dark" id="project_area" name="meta[project_area]" value="{{ old('meta.project_area') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="num_beds">Which Type (Number of Beds) *</label>
-                            <input type="text" class="form-control-dark" id="num_beds" name="meta[num_beds]" value="{{ old('meta.num_beds') }}" required>
+                            <label class="form-label" for="num_beds">Number of Beds *</label>
+                            <input type="number" class="form-control-dark" id="num_beds" name="meta[num_beds]" value="{{ old('meta.num_beds') }}" min="0" max="9999" oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4);" required>
                         </div>
                     </div>
 
@@ -596,12 +586,12 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_post">Post *</label>
-                            <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
+                            <label class="form-label" for="edit_post_office">Post *</label>
+                            <input type="text" class="form-control-dark" id="edit_post_office" name="meta[post_office]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_panchayath">Panchayat *</label>
-                            <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
+                            <label class="form-label" for="edit_panchayat">Panchayat *</label>
+                            <input type="text" class="form-control-dark" id="edit_panchayat" name="meta[panchayat]" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_district">District *</label>
@@ -728,11 +718,6 @@
                             <input type="number" step="any" min="0" class="form-control-dark" id="edit_building_area_sq" name="meta[building_area_sq]" required>
                         </div>
                     </div>
-                        <div>
-                            <label class="form-label" for="edit_area">location *</label>
-                            <input type="text" class="form-control-dark" id="edit_area" name="meta[area]" required>
-                        </div>
-                    </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
@@ -740,11 +725,15 @@
                             <input type="number" class="form-control-dark" id="edit_proposed_budget" name="amount_requested" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_is_pharmacy">Is pharmacy ? *</label>
-                            <select class="form-select-dark" id="edit_is_pharmacy" name="meta[is_pharmacy]" required>
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                            </select>
+                            <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Is pharmacy ? *</label>
+                            <div style="display: flex; gap: 1.5rem; align-items: center; min-height: 38px;">
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_is_pharmacy_yes" name="meta[is_pharmacy]" value="Yes" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> Yes
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                    <input type="radio" id="edit_is_pharmacy_no" name="meta[is_pharmacy]" value="No" required style="accent-color: var(--accent-cyan); width: 16px; height: 16px;"> No
+                                </label>
+                            </div>
                         </div>
                         <div>
                             <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Are legal permissions available? *</label>
@@ -765,12 +754,12 @@
                             <input type="text" class="form-control-dark" id="edit_permitted_type" name="meta[permitted_type]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_project_area">Area *</label>
+                            <label class="form-label" for="edit_project_area">Permitted Area *</label>
                             <input type="text" class="form-control-dark" id="edit_project_area" name="meta[project_area]" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_num_beds">Which Type (Number of Beds) *</label>
-                            <input type="text" class="form-control-dark" id="edit_num_beds" name="meta[num_beds]" required>
+                            <label class="form-label" for="edit_num_beds">Number of Beds *</label>
+                            <input type="number" class="form-control-dark" id="edit_num_beds" name="meta[num_beds]" min="0" max="9999" oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4);" required>
                         </div>
                     </div>
 
@@ -824,17 +813,18 @@
 
     <!-- Modal Scripts -->
     <script>
+        var projectsMap = @json($projectsMap ?? []); window.projectsMap = projectsMap;
+
         // Add Application Modal Toggle
         function openModal() {
-            document.getElementById('addAppModal').style.display = 'flex';
+            const modal = document.getElementById('addAppModal') || document.getElementById('addModal') || document.getElementById('createModal');
+            if (modal) modal.style.display = 'flex';
         }
 
         function closeModal() {
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
-    window.openModal = openModal;
-    window.closeModal = closeModal;
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
@@ -909,8 +899,11 @@
             document.getElementById('edit_requirement').value = meta.requirement || 'New construction';
 
             document.getElementById('edit_building_area_sq').value = meta.building_area_sq || '';
-            document.getElementById('edit_area').value = meta.area || '';
-            document.getElementById('edit_is_pharmacy').value = meta.is_pharmacy || 'No';
+            const pharmacyVal = (meta.is_pharmacy || 'No').toLowerCase();
+            const pharmacyYes = document.getElementById('edit_is_pharmacy_yes');
+            const pharmacyNo = document.getElementById('edit_is_pharmacy_no');
+            if (pharmacyVal === 'yes') { if (pharmacyYes) pharmacyYes.checked = true; }
+            else { if (pharmacyNo) pharmacyNo.checked = true; }
             const legalVal = (meta.legal_approvals_status || 'No').toLowerCase();
             const legalYes = document.getElementById('edit_legal_approvals_status_yes');
             const legalNo = document.getElementById('edit_legal_approvals_status_no');
@@ -948,7 +941,6 @@
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
     }
-    window.closeEditModal = closeEditModal;
 
         // View Details Modal Toggle
                 function openDetailsModal(appItem) {
@@ -978,14 +970,23 @@
                         </form>
                     `;
                 } else if (appItem.status === 'Approved') {
-                    statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-x"></i> Reject Application
-                            </button>
-                        </form>
-                    `;
+                    const isAssignedToProject = !!(typeof projectsMap !== 'undefined' && projectsMap[appItem.id]);
+                    if (isAssignedToProject) {
+                        statusHtml = `
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="bx bx-info-circle" style="font-size: 1.1rem;"></i> Application is assigned to a project and cannot be rejected.
+                            </div>
+                        `;
+                    } else {
+                        statusHtml = `
+                            <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
+                                <input type="hidden" name="_token" value="${csrfToken}">
+                                <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                    <i class="bx bx-x"></i> Reject Application
+                                </button>
+                            </form>
+                        `;
+                    }
                 } else if (appItem.status === 'Rejected') {
                     statusHtml = `
                         <form action="${approveUrl}" method="POST" style="display: inline-block;">
@@ -1044,7 +1045,6 @@
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Proposed Project Description</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Total Sqr Ft:</td><td>${formatVal(meta.building_area_sq)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">location:</td><td>${formatVal(meta.area)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Expected Amount:</td><td style="color: var(--accent-green); font-weight: 600;">${appItem.amount_requested ? '₹' + Number(appItem.amount_requested).toLocaleString() : 'N/A'}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Is Pharmacy?</td><td>${formatVal(meta.is_pharmacy)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Legal Permissions?</td><td>${formatVal(meta.legal_approvals_status)}</td></tr>
@@ -1176,6 +1176,15 @@
                 }
             });
         @endif
+    
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.openDetailsModal = openDetailsModal;
+        window.closeDetailsModal = closeDetailsModal;
+        window.toggleOrgOther = toggleOrgOther;
     </script>
 
 @endsection

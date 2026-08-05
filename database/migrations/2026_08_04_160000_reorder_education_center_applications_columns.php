@@ -19,6 +19,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Get the table's current columns to know their types before reordering
         $columns = DB::select("SHOW FULL COLUMNS FROM `education_center_applications`");
         $colMap = [];

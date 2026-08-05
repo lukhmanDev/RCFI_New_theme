@@ -257,7 +257,8 @@ class ProjectController extends Controller
         $user = auth()->user();
         $isOrphanCare = ($slug === 'orphan-care');
         $isSocialAid = in_array($slug, ['orphan-care', 'differently-abled', 'family-aid']);
-        $relations = $isSocialAid ? ['application.cluster', 'application.address'] : ['donor', 'projectManager', 'engineer'];
+        $hasAddrTable = \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses');
+        $relations = $isSocialAid ? ($hasAddrTable ? ['application.cluster', 'application.address'] : ['application.cluster']) : ['donor', 'projectManager', 'engineer'];
 
         $projectQuery = $model::with($relations);
         if ($isSocialAid) {
@@ -1027,7 +1028,8 @@ class ProjectController extends Controller
         $isOrphanCare = ($category === 'orphan-care');
         $isSocialAid = in_array($category, ['orphan-care', 'differently-abled', 'family-aid']);
 
-        $relations = ['application.cluster', 'application.address', 'donor', 'projectManager', 'funds'];
+        $hasAddrTable = \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses');
+        $relations = $hasAddrTable ? ['application.cluster', 'application.address', 'donor', 'projectManager', 'funds'] : ['application.cluster', 'donor', 'projectManager', 'funds'];
         $projects = $this->scopeProjectsForUser($model::with($relations), $user)->get();
 
         // Apply filters if passed from frontend
@@ -2840,7 +2842,7 @@ class ProjectController extends Controller
                 $application->save();
             }
 
-            if (method_exists($application, 'address')) {
+            if (method_exists($application, 'address') && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
                 $application->address()->updateOrCreate([], array_filter([
                     'contact_number_1' => $contact1,
                     'contact_number_2' => $contact2,

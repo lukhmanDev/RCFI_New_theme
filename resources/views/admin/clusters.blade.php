@@ -428,14 +428,14 @@
     <!-- Script Block -->
     <script>
         function openModal() {
-            document.getElementById('addClusterModal').style.display = 'flex';
-        }
+        const modal = document.getElementById('addClusterModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
+        if (modal) modal.style.display = "flex";
+    }
 
         function closeModal() {
             const modal = document.getElementById('addClusterModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
             if (modal) modal.style.display = 'none';
         }
-        window.closeModal = closeModal;
 
         function openEditModal(clusterItem) {
             const form = document.getElementById('editClusterForm');
@@ -464,7 +464,6 @@
             const modal = document.getElementById('editClusterModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
             if (modal) modal.style.display = 'none';
         }
-        window.closeEditModal = closeEditModal;
 
         function filterClusters() {
             const query = document.getElementById('clusterSearch').value.toLowerCase().trim();
@@ -488,6 +487,12 @@
                 noResultsRow.style.display = visibleCount === 0 ? '' : 'none';
             }
         }
+    
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
     </script>
 
 @endsection

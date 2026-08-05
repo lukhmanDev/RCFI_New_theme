@@ -169,7 +169,7 @@
                                 <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
-                                    @if($appItem->status === 'Pending')
+                                    @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
                                         <!-- Approve -->
                                         <button type="button" onclick="openApproveModal({{ $appItem->id }}, '{{ $appItem->cluster_id }}', '{{ $appItem->agency_number }}', '{{ addslashes($meta['agency_name'] ?? '') }}', '{{ $meta['application_date'] ?? date('Y-m-d') }}')" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Approve">
                                              <i class="bx bx-check"></i>
@@ -186,16 +186,7 @@
                                     @endif
                                 @endif
 
-                                @if($appItem->status !== 'Approved' && Auth::user()->canDeleteApplications())
-                                    <form action="{{ route('applications.destroy', $appItem->id) }}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationDeletion(event, this); return false;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="redirect_category" value="{{ $categorySlug }}">
-                                        <button type="submit" class="btn-danger-custom" style="padding: 0.4rem; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Delete">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
+
                             </td>
                         </tr>
                     @empty
@@ -269,24 +260,6 @@
                             <input type="text" class="form-control-dark" id="applicant_name" name="applicant_name" value="{{ old('applicant_name') }}" required>
                         </div>
                         <div>
-                            <label class="form-label" for="father_name">Father's Name *</label>
-                            <input type="text" class="form-control-dark" id="father_name" name="meta[father_name]" value="{{ old('meta.father_name') }}" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="mother_name">Mother's Name *</label>
-                            <input type="text" class="form-control-dark" id="mother_name" name="meta[mother_name]" value="{{ old('meta.mother_name') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="fathers_father">Father's Father</label>
-                            <input type="text" class="form-control-dark" id="fathers_father" name="meta[fathers_father]" value="{{ old('meta.fathers_father') }}">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
                             <label class="form-label" for="gender">Gender *</label>
                             <select class="form-select-dark" id="gender" name="meta[gender]" required>
                                 <option value="Male" {{ old('meta.gender') === 'Male' ? 'selected' : '' }}>Male</option>
@@ -294,21 +267,9 @@
                                 <option value="Other" {{ old('meta.gender') === 'Other' ? 'selected' : '' }}>Other</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="form-label" for="dob">Date of Birth *</label>
-                            <input type="date" class="form-control-dark" id="dob" name="meta[dob]" value="{{ old('meta.dob') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="age">Age *</label>
-                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
-                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="aadhar_number">Aadhaar Number *</label>
-                            <input type="text" class="form-control-dark" id="aadhar_number" name="meta[aadhar_number]" value="{{ old('meta.aadhar_number') }}" placeholder="XXXX XXXX XXXX" maxlength="14" required>
-                        </div>
                         <div>
                             <label class="form-label" for="pin">Pin Code *</label>
                             <input type="tel" class="form-control-dark" id="pin" name="meta[pin]" value="{{ old('meta.pin') }}" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
@@ -317,18 +278,13 @@
                             <label class="form-label" for="location">Place *</label>
                             <input type="text" class="form-control-dark" id="location" name="meta[location]" value="{{ old('meta.location') }}" required>
                         </div>
-                    </div>
-
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="address">Address *</label>
-                        <textarea class="form-control-dark" id="address" name="meta[address]" style="height: 50px;" required>{{ old('meta.address') }}</textarea>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="village">Village *</label>
                             <input type="text" class="form-control-dark" id="village" name="meta[village]" value="{{ old('meta.village') }}" required>
                         </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="post">Post *</label>
                             <input type="text" class="form-control-dark" id="post" name="meta[post]" value="{{ old('meta.post') }}" required>
@@ -337,20 +293,17 @@
                             <label class="form-label" for="panchayath">Panchayath *</label>
                             <input type="text" class="form-control-dark" id="panchayath" name="meta[panchayath]" value="{{ old('meta.panchayath') }}" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="district">District *</label>
                             <input type="text" class="form-control-dark" id="district" name="meta[district]" value="{{ old('meta.district') }}" required>
                         </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="state">State *</label>
                             <input type="text" class="form-control-dark" id="state" name="meta[state]" value="{{ old('meta.state') }}" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="contact_number_1">Contact 1 *</label>
                             <input type="tel" class="form-control-dark" id="contact_number_1" name="meta[contact_number_1]" value="{{ old('meta.contact_number_1') }}" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
@@ -406,12 +359,7 @@
                     
                     <div style="margin-bottom: 1rem;">
                         <label class="form-label" for="land_owner_name">Owner of the Proposed Land *</label>
-                        <textarea class="form-control-dark" id="land_owner_name" name="meta[land_owner_name]" style="height: 45px;" required>{{ old('meta.land_owner_name') }}</textarea>
-                    </div>
-
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="land_owner_address">Address of Land Owner *</label>
-                        <textarea class="form-control-dark" id="land_owner_address" name="meta[land_owner_address]" style="height: 45px;" required>{{ old('meta.land_owner_address') }}</textarea>
+                        <input type="text" maxlength="50" class="form-control-dark" id="land_owner_name" name="meta[land_owner_name]" value="{{ old('meta.land_owner_name') }}" placeholder="Enter land owner name (max 50 chars)" required>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -552,24 +500,6 @@
                             <input type="text" class="form-control-dark" id="edit_applicant_name" name="applicant_name" required>
                         </div>
                         <div>
-                            <label class="form-label" for="edit_father_name">Father's Name *</label>
-                            <input type="text" class="form-control-dark" id="edit_father_name" name="meta[father_name]" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_mother_name">Mother's Name *</label>
-                            <input type="text" class="form-control-dark" id="edit_mother_name" name="meta[mother_name]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_fathers_father">Father's Father</label>
-                            <input type="text" class="form-control-dark" id="edit_fathers_father" name="meta[fathers_father]">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
                             <label class="form-label" for="edit_gender">Gender *</label>
                             <select class="form-select-dark" id="edit_gender" name="meta[gender]" required>
                                 <option value="Male">Male</option>
@@ -577,21 +507,9 @@
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="form-label" for="edit_dob">Date of Birth *</label>
-                            <input type="date" class="form-control-dark" id="edit_dob" name="meta[dob]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_age">Age *</label>
-                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
-                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_aadhar_number">Aadhaar Number *</label>
-                            <input type="text" class="form-control-dark" id="edit_aadhar_number" name="meta[aadhar_number]" placeholder="XXXX XXXX XXXX" maxlength="14" required>
-                        </div>
                         <div>
                             <label class="form-label" for="edit_pin">Pin Code *</label>
                             <input type="tel" class="form-control-dark" id="edit_pin" name="meta[pin]" placeholder="Enter 6-digit pin code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
@@ -600,18 +518,13 @@
                             <label class="form-label" for="edit_location">Place *</label>
                             <input type="text" class="form-control-dark" id="edit_location" name="meta[location]" required>
                         </div>
-                    </div>
-
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="edit_address">Address *</label>
-                        <textarea class="form-control-dark" id="edit_address" name="meta[address]" style="height: 50px;" required></textarea>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_village">Village *</label>
                             <input type="text" class="form-control-dark" id="edit_village" name="meta[village]" required>
                         </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_post">Post *</label>
                             <input type="text" class="form-control-dark" id="edit_post" name="meta[post]" required>
@@ -620,20 +533,17 @@
                             <label class="form-label" for="edit_panchayath">Panchayath *</label>
                             <input type="text" class="form-control-dark" id="edit_panchayath" name="meta[panchayath]" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_district">District *</label>
                             <input type="text" class="form-control-dark" id="edit_district" name="meta[district]" required>
                         </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_state">State *</label>
                             <input type="text" class="form-control-dark" id="edit_state" name="meta[state]" required>
                         </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_contact_number_1">Contact 1 *</label>
                             <input type="tel" class="form-control-dark" id="edit_contact_number_1" name="meta[contact_number_1]" placeholder="Enter 10-digit number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
@@ -689,12 +599,7 @@
                     
                     <div style="margin-bottom: 1rem;">
                         <label class="form-label" for="edit_land_owner_name">Owner of the Proposed Land *</label>
-                        <textarea class="form-control-dark" id="edit_land_owner_name" name="meta[land_owner_name]" style="height: 45px;" required></textarea>
-                    </div>
-
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="edit_land_owner_address">Address of Land Owner *</label>
-                        <textarea class="form-control-dark" id="edit_land_owner_address" name="meta[land_owner_address]" style="height: 45px;" required></textarea>
+                        <input type="text" maxlength="50" class="form-control-dark" id="edit_land_owner_name" name="meta[land_owner_name]" placeholder="Enter land owner name (max 50 chars)" required>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -859,9 +764,12 @@
 
     <!-- Modal Scripts -->
     <script>
+        var projectsMap = @json($projectsMap ?? []); window.projectsMap = projectsMap;
+
         // Add Application Modal Toggle
         function openModal() {
-            document.getElementById('addAppModal').style.display = 'flex';
+            const modal = document.getElementById('addAppModal') || document.getElementById('addModal') || document.getElementById('createModal');
+            if (modal) modal.style.display = 'flex';
         }
 
         // Close Modal Toggle
@@ -869,8 +777,6 @@
         const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
         if (modal) modal.style.display = 'none';
     }
-    window.openModal = openModal;
-    window.closeModal = closeModal;
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
@@ -954,7 +860,6 @@
             document.getElementById('edit_num_benefited_people').value = meta.num_benefited_people || '0';
 
             document.getElementById('edit_land_owner_name').value = meta.land_owner_name || '';
-            document.getElementById('edit_land_owner_address').value = meta.land_owner_address || '';
             document.getElementById('edit_land_owner_place').value = meta.land_owner_place || '';
             document.getElementById('edit_land_owner_post').value = meta.land_owner_post || '';
             document.getElementById('edit_land_owner_panchayath').value = meta.land_owner_panchayath || '';
@@ -993,7 +898,6 @@
         const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
         if (modal) modal.style.display = 'none';
     }
-    window.closeEditModal = closeEditModal;
 
         // View Details Modal Toggle
                 function openDetailsModal(appItem) {
@@ -1020,14 +924,23 @@
                         </form>
                     `;
                 } else if (appItem.status === 'Approved') {
-                    statusHtml = `
-                        <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
-                            <input type="hidden" name="_token" value="${csrfToken}">
-                            <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                                <i class="bx bx-x"></i> Reject Application
-                            </button>
-                        </form>
-                    `;
+                    const isAssignedToProject = !!(typeof projectsMap !== 'undefined' && projectsMap[appItem.id]);
+                    if (isAssignedToProject) {
+                        statusHtml = `
+                            <div style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="bx bx-info-circle" style="font-size: 1.1rem;"></i> Application is assigned to a project and cannot be rejected.
+                            </div>
+                        `;
+                    } else {
+                        statusHtml = `
+                            <form action="${rejectUrl}" method="POST" style="display: inline-block;" onsubmit="confirmApplicationRejection(event, this); return false;">
+                                <input type="hidden" name="_token" value="${csrfToken}">
+                                <button type="submit" class="btn-danger-custom" style="padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                                    <i class="bx bx-x"></i> Reject Application
+                                </button>
+                            </form>
+                        `;
+                    }
                 } else if (appItem.status === 'Rejected') {
                     statusHtml = `
                         <button type="button" onclick="closeDetailsModal(); openApproveModal(${appItem.id}, '${appItem.cluster_id || ''}', '${appItem.agency_number || ''}')" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 0.6rem 1.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; border: none;">
@@ -1047,13 +960,8 @@
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Applicant Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(appItem.applicant_name)} (${formatVal(meta.gender)})</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Date of Birth / Age:</td><td>${formatVal(meta.dob)} / ${formatVal(meta.age)} yrs</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Aadhaar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father's Father:</td><td>${formatVal(meta.fathers_father)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place / Address:</td><td>${formatVal(meta.location)} / ${formatVal(meta.address)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village / PO / Panch:</td><td>${formatVal(meta.village)} / ${formatVal(meta.post)} / ${formatVal(meta.panchayath)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place / Village:</td><td>${formatVal(meta.location)} / ${formatVal(meta.village)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post / Panchayath:</td><td>${formatVal(meta.post)} / ${formatVal(meta.panchayath)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Dist / State / Pin:</td><td>${formatVal(meta.district)} / ${formatVal(meta.state)} / ${formatVal(meta.pin)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Details:</td><td>Mob 1: ${formatVal(meta.contact_number_1)} ${meta.contact_number_2 ? '/ Mob 2: ' + meta.contact_number_2 : ''}</td></tr>
                         </table>
@@ -1071,7 +979,6 @@
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Owner of the Proposed Land</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Land Owner Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.land_owner_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Land Owner Address:</td><td>${formatVal(meta.land_owner_address)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place / PO / Panch:</td><td>${formatVal(meta.land_owner_place)} / ${formatVal(meta.land_owner_post)} / ${formatVal(meta.land_owner_panchayath)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District / Mobile:</td><td>${formatVal(meta.land_owner_district)} / ${formatVal(meta.land_owner_mobile)}</td></tr>
                         </table>
@@ -1300,6 +1207,17 @@
         function closeApproveModal() {
             document.getElementById('approveAppModal').style.display = 'none';
         }
+    
+        // Global Window Bindings
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.openDetailsModal = openDetailsModal;
+        window.closeDetailsModal = closeDetailsModal;
+        window.openApproveModal = openApproveModal;
+        window.closeApproveModal = closeApproveModal;
+        window.toggleOrgOther = toggleOrgOther;
     </script>
 
 @endsection
