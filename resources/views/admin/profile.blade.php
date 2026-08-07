@@ -479,8 +479,14 @@
                             <i class="bx bx-map-pin"></i>
                         </div>
                         <div>
-                            <div style="font-size: 0.75rem; color: var(--pf-text-muted); font-weight: 600; text-transform: uppercase;">Address</div>
-                            <div style="font-size: 0.85rem; font-weight: 500; color: var(--pf-text-main); line-height: 1.4;">{{ $user->profile->address ?? 'Not specified' }}</div>
+                            @php
+                                $contactAddress = $user->profile->address ?? null;
+                                if (!$contactAddress) {
+                                    $parts = array_filter([$user->house_name, $user->place, $user->po ? 'PO: '.$user->po : null, $user->district, $user->state ? $user->state . ($user->pin_code ? ' - ' . $user->pin_code : '') : $user->pin_code]);
+                                    $contactAddress = !empty($parts) ? implode(', ', $parts) : 'Not specified';
+                                }
+                            @endphp
+                            <div style="font-size: 0.85rem; font-weight: 500; color: var(--pf-text-main); line-height: 1.4;">{{ $contactAddress }}</div>
                         </div>
                     </div>
                 </div>
@@ -535,45 +541,148 @@
             <!-- Personal Information Form Card -->
             <div class="pf-card">
                 <div class="pf-card-header">
-                    <h3 class="pf-card-title"><i class="bx bx-user-circle"></i> Personal Information</h3>
+                    <h3 class="pf-card-title">Personal & Profile Details</h3>
                 </div>
                 <div class="pf-card-body">
                     <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+                        <!-- ── Personal Information ── -->
+                        <div style="font-size: 0.825rem; font-weight: 700; color: var(--pf-primary-dark); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">
+                            Personal Information
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
                             <div class="pf-form-group">
                                 <label class="pf-label" for="name">Full Name</label>
-                                <div class="pf-input-wrapper">
-                                    <i class="bx bx-user pf-input-icon"></i>
-                                    <input type="text" class="pf-input pf-input-has-icon" id="name" name="name" value="{{ old('name', $user->name) }}" required>
-                                </div>
+                                <input type="text" class="pf-input" id="name" name="name" value="{{ old('name', $user->name) }}" required>
                             </div>
                             
                             <div class="pf-form-group">
                                 <label class="pf-label" for="designation">Designation</label>
-                                <div class="pf-input-wrapper">
-                                    <i class="bx bx-briefcase pf-input-icon"></i>
-                                    <input type="text" class="pf-input pf-input-has-icon" id="designation" name="designation" value="{{ old('designation', $user->designation) }}" placeholder="e.g. Project Manager" @if(!Auth::user()->isSuperAdmin()) readonly @endif>
-                                </div>
+                                <input type="text" class="pf-input" id="designation" name="designation" value="{{ old('designation', $user->designation) }}" placeholder="e.g. Project Manager" @if(!Auth::user()->isSuperAdmin()) readonly @endif>
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="mobile">Mobile Number</label>
+                                <input type="text" class="pf-input" id="mobile" name="mobile" value="{{ old('mobile', $user->mobile) }}" placeholder="e.g. +91 9999999999">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="father_name">Father's Name</label>
+                                <input type="text" class="pf-input" id="father_name" name="father_name" value="{{ old('father_name', $user->father_name) }}" placeholder="Father's name">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="mother_name">Mother's Name</label>
+                                <input type="text" class="pf-input" id="mother_name" name="mother_name" value="{{ old('mother_name', $user->mother_name) }}" placeholder="Mother's name">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="date_of_birth">Date of Birth</label>
+                                <input type="date" class="pf-input" id="date_of_birth" name="date_of_birth" value="{{ old('date_of_birth', $user->date_of_birth ? date('Y-m-d', strtotime($user->date_of_birth)) : '') }}">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="date_of_joining">Date of Joining</label>
+                                <input type="date" class="pf-input" id="date_of_joining" name="date_of_joining" value="{{ old('date_of_joining', $user->date_of_joining ? date('Y-m-d', strtotime($user->date_of_joining)) : '') }}" @if(!Auth::user()->isSuperAdmin()) readonly @endif>
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="gender">Gender</label>
+                                <select class="pf-input" id="gender" name="gender">
+                                    <option value="" {{ old('gender', $user->gender) ? '' : 'selected' }}>Select gender</option>
+                                    <option value="Male" {{ old('gender', $user->gender) == 'Male' ? 'selected' : '' }}>Male</option>
+                                    <option value="Female" {{ old('gender', $user->gender) == 'Female' ? 'selected' : '' }}>Female</option>
+                                    <option value="Other" {{ old('gender', $user->gender) == 'Other' ? 'selected' : '' }}>Other</option>
+                                </select>
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="marital_status">Marital Status</label>
+                                <select class="pf-input" id="marital_status" name="marital_status">
+                                    <option value="" {{ old('marital_status', $user->marital_status) ? '' : 'selected' }}>Select status</option>
+                                    <option value="Single" {{ old('marital_status', $user->marital_status) == 'Single' ? 'selected' : '' }}>Single</option>
+                                    <option value="Married" {{ old('marital_status', $user->marital_status) == 'Married' ? 'selected' : '' }}>Married</option>
+                                    <option value="Divorced" {{ old('marital_status', $user->marital_status) == 'Divorced' ? 'selected' : '' }}>Divorced</option>
+                                    <option value="Widowed" {{ old('marital_status', $user->marital_status) == 'Widowed' ? 'selected' : '' }}>Widowed</option>
+                                </select>
                             </div>
                         </div>
 
-                        <div class="pf-form-group">
-                            <label class="pf-label" for="mobile">Mobile Number</label>
-                            <div class="pf-input-wrapper">
-                                <i class="bx bx-mobile-alt pf-input-icon"></i>
-                                <input type="text" class="pf-input pf-input-has-icon" id="mobile" name="mobile" value="{{ old('mobile', $user->mobile) }}" placeholder="e.g. +91 9999999999">
+                        <!-- ── Residential Address ── -->
+                        <div style="font-size: 0.825rem; font-weight: 700; color: var(--pf-primary-dark); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--pf-border); padding-top: 1.25rem;">
+                            Residential Address
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="house_name">House Name/Number</label>
+                                <input type="text" class="pf-input" id="house_name" name="house_name" value="{{ old('house_name', $user->house_name) }}" placeholder="House name or number">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="place">Place</label>
+                                <input type="text" class="pf-input" id="place" name="place" value="{{ old('place', $user->place) }}" placeholder="Enter place">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="po">Post Office (PO)</label>
+                                <input type="text" class="pf-input" id="po" name="po" value="{{ old('po', $user->po) }}" placeholder="Post Office">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="district">District</label>
+                                <input type="text" class="pf-input" id="district" name="district" value="{{ old('district', $user->district) }}" placeholder="Enter district">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="state">State</label>
+                                <input type="text" class="pf-input" id="state" name="state" value="{{ old('state', $user->state) }}" placeholder="Enter state">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="pin_code">PIN Code</label>
+                                <input type="text" class="pf-input" id="pin_code" name="pin_code" value="{{ old('pin_code', $user->pin_code) }}" placeholder="6-digit PIN code" maxlength="10">
                             </div>
                         </div>
 
-                        <div class="pf-form-group">
-                            <label class="pf-label" for="address">Address</label>
-                            <textarea class="pf-input" id="address" name="address" rows="3" style="resize: vertical;" placeholder="Enter complete address...">{{ old('address', $user->profile ? $user->profile->address : '') }}</textarea>
+                        <!-- ── ID & Bank Details ── -->
+                        <div style="font-size: 0.825rem; font-weight: 700; color: var(--pf-primary-dark); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; margin-top: 1.5rem; border-top: 1px solid var(--pf-border); padding-top: 1.25rem;">
+                            ID & Bank Details
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="aadhar_number">Aadhar Number</label>
+                                <input type="text" class="pf-input" id="aadhar_number" name="aadhar_number" value="{{ old('aadhar_number', $user->aadhar_number) }}" placeholder="12-digit Aadhar number" maxlength="20">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="pan_card_number">PAN Card Number</label>
+                                <input type="text" class="pf-input" id="pan_card_number" name="pan_card_number" value="{{ old('pan_card_number', strtoupper($user->pan_card_number ?? '')) }}" placeholder="e.g. ABCDE1234F" maxlength="20" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="account_number">Bank Account Number</label>
+                                <input type="text" class="pf-input" id="account_number" name="account_number" value="{{ old('account_number', $user->account_number) }}" placeholder="Account number" maxlength="30">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="bank_name">Bank Name</label>
+                                <input type="text" class="pf-input" id="bank_name" name="bank_name" value="{{ old('bank_name', $user->bank_name) }}" placeholder="Bank name">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="bank_branch">Bank Branch</label>
+                                <input type="text" class="pf-input" id="bank_branch" name="bank_branch" value="{{ old('bank_branch', $user->bank_branch) }}" placeholder="Branch name">
+                            </div>
+
+                            <div class="pf-form-group">
+                                <label class="pf-label" for="ifsc_code">IFSC Code</label>
+                                <input type="text" class="pf-input" id="ifsc_code" name="ifsc_code" value="{{ old('ifsc_code', strtoupper($user->ifsc_code ?? '')) }}" placeholder="e.g. SBIN0001234" maxlength="20" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
+                            </div>
                         </div>
                         
                         <!-- Styled Custom File Upload Zone -->
-                        <div class="pf-form-group">
+                        <div class="pf-form-group" style="margin-top: 1.5rem; border-top: 1px solid var(--pf-border); padding-top: 1.25rem;">
                             <label class="pf-label">Upload Profile Photo</label>
                             <div class="custom-file-upload">
                                 <input type="file" id="photo" name="photo" accept="image/*">
@@ -626,27 +735,18 @@
                                 
                                 <div class="pf-form-group">
                                     <label class="pf-label" for="email">Email Address</label>
-                                    <div class="pf-input-wrapper">
-                                        <i class="bx bx-envelope pf-input-icon"></i>
-                                        <input type="email" class="pf-input pf-input-has-icon" id="email" name="email" value="{{ old('email', $user->email) }}" required>
-                                    </div>
+                                    <input type="email" class="pf-input" id="email" name="email" value="{{ old('email', $user->email) }}" required>
                                 </div>
                                 
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
                                     <div class="pf-form-group">
                                         <label class="pf-label" for="password">New Password</label>
-                                        <div class="pf-input-wrapper">
-                                            <i class="bx bx-lock-alt pf-input-icon"></i>
-                                            <input type="password" class="pf-input pf-input-has-icon" id="password" name="password" placeholder="Leave blank to keep current">
-                                        </div>
+                                        <input type="password" class="pf-input" id="password" name="password" placeholder="Leave blank to keep current">
                                     </div>
                                     
                                     <div class="pf-form-group">
                                         <label class="pf-label" for="password_confirmation">Confirm Password</label>
-                                        <div class="pf-input-wrapper">
-                                            <i class="bx bx-lock-check pf-input-icon"></i>
-                                            <input type="password" class="pf-input pf-input-has-icon" id="password_confirmation" name="password_confirmation" placeholder="Confirm new password">
-                                        </div>
+                                        <input type="password" class="pf-input" id="password_confirmation" name="password_confirmation" placeholder="Confirm new password">
                                     </div>
                                 </div>
                                 

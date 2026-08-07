@@ -101,6 +101,11 @@ class User extends Authenticatable
             'Social Aid' => 'social_aid',
             'Social Aid Manager' => 'social_aid',
             'social_aid' => 'social_aid',
+            9 => 'employee',
+            '9' => 'employee',
+            'Employee' => 'employee',
+            'employee' => 'employee',
+            'staff' => 'employee',
         ];
 
         $this->attributes['role'] = $map[$value] ?? strtolower(str_replace(' ', '_', $value ?: 'others'));
@@ -117,6 +122,7 @@ class User extends Authenticatable
             'engineer' => 'Engineer',
             'reception' => 'Reception',
             'social_aid' => 'Social Aid Manager',
+            'employee' => 'Employee',
         ];
 
         return $map[$this->role] ?? ucwords(str_replace('_', ' ', $this->role));
@@ -165,6 +171,50 @@ class User extends Authenticatable
     {
         $roleLower = strtolower(trim($this->role ?? ''));
         return in_array($roleLower, ['social_aid', 'social aid', 'social aid manager', '8']);
+    }
+
+    public function isOthers(): bool
+    {
+        $roleLower = strtolower(trim($this->role ?? ''));
+        return in_array($roleLower, ['others', '5']);
+    }
+
+    public function isEmployee(): bool
+    {
+        $roleLower = strtolower(trim($this->role ?? ''));
+        return in_array($roleLower, ['employee', 'staff', '9']);
+    }
+
+    public function canAddApplications(): bool
+    {
+        return !$this->isOthers() && !$this->isEmployee();
+    }
+
+    public function canAddEditProjects(): bool
+    {
+        $designationLower = strtolower(trim($this->designation ?? ''));
+        $isCoo = ($this->isCoo() || $this->role == 2 || $this->role === 'coo' || str_contains($designationLower, 'coo'));
+        $isHod = ($this->isHod() || $this->role == 4 || $this->role === 'hod' || str_contains($designationLower, 'hod'));
+        $isSuperAdmin = ($this->isSuperAdmin() || $this->role == 1 || $this->role === 'super_admin');
+
+        return $isSuperAdmin || $isCoo || $isHod;
+    }
+
+    public function canAssignApplications(): bool
+    {
+        $designationLower = strtolower(trim($this->designation ?? ''));
+        $isPm = ($this->isPm() || $this->role == 3 || $this->role === 'project_manager' || str_contains($designationLower, 'project manager'));
+        $isEngineer = ($this->isEngineer() || $this->role == 6 || $this->role === 'engineer' || str_contains($designationLower, 'engineer'));
+        $isCoo = ($this->isCoo() || $this->role == 2 || $this->role === 'coo' || str_contains($designationLower, 'coo'));
+        $isHod = ($this->isHod() || $this->role == 4 || $this->role === 'hod' || str_contains($designationLower, 'hod'));
+        $isSuperAdmin = ($this->isSuperAdmin() || $this->role == 1 || $this->role === 'super_admin');
+
+        return $isSuperAdmin || $isCoo || $isHod || $isPm || $isEngineer;
+    }
+
+    public function canDownloadExcel(): bool
+    {
+        return !$this->isOthers();
     }
 
     public function hasAdminAccess(): bool
@@ -262,5 +312,109 @@ class User extends Authenticatable
         }
 
         return $projects->sortByDesc('created_at');
+    }
+
+    public function leaveRequests()
+    {
+        return $this->hasMany(LeaveRequest::class, 'user_id');
+    }
+
+    public function leaveBalances()
+    {
+        return $this->hasMany(LeaveBalance::class, 'user_id');
+    }
+
+    public function isEligibleFor(LeaveType $type): bool
+    {
+        if (!$type->is_active) {
+            return false;
+        }
+
+        // Gender check
+        if ($type->applicable_gender !== 'All') {
+            if (!$this->gender || strtolower($this->gender) !== strtolower($type->applicable_gender)) {
+                return false;
+            }
+        }
+
+        // Marital status check
+        if ($type->requires_marital_status !== 'Any') {
+            if (!$this->marital_status || strtolower($this->marital_status) !== strtolower($type->requires_marital_status)) {
+                return false;
+            }
+        }
+
+        // Service years check
+        if ($type->min_service_years > 0) {
+            if (!$this->date_of_joining) {
+                return false;
+            }
+            $yearsOfService = \Carbon\Carbon::parse($this->date_of_joining)->diffInYears(now());
+            if ($yearsOfService < $type->min_service_years) {
+                return false;
+            }
+        }
+
+        // Lifetime only check
+        if ($type->is_lifetime_only) {
+            $usedDays = LeaveBalance::where('user_id', $this->id)
+                ->where('leave_type_id', $type->id)
+                ->sum('used_days');
+            if ($usedDays > 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function getCurrentLeaveAttribute(): array
+    {
+        $today = now()->format('Y-m-d');
+
+        $activeLeave = $this->leaveRequests()
+            ->where('status', 'Approved')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->with('leaveType')
+            ->first();
+
+        if ($activeLeave) {
+            $code = strtolower($activeLeave->leaveType->leave_code ?? 'leave');
+            return [
+                'status' => 'On Leave',
+                'badge_style' => 'background: #fffbeb; color: #d97706; border: 1px solid #fef3c7;',
+                'type' => $activeLeave->leaveType->leave_name ?? 'Leave',
+                'code' => $code . '_leave',
+                'dates' => \Carbon\Carbon::parse($activeLeave->start_date)->format('M d') . ' - ' . \Carbon\Carbon::parse($activeLeave->end_date)->format('M d'),
+                'is_on_leave' => true,
+            ];
+        }
+
+        $pendingLeave = $this->leaveRequests()
+            ->where('status', 'Pending')
+            ->where('start_date', '>=', $today)
+            ->with('leaveType')
+            ->first();
+
+        if ($pendingLeave) {
+            return [
+                'status' => 'Pending Request',
+                'badge_style' => 'background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;',
+                'type' => $pendingLeave->leaveType->leave_name ?? 'Pending Leave',
+                'code' => 'pending',
+                'dates' => \Carbon\Carbon::parse($pendingLeave->start_date)->format('M d') . ' - ' . \Carbon\Carbon::parse($pendingLeave->end_date)->format('M d'),
+                'is_on_leave' => false,
+            ];
+        }
+
+        return [
+            'status' => $this->is_suspended ? 'Suspended' : 'Active',
+            'badge_style' => $this->is_suspended ? 'background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2;' : 'background: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0;',
+            'type' => 'No active leave',
+            'code' => 'no_leave',
+            'dates' => null,
+            'is_on_leave' => false,
+        ];
     }
 }

@@ -19,7 +19,15 @@ class UserController extends Controller
     {
         $this->checkAdmin();
         $users = User::where('id', '!=', auth()->id())->orderBy('created_at', 'desc')->get();
-        return view('admin.users', compact('users'));
+
+        $today = now()->format('Y-m-d');
+        $onLeaveCount = User::whereHas('leaveRequests', function($q) use ($today) {
+            $q->where('status', 'Approved')
+              ->where('start_date', '<=', $today)
+              ->where('end_date', '>=', $today);
+        })->count();
+
+        return view('admin.users', compact('users', 'onLeaveCount'));
     }
 
     public function store(Request $request)
@@ -27,21 +35,46 @@ class UserController extends Controller
         $this->checkAdmin();
         
         $rules = [
-            'name' => ['required', 'string', 'min:2', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'mobile' => ['nullable', 'string', 'max:15'],
-            'designation' => ['nullable', 'string', 'max:255'],
-            'password' => ['required', 'string', 'min:8'],
+            'name'           => ['required', 'string', 'min:2', 'max:255'],
+            'email'          => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'mobile'         => ['required', 'string', 'max:15'],
+            'father_name'    => ['required', 'string', 'max:255'],
+            'mother_name'    => ['required', 'string', 'max:255'],
+            'date_of_birth'  => ['required', 'date'],
+            'date_of_joining'=> ['required', 'date'],
+            'gender'         => ['required', 'string', 'in:Male,Female,Other'],
+            'marital_status' => ['required', 'string', 'in:Single,Married,Divorced,Widowed'],
+            'house_name'     => ['required', 'string', 'max:255'],
+            'place'          => ['required', 'string', 'max:255'],
+            'po'             => ['required', 'string', 'max:255'],
+            'district'       => ['required', 'string', 'max:255'],
+            'state'          => ['required', 'string', 'max:255'],
+            'pin_code'       => ['required', 'string', 'max:10'],
+            'aadhar_number'  => ['required', 'string', 'max:20'],
+            'pan_card_number'=> ['required', 'string', 'max:20'],
+            'account_number' => ['required', 'string', 'max:30'],
+            'bank_name'      => ['required', 'string', 'max:255'],
+            'bank_branch'    => ['required', 'string', 'max:255'],
+            'ifsc_code'      => ['required', 'string', 'max:20'],
+            'designation'    => ['required', 'string', 'max:255'],
+            'password'       => ['required', 'string', 'min:8'],
         ];
 
         if (auth()->user()->isSuperAdmin()) {
-            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,social_aid,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,Social Aid,Social Aid Manager,1,2,3,4,5,6,7,8'];
+            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,social_aid,employee,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,Social Aid,Social Aid Manager,Employee,1,2,3,4,5,6,7,8,9'];
         }
 
         $data = $request->validate($rules);
 
         if (!auth()->user()->isSuperAdmin()) {
             $data['role'] = 'others'; // default to 'others'
+        }
+
+        if (!empty($data['pan_card_number'])) {
+            $data['pan_card_number'] = strtoupper($data['pan_card_number']);
+        }
+        if (!empty($data['ifsc_code'])) {
+            $data['ifsc_code'] = strtoupper($data['ifsc_code']);
         }
 
         $data['password'] = bcrypt($data['password']);
@@ -62,15 +95,33 @@ class UserController extends Controller
         }
 
         $rules = [
-            'name' => ['required', 'string', 'min:2', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'mobile' => ['nullable', 'string', 'max:15'],
-            'designation' => ['nullable', 'string', 'max:255'],
-            'password' => ['nullable', 'string', 'min:8'],
+            'name'           => ['required', 'string', 'min:2', 'max:255'],
+            'email'          => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'mobile'         => ['required', 'string', 'max:15'],
+            'father_name'    => ['required', 'string', 'max:255'],
+            'mother_name'    => ['required', 'string', 'max:255'],
+            'date_of_birth'  => ['required', 'date'],
+            'date_of_joining'=> ['required', 'date'],
+            'gender'         => ['required', 'string', 'in:Male,Female,Other'],
+            'marital_status' => ['required', 'string', 'in:Single,Married,Divorced,Widowed'],
+            'house_name'     => ['required', 'string', 'max:255'],
+            'place'          => ['required', 'string', 'max:255'],
+            'po'             => ['required', 'string', 'max:255'],
+            'district'       => ['required', 'string', 'max:255'],
+            'state'          => ['required', 'string', 'max:255'],
+            'pin_code'       => ['required', 'string', 'max:10'],
+            'aadhar_number'  => ['required', 'string', 'max:20'],
+            'pan_card_number'=> ['required', 'string', 'max:20'],
+            'account_number' => ['required', 'string', 'max:30'],
+            'bank_name'      => ['required', 'string', 'max:255'],
+            'bank_branch'    => ['required', 'string', 'max:255'],
+            'ifsc_code'      => ['required', 'string', 'max:20'],
+            'designation'    => ['required', 'string', 'max:255'],
+            'password'       => ['nullable', 'string', 'min:8'],
         ];
 
         if (auth()->user()->isSuperAdmin()) {
-            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,social_aid,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,Social Aid,Social Aid Manager,1,2,3,4,5,6,7,8'];
+            $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,social_aid,employee,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,Social Aid,Social Aid Manager,Employee,1,2,3,4,5,6,7,8,9'];
         }
 
         $data = $request->validate($rules);
@@ -78,6 +129,13 @@ class UserController extends Controller
         if (!auth()->user()->isSuperAdmin()) {
             $data['role'] = $user->role;
             $data['designation'] = $user->designation;
+        }
+
+        if (!empty($data['pan_card_number'])) {
+            $data['pan_card_number'] = strtoupper($data['pan_card_number']);
+        }
+        if (!empty($data['ifsc_code'])) {
+            $data['ifsc_code'] = strtoupper($data['ifsc_code']);
         }
 
         if (!empty($data['password'])) {
@@ -148,22 +206,65 @@ class UserController extends Controller
             6 => 'Engineer',
             7 => 'Reception',
             8 => 'Social Aid Manager',
-            'social_aid' => 'Social Aid Manager',
+            'super_admin'     => 'Super Admin',
+            'coo'             => 'COO',
+            'project_manager' => 'Project Manager',
+            'hod'             => 'HOD',
+            'engineer'        => 'Engineer',
+            'reception'       => 'Reception',
+            'social_aid'      => 'Social Aid Manager',
+            'others'          => 'Others',
         ];
+
+        $runningCount = 0;
+        $completedCount = 0;
+        if ($isPmOrEngineer && !empty($projects)) {
+            foreach ($projects as $p) {
+                $st = strtolower($p['status'] ?? '');
+                if (in_array($st, ['completed', 'done', 'handover', 'finished'])) {
+                    $completedCount++;
+                } else {
+                    $runningCount++;
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
             'user' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'mobile' => $user->mobile ?? 'N/A',
-                'designation' => $user->designation ?? 'N/A',
-                'role' => $rolesMap[$user->role] ?? 'User',
+                'name'            => $user->name,
+                'email'           => $user->email,
+                'mobile'          => $user->mobile ?? 'N/A',
+                'father_name'     => $user->father_name ?? 'N/A',
+                'mother_name'     => $user->mother_name ?? 'N/A',
+                'date_of_birth'   => $user->date_of_birth ?? 'N/A',
+                'date_of_joining' => $user->date_of_joining ?? 'N/A',
+                'gender'          => $user->gender ?? 'N/A',
+                'marital_status'  => $user->marital_status ?? 'N/A',
+                'house_name'      => $user->house_name ?? 'N/A',
+                'place'           => $user->place ?? 'N/A',
+                'po'              => $user->po ?? 'N/A',
+                'district'        => $user->district ?? 'N/A',
+                'state'           => $user->state ?? 'N/A',
+                'pin_code'        => $user->pin_code ?? 'N/A',
+                'aadhar_number'   => $user->aadhar_number ?? 'N/A',
+                'pan_card_number' => $user->pan_card_number ?? 'N/A',
+                'account_number'  => $user->account_number ?? 'N/A',
+                'bank_name'       => $user->bank_name ?? 'N/A',
+                'bank_branch'     => $user->bank_branch ?? 'N/A',
+                'ifsc_code'       => $user->ifsc_code ?? 'N/A',
+                'designation'     => $user->designation ?? 'N/A',
+                'role'            => $rolesMap[$user->role] ?? 'User',
+                'raw_role'        => $user->role,
                 'is_pm_or_engineer' => $isPmOrEngineer,
-                'address' => $user->profile->address ?? 'N/A',
-                'is_suspended' => $user->is_suspended,
+                'address'         => $user->profile->address ?? 'N/A',
+                'is_suspended'    => $user->is_suspended,
+                'photo_url'       => ($user->profile && $user->profile->photo) ? asset($user->profile->photo) : ($user->photo ? asset($user->photo) : null),
             ],
-            'projects' => $projects
+            'projects' => $projects,
+            'running_projects_count' => $runningCount,
+            'completed_projects_count' => $completedCount,
+            'total_projects_count' => is_countable($projects) ? count($projects) : 0,
         ]);
     }
 
@@ -181,5 +282,17 @@ class UserController extends Controller
 
         $statusStr = $user->is_suspended ? 'suspended' : 'unsuspended';
         return redirect()->route('users')->with('success', "User account {$statusStr} successfully!");
+    }
+
+    public function submitLeaveRequest(Request $request)
+    {
+        $request->validate([
+            'leave_type' => 'required|string',
+            'from_date'  => 'required|date',
+            'to_date'    => 'required|date|after_or_equal:from_date',
+            'reason'     => 'required|string|max:1000',
+        ]);
+
+        return redirect()->back()->with('success', "Your leave request ({$request->leave_type} from {$request->from_date} to {$request->to_date}) has been submitted successfully for approval!");
     }
 }

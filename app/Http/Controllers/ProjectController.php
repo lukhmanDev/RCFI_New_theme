@@ -258,7 +258,7 @@ class ProjectController extends Controller
         $isOrphanCare = ($slug === 'orphan-care');
         $isSocialAid = in_array($slug, ['orphan-care', 'differently-abled', 'family-aid']);
         $hasAddrTable = \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses');
-        $relations = $isSocialAid ? ($hasAddrTable ? ['application.cluster', 'application.address'] : ['application.cluster']) : ['donor', 'projectManager', 'engineer'];
+        $relations = $isSocialAid ? ($hasAddrTable ? ['application.cluster', 'application.address'] : ['application.cluster']) : ['donor', 'projectManager', 'engineer', 'application'];
 
         $projectQuery = $model::with($relations);
         if ($isSocialAid) {
@@ -281,8 +281,9 @@ class ProjectController extends Controller
             ->orWhere('designation', 'like', '%engineer%')
             ->get();
 
-        $themes = \Illuminate\Support\Facades\DB::table('themes')->where('status', 1)->get();
-        $subthemes = \Illuminate\Support\Facades\DB::table('subthemes')->where('status', 1)->get();
+        $themes = \Illuminate\Support\Facades\Schema::hasTable('themes') ? \Illuminate\Support\Facades\DB::table('themes')->where('status', 1)->get() : collect([]);
+        $subthemes = \Illuminate\Support\Facades\Schema::hasTable('subthemes') ? \Illuminate\Support\Facades\DB::table('subthemes')->where('status', 1)->get() : collect([]);
+        $canAddEditProjects = $user ? $user->canAddEditProjects() : false;
 
         return view($config['view'], compact(
             'categoryName',
@@ -292,19 +293,16 @@ class ProjectController extends Controller
             'managers',
             'engineers',
             'themes',
-            'subthemes'
+            'subthemes',
+            'canAddEditProjects'
         ));
     }
 
     public function store(Request $request)
     {
         $user = auth()->user();
-        $designationLower = strtolower($user->designation ?? '');
-        $isCoo = ($user->isCoo() || $user->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'coo'));
-        $isHod = ($user->isHod() || $user->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'hod'));
-        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin');
-        if (!$isCoo && !$isHod && !$isSuperAdmin) {
-            return redirect()->back()->with('error', 'Only HOD and COO are authorized to create projects.');
+        if (!$user || !$user->canAddEditProjects()) {
+            return redirect()->back()->with('error', 'Only Super Admin, HOD, and COO are authorized to create projects.');
         }
 
         $redirectCategory = $request->input('redirect_category');
@@ -419,8 +417,11 @@ class ProjectController extends Controller
         if ($config) {
             $model = $config['model'];
             $project = $model::findOrFail($id);
-            if (!$this->isPmOrEngineer($user, $project)) {
-                return redirect()->back()->with('error', 'You are not authorized to edit this project.');
+            if (!$user || !$user->canAddEditProjects()) {
+                return redirect()->back()->with('error', 'Only Super Admin, HOD, and COO are authorized to edit projects.');
+            }
+            if (!empty($project->application_id)) {
+                return redirect()->back()->with('error', 'Projects connected to an application cannot be edited.');
             }
             try {
                 $project->update($data);
@@ -643,8 +644,8 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Once Stage 4 is approved, the assigned application cannot be changed.');
         }
 
-        if (!$this->isPmOrEngineer($user, $project)) {
-            return redirect()->back()->with('error', 'Only assigned Project Manager, Engineer, HOD, and COO are authorized to assign or connect applications.');
+        if (!$user || !$user->canAssignApplications()) {
+            return redirect()->back()->with('error', 'Only Project Manager, HOD, COO, and Super Admin are authorized to assign or connect applications.');
         }
 
         $request->validate([
@@ -1018,6 +1019,10 @@ class ProjectController extends Controller
 
     public function export(Request $request, $category)
     {
+        if (auth()->user() && !auth()->user()->canDownloadExcel()) {
+            return redirect()->back()->with('error', 'Users with role "Others" cannot download Excel exports.');
+        }
+
         if (!array_key_exists($category, $this->categories)) {
             abort(404);
         }

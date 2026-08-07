@@ -26,7 +26,15 @@
         </div>
     </div>
 
-    <div class="topbar-right">
+    <div class="topbar-right" style="display: flex; align-items: center; gap: 0.85rem;">
+        <!-- Live Date & Clock Widget -->
+        <div id="liveClockWidget" style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px; padding: 0.35rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: #334155;">
+            <i class="bx bx-time" style="color: #10b981; font-size: 1.05rem;"></i>
+            <span id="liveClockDate" style="color: #475569;">{{ now()->format('D, M d, Y') }}</span>
+            <span style="color: #cbd5e1;">|</span>
+            <span id="liveClockTime" style="color: #0f172a; font-weight: 700;">{{ now()->format('h:i:s A') }}</span>
+        </div>
+
         <div class="topbar-icon-wrapper" style="position: relative; display: flex; align-items: center;">
             <button class="topbar-icon-btn" onclick="toggleTopbarNotificationsMenu(event)" style="background: none; border: none; cursor: pointer;">
                 <i class="bx bx-bell"></i>
@@ -546,4 +554,20 @@
             resultsContainer.style.display = 'none';
         }
     });
+
+    // Live Date & Time Clock Ticker
+    function updateLiveClock() {
+        const dateEl = document.getElementById('liveClockDate');
+        const timeEl = document.getElementById('liveClockTime');
+        if (!dateEl || !timeEl) return;
+
+        const now = new Date();
+        const optionsDate = { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' };
+        dateEl.innerText = now.toLocaleDateString('en-US', optionsDate);
+
+        const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+        timeEl.innerText = now.toLocaleTimeString('en-US', optionsTime);
+    }
+    setInterval(updateLiveClock, 1000);
+    document.addEventListener('DOMContentLoaded', updateLiveClock);
 </script>

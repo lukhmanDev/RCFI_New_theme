@@ -9,6 +9,7 @@
     $isStaffs = request()->is('admin/users*') || request()->routeIs('users.*') || Route::currentRouteName() === 'users';
     $isSocialAidFundReport = request()->is('admin/reports/social-aid-funds*') || request()->routeIs('admin.reports.social_aid_funds');
     $isProjectReport = request()->is('admin/reports/projects*') || request()->is('admin/reports/single-project*') || request()->routeIs('admin.reports.projects') || request()->routeIs('admin.reports.single_project');
+    $isLeaveRequests = request()->is('admin/leave-requests*') || request()->routeIs('leave.*');
     $isDashboard = request()->is('dashboard') || request()->is('admin/dashboard') || Route::currentRouteName() === 'admin.home';
 @endphp
 
@@ -32,13 +33,21 @@
         </li>
 
         <li>
+            <a href="{{ route('leave.index') }}" class="{{ $isLeaveRequests ? 'active' : '' }}">
+                <i class="bx bxs-calendar-event"></i>
+                <span>Leave Requests</span>
+            </a>
+        </li>
+
+        @if(!Auth::user() || !Auth::user()->isEmployee())
+        <li>
             <a href="{{ route('applications.index') }}" class="{{ $isApplications ? 'active' : '' }}">
                 <i class="bx bxs-file-doc"></i>
                 <span>Applications</span>
             </a>
         </li>
 
-        @if(!Auth::user() || !Auth::user()->isReception())
+        @if(!Auth::user()->isReception())
         <li>
             <a href="{{ route('applications.approved.index') }}" class="approved-link {{ $isApprovedApps ? 'active' : '' }}">
                 <i class="bx bxs-check-circle icon-approved"></i>
@@ -101,6 +110,7 @@
             </a>
         </li>
         @endif
+        @endif
     </ul>
 
     <!-- Relocated Sidebar Profile Section -->
@@ -135,9 +145,43 @@
         display: flex;
         flex-direction: column;
         border-right: 1px solid #e2e8f0;
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
     }
 
-    .sidebar-menu { list-style: none; margin: 0; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.2rem; }
+    .sidebar-brand {
+        flex-shrink: 0;
+    }
+
+    .sidebar-menu {
+        list-style: none;
+        margin: 0;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 0;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+    }
+
+    .sidebar-menu::-webkit-scrollbar {
+        width: 5px;
+    }
+    .sidebar-menu::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .sidebar-menu::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .sidebar-menu::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
 
     .sidebar-menu li a {
         display: flex;
@@ -162,8 +206,6 @@
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
     }
     .sidebar-menu li a.active i { color: #ffffff !important; }
-
-
 
     /* ============ Sidebar Section Headers ============ */
     .sidebar-menu li.sidebar-header {
@@ -208,14 +250,18 @@
         padding-top: 0;
     }
 
-    /* ============ Footer / profile ============ */
+    /* ============ Footer / profile (Fixed at bottom) ============ */
     .sidebar-footer {
         margin-top: auto;
+        flex-shrink: 0;
         border-top: 1px solid #e2e8f0;
         padding: 0.85rem 0.9rem 1rem;
         display: flex;
         flex-direction: column;
         gap: 0.6rem;
+        background: #ffffff;
+        position: relative;
+        z-index: 10;
     }
 
     .sidebar-profile {

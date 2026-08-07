@@ -250,17 +250,21 @@
         $authUser = auth()->user();
         $isSuperAdmin = ($authUser && ($authUser->isSuperAdmin() || $authUser->role == 1 || $authUser->role === 'super_admin'));
         $designationLower = strtolower($authUser->designation ?? '');
-        $isCoo = ($authUser && ($authUser->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
-        $isHod = ($authUser && ($authUser->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
-        $isPmOnly = ($authUser && ($authUser->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
-        $isEngineerOnly = ($authUser && ($authUser->role == 6 || strtolower($authUser->designation ?? '') === 'engineer'));
+        $isCoo = ($authUser && ($authUser->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
+        $isHod = ($authUser && ($authUser->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+        $isPmOnly = ($authUser && ($authUser->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
+        $isEngineerOnly = ($authUser && ($authUser->isEngineer() || strtolower($authUser->designation ?? '') === 'engineer'));
         
         $isProjectManager = ($authUser && ($isSuperAdmin || $isCoo || $isHod || $isPmOnly || $isEngineerOnly || in_array($authUser->role, [1, 2, 3, 4, 6, 'super_admin', 'coo', 'project_manager', 'hod', 'engineer']) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod', 'super admin', 'admin'])));
         $isLockedForEditing = ($project->status === 'Completed' && !$isSuperAdmin);
         $canEditStatus = ($isCoo || $isHod || $isSuperAdmin) && !$isLockedForEditing;
         $isSixStage = false; // General project uses 5 stages
         $isStage4Approved = ($project->stage >= 4 || in_array($project->status, ['Approved', 'Completed']));
-        $canAssignApplication = $isProjectManager && $project->status !== 'Completed';
+        if ($isSixStage) {
+            $canAssignApplication = ($authUser && $authUser->canAssignApplications()) && !$isStage4Approved;
+        } else {
+            $canAssignApplication = ($authUser && $authUser->canAssignApplications()) && !$isLockedForEditing;
+        }
         $hasApplication = !empty($project->application_id);
     @endphp
 
@@ -730,7 +734,7 @@
                 @if($project->stage <= 3 && $project->status !== 'Approved' && $project->status !== 'Completed')
                     <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
 
-                        {{-- COO / HOD: Always see Approve & Reject at Stage 3 --}}
+                        {{-- COO / HOD / SuperAdmin: Always see Review & Approval Actions --}}
                         @if($isCoo || $isHod || $isSuperAdmin)
                             <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; width: 100%; max-width: 700px; background: rgba(255,255,255,0.02); padding: 1.25rem; border: 1px solid var(--panel-border); border-radius: 8px;">
                                 <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; width: 100%; text-transform: uppercase;">
@@ -766,8 +770,8 @@
                             </div>
                         @endif
 
-                        {{-- PM: Submit button (if not yet submitted) --}}
-                        @if($isPmOnly || $isSuperAdmin)
+                        {{-- PM / Engineer ONLY: Submit Button --}}
+                        @if(!$isCoo && !$isHod && !$isSuperAdmin && ($isPmOnly || $isEngineerOnly))
                             @if($project->status === 'Pending' || $project->status === 'Rejected')
                                 <form action="{{ route('projects.approve', $project->id) }}" method="POST">
                                     @csrf
@@ -2264,7 +2268,6 @@
             const pinCode = formatVal(getVal(['pin_code', 'pin']));
             const c1 = formatVal(getVal(['contact_number_1', 'mobile_1', 'mobile', 'contact1']));
             const c2 = formatVal(getVal(['contact_number_2', 'mobile_2', 'contact2']));
-            const mahalluName = formatVal(getVal(['mahallu_name']));
             const localityPlace = formatVal(getVal(['locality_place', 'locality_location', 'location']));
             const localityVillage = formatVal(getVal(['locality_village', 'village']));
             const localityPost = formatVal(getVal(['locality_post', 'post']));

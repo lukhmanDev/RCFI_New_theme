@@ -167,6 +167,9 @@ class AdminController extends Controller
             'chartPeriodData'
         );
 
+        if ($user->isEmployee()) {
+            return view('dashboard.employee', $viewData);
+        }
         if ($user->isReception()) {
             return view('dashboard.reception', $viewData);
         }

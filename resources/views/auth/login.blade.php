@@ -238,7 +238,7 @@
                 </div>
                 <div class="input-group-custom">
                     <i class="bx bx-lock-alt input-icon"></i>
-                    <input type="password" class="form-control-dark @error('password') is-invalid @enderror" id="password" name="password" placeholder="Enter your password" required>
+                    <input type="password" class="form-control-dark @error('password') is-invalid @enderror" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
                 </div>
                 @error('password')
                     <span class="invalid-feedback" role="alert">

@@ -41,4 +41,9 @@ class CulturalCenterProject extends Model
     {
         return $this->belongsTo(User::class, 'engineer_id');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(CulturalCenterApplication::class, 'application_id');
+    }
 }

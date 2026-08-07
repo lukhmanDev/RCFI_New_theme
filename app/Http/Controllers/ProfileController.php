@@ -22,23 +22,71 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
-        $request->validate([
-            'name' => ['required', 'string', 'min:2', 'max:255'],
-            'designation' => ['nullable', 'string', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:20'],
-            'address' => ['nullable', 'string', 'max:1000'],
-            'photo' => ['nullable', 'file', 'mimes:jpeg,png,jpg,gif,svg,webp,avif', 'max:10240'], // Max 10MB
+        $validated = $request->validate([
+            'name'            => ['required', 'string', 'min:2', 'max:255'],
+            'designation'     => ['nullable', 'string', 'max:255'],
+            'mobile'          => ['nullable', 'string', 'max:20'],
+            'father_name'     => ['nullable', 'string', 'max:255'],
+            'mother_name'     => ['nullable', 'string', 'max:255'],
+            'date_of_birth'   => ['nullable', 'date'],
+            'date_of_joining' => ['nullable', 'date'],
+            'gender'          => ['nullable', 'string', 'in:Male,Female,Other'],
+            'marital_status'  => ['nullable', 'string', 'in:Single,Married,Divorced,Widowed'],
+            'house_name'      => ['nullable', 'string', 'max:255'],
+            'place'           => ['nullable', 'string', 'max:255'],
+            'po'              => ['nullable', 'string', 'max:255'],
+            'district'        => ['nullable', 'string', 'max:255'],
+            'state'           => ['nullable', 'string', 'max:255'],
+            'pin_code'        => ['nullable', 'string', 'max:10'],
+            'aadhar_number'   => ['nullable', 'string', 'max:20'],
+            'pan_card_number' => ['nullable', 'string', 'max:20'],
+            'account_number'  => ['nullable', 'string', 'max:30'],
+            'bank_name'       => ['nullable', 'string', 'max:255'],
+            'bank_branch'     => ['nullable', 'string', 'max:255'],
+            'ifsc_code'       => ['nullable', 'string', 'max:20'],
+            'address'         => ['nullable', 'string', 'max:1000'],
+            'photo'           => ['nullable', 'file', 'mimes:jpeg,png,jpg,gif,svg,webp,avif', 'max:10240'], // Max 10MB
         ]);
 
-        $user->name = $request->input('name');
-        if ($user->isSuperAdmin()) {
-            $user->designation = $request->input('designation');
+        $user->name            = $validated['name'];
+        if ($user->isSuperAdmin() && isset($validated['designation'])) {
+            $user->designation = $validated['designation'];
         }
-        $user->mobile = $request->input('mobile');
+        $user->mobile          = $validated['mobile'] ?? $user->mobile;
+        $user->father_name     = $validated['father_name'] ?? $user->father_name;
+        $user->mother_name     = $validated['mother_name'] ?? $user->mother_name;
+        $user->date_of_birth   = $validated['date_of_birth'] ?? $user->date_of_birth;
+        if ($user->isSuperAdmin() && isset($validated['date_of_joining'])) {
+            $user->date_of_joining = $validated['date_of_joining'];
+        }
+        $user->gender          = $validated['gender'] ?? $user->gender;
+        $user->marital_status  = $validated['marital_status'] ?? $user->marital_status;
+        $user->house_name      = $validated['house_name'] ?? $user->house_name;
+        $user->place           = $validated['place'] ?? $user->place;
+        $user->po              = $validated['po'] ?? $user->po;
+        $user->district        = $validated['district'] ?? $user->district;
+        $user->state           = $validated['state'] ?? $user->state;
+        $user->pin_code        = $validated['pin_code'] ?? $user->pin_code;
+        $user->aadhar_number   = $validated['aadhar_number'] ?? $user->aadhar_number;
+        $user->pan_card_number = isset($validated['pan_card_number']) ? strtoupper($validated['pan_card_number']) : $user->pan_card_number;
+        $user->account_number  = $validated['account_number'] ?? $user->account_number;
+        $user->bank_name       = $validated['bank_name'] ?? $user->bank_name;
+        $user->bank_branch     = $validated['bank_branch'] ?? $user->bank_branch;
+        $user->ifsc_code       = isset($validated['ifsc_code']) ? strtoupper($validated['ifsc_code']) : $user->ifsc_code;
         $user->save();
 
+        // Synthesize address string for Profile model
+        $addressParts = array_filter([
+            $user->house_name,
+            $user->place,
+            $user->po ? 'PO: ' . $user->po : null,
+            $user->district,
+            $user->state ? $user->state . ($user->pin_code ? ' - ' . $user->pin_code : '') : $user->pin_code,
+        ]);
+        $fullAddress = !empty($addressParts) ? implode(', ', $addressParts) : ($request->input('address') ?? null);
+
         $profileData = [
-            'address' => $request->input('address'),
+            'address' => $fullAddress,
         ];
 
         if ($request->hasFile('photo')) {

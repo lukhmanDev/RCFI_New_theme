@@ -1,4 +1,4 @@
-﻿@php
+@php
     $authUser = auth()->user();
     $isCoo = ($authUser && ($authUser->isCoo() || strtolower($authUser->designation ?? '') === 'coo'));
     $isHod = ($authUser && ($authUser->isHod() || strtolower($authUser->designation ?? '') === 'hod'));
@@ -279,10 +279,29 @@
     </div>
 
 
-    <div class="search-container">
-        <span>Search:</span>
-        <input type="text" id="tableSearch" onkeyup="filterTable()" class="form-control-dark" style="width: 200px; padding: 0.4rem 0.8rem; font-size: 0.85rem;" placeholder="Search projects...">
-    </div>
+            <!-- Search & Filter Toolbar -->
+        <div style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: flex-end;">
+            <select id="filterManager" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 150px;">
+                <option value="">All Project Managers</option>
+            </select>
+
+            <select id="filterAgency" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 140px;">
+                <option value="">All Agencies</option>
+            </select>
+
+            <select id="filterDistrict" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 130px;">
+                <option value="">All Districts</option>
+            </select>
+
+            <select id="filterState" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 120px;">
+                <option value="">All States</option>
+            </select>
+
+            <div style="position: relative; width: 100%; max-width: 220px;">
+                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"><i class="bx bx-search"></i></span>
+                <input type="text" id="tableSearch" placeholder="Search projects..." style="width: 100%; padding: 0.45rem 0.75rem 0.45rem 2.25rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;" onkeyup="filterTable()">
+            </div>
+        </div>
 </div>
 
 <div class="panel" style="width: 100%;">
@@ -390,7 +409,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Add Family Aid Project</h3>
-            
+            <button type="button" class="modal-close-btn" onclick="closeModal()" title="Close">&times;</button>
         </div>
         <form action="{{ route('projects.store') }}" method="POST">
             @csrf
@@ -496,7 +515,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Edit Family Aid Project</h3>
-            
+            <button type="button" class="modal-close-btn" onclick="closeEditModal()" title="Close">&times;</button>
         </div>
         <form id="editProjectForm" method="POST">
             @csrf
@@ -644,34 +663,90 @@
         }
     }
 
-    function filterTable() {
-        const input = document.getElementById('tableSearch');
-        const filter = input.value.toLowerCase().trim();
-        const table = document.getElementById('projectsTable');
-        const trs = table.getElementsByTagName('tr');
+    function initProjectFilters() {
+            const filterManager = document.getElementById('filterManager');
+            const filterAgency = document.getElementById('filterAgency');
+            const filterDistrict = document.getElementById('filterDistrict');
+            const filterState = document.getElementById('filterState');
+            
+            if (!filterManager && !filterAgency && !filterDistrict && !filterState) return;
 
-        for (let i = 1; i < trs.length; i++) {
-            let match = false;
-            const searchData = trs[i].getAttribute('data-search');
-            if (searchData !== null && searchData !== '') {
-                if (searchData.indexOf(filter) > -1) {
-                    match = true;
+            const managers = new Set();
+            const agencies = new Set();
+            const districts = new Set();
+            const states = new Set();
+
+            const rows = document.querySelectorAll('#projectsTable tbody tr.project-row');
+            rows.forEach(row => {
+                const m = row.getAttribute('data-manager-display') || row.getAttribute('data-manager');
+                const a = row.getAttribute('data-agency-display') || row.getAttribute('data-agency');
+                const d = row.getAttribute('data-district-display') || row.getAttribute('data-district');
+                const s = row.getAttribute('data-state-display') || row.getAttribute('data-state');
+
+                if (m && m.toLowerCase() !== 'n/a') managers.add(m.trim());
+                if (a && a.toLowerCase() !== 'n/a') agencies.add(a.trim());
+                if (d && d.toLowerCase() !== 'n/a') districts.add(d.trim());
+                if (s && s.toLowerCase() !== 'n/a') states.add(s.trim());
+            });
+
+            populateSelectOptions(filterManager, managers, 'All Project Managers');
+            populateSelectOptions(filterAgency, agencies, 'All Agencies');
+            populateSelectOptions(filterDistrict, districts, 'All Districts');
+            populateSelectOptions(filterState, states, 'All States');
+        }
+
+        function populateSelectOptions(selectEl, setValues, defaultText) {
+            if (!selectEl) return;
+            const currentVal = selectEl.value;
+            selectEl.innerHTML = `<option value="">${defaultText}</option>`;
+            Array.from(setValues).sort().forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val.toLowerCase();
+                opt.textContent = val;
+                if (val.toLowerCase() === currentVal.toLowerCase()) {
+                    opt.selected = true;
                 }
-            } else {
-                const tds = trs[i].getElementsByTagName('td');
-                for (let j = 0; j < tds.length - 1; j++) {
-                    if (tds[j]) {
-                        const txtValue = tds[j].textContent || tds[j].innerText;
-                        if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                            match = true;
-                            break;
-                        }
-                    }
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function filterTable() {
+            const input = document.getElementById('tableSearch');
+            const filter = input ? input.value.toLowerCase().trim() : '';
+            const selManager = (document.getElementById('filterManager')?.value || '').toLowerCase().trim();
+            const selAgency = (document.getElementById('filterAgency')?.value || '').toLowerCase().trim();
+            const selDistrict = (document.getElementById('filterDistrict')?.value || '').toLowerCase().trim();
+            const selState = (document.getElementById('filterState')?.value || '').toLowerCase().trim();
+
+            const table = document.getElementById('projectsTable');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tbody tr.project-row');
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const rManager = (row.getAttribute('data-manager') || '').toLowerCase();
+                const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
+                const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
+                const rState = (row.getAttribute('data-state') || '').toLowerCase();
+                const rText = (row.textContent || row.innerText || '').toLowerCase();
+
+                const matchesSearch = !filter || rText.includes(filter);
+                const matchesManager = !selManager || rManager === selManager;
+                const matchesAgency = !selAgency || rAgency === selAgency;
+                const matchesDistrict = !selDistrict || rDistrict === selDistrict;
+                const matchesState = !selState || rState === selState;
+
+                if (matchesSearch && matchesManager && matchesAgency && matchesDistrict && matchesState) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
                 }
             }
-            trs[i].style.display = match ? '' : 'none';
         }
-    }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initProjectFilters();
+        });
 
     var themesData = {
         @foreach($themes as $t)
@@ -971,7 +1046,13 @@
         window.closeModal = closeModal;
         window.openEditModal = openEditModal;
         window.closeEditModal = closeEditModal;
-    </script>
+    
+    function closeProgrammeModal() {
+        const modal = document.getElementById('addProgrammeModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+</script>
 
 <!-- Add Programme Modal -->
 <div class="modal-overlay" id="addProgrammeModal" style="display: none;">

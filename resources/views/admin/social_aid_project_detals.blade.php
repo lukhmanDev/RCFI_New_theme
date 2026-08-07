@@ -365,9 +365,9 @@
         }
         
         if ($isSixStage) {
-            $canAssignApplication = ($isPmOnly || $isEngineerOnly || $isHod || $isCoo || $isSuperAdmin) && !$isStage4Approved;
+            $canAssignApplication = ($authUser && $authUser->canAssignApplications()) && !$isStage4Approved;
         } else {
-            $canAssignApplication = ($isHod || $isCoo || $isSuperAdmin) && !$isLockedForEditing;
+            $canAssignApplication = ($authUser && $authUser->canAssignApplications()) && !$isLockedForEditing;
         }
         $hasApplication = !empty($project->application_id);
     @endphp
@@ -2204,13 +2204,13 @@
                                             </button>
                                         @endif
                                     </td>
-                                    <td style="vertical-align: middle;" id="remark-cell-{{ str_replace(' ', '_', $doc) }}">
+                                    <td style="vertical-align: middle;" id="remark-cell-{{ str_replace(' ', '_', strtolower($doc)) }}">
                                         @if($isProjectManager && !$isLockedForEditing)
                                             @if(!empty($filePath))
                                                 <span style="font-size: 0.85rem; color: var(--text-main);">{{ $docRemark ?: '-' }}</span>
                                             @else
                                                 <input type="text" 
-                                                       id="remark-input-{{ str_replace(' ', '_', $doc) }}"
+                                                       id="remark-input-{{ str_replace(' ', '_', strtolower($doc)) }}"
                                                        value="{{ $docRemark }}" 
                                                        placeholder="Add remark..." 
                                                        onchange="saveDocRemark('{{ $doc }}', this.value, this)"
@@ -2220,7 +2220,7 @@
                                             <span style="font-size: 0.85rem; color: var(--text-main);">{{ $docRemark ?: '-' }}</span>
                                         @endif
                                     </td>
-                                    <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
+                                    <td id="ticked-at-{{ str_replace(' ', '_', strtolower($doc)) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
                                         {{ $tickedAt ?? '-' }}
                                     </td>
                                     <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center;">
@@ -2289,7 +2289,7 @@
                 @if($project->stage <= 4 && $project->status !== 'Approved' && $project->status !== 'Completed')
                     <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
 
-                        {{-- COO / HOD: Always see Approve & Reject at Stage 4 --}}
+                        {{-- COO / HOD / SuperAdmin: Always see Review & Approval Actions --}}
                         @if($isCoo || $isHod || $isSuperAdmin)
                             <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; width: 100%; max-width: 700px; background: rgba(255,255,255,0.02); padding: 1.25rem; border: 1px solid var(--panel-border); border-radius: 8px;">
                                 <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; width: 100%; text-transform: uppercase;">
@@ -2325,8 +2325,8 @@
                             </div>
                         @endif
 
-                        {{-- PM: Submit button (if not yet submitted) --}}
-                        @if($isPmOnly || $isSuperAdmin)
+                        {{-- PM / Engineer ONLY: Submit Button --}}
+                        @if(!$isCoo && !$isHod && !$isSuperAdmin && ($isPmOnly || $isEngineerOnly))
                             @if($project->status === 'Pending' || $project->status === 'Rejected')
                                 <form action="{{ route('projects.approve', $project->id) }}" method="POST">
                                     @csrf
@@ -3450,7 +3450,7 @@
                     @elseif($project->stage == 5)
                         <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
                             <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; text-transform: uppercase;">Promote to Stage 6</h4>
-                            @if($isPmOnly || $isEngineerOnly || $isSuperAdmin)
+                            @if($isPmOnly || $isEngineerOnly || $isSuperAdmin || $isHod)
                                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
                                     Once all expenses have been logged and the evaluation is complete, you can promote this project to Stage 6 (Completion Stage).
                                 </p>
@@ -5279,18 +5279,6 @@
             }
         }
 
-        // Laravel Reverb / Echo Realtime Broadcast Listener
-        if (typeof window.Echo !== 'undefined') {
-            window.Echo.channel('project.{{ $project->id }}')
-                .listen('.project.updated', (e) => {
-                    if (e.action === 'toggle_file' && e.payload) {
-                        const docName = e.payload.document_name;
-                        if (!docName) return;
-                        const docKey = docName.replace(/ /g, '_').toLowerCase();
-                        const tickedAtCell = document.getElementById('ticked-at-' + docKey);
-                        if (tickedAtCell) {
-                            tickedAtCell.innerText = e.payload.ticked ? (e.payload.ticked_at || '-') : '-';
-                        }
                         document.querySelectorAll('button[onclick*="\'' + docName + '\'"]').forEach(btn => {
                             const icon = btn.querySelector('i');
                             if (icon) {

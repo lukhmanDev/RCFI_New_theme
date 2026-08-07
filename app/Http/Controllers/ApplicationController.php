@@ -171,6 +171,13 @@ class ApplicationController extends Controller
 
     public function store(Request $request)
     {
+        if (auth()->user() && !auth()->user()->canAddApplications()) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'error' => 'Users with role "Others" cannot add applications.'], 403);
+            }
+            return redirect()->back()->with('error', 'Users with role "Others" cannot add applications.');
+        }
+
         $rules = [
             'applicant_name' => ['required', 'string', 'min:2', 'max:255'],
             'category' => ['required', 'string'],
@@ -286,6 +293,12 @@ class ApplicationController extends Controller
             $appItem = $model::create($data);
             if (!empty(array_filter($addressData)) && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
                 $appItem->address()->updateOrCreate([], array_filter($addressData));
+            }
+
+            try {
+                broadcast(new \App\Events\ApplicationCreated($appItem))->toOthers();
+            } catch (\Exception $e) {
+                \Log::warning('ApplicationCreated broadcast error: ' . $e->getMessage());
             }
 
             try {
@@ -571,6 +584,10 @@ class ApplicationController extends Controller
 
     public function export($category)
     {
+        if (auth()->user() && !auth()->user()->canDownloadExcel()) {
+            return redirect()->back()->with('error', 'Users with role "Others" cannot download Excel exports.');
+        }
+
         if (!array_key_exists($category, $this->categories)) {
             abort(404);
         }
@@ -1141,6 +1158,10 @@ class ApplicationController extends Controller
 
     public function exportApproved(Request $request)
     {
+        if (auth()->user() && !auth()->user()->canDownloadExcel()) {
+            return redirect()->back()->with('error', 'Users with role "Others" cannot download Excel exports.');
+        }
+
         if (auth()->user() && auth()->user()->isReception()) {
             return redirect()->route('applications.index')->with('error', 'Unauthorized access.');
         }

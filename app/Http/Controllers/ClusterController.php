@@ -28,6 +28,10 @@ class ClusterController extends Controller
 
     public function exportExcel()
     {
+        if (auth()->user() && !auth()->user()->canDownloadExcel()) {
+            return redirect()->back()->with('error', 'Users with role "Others" cannot download Excel exports.');
+        }
+
         if (!$this->canManageClusters(auth()->user())) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }

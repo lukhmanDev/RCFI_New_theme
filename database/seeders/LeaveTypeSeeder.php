@@ -1,0 +1,117 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\LeaveType;
+
+class LeaveTypeSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $types = [
+            [
+                'leave_code' => 'CL',
+                'leave_name' => 'Casual Leave',
+                'description' => 'Monthly accrued casual leave',
+                'accrual_type' => 'Monthly',
+                'max_days_per_year' => 12.0,
+                'max_days_lifetime' => null,
+                'carry_forward' => true,
+                'applicable_gender' => 'All',
+                'requires_marital_status' => 'Any',
+                'min_service_years' => 0,
+                'is_lifetime_only' => false,
+                'is_active' => true,
+            ],
+            [
+                'leave_code' => 'SL',
+                'leave_name' => 'Sick Leave',
+                'description' => 'Annual medical & sick leave',
+                'accrual_type' => 'Annual',
+                'max_days_per_year' => 10.0,
+                'max_days_lifetime' => null,
+                'carry_forward' => false,
+                'applicable_gender' => 'All',
+                'requires_marital_status' => 'Any',
+                'min_service_years' => 0,
+                'is_lifetime_only' => false,
+                'is_active' => true,
+            ],
+            [
+                'leave_code' => 'LSL',
+                'leave_name' => 'Long Service Leave',
+                'description' => 'Annual leave for staff with >= 5 years of service',
+                'accrual_type' => 'Annual',
+                'max_days_per_year' => 10.0,
+                'max_days_lifetime' => null,
+                'carry_forward' => false,
+                'applicable_gender' => 'All',
+                'requires_marital_status' => 'Any',
+                'min_service_years' => 5,
+                'is_lifetime_only' => false,
+                'is_active' => true,
+            ],
+            [
+                'leave_code' => 'ML',
+                'leave_name' => 'Marriage Leave',
+                'description' => 'One-time leave for employee marriage',
+                'accrual_type' => 'OneTime',
+                'max_days_per_year' => null,
+                'max_days_lifetime' => 5.0,
+                'carry_forward' => false,
+                'applicable_gender' => 'All',
+                'requires_marital_status' => 'Any',
+                'min_service_years' => 0,
+                'is_lifetime_only' => true,
+                'is_active' => true,
+            ],
+            [
+                'leave_code' => 'MTL',
+                'leave_name' => 'Maternity Leave',
+                'description' => 'One-time maternity leave for married female staff',
+                'accrual_type' => 'OneTime',
+                'max_days_per_year' => null,
+                'max_days_lifetime' => 90.0,
+                'carry_forward' => false,
+                'applicable_gender' => 'Female',
+                'requires_marital_status' => 'Married',
+                'min_service_years' => 0,
+                'is_lifetime_only' => true,
+                'is_active' => true,
+            ],
+            [
+                'leave_code' => 'PTL',
+                'leave_name' => 'Paternity Leave',
+                'description' => 'One-time paternity leave for married male staff',
+                'accrual_type' => 'OneTime',
+                'max_days_per_year' => null,
+                'max_days_lifetime' => 7.0,
+                'carry_forward' => false,
+                'applicable_gender' => 'Male',
+                'requires_marital_status' => 'Married',
+                'min_service_years' => 0,
+                'is_lifetime_only' => true,
+                'is_active' => true,
+            ],
+            [
+                'leave_code' => 'PIL',
+                'leave_name' => 'Pilgrimage Leave',
+                'description' => 'One-time pilgrimage leave',
+                'accrual_type' => 'OneTime',
+                'max_days_per_year' => null,
+                'max_days_lifetime' => 20.0,
+                'carry_forward' => false,
+                'applicable_gender' => 'All',
+                'requires_marital_status' => 'Any',
+                'min_service_years' => 0,
+                'is_lifetime_only' => true,
+                'is_active' => true,
+            ],
+        ];
+
+        foreach ($types as $typeData) {
+            LeaveType::updateOrCreate(['leave_code' => $typeData['leave_code']], $typeData);
+        }
+    }
+}

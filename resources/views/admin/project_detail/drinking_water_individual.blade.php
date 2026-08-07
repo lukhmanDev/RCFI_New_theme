@@ -270,10 +270,10 @@
         $authUser = auth()->user();
         $isSuperAdmin = ($authUser && ($authUser->isSuperAdmin() || $authUser->role == 1 || $authUser->role === 'super_admin'));
         $designationLower = strtolower($authUser->designation ?? '');
-        $isCoo = ($authUser && ($authUser->role == 2 || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
-        $isHod = ($authUser && ($authUser->role == 4 || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
-        $isPmOnly = ($authUser && ($authUser->role == 3 || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
-        $isEngineerOnly = ($authUser && ($authUser->role == 6 || strtolower($authUser->designation ?? '') === 'engineer'));
+        $isCoo = ($authUser && ($authUser->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
+        $isHod = ($authUser && ($authUser->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+        $isPmOnly = ($authUser && ($authUser->isPm() || str_contains($designationLower, 'project manager') || $designationLower === 'project manager'));
+        $isEngineerOnly = ($authUser && ($authUser->isEngineer() || strtolower($authUser->designation ?? '') === 'engineer'));
         
         $isProjectManager = ($authUser && ($isSuperAdmin || $isCoo || $isHod || $isPmOnly || $isEngineerOnly || in_array($authUser->role, [1, 2, 3, 4, 6, 'super_admin', 'coo', 'project_manager', 'hod', 'engineer']) || in_array(strtolower($authUser->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod', 'super admin', 'admin'])));
         $isLockedForEditing = ($project->status === 'Completed' && !$isSuperAdmin);
@@ -285,9 +285,9 @@
         }
         
         if ($isSixStage) {
-            $canAssignApplication = ($isPmOnly || $isEngineerOnly || $isHod || $isCoo || $isSuperAdmin) && !$isStage4Approved;
+            $canAssignApplication = ($authUser && $authUser->canAssignApplications()) && !$isStage4Approved;
         } else {
-            $canAssignApplication = ($isHod || $isCoo || $isSuperAdmin) && !$isLockedForEditing;
+            $canAssignApplication = ($authUser && $authUser->canAssignApplications()) && !$isLockedForEditing;
         }
         $hasApplication = !empty($project->application_id);
     @endphp
@@ -723,13 +723,13 @@
                             @endphp
                             <tr>
                                 <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $doc }}</td>
-                                <td style="vertical-align: middle;" id="remark-cell-{{ str_replace(' ', '_', $doc) }}">
+                                <td style="vertical-align: middle;" id="remark-cell-{{ str_replace(' ', '_', strtolower($doc)) }}">
                                     @if($isProjectManager && !$isLockedForEditing)
                                         @if(!empty($filePath))
                                             <span style="font-size: 0.85rem; color: var(--text-main);">{{ $docRemark ?: '-' }}</span>
                                         @else
                                             <input type="text" 
-                                                   id="remark-input-{{ str_replace(' ', '_', $doc) }}"
+                                                   id="remark-input-{{ str_replace(' ', '_', strtolower($doc)) }}"
                                                    value="{{ $docRemark }}" 
                                                    placeholder="Add remark..." 
                                                    onchange="saveDocRemark('{{ $doc }}', this.value, this)"
@@ -739,7 +739,7 @@
                                         <span style="font-size: 0.85rem; color: var(--text-main);">{{ $docRemark ?: '-' }}</span>
                                     @endif
                                 </td>
-                                <td id="ticked-at-{{ str_replace(' ', '_', $doc) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
+                                <td id="ticked-at-{{ str_replace(' ', '_', strtolower($doc)) }}" style="color: var(--text-muted); font-size: 0.9rem; vertical-align: middle;">
                                     {{ $tickedAt ?? '-' }}
                                 </td>
                                 <td style="vertical-align: middle; text-align: center; display: flex; justify-content: center;">
@@ -807,7 +807,7 @@
                 @if($project->stage <= 4 && $project->status !== 'Approved' && $project->status !== 'Completed')
                     <div style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
 
-                        {{-- COO / HOD: Always see Approve & Reject at Stage 4 --}}
+                        {{-- COO / HOD / SuperAdmin: Always see Review & Approval Actions --}}
                         @if($isCoo || $isHod || $isSuperAdmin)
                             <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; width: 100%; max-width: 700px; background: rgba(255,255,255,0.02); padding: 1.25rem; border: 1px solid var(--panel-border); border-radius: 8px;">
                                 <h4 style="color: var(--text-main); font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; width: 100%; text-transform: uppercase;">
@@ -843,8 +843,8 @@
                             </div>
                         @endif
 
-                        {{-- PM: Submit button (if not yet submitted) --}}
-                        @if($isPmOnly || $isSuperAdmin)
+                        {{-- PM / Engineer ONLY: Submit Button --}}
+                        @if(!$isCoo && !$isHod && !$isSuperAdmin && ($isPmOnly || $isEngineerOnly))
                             @if($project->status === 'Pending' || $project->status === 'Rejected')
                                 <form action="{{ route('projects.approve', $project->id) }}" method="POST">
                                     @csrf
@@ -3000,18 +3000,6 @@
         function closeEditInspectionModal() {
             document.getElementById('editInspectionModal').style.display = 'none';
         }
-        // Laravel Reverb / Echo Realtime Broadcast Listener
-        if (typeof window.Echo !== 'undefined') {
-            window.Echo.channel('project.{{ $project->id }}')
-                .listen('.project.updated', (e) => {
-                    if (e.action === 'toggle_file' && e.payload) {
-                        const docName = e.payload.document_name;
-                        if (!docName) return;
-                        const docKey = docName.replace(/ /g, '_').toLowerCase();
-                        const tickedAtCell = document.getElementById('ticked-at-' + docKey);
-                        if (tickedAtCell) {
-                            tickedAtCell.innerText = e.payload.ticked ? (e.payload.ticked_at || '-') : '-';
-                        }
                         document.querySelectorAll('button[onclick*="\'' + docName + '\'"]').forEach(btn => {
                             const icon = btn.querySelector('i');
                             if (icon) {

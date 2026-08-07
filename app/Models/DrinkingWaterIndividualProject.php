@@ -41,4 +41,9 @@ class DrinkingWaterIndividualProject extends Model
     {
         return $this->belongsTo(User::class, 'engineer_id');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(DrinkingWaterIndividualApplication::class, 'application_id');
+    }
 }

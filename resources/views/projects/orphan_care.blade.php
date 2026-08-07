@@ -549,7 +549,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Add Orphan Care Project</h3>
-            
+            <button type="button" class="modal-close-btn" onclick="closeModal()" title="Close">&times;</button>
         </div>
         <form action="{{ route('projects.store') }}" method="POST">
             @csrf
@@ -621,7 +621,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Edit Orphan Care Project</h3>
-            
+            <button type="button" class="modal-close-btn" onclick="closeEditModal()" title="Close">&times;</button>
         </div>
         <form id="editProjectForm" method="POST">
             @csrf
@@ -731,62 +731,90 @@
         }
     }
 
-    function filterTable() {
-        const searchFilter = (document.getElementById('tableSearch')?.value || '').toLowerCase().trim();
-        const stateFilter = (document.getElementById('stateFilter')?.value || '').toLowerCase().trim();
-        const districtFilter = (document.getElementById('districtFilter')?.value || '').toLowerCase().trim();
-        const agencyFilter = (document.getElementById('agencyFilter')?.value || '').toLowerCase().trim();
-        const clusterFilter = (document.getElementById('clusterFilter')?.value || '').toLowerCase().trim();
-        const genderFilter = (document.getElementById('genderFilter')?.value || '').toLowerCase().trim();
+    function initProjectFilters() {
+            const filterManager = document.getElementById('filterManager');
+            const filterAgency = document.getElementById('filterAgency');
+            const filterDistrict = document.getElementById('filterDistrict');
+            const filterState = document.getElementById('filterState');
+            
+            if (!filterManager && !filterAgency && !filterDistrict && !filterState) return;
 
-        const table = document.getElementById('projectsTable');
-        if (!table) return;
-        const trs = table.querySelectorAll('tbody tr.project-row');
+            const managers = new Set();
+            const agencies = new Set();
+            const districts = new Set();
+            const states = new Set();
 
-        trs.forEach(tr => {
-            let match = true;
+            const rows = document.querySelectorAll('#projectsTable tbody tr.project-row');
+            rows.forEach(row => {
+                const m = row.getAttribute('data-manager-display') || row.getAttribute('data-manager');
+                const a = row.getAttribute('data-agency-display') || row.getAttribute('data-agency');
+                const d = row.getAttribute('data-district-display') || row.getAttribute('data-district');
+                const s = row.getAttribute('data-state-display') || row.getAttribute('data-state');
 
-            if (searchFilter) {
-                const searchData = tr.getAttribute('data-search') || '';
-                if (!searchData.includes(searchFilter)) match = false;
+                if (m && m.toLowerCase() !== 'n/a') managers.add(m.trim());
+                if (a && a.toLowerCase() !== 'n/a') agencies.add(a.trim());
+                if (d && d.toLowerCase() !== 'n/a') districts.add(d.trim());
+                if (s && s.toLowerCase() !== 'n/a') states.add(s.trim());
+            });
+
+            populateSelectOptions(filterManager, managers, 'All Project Managers');
+            populateSelectOptions(filterAgency, agencies, 'All Agencies');
+            populateSelectOptions(filterDistrict, districts, 'All Districts');
+            populateSelectOptions(filterState, states, 'All States');
+        }
+
+        function populateSelectOptions(selectEl, setValues, defaultText) {
+            if (!selectEl) return;
+            const currentVal = selectEl.value;
+            selectEl.innerHTML = `<option value="">${defaultText}</option>`;
+            Array.from(setValues).sort().forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val.toLowerCase();
+                opt.textContent = val;
+                if (val.toLowerCase() === currentVal.toLowerCase()) {
+                    opt.selected = true;
+                }
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function filterTable() {
+            const input = document.getElementById('tableSearch');
+            const filter = input ? input.value.toLowerCase().trim() : '';
+            const selManager = (document.getElementById('filterManager')?.value || '').toLowerCase().trim();
+            const selAgency = (document.getElementById('filterAgency')?.value || '').toLowerCase().trim();
+            const selDistrict = (document.getElementById('filterDistrict')?.value || '').toLowerCase().trim();
+            const selState = (document.getElementById('filterState')?.value || '').toLowerCase().trim();
+
+            const table = document.getElementById('projectsTable');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tbody tr.project-row');
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const rManager = (row.getAttribute('data-manager') || '').toLowerCase();
+                const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
+                const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
+                const rState = (row.getAttribute('data-state') || '').toLowerCase();
+                const rText = (row.textContent || row.innerText || '').toLowerCase();
+
+                const matchesSearch = !filter || rText.includes(filter);
+                const matchesManager = !selManager || rManager === selManager;
+                const matchesAgency = !selAgency || rAgency === selAgency;
+                const matchesDistrict = !selDistrict || rDistrict === selDistrict;
+                const matchesState = !selState || rState === selState;
+
+                if (matchesSearch && matchesManager && matchesAgency && matchesDistrict && matchesState) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
             }
+        }
 
-            if (match && stateFilter && stateFilter !== 'all') {
-                const stateVal = tr.getAttribute('data-state') || '';
-                if (stateVal !== stateFilter) match = false;
-            }
-
-            if (match && districtFilter && districtFilter !== 'all') {
-                const distVal = tr.getAttribute('data-district') || '';
-                if (distVal !== districtFilter) match = false;
-            }
-
-            if (match && agencyFilter && agencyFilter !== 'all') {
-                const agencyVal = tr.getAttribute('data-agency') || '';
-                if (agencyVal !== agencyFilter) match = false;
-            }
-
-            if (match && clusterFilter && clusterFilter !== 'all') {
-                const clusterVal = tr.getAttribute('data-cluster') || '';
-                if (clusterVal !== clusterFilter) match = false;
-            }
-
-            if (match && genderFilter && genderFilter !== 'all') {
-                const genderVal = tr.getAttribute('data-gender') || '';
-                if (genderVal !== genderFilter) match = false;
-            }
-
-            tr.style.display = match ? '' : 'none';
-        });
-
-        updateExportUrl();
-    }
-    window.filterTable = filterTable;
-
-    function updateExportUrl() {
-        const btns = document.querySelectorAll('.excel-export-btn, #excelExportBtn, a[href*="projects/export"]');
-        if (!btns.length) return;
-        const baseUrl = "{{ route('projects.export', 'orphan-care') }}";
+        document.addEventListener('DOMContentLoaded', function() {
+            initProjectFilters();
+        });";
         const params = new URLSearchParams();
         
         const searchVal = document.getElementById('tableSearch')?.value;
@@ -1112,6 +1140,12 @@
     }
     window.toggleSuspend = toggleSuspend;
 
+
+    function closeProgrammeModal() {
+        const modal = document.getElementById('addProgrammeModal');
+        if (modal) modal.style.display = 'none';
+    }
+
 </script>
 
 <!-- Add Programme Modal -->
@@ -1212,7 +1246,13 @@ window.openStageDetailsModal = openStageDetailsModal;
         window.closeModal = closeModal;
         window.openEditModal = openEditModal;
         window.closeEditModal = closeEditModal;
-    </script>
+    
+    function closeProgrammeModal() {
+        const modal = document.getElementById('addProgrammeModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+</script>
 
 @endsection
 

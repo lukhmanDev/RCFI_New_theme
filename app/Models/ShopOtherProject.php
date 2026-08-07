@@ -41,4 +41,9 @@ class ShopOtherProject extends Model
     {
         return $this->belongsTo(User::class, 'engineer_id');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(ShopOtherApplication::class, 'application_id');
+    }
 }

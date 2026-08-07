@@ -41,4 +41,9 @@ class HospitalClinicProject extends Model
     {
         return $this->belongsTo(User::class, 'engineer_id');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(HospitalClinicApplication::class, 'application_id');
+    }
 }

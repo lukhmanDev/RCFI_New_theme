@@ -484,7 +484,7 @@ class Stage4ApprovalTest extends TestCase
 
         // PM tries to create a project -> fails
         $response = $this->actingAs($pm)->post('/admin/projects', $projectData);
-        $response->assertSessionHas('error', 'Only HOD and COO are authorized to create projects.');
+        $response->assertSessionHas('error', 'Only Super Admin, HOD, and COO are authorized to create projects.');
 
         // COO tries to create a project -> succeeds
         $response = $this->actingAs($coo)->post('/admin/projects', $projectData);

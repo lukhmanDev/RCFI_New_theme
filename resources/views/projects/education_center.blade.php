@@ -1,4 +1,4 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Education Center Project List')
 
@@ -263,15 +263,74 @@
         <a href="{{ route('projects.export', 'education-center') }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
             <i class="bx bx-download"></i> Download Excel
         </a>
+        @if(Auth::user() && Auth::user()->canAddEditProjects())
         <button onclick="openModal()" class="btn-custom">
             <i class="bx bx-plus-circle"></i> Add Project
         </button>
+        @endif
     </div>
 
-    <div class="search-container">
-        <span>Search:</span>
-        <input type="text" id="tableSearch" onkeyup="filterTable()" class="form-control-dark" style="width: 200px; padding: 0.4rem 0.8rem; font-size: 0.85rem;" placeholder="Search projects...">
-    </div>
+@php
+    $uniqueManagers = collect();
+    $uniqueAgencies = collect();
+    $uniqueDistricts = collect();
+    $uniqueStates = collect();
+
+    foreach($projects as $p) {
+        $m = $p->projectManager ? $p->projectManager->name : ($p->manager ? $p->manager->name : null);
+        if ($m && strtolower($m) !== 'n/a') $uniqueManagers->push(trim($m));
+
+        $a = $p->sponsor ?? ($p->donor ? $p->donor->name : ($p->agency_name ?? null));
+        if ($a && strtolower($a) !== 'n/a') $uniqueAgencies->push(trim($a));
+
+        $d = $p->district ?? ($p->application ? ($p->application->district ?? ($p->application->meta['district'] ?? ($p->application->meta['locality_district'] ?? null))) : null);
+        if ($d && strtolower($d) !== 'n/a') $uniqueDistricts->push(trim($d));
+
+        $s = $p->state ?? ($p->application ? ($p->application->state ?? ($p->application->meta['state'] ?? ($p->application->meta['locality_state'] ?? null))) : null);
+        if ($s && strtolower($s) !== 'n/a') $uniqueStates->push(trim($s));
+    }
+
+    $uniqueManagers = $uniqueManagers->unique()->sort()->values();
+    $uniqueAgencies = $uniqueAgencies->unique()->sort()->values();
+    $uniqueDistricts = $uniqueDistricts->unique()->sort()->values();
+    $uniqueStates = $uniqueStates->unique()->sort()->values();
+@endphp
+
+            <!-- Search & Filter Toolbar -->
+        <div style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: flex-end;">
+            <select id="filterManager" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 150px; height: 38px;">
+                <option value="">All Project Managers</option>
+                @foreach($uniqueManagers as $um)
+                    <option value="{{ strtolower($um) }}">{{ $um }}</option>
+                @endforeach
+            </select>
+
+            <select id="filterAgency" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 140px; height: 38px;">
+                <option value="">All Agencies</option>
+                @foreach($uniqueAgencies as $ua)
+                    <option value="{{ strtolower($ua) }}">{{ $ua }}</option>
+                @endforeach
+            </select>
+
+            <select id="filterDistrict" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 130px; height: 38px;">
+                <option value="">All Districts</option>
+                @foreach($uniqueDistricts as $ud)
+                    <option value="{{ strtolower($ud) }}">{{ $ud }}</option>
+                @endforeach
+            </select>
+
+            <select id="filterState" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 120px; height: 38px;">
+                <option value="">All States</option>
+                @foreach($uniqueStates as $us)
+                    <option value="{{ strtolower($us) }}">{{ $us }}</option>
+                @endforeach
+            </select>
+
+            <div style="position: relative; width: 100%; max-width: 220px;">
+                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"><i class="bx bx-search"></i></span>
+                <input type="text" id="tableSearch" placeholder="Search projects..." style="width: 100%; height: 38px; padding: 0.45rem 0.75rem 0.45rem 2.25rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;" onkeyup="filterTable()">
+            </div>
+        </div>
 </div>
 
 <div class="panel" style="width: 100%;">
@@ -294,7 +353,13 @@
             </thead>
             <tbody>
                 @forelse($projects as $index => $project)
-                    <tr>
+                                            @php
+                            $mgrName = $project->projectManager ? $project->projectManager->name : ($project->manager ? $project->manager->name : 'N/A');
+                            $agencyName = $project->sponsor ?? ($project->donor ? $project->donor->name : ($project->agency_name ?? 'N/A'));
+                            $districtName = $project->district ?? ($project->application ? ($project->application->district ?? ($project->application->meta['district'] ?? ($project->application->meta['locality_district'] ?? 'N/A'))) : 'N/A');
+                            $stateName = $project->state ?? ($project->application ? ($project->application->state ?? ($project->application->meta['state'] ?? ($project->application->meta['locality_state'] ?? 'N/A'))) : 'N/A');
+                        @endphp
+                        <tr class="project-row" data-manager="{{ strtolower($mgrName) }}" data-manager-display="{{ $mgrName }}" data-agency="{{ strtolower($agencyName) }}" data-agency-display="{{ $agencyName }}" data-district="{{ strtolower($districtName) }}" data-district-display="{{ $districtName }}" data-state="{{ strtolower($stateName) }}" data-state-display="{{ $stateName }}">
                         <td style="text-align: center;">{{ $index + 1 }}</td>
                         <td style="font-weight: 600; color: var(--accent-cyan);">
                             {{ $project->project_id }}
@@ -313,9 +378,11 @@
                                 <i class="bx bx-dots-horizontal-rounded"></i>
                             </button>
 
+                            @if(Auth::user() && Auth::user()->canAddEditProjects() && empty($project->application_id))
                             <button onclick="openEditModal({{ json_encode($project) }})" class="btn-action-icon btn-edit" title="Edit">
                                 <i class="bx bx-pencil"></i>
                             </button>
+                            @endif
 
                             <!-- PDF Report Button -->
                             <a href="{{ route('projects.pdf', [$project->id, 'category' => 'education-center']) }}" onclick="downloadDirectPdf(event, this.href)" class="btn-action-icon btn-pdf" title="Download PDF Report">
@@ -342,7 +409,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Add Education Center Project</h3>
-            
+            <button type="button" class="modal-close-btn" onclick="closeModal()" title="Close">&times;</button>
         </div>
         <form action="{{ route('projects.store') }}" method="POST">
             @csrf
@@ -456,7 +523,7 @@
     <div class="modal-content-custom">
         <div class="modal-header-custom">
             <h3>Edit Education Center Project</h3>
-            
+            <button type="button" class="modal-close-btn" onclick="closeEditModal()" title="Close">&times;</button>
         </div>
         <form id="editProjectForm" method="POST">
             @csrf
@@ -613,27 +680,90 @@
         }
     }
 
-    function filterTable() {
-        const input = document.getElementById('tableSearch');
-        const filter = input.value.toLowerCase();
-        const table = document.getElementById('projectsTable');
-        const trs = table.getElementsByTagName('tr');
+    function initProjectFilters() {
+            const filterManager = document.getElementById('filterManager');
+            const filterAgency = document.getElementById('filterAgency');
+            const filterDistrict = document.getElementById('filterDistrict');
+            const filterState = document.getElementById('filterState');
+            
+            if (!filterManager && !filterAgency && !filterDistrict && !filterState) return;
 
-        for (let i = 1; i < trs.length; i++) {
-            let match = false;
-            const tds = trs[i].getElementsByTagName('td');
-            for (let j = 0; j < tds.length - 1; j++) {
-                if (tds[j]) {
-                    const txtValue = tds[j].textContent || tds[j].innerText;
-                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                        match = true;
-                        break;
-                    }
+            const managers = new Set();
+            const agencies = new Set();
+            const districts = new Set();
+            const states = new Set();
+
+            const rows = document.querySelectorAll('#projectsTable tbody tr.project-row');
+            rows.forEach(row => {
+                const m = row.getAttribute('data-manager-display') || row.getAttribute('data-manager');
+                const a = row.getAttribute('data-agency-display') || row.getAttribute('data-agency');
+                const d = row.getAttribute('data-district-display') || row.getAttribute('data-district');
+                const s = row.getAttribute('data-state-display') || row.getAttribute('data-state');
+
+                if (m && m.toLowerCase() !== 'n/a') managers.add(m.trim());
+                if (a && a.toLowerCase() !== 'n/a') agencies.add(a.trim());
+                if (d && d.toLowerCase() !== 'n/a') districts.add(d.trim());
+                if (s && s.toLowerCase() !== 'n/a') states.add(s.trim());
+            });
+
+            populateSelectOptions(filterManager, managers, 'All Project Managers');
+            populateSelectOptions(filterAgency, agencies, 'All Agencies');
+            populateSelectOptions(filterDistrict, districts, 'All Districts');
+            populateSelectOptions(filterState, states, 'All States');
+        }
+
+        function populateSelectOptions(selectEl, setValues, defaultText) {
+            if (!selectEl) return;
+            const currentVal = selectEl.value;
+            selectEl.innerHTML = `<option value="">${defaultText}</option>`;
+            Array.from(setValues).sort().forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val.toLowerCase();
+                opt.textContent = val;
+                if (val.toLowerCase() === currentVal.toLowerCase()) {
+                    opt.selected = true;
+                }
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function filterTable() {
+            const input = document.getElementById('tableSearch');
+            const filter = input ? input.value.toLowerCase().trim() : '';
+            const selManager = (document.getElementById('filterManager')?.value || '').toLowerCase().trim();
+            const selAgency = (document.getElementById('filterAgency')?.value || '').toLowerCase().trim();
+            const selDistrict = (document.getElementById('filterDistrict')?.value || '').toLowerCase().trim();
+            const selState = (document.getElementById('filterState')?.value || '').toLowerCase().trim();
+
+            const table = document.getElementById('projectsTable');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tbody tr.project-row');
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const rManager = (row.getAttribute('data-manager') || '').toLowerCase();
+                const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
+                const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
+                const rState = (row.getAttribute('data-state') || '').toLowerCase();
+                const rText = (row.textContent || row.innerText || '').toLowerCase();
+
+                const matchesSearch = !filter || rText.includes(filter);
+                const matchesManager = !selManager || rManager === selManager;
+                const matchesAgency = !selAgency || rAgency === selAgency;
+                const matchesDistrict = !selDistrict || rDistrict === selDistrict;
+                const matchesState = !selState || rState === selState;
+
+                if (matchesSearch && matchesManager && matchesAgency && matchesDistrict && matchesState) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
                 }
             }
-            trs[i].style.display = match ? '' : 'none';
         }
-    }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initProjectFilters();
+        });
 
     var themesData = {
         @foreach($themes as $t)
@@ -673,6 +803,8 @@
         window.closeModal = closeModal;
         window.openEditModal = openEditModal;
         window.closeEditModal = closeEditModal;
+        window.filterTable = filterTable;
+        window.initProjectFilters = initProjectFilters;
     </script>
 
 

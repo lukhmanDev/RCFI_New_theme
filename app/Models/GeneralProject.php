@@ -41,4 +41,9 @@ class GeneralProject extends Model
     {
         return $this->belongsTo(User::class, 'engineer_id');
     }
+
+    public function application()
+    {
+        return $this->belongsTo(GeneralApplication::class, 'application_id');
+    }
 }

@@ -176,9 +176,9 @@ class ApplicationAddressTest extends TestCase
         $this->assertNotNull($app);
         $this->assertEquals('9876543210', $app->meta['mobile_1']);
         $this->assertEquals('9123456789', $app->meta['mobile_2']);
-        $this->assertEquals('Rose Villa', $app->meta['house_name']);
-        $this->assertEquals('Calicut', $app->meta['place']);
-        $this->assertEquals('Kozhikode', $app->meta['district']);
+        $this->assertEquals('Rose Villa', $app->address->house_name ?? ($app->meta['house_name'] ?? null));
+        $this->assertEquals('Calicut', $app->address->place ?? ($app->meta['place'] ?? null));
+        $this->assertEquals('Kozhikode', $app->address->district ?? ($app->meta['district'] ?? null));
 
         $this->assertDatabaseHas('applicant_addresses', [
             'addressable_type' => \App\Models\OrphanCareApplication::class,
@@ -189,4 +189,68 @@ class ApplicationAddressTest extends TestCase
             'contact_number_2' => '9123456789',
         ]);
     }
+
+    public function test_education_center_application_saves_status_of_current_building_other_in_database(): void
+    {
+        $admin = User::where('role', 1)->first();
+        if (!$admin) {
+            $admin = User::create([
+                'name' => 'Super Admin Test',
+                'email' => 'admin_test2@rcfi.org',
+                'mobile' => '9999999998',
+                'role' => 1,
+                'password' => bcrypt('password'),
+                'designation' => 'Super Admin',
+            ]);
+        }
+
+        $response = $this->actingAs($admin)->post('/admin/applications', [
+            'category' => 'Education Center',
+            'applicant_name' => 'Education Center Other Status Test',
+            'amount_requested' => 450000,
+            'status' => 'Pending',
+            'meta' => [
+                'committee_name' => 'Test Committee',
+                'reg_number' => 'REG12345',
+                'year' => '2024',
+                'pin_code' => '673001',
+                'location' => 'Calicut',
+                'village' => 'West Village',
+                'post' => 'Calicut PO',
+                'panchayath' => 'Calicut GP',
+                'district' => 'Kozhikode',
+                'state' => 'Kerala',
+                'contact_number_1' => '9876543210',
+                'contact_number_2' => '9876543211',
+                'status_of_current_building' => 'Other',
+                'status_of_current_building_other' => 'Abcde Custom Status Details',
+                'students_boys' => 50,
+                'students_girls' => 40,
+                'total_students' => 90,
+                'project_type' => 'classroom',
+                'requirement' => 'New construction',
+                'building_area_sq' => 1200,
+                'land_area_sq' => 15,
+                'num_classrooms' => 4,
+                'num_students' => 90,
+                'area' => 'Permitted Area 1000',
+            ],
+            'redirect_category' => 'education-center',
+        ]);
+
+        $response->assertRedirect(route('applications.category', 'education-center'));
+
+        $this->assertDatabaseHas('education_center_applications', [
+            'applicant_name' => 'Education Center Other Status Test',
+            'status_of_current_building' => 'Other',
+            'status_of_current_building_other' => 'Abcde Custom Status Details',
+            'total_students' => 90,
+        ]);
+
+        $app = EducationCenterApplication::where('applicant_name', 'Education Center Other Status Test')->first();
+        $this->assertNotNull($app);
+        $this->assertEquals('Abcde Custom Status Details', $app->status_of_current_building_other);
+        $this->assertEquals('Abcde Custom Status Details', $app->meta['status_of_current_building_other']);
+    }
 }
+

@@ -89,9 +89,29 @@ class UserManagementTest extends TestCase
         $staff = User::factory()->create(['role' => 3, 'name' => 'Original Name']);
 
         $response = $this->actingAs($coo)->put("/admin/users/{$staff->id}", [
-            'name' => 'Updated Name',
-            'email' => $staff->email,
-            'role' => 4,
+            'name'            => 'Updated Name',
+            'email'           => $staff->email,
+            'mobile'          => '9876543210',
+            'father_name'     => 'Father Name',
+            'mother_name'     => 'Mother Name',
+            'date_of_birth'   => '1990-01-01',
+            'date_of_joining' => '2020-06-01',
+            'gender'          => 'Male',
+            'marital_status'  => 'Single',
+            'house_name'      => 'Test House',
+            'place'           => 'Test Place',
+            'po'              => 'Test PO',
+            'district'        => 'Test District',
+            'state'           => 'Kerala',
+            'pin_code'        => '680001',
+            'aadhar_number'   => '123456789012',
+            'pan_card_number' => 'ABCDE1234F',
+            'account_number'  => '1234567890',
+            'bank_name'       => 'SBI',
+            'bank_branch'     => 'Main Branch',
+            'ifsc_code'       => 'SBIN0001234',
+            'designation'     => $staff->designation ?? 'Engineer',
+            'role'            => 4,
         ]);
 
         $response->assertRedirect();
@@ -104,10 +124,30 @@ class UserManagementTest extends TestCase
         $coo = User::factory()->create(['role' => 2]);
 
         $response = $this->actingAs($coo)->post('/doAddUser', [
-            'name' => 'New Staff',
-            'email' => 'newstaff@example.com',
-            'password' => 'password123',
-            'role' => 2,
+            'name'            => 'New Staff',
+            'email'           => 'newstaff@example.com',
+            'mobile'          => '9876543210',
+            'father_name'     => 'Father Name',
+            'mother_name'     => 'Mother Name',
+            'date_of_birth'   => '1990-01-01',
+            'date_of_joining' => '2020-06-01',
+            'gender'          => 'Male',
+            'marital_status'  => 'Single',
+            'house_name'      => 'Test House',
+            'place'           => 'Test Place',
+            'po'              => 'Test PO',
+            'district'        => 'Test District',
+            'state'           => 'Kerala',
+            'pin_code'        => '680001',
+            'aadhar_number'   => '123456789012',
+            'pan_card_number' => 'ABCDE1234F',
+            'account_number'  => '1234567890',
+            'bank_name'       => 'SBI',
+            'bank_branch'     => 'Main Branch',
+            'ifsc_code'       => 'SBIN0001234',
+            'designation'     => 'Staff',
+            'password'        => 'password123',
+            'role'            => 2,
         ]);
 
         $response->assertRedirect();
@@ -122,9 +162,28 @@ class UserManagementTest extends TestCase
         $staff = User::factory()->create(['role' => 3, 'designation' => 'Original Designation']);
 
         $response = $this->actingAs($coo)->put("/admin/users/{$staff->id}", [
-            'name' => $staff->name,
-            'email' => $staff->email,
-            'designation' => 'Updated Designation',
+            'name'            => $staff->name,
+            'email'           => $staff->email,
+            'mobile'          => '9876543210',
+            'father_name'     => 'Father Name',
+            'mother_name'     => 'Mother Name',
+            'date_of_birth'   => '1990-01-01',
+            'date_of_joining' => '2020-06-01',
+            'gender'          => 'Male',
+            'marital_status'  => 'Single',
+            'house_name'      => 'Test House',
+            'place'           => 'Test Place',
+            'po'              => 'Test PO',
+            'district'        => 'Test District',
+            'state'           => 'Kerala',
+            'pin_code'        => '680001',
+            'aadhar_number'   => '123456789012',
+            'pan_card_number' => 'ABCDE1234F',
+            'account_number'  => '1234567890',
+            'bank_name'       => 'SBI',
+            'bank_branch'     => 'Main Branch',
+            'ifsc_code'       => 'SBIN0001234',
+            'designation'     => 'Updated Designation',
         ]);
 
         $response->assertRedirect();

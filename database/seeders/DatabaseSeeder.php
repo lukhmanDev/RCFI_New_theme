@@ -15,16 +15,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name' => 'Super Admin',
-            'email' => 'sdigibeat@gmail.com',
-            'mobile' => 9999999999,
-            'role' => 1,
-            'password' => bcrypt('support@123'),
-            'designation' => 'Super Admin',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'sdigibeat@gmail.com'],
+            [
+                'name' => 'Super Admin',
+                'mobile' => '9999999999',
+                'role' => 'super_admin',
+                'password' => bcrypt('support@123'),
+                'designation' => 'Super Admin',
+            ]
+        );
 
-        $this->call(DummyDataSeeder::class);
-        $this->call(ProjectSeeder::class);
+        if (class_exists(\Database\Seeders\DummyDataSeeder::class)) {
+            $this->call(\Database\Seeders\DummyDataSeeder::class);
+        }
+
+        if (class_exists(\Database\Seeders\ProjectSeeder::class)) {
+            $this->call(\Database\Seeders\ProjectSeeder::class);
+        }
     }
 }

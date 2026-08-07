@@ -69,12 +69,16 @@
         <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h2 class="panel-title">Education Center Applications List</h2>
             <div style="display: flex; gap: 0.75rem;">
+                @if(auth()->user() && auth()->user()->canDownloadExcel())
                 <a href="{{ route('applications.export', $categorySlug) }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
                     <i class="bx bx-download"></i> Download Excel
                 </a>
+                @endif
+                @if(auth()->user() && auth()->user()->canAddApplications())
                 <button onclick="openModal()" class="btn-custom">
                     <i class="bx bx-plus-circle"></i> Add Application
                 </button>
+                @endif
             </div>
         </div>
         

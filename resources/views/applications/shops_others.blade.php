@@ -72,9 +72,11 @@
                 <a href="{{ route('applications.export', $categorySlug) }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
                     <i class="bx bx-download"></i> Download Excel
                 </a>
+                @if(auth()->user() && auth()->user()->canAddApplications())
                 <button onclick="openModal()" class="btn-custom">
                     <i class="bx bx-plus-circle"></i> Add Application
                 </button>
+                @endif
             </div>
         </div>
         

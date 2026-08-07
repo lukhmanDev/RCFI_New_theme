@@ -53,12 +53,11 @@
         <input type="tel" class="form-control-dark" id="{{ $prefix }}mobile_1" name="meta[mobile_1]" placeholder="Enter 10-digit Mobile 1" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
     </div>
     <div>
-        <label class="form-label" for="{{ $prefix }}mobile_2">Mobile 2 *</label>
-        <input type="tel" class="form-control-dark" id="{{ $prefix }}mobile_2" name="meta[mobile_2]" placeholder="Enter 10-digit Mobile 2" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
+        <label class="form-label" for="{{ $prefix }}mobile_2">Mobile 2</label>
+        <input type="tel" class="form-control-dark" id="{{ $prefix }}mobile_2" name="meta[mobile_2]" placeholder="Enter 10-digit Mobile 2" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
     </div>
     <div>
         <label class="form-label" for="{{ $prefix }}whatsapp_number">WhatsApp Number *</label>
         <input type="tel" class="form-control-dark" id="{{ $prefix }}whatsapp_number" name="meta[whatsapp_number]" placeholder="Enter 10-digit WhatsApp Number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required>
     </div>
 </div>
-
