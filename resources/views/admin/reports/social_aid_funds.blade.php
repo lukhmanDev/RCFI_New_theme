@@ -4,10 +4,10 @@
 
 @section('content')
 
-    @if(!Auth::user() || !Auth::user()->isSuperAdmin())
+    @if(!Auth::user() || !(Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod() || Auth::user()->isSocialAid()))
         <div class="alert alert-danger" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff9999; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 1rem; font-weight: 600;">
             <i class="bx bx-error-circle" style="vertical-align: middle; margin-right: 0.5rem; font-size: 1.25rem;"></i>
-            Unauthorized Action: Only Super Admin can access the Social Aid Fund Report page.
+            Unauthorized Action: Only Super Admin, COO, HOD, and Social Aid Manager can access the Social Aid Fund Report page.
         </div>
     @else
 

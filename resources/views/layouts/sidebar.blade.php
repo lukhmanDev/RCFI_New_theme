@@ -62,22 +62,27 @@
             </a>
         </li>
 
+        @if(Auth::user() && !Auth::user()->isOthers())
         <li class="sidebar-header">
             <span>Master Data</span>
         </li>
-        @if(Auth::user() && Auth::user()->isSuperAdmin())
+        @if(Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod())
         <li>
-            <a href="{{ route('users') }}" class="{{ $isStaffs ? 'active' : '' }}">
-                <i class="bx bxs-id-card"></i>
+            <a href="{{ route('coo.staff_dashboard') }}" class="{{ (request()->routeIs('coo.staff_dashboard') || $isStaffs) ? 'active' : '' }}">
+                <i class="bx bxs-group"></i>
                 <span>Staffs</span>
             </a>
         </li>
+        @endif
+        @if(Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod() || Auth::user()->isSocialAid())
         <li>
             <a href="{{ route('admin.reports.social_aid_funds') }}" class="{{ $isSocialAidFundReport ? 'active' : '' }}">
                 <i class="bx bxs-report"></i>
                 <span>Social Aid Fund Report</span>
             </a>
         </li>
+        @endif
+        @if(Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod())
         <li>
             <a href="{{ route('admin.reports.projects') }}" class="{{ $isProjectReport ? 'active' : '' }}">
                 <i class="bx bxs-briefcase-alt-2"></i>
@@ -109,6 +114,7 @@
                 <span>Themes & Subthemes</span>
             </a>
         </li>
+        @endif
         @endif
         @endif
     </ul>

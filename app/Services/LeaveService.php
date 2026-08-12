@@ -21,7 +21,7 @@ class LeaveService
         return $user->isEligibleFor($type);
     }
 
-    public function submitRequest(User $user, LeaveType $type, $start, $end, ?string $reason): LeaveRequest
+    public function submitRequest(User $user, LeaveType $type, $start, $end, ?string $reason, bool $isHalfDay = false, ?string $halfDaySession = null): LeaveRequest
     {
         if ($user->is_suspended) {
             throw ValidationException::withMessages([
@@ -51,6 +51,14 @@ class LeaveService
 
         if ($totalDays <= 0) {
             $totalDays = $startDate->diffInDays($endDate) + 1;
+        }
+
+        if ($isHalfDay) {
+            if ($startDate->equalTo($endDate)) {
+                $totalDays = 0.5;
+            } else {
+                $totalDays = max(0.5, $totalDays - 0.5);
+            }
         }
 
         // Check for overlapping pending/approved leave requests
@@ -86,7 +94,7 @@ class LeaveService
             ]
         );
 
-        if ($balance->balance_days < $totalDays) {
+        if (!$type->isUnlimited() && $balance->balance_days < $totalDays) {
             throw ValidationException::withMessages([
                 'total_days' => ["Insufficient leave balance. You have {$balance->balance_days} day(s) available, but requested {$totalDays} day(s)."],
             ]);
@@ -98,6 +106,8 @@ class LeaveService
             'start_date' => $startDate->format('Y-m-d'),
             'end_date' => $endDate->format('Y-m-d'),
             'total_days' => $totalDays,
+            'is_half_day' => (bool)$isHalfDay,
+            'half_day_session' => $isHalfDay ? ($halfDaySession ?: 'First Half') : null,
             'reason' => $reason,
             'status' => 'Pending',
             'applied_on' => now(),
@@ -140,6 +150,24 @@ class LeaveService
         $balance->increment('used_days', $request->total_days);
         $balance->refresh();
 
+        $isBackupApprover = false;
+        if ($request->user && $request->user->assigned_hod_id && $request->user->assigned_hod_id !== $approver->id) {
+            $isBackupApprover = true;
+        }
+
+        try {
+            \App\Models\LeaveApprovalLog::create([
+                'leave_request_id' => $request->id,
+                'approver_id' => $approver->id,
+                'action' => 'Approved',
+                'approver_role' => $approver->is_hr ? 'HR-HOD' : ($approver->isCoo() ? 'COO' : ($approver->isSuperAdmin() ? 'Super Admin' : 'HOD')),
+                'is_backup_approver' => $isBackupApprover,
+                'remarks' => null,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to log leave approval: ' . $e->getMessage());
+        }
+
         event(new LeaveRequestApproved($request));
         event(new LeaveBalanceUpdated($balance));
     }
@@ -158,6 +186,24 @@ class LeaveService
             'approved_on' => now(),
             'remarks' => $remarks,
         ]);
+
+        $isBackupApprover = false;
+        if ($request->user && $request->user->assigned_hod_id && $request->user->assigned_hod_id !== $approver->id) {
+            $isBackupApprover = true;
+        }
+
+        try {
+            \App\Models\LeaveApprovalLog::create([
+                'leave_request_id' => $request->id,
+                'approver_id' => $approver->id,
+                'action' => 'Rejected',
+                'approver_role' => $approver->is_hr ? 'HR-HOD' : ($approver->isCoo() ? 'COO' : ($approver->isSuperAdmin() ? 'Super Admin' : 'HOD')),
+                'is_backup_approver' => $isBackupApprover,
+                'remarks' => $remarks,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to log leave rejection: ' . $e->getMessage());
+        }
 
         event(new LeaveRequestRejected($request));
     }

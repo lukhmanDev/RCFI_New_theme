@@ -260,9 +260,11 @@
 
 <div class="controls-row">
     <div style="display: flex; gap: 0.75rem;">
-        <a href="{{ route('projects.export', 'education-center') }}" class="btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
+        @if(Auth::user() && Auth::user()->canDownloadExcel())
+        <a href="{{ route('projects.export', 'education-center') }}" id="excelExportBtn" class="excel-export-btn btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
             <i class="bx bx-download"></i> Download Excel
         </a>
+        @endif
         @if(Auth::user() && Auth::user()->canAddEditProjects())
         <button onclick="openModal()" class="btn-custom">
             <i class="bx bx-plus-circle"></i> Add Project
@@ -370,8 +372,8 @@
                         <td class="col-place">{{ $project->place ?? $project->location ?? ($project->application ? ($project->application->place ?? $project->application->location ?? 'N/A') : 'N/A') }}</td>
                         <td class="col-district">{{ $project->district ?? ($project->application ? ($project->application->district ?? ($project->application->meta['district'] ?? ($project->application->meta['locality_district'] ?? 'N/A'))) : 'N/A') }}</td>
                         <td class="col-manager">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</td>
-                        <td class="col-allocated" style="text-align: right;">₹{{ number_format($project->available_budget ?? 0, 2) }}</td>
-                        <td class="col-balance" style="text-align: right;">₹{{ number_format($project->available_budget ?? 0, 2) }}</td>
+                        <td class="col-allocated" style="text-align: right;">{!! "&#x20B9;" !!}{{ number_format($project->total_allocated ?? 0, 2) }}</td>
+                        <td class="col-balance" style="text-align: right;">{!! "&#x20B9;" !!}{{ number_format(($project->total_allocated ?? 0) - ($project->total_spent ?? 0), 2) }}</td>
                         <td style="text-align: center; white-space: nowrap;">
                             @if(Auth::user()->hasAdminAccess())
                             <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nAgency No: {{ $project->agency_project_no }}\nAgency: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nEngineer: {{ $project->engineer ? $project->engineer->name : 'N/A' }}\nUnit: {{ $project->unit ?? 'RCFI' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
@@ -379,7 +381,7 @@
                             </button>
 
                             @if(Auth::user() && Auth::user()->canAddEditProjects() && empty($project->application_id))
-                            <button onclick="openEditModal({{ json_encode($project) }})" class="btn-action-icon btn-edit" title="Edit">
+                            <button onclick="openEditModal({{ e(json_encode($project)) }})" class="btn-action-icon btn-edit" title="Edit">
                                 <i class="bx bx-pencil"></i>
                             </button>
                             @endif
@@ -759,6 +761,30 @@
                     row.style.display = 'none';
                 }
             }
+            updateExportUrl();
+        }
+
+        function updateExportUrl() {
+            const btns = document.querySelectorAll('.excel-export-btn');
+            if (!btns.length) return;
+            const baseUrl = "{{ route('projects.export', 'education-center') }}";
+            const params = new URLSearchParams();
+
+            const searchVal = document.getElementById('tableSearch')?.value;
+            const managerVal = document.getElementById('filterManager')?.value;
+            const agencyVal = document.getElementById('filterAgency')?.value;
+            const districtVal = document.getElementById('filterDistrict')?.value;
+            const stateVal = document.getElementById('filterState')?.value;
+
+            if (searchVal) params.append('search', searchVal);
+            if (managerVal) params.append('pm_id', managerVal);
+            if (agencyVal) params.append('agency', agencyVal);
+            if (districtVal) params.append('district', districtVal);
+            if (stateVal) params.append('state', stateVal);
+
+            const queryString = params.toString();
+            const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+            btns.forEach(btn => btn.href = fullUrl);
         }
 
         document.addEventListener('DOMContentLoaded', function() {

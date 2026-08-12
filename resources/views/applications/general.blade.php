@@ -370,7 +370,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="num_total_family">Total Family Members *</label>
-                            <input type="number" class="form-control-dark" id="num_total_family" name="meta[num_total_family]" value="{{ old('meta.num_total_family') }}" readonly required>
+                            <input type="number" class="form-control-dark" id="num_total_family" name="meta[num_total_family]" value="{{ old('meta.num_total_family') }}" readonly>
                         </div>
                     </div>
 
@@ -385,7 +385,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="applying_for">Applying for *</label>
                             <input type="text" class="form-control-dark" id="applying_for" name="meta[applying_for]" value="{{ old('meta.applying_for') }}" required>
@@ -393,17 +393,6 @@
                         <div>
                             <label class="form-label" for="monthly_income_detail">Monthly Income (₹) *</label>
                             <input type="number" class="form-control-dark" id="monthly_income_detail" name="meta[monthly_income_detail]" value="{{ old('meta.monthly_income_detail') }}" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <label class="form-label" for="recommended_by">Recommended by *</label>
-                            <input type="text" class="form-control-dark" id="recommended_by" name="meta[recommended_by]" value="{{ old('meta.recommended_by') }}" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="recommended_phone">Phone Number *</label>
-                            <input type="text" class="form-control-dark" id="recommended_phone" name="meta[recommended_phone]" value="{{ old('meta.recommended_phone') }}" required>
                         </div>
                     </div>
                 </div>
@@ -591,7 +580,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_num_total_family">Total Family Members *</label>
-                            <input type="number" class="form-control-dark" id="edit_num_total_family" name="meta[num_total_family]" readonly required>
+                            <input type="number" class="form-control-dark" id="edit_num_total_family" name="meta[num_total_family]" readonly>
                         </div>
                     </div>
 
@@ -606,7 +595,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_applying_for">Applying for *</label>
                             <input type="text" class="form-control-dark" id="edit_applying_for" name="meta[applying_for]" required>
@@ -614,17 +603,6 @@
                         <div>
                             <label class="form-label" for="edit_monthly_income_detail">Monthly Income (₹) *</label>
                             <input type="number" class="form-control-dark" id="edit_monthly_income_detail" name="meta[monthly_income_detail]" required>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_recommended_by">Recommended by *</label>
-                            <input type="text" class="form-control-dark" id="edit_recommended_by" name="meta[recommended_by]" required>
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_recommended_phone">Phone Number *</label>
-                            <input type="text" class="form-control-dark" id="edit_recommended_phone" name="meta[recommended_phone]" required>
                         </div>
                     </div>
                 </div>
@@ -888,8 +866,8 @@
             document.getElementById('edit_average_monthly_income').value = meta.average_monthly_income || '';
             document.getElementById('edit_applying_for').value = meta.applying_for || '';
             document.getElementById('edit_monthly_income_detail').value = meta.monthly_income_detail || '';
-            document.getElementById('edit_recommended_by').value = meta.recommended_by || '';
-            document.getElementById('edit_recommended_phone').value = meta.recommended_phone || '';
+            if (document.getElementById('edit_recommended_by')) document.getElementById('edit_recommended_by').value = meta.recommended_by || '';
+            if (document.getElementById('edit_recommended_phone')) document.getElementById('edit_recommended_phone').value = meta.recommended_phone || '';
             document.getElementById('edit_office_application_type').value = meta.office_application_type || '';
 
             if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || '';
@@ -1029,7 +1007,6 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Average Monthly Income:</td><td>${meta.average_monthly_income ? '₹' + Number(meta.average_monthly_income).toLocaleString() : 'N/A'}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Applying for:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.applying_for)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income_detail ? '₹' + Number(meta.monthly_income_detail).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Recommended by:</td><td>${formatVal(meta.recommended_by)} <span style="font-size: 0.8rem; color: var(--text-muted);">(${formatVal(meta.recommended_phone)})</span></td></tr>
                         </table>
 
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. For Office Use Only</h4>

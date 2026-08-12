@@ -39,6 +39,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::delete('/admin/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/admin/users/{id}/details', [UserController::class, 'getDetails'])->name('users.details');
     Route::post('/admin/users/{id}/toggle-suspend', [UserController::class, 'toggleSuspend'])->name('users.toggle_suspend');
+    Route::get('/admin/coo/staff-dashboard', [\App\Http\Controllers\CooStaffDashboardController::class, 'index'])->name('coo.staff_dashboard');
     
     // Leave Requests routes
     Route::get('/leaves', [\App\Http\Controllers\LeaveController::class, 'index'])->name('leave.portal');
@@ -49,6 +50,10 @@ Route::middleware(['auth', \App\Http\Middleware\CheckSuspendedUser::class])->gro
     Route::post('/admin/leave-requests/{id}/reject', [\App\Http\Controllers\LeaveRequestController::class, 'reject'])->name('leave.reject');
     Route::delete('/admin/leave-requests/{id}', [\App\Http\Controllers\LeaveRequestController::class, 'destroy'])->name('leave.destroy');
     Route::get('/admin/staff/{id}/leave-history', [\App\Http\Controllers\LeaveRequestController::class, 'getStaffLeaveHistory'])->name('staff.leave-history');
+
+    // Attendance routes
+    Route::get('/attendance', [\App\Http\Controllers\AttendanceController::class, 'index'])->name('attendance.portal');
+    Route::get('/attendance/admin', [\App\Http\Controllers\AttendanceAdminController::class, 'index'])->name('attendance.admin');
 
     // Reports routes
     Route::get('/admin/reports/social-aid-funds', [AdminController::class, 'socialAidFundReport'])->name('admin.reports.social_aid_funds');

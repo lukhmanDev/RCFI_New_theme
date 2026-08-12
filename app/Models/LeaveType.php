@@ -31,6 +31,21 @@ class LeaveType extends Model
         'is_active'         => 'boolean',
     ];
 
+    public function getCodeAttribute()
+    {
+        return $this->leave_code;
+    }
+
+    public function getNameAttribute()
+    {
+        return $this->leave_name;
+    }
+
+    public function isUnlimited(): bool
+    {
+        return $this->leave_code === 'LWP' || $this->accrual_type === 'None';
+    }
+
     public function balances()
     {
         return $this->hasMany(LeaveBalance::class, 'leave_type_id');

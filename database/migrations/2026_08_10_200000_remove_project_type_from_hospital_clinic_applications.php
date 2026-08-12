@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        if (Schema::hasTable('hospital_clinic_applications') && Schema::hasColumn('hospital_clinic_applications', 'project_type')) {
+            Schema::table('hospital_clinic_applications', function (Blueprint $table) {
+                $table->dropColumn('project_type');
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        if (Schema::hasTable('hospital_clinic_applications') && !Schema::hasColumn('hospital_clinic_applications', 'project_type')) {
+            Schema::table('hospital_clinic_applications', function (Blueprint $table) {
+                $table->string('project_type')->nullable();
+            });
+        }
+    }
+};

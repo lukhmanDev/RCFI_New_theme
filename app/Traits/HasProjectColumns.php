@@ -328,7 +328,7 @@ trait HasProjectColumns
             if (isset($model->tempFilesToSave)) {
                 $value = $model->tempFilesToSave;
 
-                // Sync photos in one row - strictly enforce maximum 1 photo per column
+                // Sync photos in one row - enforce maximum 3 photos per column
                 $photoData = [];
                 $photoKeys = [
                     'photos', 'photos_before', 'photos_starting', 'photos_inbetween',
@@ -340,10 +340,13 @@ trait HasProjectColumns
                         if (is_null($raw)) {
                             $photoData[$key] = null;
                         } else {
-                            $arr = is_array($raw) ? $raw : [$raw];
-                            $arr = array_values(array_filter($arr));
-                            $singlePhoto = !empty($arr) ? [end($arr)] : [];
-                            $photoData[$key] = !empty($singlePhoto) ? json_encode($singlePhoto) : null;
+                            $arr = is_array($raw) ? $raw : (is_string($raw) ? json_decode($raw, true) : [$raw]);
+                            if (!is_array($arr)) {
+                                $arr = [$raw];
+                            }
+                            $arr = array_values(array_unique(array_filter($arr)));
+                            $upToThreePhotos = !empty($arr) ? array_slice($arr, 0, 3) : [];
+                            $photoData[$key] = !empty($upToThreePhotos) ? json_encode($upToThreePhotos) : null;
                         }
                     }
                 }

@@ -182,7 +182,7 @@
                             </td>
 
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
+                                <button onclick="openDetailsModal({{ e(json_encode($appItem)) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
@@ -349,7 +349,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="age">Age *</label>
-                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                         <div>
                             <label class="form-label" for="aadhar_number">Aadhaar Number *</label>
@@ -400,7 +400,7 @@
                         </div>
                         <div id="add_mother_remarried_wrapper" style="display: {{ old('meta.mother_alive_status', 'Yes') == 'Yes' ? 'block' : 'none' }};">
                             <label class="form-label" for="mother_remarried_status">Mother Re-Married/not *</label>
-                            <input type="text" class="form-control-dark" id="mother_remarried_status" name="meta[mother_remarried_status]" placeholder="e.g. Yes / No" value="{{ old('meta.mother_remarried_status') }}" required>
+                            <input type="text" class="form-control-dark" id="mother_remarried_status" name="meta[mother_remarried_status]" placeholder="e.g. Yes / No" value="{{ old('meta.mother_remarried_status') }}" {{ old('meta.mother_alive_status', 'Yes') == 'Yes' ? 'required' : '' }}>
                         </div>
                     </div>
 
@@ -427,7 +427,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="siblings_total">No Of Brothers And Sisters *</label>
-                            <input type="number" class="form-control-dark" id="siblings_total" name="meta[siblings_total]" value="{{ old('meta.siblings_total', 0) }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                            <input type="number" class="form-control-dark" id="siblings_total" name="meta[siblings_total]" value="{{ old('meta.siblings_total', 0) }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                     </div>
 
@@ -602,37 +602,6 @@
                 </div>
 
 
-                <!-- Recommendation Details Section -->
-                <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommender_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
-                        </div>
-                        <div>
-                            <label class="form-label" for="recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
-                                <option value="">-- Select Organization --</option>
-                                <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
-                                <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
-                                <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
-                                <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
-                            </select>
-                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommender_org_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <label class="form-label" for="recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommender_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
-                        </div>
-                        <div>
-                            <label class="form-label" for="recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommender_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Submit Application
@@ -740,7 +709,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_age">Age *</label>
-                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                         <div>
                             <label class="form-label" for="edit_aadhar_number">Aadhaar Number *</label>
@@ -818,7 +787,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_siblings_total">No Of Brothers And Sisters *</label>
-                            <input type="number" class="form-control-dark" id="edit_siblings_total" name="meta[siblings_total]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                            <input type="number" class="form-control-dark" id="edit_siblings_total" name="meta[siblings_total]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                     </div>
 
@@ -993,37 +962,6 @@
                 </div>
 
 
-                <!-- Edit Recommendation Details Section -->
-                <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommender_name]" placeholder="Full name">
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
-                                <option value="">-- Select Organization --</option>
-                                <option value="KMJ">KMJ</option>
-                                <option value="SYS">SYS</option>
-                                <option value="SSF">SSF</option>
-                                <option value="Others">Others</option>
-                            </select>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommender_org_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
-                        </div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div>
-                            <label class="form-label" for="edit_recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommender_phone]" placeholder="Phone number">
-                        </div>
-                        <div>
-                            <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommender_position]" placeholder="Job title / Designation">
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Save Changes
@@ -1238,6 +1176,8 @@
         // View Details Modal Toggle
         function openDetailsModal(appItem) {
             currentDetailsAppItem = appItem;
+            const meta = appItem.meta || {};
+            const addr = appItem.address || {};
             
             // Populate status actions in the modal footer dynamically
             const statusActionsContainer = document.getElementById('modal_status_actions');
@@ -1293,8 +1233,6 @@
 
                 statusActionsContainer.innerHTML = statusHtml;
             }
-            const meta = appItem.meta || {};
-            const addr = appItem.address || {};
             const houseName = meta.house_name || addr.house_name || appItem.house_name;
             const placeName = meta.place || addr.place || appItem.place;
             const villageName = meta.village || addr.village || appItem.village;
@@ -1512,16 +1450,6 @@
                     </p>
                 </div>
 
-                ${(meta.recommendation_name || meta.recommendation_organization || meta.recommendation_phone || meta.recommendation_position) ? `
-                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
-                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details:</h5>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                        ${meta.recommendation_name ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px;">Name:</td><td>${meta.recommendation_name}</td></tr>` : ''}
-                        ${meta.recommendation_organization ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Organization:</td><td>${meta.recommendation_organization === 'Others' ? (meta.recommendation_organization_other || 'Others') : meta.recommendation_organization}</td></tr>` : ''}
-                        ${meta.recommendation_phone ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Phone:</td><td>${meta.recommendation_phone}</td></tr>` : ''}
-                        ${meta.recommendation_position ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Position:</td><td>${meta.recommendation_position}</td></tr>` : ''}
-                    </table>
-                </div>` : ''}
 
                 ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
@@ -1614,12 +1542,15 @@
             const noRadio = document.getElementById('mother_alive_no');
             const deathFields = document.getElementById('add_mother_death_fields');
             const remarriedWrapper = document.getElementById('add_mother_remarried_wrapper');
+            const remarriedInput = document.getElementById('mother_remarried_status');
             if (noRadio && noRadio.checked) {
                 if (deathFields) deathFields.style.display = 'grid';
                 if (remarriedWrapper) remarriedWrapper.style.display = 'none';
+                if (remarriedInput) remarriedInput.required = false;
             } else {
                 if (deathFields) deathFields.style.display = 'none';
                 if (remarriedWrapper) remarriedWrapper.style.display = 'block';
+                if (remarriedInput) remarriedInput.required = true;
             }
         }
 
@@ -1627,12 +1558,15 @@
             const noRadio = document.getElementById('edit_mother_alive_no');
             const deathFields = document.getElementById('edit_mother_death_fields');
             const remarriedWrapper = document.getElementById('edit_mother_remarried_wrapper');
+            const remarriedInput = document.getElementById('edit_mother_remarried_status');
             if (noRadio && noRadio.checked) {
                 if (deathFields) deathFields.style.display = 'grid';
                 if (remarriedWrapper) remarriedWrapper.style.display = 'none';
+                if (remarriedInput) remarriedInput.required = false;
             } else {
                 if (deathFields) deathFields.style.display = 'none';
                 if (remarriedWrapper) remarriedWrapper.style.display = 'block';
+                if (remarriedInput) remarriedInput.required = false;
             }
         }
 

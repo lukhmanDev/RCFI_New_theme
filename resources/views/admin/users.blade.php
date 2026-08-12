@@ -46,9 +46,11 @@
             <h1 style="color: #0f172a; font-size: 1.75rem; font-weight: 800; margin: 0;">Staff Management</h1>
             <p style="color: #64748b; font-size: 0.88rem; margin-top: 0.25rem; margin-bottom: 0;">Dashboard &nbsp;•&nbsp; Staff Management</p>
         </div>
-        <button onclick="openAddStaffModal()" class="btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; border-radius: 10px; padding: 0.65rem 1.25rem; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: transform 0.1s ease;">
-            <i class="bx bx-user-plus" style="font-size: 1.15rem;"></i> Add New Staff
-        </button>
+        @if(auth()->user()->isSuperAdmin())
+            <button onclick="openAddStaffModal()" class="btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; border-radius: 10px; padding: 0.65rem 1.25rem; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: transform 0.1s ease;">
+                <i class="bx bx-user-plus" style="font-size: 1.15rem;"></i> Add New Staff
+            </button>
+        @endif
     </div>
 
     <!-- Stat Cards Row (5 Cards) -->
@@ -351,7 +353,7 @@
                     </div>
                     <div>
                         <label class="form-label" for="mobile">Mobile Number <span style="color:#ef4444;">*</span></label>
-                        <input type="text" class="form-control-dark" id="mobile" name="mobile" placeholder="Enter mobile number" value="{{ old('mobile') }}" required>
+                        <input type="text" class="form-control-dark" id="mobile" name="mobile" placeholder="10-digit mobile number" value="{{ old('mobile') }}" required maxlength="10" minlength="10" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
                     </div>
                     <div>
                         <label class="form-label" for="father_name">Father's Name <span style="color:#ef4444;">*</span></label>
@@ -415,7 +417,7 @@
                     </div>
                     <div>
                         <label class="form-label" for="pin_code">PIN Code <span style="color:#ef4444;">*</span></label>
-                        <input type="text" class="form-control-dark" id="pin_code" name="pin_code" placeholder="6-digit PIN code" value="{{ old('pin_code') }}" required maxlength="10">
+                        <input type="text" class="form-control-dark" id="pin_code" name="pin_code" placeholder="6-digit PIN code" value="{{ old('pin_code') }}" required maxlength="6" minlength="6" pattern="[0-9]{6}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)">
                     </div>
                 </div>
 
@@ -424,7 +426,7 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
                     <div>
                         <label class="form-label" for="aadhar_number">Aadhar Number <span style="color:#ef4444;">*</span></label>
-                        <input type="text" class="form-control-dark" id="aadhar_number" name="aadhar_number" placeholder="12-digit Aadhar Number" value="{{ old('aadhar_number') }}" required>
+                        <input type="text" class="form-control-dark" id="aadhar_number" name="aadhar_number" placeholder="1234 5678 9012" maxlength="14" oninput="this.value = this.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim()" value="{{ old('aadhar_number') }}" required>
                     </div>
                     <div>
                         <label class="form-label" for="pan_card_number">PAN Card Number <span style="color:#ef4444;">*</span></label>
@@ -448,17 +450,17 @@
                     </div>
                 </div>
 
-                {{-- ── Account & Security ── --}}
-                <p style="font-size:0.8rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1rem; margin-top:0.5rem; border-top:1px solid #e2e8f0; padding-top:1rem;">Account & Security</p>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                {{-- ── Account & Role Settings ── --}}
+                <p style="font-size:0.8rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1rem; margin-top:0.5rem; border-top:1px solid #e2e8f0; padding-top:1rem;">Account & Role Settings</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
                     <div>
                         <label class="form-label" for="designation">Designation <span style="color:#ef4444;">*</span></label>
                         <input type="text" class="form-control-dark" id="designation" name="designation" placeholder="e.g. Senior Accountant" value="{{ old('designation') }}" required>
                     </div>
-                    @if(Auth::user()->isSuperAdmin())
+                    @if(Auth::user()->hasAdminAccess())
                         <div>
                             <label class="form-label" for="role">User Role <span style="color:#ef4444;">*</span></label>
-                            <select class="form-select-dark" id="role" name="role" required>
+                            <select class="form-select-dark" id="role" name="role" required onchange="toggleRoleFields('add')">
                                 <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select user role</option>
                                 <option value="coo" {{ old('role') == 'coo' ? 'selected' : '' }}>COO</option>
                                 <option value="project_manager" {{ old('role') == 'project_manager' ? 'selected' : '' }}>Project Manager</option>
@@ -471,7 +473,27 @@
                             </select>
                         </div>
                     @endif
-                    <div style="{{ Auth::user()->isSuperAdmin() ? 'grid-column: 1 / -1;' : '' }}">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; align-items: end;">
+                    <div id="add_assigned_hod_wrapper" style="display: block;">
+                        <label class="form-label" for="assigned_hod_id">Assigned HOD <span style="color:#ef4444;" id="assigned_hod_star">*</span></label>
+                        <select class="form-select-dark" id="assigned_hod_id" name="assigned_hod_id">
+                            <option value="">-- Select Assigned HOD --</option>
+                            @foreach($hods as $h)
+                                <option value="{{ $h->id }}" {{ old('assigned_hod_id') == $h->id ? 'selected' : '' }}>{{ $h->name }} (HOD)</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div id="add_is_hr_wrapper" style="display: none; align-items: center; background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); padding: 0.75rem; border-radius: 8px; height: 42px;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: #6b21a8; font-weight: 700; font-size: 0.85rem; cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="is_hr" name="is_hr" value="1" {{ old('is_hr') ? 'checked' : '' }} style="width: 18px; height: 18px; cursor: pointer;">
+                            <i class="bx bx-shield-quarter" style="font-size: 1.1rem;"></i> Designate as Central HR HOD
+                        </label>
+                    </div>
+
+                    <div style="{{ Auth::user()->hasAdminAccess() ? '' : 'grid-column: 1 / -1;' }}">
                         <label class="form-label" for="password">Password <span style="color:#ef4444;">*</span></label>
                         <input type="password" class="form-control-dark" id="password" name="password" placeholder="Minimum 8 characters" autocomplete="new-password" required>
                     </div>
@@ -521,7 +543,7 @@
                     </div>
                     <div>
                         <label class="form-label" for="edit_mobile">Mobile Number <span style="color:#ef4444;">*</span></label>
-                        <input type="text" class="form-control-dark" id="edit_mobile" name="mobile" required>
+                        <input type="text" class="form-control-dark" id="edit_mobile" name="mobile" placeholder="10-digit mobile number" required maxlength="10" minlength="10" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
                     </div>
                     <div>
                         <label class="form-label" for="edit_father_name">Father's Name <span style="color:#ef4444;">*</span></label>
@@ -583,7 +605,7 @@
                     </div>
                     <div>
                         <label class="form-label" for="edit_pin_code">PIN Code <span style="color:#ef4444;">*</span></label>
-                        <input type="text" class="form-control-dark" id="edit_pin_code" name="pin_code" required maxlength="10">
+                        <input type="text" class="form-control-dark" id="edit_pin_code" name="pin_code" placeholder="6-digit PIN code" required maxlength="6" minlength="6" pattern="[0-9]{6}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)">
                     </div>
                 </div>
 
@@ -592,7 +614,7 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
                     <div>
                         <label class="form-label" for="edit_aadhar_number">Aadhar Number <span style="color:#ef4444;">*</span></label>
-                        <input type="text" class="form-control-dark" id="edit_aadhar_number" name="aadhar_number" required>
+                        <input type="text" class="form-control-dark" id="edit_aadhar_number" name="aadhar_number" placeholder="1234 5678 9012" maxlength="14" oninput="this.value = this.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim()" required>
                     </div>
                     <div>
                         <label class="form-label" for="edit_pan_card_number">PAN Card Number <span style="color:#ef4444;">*</span></label>
@@ -616,17 +638,17 @@
                     </div>
                 </div>
 
-                {{-- Account & Security --}}
-                <p style="font-size:0.8rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1rem; margin-top:0.5rem; border-top:1px solid #e2e8f0; padding-top:1rem;">Account & Security</p>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                {{-- Account & Role Settings --}}
+                <p style="font-size:0.8rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1rem; margin-top:0.5rem; border-top:1px solid #e2e8f0; padding-top:1rem;">Account & Role Settings</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
                     <div>
                         <label class="form-label" for="edit_designation">Designation <span style="color:#ef4444;">*</span></label>
                         <input type="text" class="form-control-dark" id="edit_designation" name="designation" required>
                     </div>
-                    @if(Auth::user()->isSuperAdmin())
+                    @if(Auth::user()->hasAdminAccess())
                         <div>
                             <label class="form-label" for="edit_role">User Role <span style="color:#ef4444;">*</span></label>
-                            <select class="form-select-dark" id="edit_role" name="role" required>
+                            <select class="form-select-dark" id="edit_role" name="role" required onchange="toggleRoleFields('edit')">
                                 <option value="super_admin">Super Admin</option>
                                 <option value="coo">COO</option>
                                 <option value="project_manager">Project Manager</option>
@@ -639,7 +661,27 @@
                             </select>
                         </div>
                     @endif
-                    <div style="{{ Auth::user()->isSuperAdmin() ? 'grid-column: 1 / -1;' : '' }}">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; align-items: end;">
+                    <div id="edit_assigned_hod_wrapper" style="display: block;">
+                        <label class="form-label" for="edit_assigned_hod_id">Assigned HOD <span style="color:#ef4444;" id="edit_assigned_hod_star">*</span></label>
+                        <select class="form-select-dark" id="edit_assigned_hod_id" name="assigned_hod_id">
+                            <option value="">-- Select Assigned HOD --</option>
+                            @foreach($hods as $h)
+                                <option value="{{ $h->id }}">{{ $h->name }} (HOD)</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div id="edit_is_hr_wrapper" style="display: none; align-items: center; background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); padding: 0.75rem; border-radius: 8px; height: 42px;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: #6b21a8; font-weight: 700; font-size: 0.85rem; cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="edit_is_hr" name="is_hr" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                            <i class="bx bx-shield-quarter" style="font-size: 1.1rem;"></i> Designate as Central HR HOD
+                        </label>
+                    </div>
+
+                    <div style="{{ Auth::user()->hasAdminAccess() ? '' : 'grid-column: 1 / -1;' }}">
                         <label class="form-label" for="edit_password">New Password <span style="color:#94a3b8; font-weight:normal; font-size:0.75rem;">(Leave blank to keep current)</span></label>
                         <input type="password" class="form-control-dark" id="edit_password" name="password" placeholder="Minimum 8 characters" autocomplete="new-password">
                     </div>
@@ -914,11 +956,41 @@
             filterStaffs();
         }
 
+        // Dynamic toggle function for Assigned HOD dropdown vs Is HR checkbox
+        function toggleRoleFields(mode) {
+            const prefix = mode === 'edit' ? 'edit_' : '';
+            const roleEl = document.getElementById(prefix + 'role');
+            if (!roleEl) return;
+
+            const role = (roleEl.value || '').toLowerCase();
+            const hodWrapper = document.getElementById(mode === 'edit' ? 'edit_assigned_hod_wrapper' : 'add_assigned_hod_wrapper');
+            const hrWrapper = document.getElementById(mode === 'edit' ? 'edit_is_hr_wrapper' : 'add_is_hr_wrapper');
+            const hodSelect = document.getElementById(prefix + 'assigned_hod_id');
+
+            const excludedRoles = ['coo', 'super_admin', 'hod', '1', '2', '4'];
+            const isExcluded = excludedRoles.includes(role);
+
+            if (role === 'hod' || role === '4') {
+                if (hrWrapper) hrWrapper.style.display = 'flex';
+                if (hodWrapper) hodWrapper.style.display = 'none';
+                if (hodSelect) { hodSelect.required = false; hodSelect.value = ''; }
+            } else if (!isExcluded && role !== '') {
+                if (hodWrapper) hodWrapper.style.display = 'block';
+                if (hrWrapper) hrWrapper.style.display = 'none';
+                if (hodSelect) hodSelect.required = true;
+            } else {
+                if (hodWrapper) hodWrapper.style.display = 'none';
+                if (hrWrapper) hrWrapper.style.display = 'none';
+                if (hodSelect) { hodSelect.required = false; hodSelect.value = ''; }
+            }
+        }
+
         // Add Staff Modal
         function openAddStaffModal() {
             const modal = document.getElementById('addUserModal');
             if (modal) {
                 modal.style.display = "flex";
+                toggleRoleFields('add');
             } else {
                 console.error('addUserModal not found in DOM');
             }
@@ -980,11 +1052,19 @@
                         setVal('edit_bank_branch', u.bank_branch);
                         setVal('edit_ifsc_code', u.ifsc_code);
                         setVal('edit_designation', u.designation);
-                        
+                        setVal('edit_assigned_hod_id', u.assigned_hod_id || u.hod_id);
+
+                        const editIsHrCheckbox = document.getElementById('edit_is_hr');
+                        if (editIsHrCheckbox) {
+                            editIsHrCheckbox.checked = !!u.is_hr;
+                        }
+
                         const roleSelect = document.getElementById('edit_role');
                         if (roleSelect && u.raw_role) {
                             roleSelect.value = u.raw_role;
                         }
+
+                        toggleRoleFields('edit');
 
                         const passwordInput = document.getElementById('edit_password');
                         if (passwordInput) passwordInput.value = '';

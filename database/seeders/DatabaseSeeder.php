@@ -26,6 +26,10 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        if (class_exists(\Database\Seeders\LeaveTypeSeeder::class)) {
+            $this->call(\Database\Seeders\LeaveTypeSeeder::class);
+        }
+
         if (class_exists(\Database\Seeders\DummyDataSeeder::class)) {
             $this->call(\Database\Seeders\DummyDataSeeder::class);
         }

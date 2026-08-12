@@ -345,7 +345,7 @@
 
                     <div>
                         <label class="form-label" for="num_benefited_people">No. Of Benefited People *</label>
-                        <input type="number" class="form-control-dark" id="num_benefited_people" name="meta[num_benefited_people]" value="{{ old('meta.num_benefited_people') }}" readonly required>
+                        <input type="number" class="form-control-dark" id="num_benefited_people" name="meta[num_benefited_people]" value="{{ old('meta.num_benefited_people') }}" readonly>
                     </div>
                 </div>
 
@@ -585,7 +585,7 @@
 
                     <div>
                         <label class="form-label" for="edit_num_benefited_people">No. Of Benefited People *</label>
-                        <input type="number" class="form-control-dark" id="edit_num_benefited_people" name="meta[num_benefited_people]" readonly required>
+                        <input type="number" class="form-control-dark" id="edit_num_benefited_people" name="meta[num_benefited_people]" readonly>
                     </div>
                 </div>
 

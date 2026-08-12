@@ -14,11 +14,14 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <script>
         if (typeof Chart === 'undefined') {
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"><\/script>');
         }
+        window.BROADCAST_DRIVER = "{{ config('broadcasting.default', env('BROADCAST_CONNECTION', 'log')) }}";
     </script>
+    @vite(['resources/js/app.js'])
 
     <!-- Premium CSS Layout and Design System -->
     @if(request('embed'))
@@ -1353,8 +1356,12 @@
     <!-- Global Toast Engine & Toggle Script -->
     <script>
         function showToast(message, type = 'success', duration = 5000) {
-            const container = document.getElementById('globalToastContainer');
-            if (!container) return;
+            let container = document.getElementById('globalToastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'globalToastContainer';
+                document.body.appendChild(container);
+            }
 
             const iconMap = {
                 success: 'bx-check-circle',
@@ -1465,39 +1472,76 @@
             document.getElementById('profileDropdown').style.display = 'none';
         });
 
-        // Global Download Excel (CSV) function for all list tables
-        function downloadExcel() {
-            const table = document.querySelector('.table-custom');
+        // Global ExcelJS Styled Excel Export (.xlsx) function for all list tables
+        async function downloadExcel(tableSelector = '.table-custom', customFilename = null) {
+            const table = document.querySelector(tableSelector);
             if (!table) return;
-            let csv = [];
+
+            if (typeof ExcelJS === 'undefined') {
+                alert('ExcelJS library is loading. Please try again in a moment.');
+                return;
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Export Data');
+
             const rows = table.querySelectorAll('tr');
-            
-            for (let i = 0; i < rows.length; i++) {
-                const row = [], cols = rows[i].querySelectorAll('td, th');
+            rows.forEach((tr) => {
+                const rowData = [];
+                const cols = tr.querySelectorAll('td, th');
                 
-                // Exclude last column (Action column)
-                for (let j = 0; j < cols.length - 1; j++) {
-                    let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/(\s\s+)/gm, ' ');
-                    data = data.replace(/"/g, '""');
-                    row.push('"' + data + '"');
+                // Exclude last column if it contains Action buttons
+                const lastColText = cols.length > 0 ? cols[cols.length - 1].innerText.toLowerCase() : '';
+                const colCount = cols.length > 1 && (lastColText.includes('action') || lastColText.includes('edit')) ? cols.length - 1 : cols.length;
+
+                for (let j = 0; j < colCount; j++) {
+                    let cellText = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, ' ').replace(/\s+/g, ' ').trim();
+                    rowData.push(cellText);
                 }
-                csv.push(row.join(','));
-            }
-            
-            const csvContent = "data:text/csv;charset=utf-8," + csv.join('\n');
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            // Get category/list name for download filename if possible
-            let filename = "export.csv";
+                if (rowData.length > 0) {
+                    worksheet.addRow(rowData);
+                }
+            });
+
+            // 1. Style Header Row (Row 1): Bold font, Green Background (#4CAF50), Centered alignment
+            const headerRow = worksheet.getRow(1);
+            headerRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFF' } };
+            headerRow.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF4CAF50' } // Green background (#4CAF50)
+            };
+            headerRow.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            headerRow.height = 28;
+
+            // 2. Auto-fit column widths based on max character length (header + data rows)
+            worksheet.columns.forEach(column => {
+                let maxLength = 0;
+                column.eachCell({ includeEmpty: true }, cell => {
+                    const cellVal = cell.value !== null && cell.value !== undefined ? cell.value.toString() : '';
+                    if (cellVal.length > maxLength) {
+                        maxLength = cellVal.length;
+                    }
+                });
+                column.width = Math.max(maxLength + 4, 12);
+            });
+
+            // 3. Trigger Excel (.xlsx) file download in browser
+            let filename = customFilename || "export.xlsx";
             const titleEl = document.querySelector('.panel-title');
-            if (titleEl) {
-                filename = titleEl.innerText.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '.csv';
+            if (titleEl && !customFilename) {
+                filename = titleEl.innerText.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '.xlsx';
             }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
             link.setAttribute("download", filename);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
         }
 
         let activeConfirmCallback = null;
@@ -1797,21 +1841,7 @@
 
         document.addEventListener('DOMContentLoaded', initCustomConfirmForms);
 
-        // Global helper to show dynamic toast alerts
-        function showToast(message, type = 'success') {
-            const existing = document.querySelectorAll('.alert');
-            existing.forEach(el => el.remove());
-            
-            const toast = document.createElement('div');
-            toast.className = `alert alert-${type}`;
-            toast.innerText = message;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 4000);
-        }
+
 
         // Global PJAX Loader Bar functions
         function showLoader() {
@@ -1917,14 +1947,16 @@
             if (newContent) {
                 const scripts = newContent.querySelectorAll('script');
                 scripts.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    newScript.textContent = oldScript.textContent;
-                    for (let attr of oldScript.attributes) {
-                        newScript.setAttribute(attr.name, attr.value);
-                    }
                     try {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = oldScript.textContent;
+                        for (let attr of oldScript.attributes) {
+                            newScript.setAttribute(attr.name, attr.value);
+                        }
                         document.body.appendChild(newScript);
-                        newScript.remove();
+                        if (newScript.parentNode) {
+                            newScript.remove();
+                        }
                     } catch(err) {
                         console.warn('Script execution warning during PJAX swap:', err);
                     }
@@ -2372,6 +2404,11 @@
             const port = {{ $reverbPort }};
             const scheme = "{{ $reverbScheme }}";
             
+            // Only connect if broadcast driver is reverb or pusher
+            if (broadcastDriver !== 'reverb' && broadcastDriver !== 'pusher') {
+                return;
+            }
+
             // Skip attempting localhost WebSocket connections if user is accessing on a live hosted domain
             const isLocalClient = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const isServerLocal = (host === '127.0.0.1' || host === 'localhost');
@@ -2381,6 +2418,7 @@
 
             if (typeof Pusher !== 'undefined' && appKey && (broadcastDriver === 'reverb' || broadcastDriver === 'pusher')) {
                 try {
+                    Pusher.logToConsole = false;
                     const pusher = new Pusher(appKey, {
                         wsHost: host,
                         wsPort: port,
@@ -2388,12 +2426,13 @@
                         forceTLS: scheme === 'https',
                         enabledTransports: ["ws", "wss"],
                         cluster: "mt1",
-                        unavailableTimeout: 2000
+                        unavailableTimeout: 1000,
+                        maxReconnectionAttempts: 1
                     });
 
                     pusher.connection.bind('state_change', function(states) {
-                        if (states.current === 'failed' || states.current === 'unavailable') {
-                            pusher.disconnect();
+                        if (states.current === 'failed' || states.current === 'unavailable' || states.current === 'disconnected') {
+                            try { pusher.disconnect(); } catch(e) {}
                         }
                     });
 
@@ -3134,12 +3173,7 @@
                             }
                         }
 
-                        // Auto-fill Place & Village if empty
-                        const placeEl = getScopedField('place');
-                        setFieldValue(placeEl, data.place, false);
-
-                        const villageEl = getScopedField('village');
-                        setFieldValue(villageEl, data.village, false);
+                        // Place & Village auto-fill removed as requested (user enters place & village manually)
 
                         // Success visual feedback on Pin Code input field
                         inputEl.style.transition = 'border-color 0.3s ease, box-shadow 0.3s ease';
@@ -3281,10 +3315,20 @@
                 const allInputs = document.querySelectorAll('input');
                 allInputs.forEach(input => {
                     if (isActualAgeField(input)) {
-                        input.readOnly = true;
-                        input.setAttribute('readonly', 'readonly');
-                        input.style.cursor = 'not-allowed';
-                        input.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                        const container = input.closest('form') || input.closest('.modal') || input.closest('.panel') || input.closest('tr') || document;
+                        const hasDob = container ? container.querySelector('input[id*="dob"], input[name*="[dob]"]') : null;
+
+                        if (hasDob || input.hasAttribute('readonly')) {
+                            input.readOnly = true;
+                            input.setAttribute('readonly', 'readonly');
+                            input.style.cursor = 'not-allowed';
+                            input.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                        } else {
+                            input.readOnly = false;
+                            input.removeAttribute('readonly');
+                            input.style.cursor = 'text';
+                            input.style.backgroundColor = '';
+                        }
                     } else if (input.id === 'agency_number' || input.id === 'edit_agency_number' || input.name === 'agency_number') {
                         input.readOnly = false;
                         input.removeAttribute('readonly');
@@ -3823,6 +3867,52 @@
                 }
             }
         });
+    </script>
+
+    <!-- Global Notification Modal -->
+    <div id="globalNotificationModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 999999; align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background: #ffffff; width: 100%; max-width: 440px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid #cbd5e1; overflow: hidden; text-align: center; padding: 1.75rem 1.5rem;">
+            <div id="globalNotificationIconBox" style="width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem; background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                <i id="globalNotificationIcon" class="bx bx-check-circle"></i>
+            </div>
+            <h3 id="globalNotificationTitle" style="font-size: 1.2rem; font-weight: 700; color: #0f172a; margin: 0 0 0.5rem 0;">Notification</h3>
+            <p id="globalNotificationMessage" style="font-size: 0.95rem; color: #475569; margin: 0 0 1.5rem 0; line-height: 1.5;"></p>
+            <button type="button" onclick="closeNotificationModal()" style="background: #10b981; color: #ffffff; border: none; padding: 0.6rem 2rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: background 0.2s;">
+                OK
+            </button>
+        </div>
+    </div>
+    <script>
+        function showNotificationModal(message, type = 'success', title = '') {
+            const modal = document.getElementById('globalNotificationModal');
+            const iconBox = document.getElementById('globalNotificationIconBox');
+            const icon = document.getElementById('globalNotificationIcon');
+            const titleEl = document.getElementById('globalNotificationTitle');
+            const msgEl = document.getElementById('globalNotificationMessage');
+            if (!modal) return;
+
+            const config = {
+                success: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', icon: 'bx-check-circle', title: 'Success' },
+                error: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', icon: 'bx-error-circle', title: 'Error' },
+                warning: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', icon: 'bx-error', title: 'Warning' },
+                info: { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', icon: 'bx-info-circle', title: 'Information' }
+            };
+
+            const theme = config[type] || config.success;
+            if (iconBox) { iconBox.style.background = theme.bg; iconBox.style.color = theme.color; }
+            if (icon) { icon.className = `bx ${theme.icon}`; }
+            if (titleEl) { titleEl.innerText = title || theme.title; }
+            if (msgEl) { msgEl.innerText = message; }
+            modal.style.display = 'flex';
+        }
+
+        function closeNotificationModal() {
+            const modal = document.getElementById('globalNotificationModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        window.showNotificationModal = showNotificationModal;
+        window.closeNotificationModal = closeNotificationModal;
     </script>
 </body>
 </html>

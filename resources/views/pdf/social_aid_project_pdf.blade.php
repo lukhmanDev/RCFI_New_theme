@@ -334,15 +334,37 @@
 
     <!-- TOP ACTION BAR -->
     <div class="pdf-actions-bar">
-        <h3>Social Aid PDF Report &bull; {{ $projectObj->project_id ?? ($project->project_id ?? 'Report') }}</h3>
+        <h3>Social Aid Project Report &bull; {{ $projectObj->project_id ?? ($project->project_id ?? 'Report') }}</h3>
         <button onclick="window.print()" class="btn-print">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M2.5 8a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-                <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5z"/>
-            </svg>
-            Print / Save PDF
+            &#128438; &nbsp;Print / Save PDF
         </button>
     </div>
+
+    <!-- DOCUMENT HEADER (Voucher-style) -->
+    <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
+        <tr>
+            <td style="vertical-align:top;">
+                <div style="font-size:22px; font-weight:900; color:#09090b; margin:0; text-transform:uppercase; letter-spacing:-0.3px;">Social Aid Report</div>
+                <div style="font-size:10.5px; color:#71717a; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; margin-top:3px;">
+                    @php
+                        $docCategoryName = '';
+                        if(isset($projectObj->type_of_project)) $docCategoryName = $projectObj->type_of_project;
+                        elseif(isset($project->type_of_project)) $docCategoryName = $project->type_of_project;
+                    @endphp
+                    {{ $docCategoryName ?: 'Orphan Care / Differently Abled / Family Aid' }} &bull; RCFI
+                </div>
+            </td>
+            <td style="text-align:right; vertical-align:top;">
+                <img src="{{ asset('images/logo.png') }}" alt="RCFI Logo" style="height:42px; width:auto; object-fit:contain; margin-bottom:5px;"><br>
+                <div style="font-size:11.5px; color:#3f3f46; line-height:1.9; text-align:right;">
+                    <strong style="color:#09090b;">Project ID:</strong> {{ $projectObj->project_id ?? ($project->project_id ?? '—') }}<br>
+                    <strong style="color:#09090b;">Generated:</strong> {{ date('d-M-Y H:i') }}
+                </div>
+            </td>
+        </tr>
+    </table>
+    <hr style="border:none; border-top:1.5px solid #d4d4d8; margin:12px 0 18px;">
+
 
     @php
         $app = $application ?? ($projectObj->application ?? null);

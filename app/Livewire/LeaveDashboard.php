@@ -18,6 +18,8 @@ class LeaveDashboard extends Component
     public ?int $leave_type_id = null;
     public string $start_date = '';
     public string $end_date = '';
+    public bool $is_half_day = false;
+    public string $half_day_session = 'First Half';
     public string $reason = '';
     public string $errorMessage = '';
     public string $successMessage = '';
@@ -69,11 +71,13 @@ class LeaveDashboard extends Component
                 $type,
                 $this->start_date,
                 $this->end_date,
-                $this->reason
+                $this->reason,
+                $this->is_half_day,
+                $this->half_day_session
             );
 
             $this->successMessage = 'Leave request submitted successfully!';
-            $this->reset(['leave_type_id', 'start_date', 'end_date', 'reason', 'showModal']);
+            $this->reset(['leave_type_id', 'start_date', 'end_date', 'is_half_day', 'half_day_session', 'reason', 'showModal']);
         } catch (\Exception $e) {
             $this->errorMessage = $e->getMessage();
         }

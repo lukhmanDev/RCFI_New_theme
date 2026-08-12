@@ -218,7 +218,11 @@
                                                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; font-weight: 800;">
                                                         <span style="color: {{ $isEligible ? '#0f172a' : '#991b1b' }};">{{ $t->code }}</span>
                                                         @if($isEligible)
-                                                            <span style="color: #10b981; font-weight: 800; font-size: 0.74rem;">{{ $avail }}d avail</span>
+                                                            @if($t->leave_code === 'LWP' || $t->isUnlimited())
+                                                                <span style="color: #ef4444; font-weight: 800; font-size: 0.74rem;">{{ $used }}d taken</span>
+                                                            @else
+                                                                <span style="color: #10b981; font-weight: 800; font-size: 0.74rem;">{{ $avail }}d avail</span>
+                                                            @endif
                                                         @else
                                                             <span style="color: #ef4444; font-size: 0.68rem; font-weight: 700;">Ineligible</span>
                                                         @endif
@@ -227,9 +231,15 @@
                                                         {{ $t->name }}
                                                     </div>
                                                     @if($isEligible)
-                                                        <div style="font-size: 0.7rem; color: #475569; margin-top: 0.25rem; font-weight: 600;">
-                                                            Used: <strong>{{ $used }}</strong> / {{ $totalAlloc }} days
-                                                        </div>
+                                                        @if($t->leave_code === 'LWP' || $t->isUnlimited())
+                                                            <div style="font-size: 0.7rem; color: #dc2626; margin-top: 0.25rem; font-weight: 600;">
+                                                                Taken: <strong>{{ $used }}</strong> days (No limit)
+                                                            </div>
+                                                        @else
+                                                            <div style="font-size: 0.7rem; color: #475569; margin-top: 0.25rem; font-weight: 600;">
+                                                                Used: <strong>{{ $used }}</strong> / {{ $totalAlloc }} days
+                                                            </div>
+                                                        @endif
                                                     @endif
                                                 </div>
                                             @endforeach
@@ -254,9 +264,15 @@
                                 <div style="font-weight: 700; color: #0f172a; font-size: 0.88rem;">
                                     {{ \Carbon\Carbon::parse($req->start_date ?? $req->from_date)->format('M d, Y') }} — {{ \Carbon\Carbon::parse($req->end_date ?? $req->to_date)->format('M d, Y') }}
                                 </div>
-                                <span style="background: #eff6ff; color: #2563eb; padding: 0.15rem 0.55rem; border-radius: 12px; font-size: 0.74rem; font-weight: 700; display: inline-block; margin-top: 0.25rem;">
-                                    {{ $req->total_days ?? $req->days_count }} day(s)
-                                </span>
+                                @if($req->is_half_day)
+                                    <span style="background: #f3e8ff; color: #9333ea; border: 1px solid #d8b4fe; padding: 0.15rem 0.55rem; border-radius: 12px; font-size: 0.74rem; font-weight: 800; display: inline-block; margin-top: 0.25rem;">
+                                        0.5 Day (Half Day &bull; {{ $req->half_day_session ?? 'First Half' }})
+                                    </span>
+                                @else
+                                    <span style="background: #eff6ff; color: #2563eb; padding: 0.15rem 0.55rem; border-radius: 12px; font-size: 0.74rem; font-weight: 700; display: inline-block; margin-top: 0.25rem;">
+                                        {{ $req->total_days ?? $req->days_count }} day(s)
+                                    </span>
+                                @endif
                             </td>
 
                             <!-- Reason -->
@@ -302,14 +318,16 @@
                                         </button>
                                     @endif
 
-                                    <!-- Delete Record -->
-                                    <form action="{{ route('leave.destroy', $req->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this leave request record?')" style="margin: 0;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 0.4rem 0.6rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center;" title="Delete Record">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </form>
+                                    @if($req->status === 'Pending')
+                                        <!-- Delete Record -->
+                                        <form action="{{ route('leave.destroy', $req->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this leave request record?')" style="margin: 0;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 0.4rem 0.6rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center;" title="Delete Record">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -471,15 +489,18 @@
                 
                 let balancesHtml = '';
                 (data.balances || []).forEach(b => {
+                    const isLwp = b.type_code === 'LWP';
+                    const availHtml = isLwp ? `<span style="color: #dc2626;">${b.used}d taken</span>` : `<span style="color: #10b981;">${b.available}d avail</span>`;
+                    const usedHtml = isLwp ? `Taken: ${b.used} days (No limit)` : `Used: ${b.used} / ${b.allocated} days`;
                     balancesHtml += `
                         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.65rem 0.85rem;">
                             <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.8rem; color: #0f172a;">
                                 <span>${b.type_code}</span>
-                                <span style="color: #10b981;">${b.available}d avail</span>
+                                ${availHtml}
                             </div>
                             <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.15rem;">${b.type_name}</div>
                             <div style="font-size: 0.7rem; color: #475569; margin-top: 0.25rem; font-weight: 600;">
-                                Used: ${b.used} / ${b.allocated} days
+                                ${usedHtml}
                             </div>
                         </div>
                     `;

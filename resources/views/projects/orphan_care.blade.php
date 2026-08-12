@@ -247,9 +247,11 @@
 
 <div class="group-header-panel" style="display: flex; justify-content: space-between; align-items: center;">
     <span>Orphan Care PROJECT LIST</span>
+    @if(Auth::user() && Auth::user()->canDownloadExcel())
     <a href="{{ route('projects.export', 'orphan-care') }}" class="excel-export-btn btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);">
         <i class="bx bxs-file-export" style="font-size: 1.1rem;"></i> Export Excel
     </a>
+    @endif
 </div>
 
 @if (session('success'))
@@ -389,12 +391,13 @@
             </button>
         </div>
 
-        <!-- Export Excel Button -->
+        @if(Auth::user() && Auth::user()->canDownloadExcel())
         <div style="display: flex; flex-direction: column; justify-content: flex-end;">
             <a id="excelExportBtn" href="{{ route('projects.export', 'orphan-care') }}" class="btn-custom excel-export-btn" style="height: 38px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0 1rem; border-radius: 6px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); white-space: nowrap;" title="Download Excel report with all filtered data">
                 <i class="bx bxs-file-export" style="font-size: 1.1rem;"></i> Export Excel
             </a>
         </div>
+        @endif
     </div>
 
     <div style="display: flex; gap: 0.75rem; align-items: flex-end;">

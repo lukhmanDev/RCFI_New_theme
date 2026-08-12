@@ -47,17 +47,32 @@
                     </div>
 
                     @if($isEligible)
-                        <div style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
-                            <div style="font-size: 1.75rem; font-weight: 800; color: #0f172a; line-height: 1;">
-                                {{ $avail }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">/ {{ $totalAlloc }} days</span>
+                        @if($type->leave_code === 'LWP' || $type->isUnlimited())
+                            @php
+                                $usedLwp = $bal ? $bal->used_days : 0;
+                            @endphp
+                            <div style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
+                                <div style="font-size: 1.75rem; font-weight: 800; color: #dc2626; line-height: 1;">
+                                    {{ $usedLwp }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Days Taken</span>
+                                </div>
+                                <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Leave Without Pay (No Limit)</span>
                             </div>
-                            <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Available Balance</span>
-                        </div>
+                            <div style="width: 100%; height: 6px; background: #fee2e2; border-radius: 3px; overflow: hidden;">
+                                <div style="width: 100%; height: 100%; background: #ef4444;"></div>
+                            </div>
+                        @else
+                            <div style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
+                                <div style="font-size: 1.75rem; font-weight: 800; color: #0f172a; line-height: 1;">
+                                    {{ $avail }} <span style="font-size: 0.85rem; font-weight: 600; color: #64748b;">/ {{ $totalAlloc }} days</span>
+                                </div>
+                                <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Available Balance</span>
+                            </div>
 
-                        <!-- Progress Bar -->
-                        <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                            <div style="width: {{ $percent }}%; height: 100%; background: #10b981; transition: width 0.3s ease;"></div>
-                        </div>
+                            <!-- Progress Bar -->
+                            <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                                <div style="width: {{ $percent }}%; height: 100%; background: #10b981; transition: width 0.3s ease;"></div>
+                            </div>
+                        @endif
                     @else
                         <div style="margin-top: 1rem; color: #94a3b8; font-size: 0.82rem; font-weight: 500;">
                             Requirements not met (service years, gender, or marital status).
@@ -93,8 +108,14 @@
                             <td style="padding: 1rem 1.25rem; font-weight: 600; color: #0f172a;">
                                 {{ $req->start_date->format('M d, Y') }} &mdash; {{ $req->end_date->format('M d, Y') }}
                             </td>
-                            <td style="padding: 1rem 1.25rem; text-align: center; font-weight: 700; color: #2563eb;">
-                                {{ $req->total_days }}
+                            <td style="padding: 1rem 1.25rem; text-align: center; font-weight: 700;">
+                                @if($req->is_half_day)
+                                    <span style="background: #f3e8ff; color: #9333ea; border: 1px solid #d8b4fe; padding: 0.15rem 0.55rem; border-radius: 12px; font-size: 0.74rem; font-weight: 800; display: inline-block;">
+                                        0.5 Day ({{ $req->half_day_session ?? 'Half Day' }})
+                                    </span>
+                                @else
+                                    <span style="color: #2563eb;">{{ $req->total_days }} day(s)</span>
+                                @endif
                             </td>
                             <td style="padding: 1rem 1.25rem; max-width: 250px; color: #475569;">
                                 {{ $req->reason }}
@@ -158,6 +179,31 @@
                         </div>
 
                         <x-date-range-picker startDateName="start_date" endDateName="end_date" />
+
+                        <!-- Half Day Leave Option -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem 1rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <label style="font-size: 0.85rem; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" wire:model.live="is_half_day" style="width: 17px; height: 17px; accent-color: #f59e0b; cursor: pointer;">
+                                    Apply for Half Day Leave
+                                </label>
+                                <span style="background: #f3e8ff; color: #9333ea; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.55rem; border-radius: 8px;">0.5 Day</span>
+                            </div>
+
+                            @if($is_half_day)
+                                <div style="margin-top: 0.75rem; border-top: 1px dashed #cbd5e1; padding-top: 0.65rem;">
+                                    <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Half Day Session:</label>
+                                    <div style="display: flex; gap: 1rem;">
+                                        <label style="font-size: 0.82rem; font-weight: 600; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+                                            <input type="radio" wire:model="half_day_session" value="First Half" style="accent-color: #f59e0b;"> First Half (Morning)
+                                        </label>
+                                        <label style="font-size: 0.82rem; font-weight: 600; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+                                            <input type="radio" wire:model="half_day_session" value="Second Half" style="accent-color: #f59e0b;"> Second Half (Afternoon)
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
 
                         <div>
                             <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">Reason / Remarks</label>

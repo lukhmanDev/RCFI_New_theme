@@ -133,4 +133,174 @@ class LeaveManagementTest extends TestCase
             'status' => 'Pending',
         ]);
     }
+
+    public function test_is_hr_single_flag_auto_flip_constraint(): void
+    {
+        $hod1 = User::factory()->create(['role' => 'hod', 'is_hr' => true]);
+        $this->assertTrue((bool)$hod1->fresh()->is_hr);
+
+        $hod2 = User::factory()->create(['role' => 'hod', 'is_hr' => true]);
+        $this->assertTrue((bool)$hod2->fresh()->is_hr);
+        $this->assertFalse((bool)$hod1->fresh()->is_hr); // Auto-flipped to false
+    }
+
+    public function test_hod_approval_scope_and_hr_hod_all_access(): void
+    {
+        $hod1 = User::factory()->create(['role' => 'hod', 'is_hr' => false]);
+        $hrHod = User::factory()->create(['role' => 'hod', 'is_hr' => true]);
+
+        $staff1 = User::factory()->create(['role' => 'engineer', 'assigned_hod_id' => $hod1->id]);
+        $staff2 = User::factory()->create(['role' => 'reception', 'assigned_hod_id' => $hrHod->id]);
+
+        $type = LeaveType::where('leave_code', 'CL')->first();
+        $service = app(LeaveService::class);
+
+        $req1 = $service->submitRequest($staff1, $type, now()->addDays(1)->format('Y-m-d'), now()->addDays(2)->format('Y-m-d'), 'Req 1');
+        $req2 = $service->submitRequest($staff2, $type, now()->addDays(3)->format('Y-m-d'), now()->addDays(4)->format('Y-m-d'), 'Req 2');
+
+        // Regular HOD1 can approve assigned staff1, but NOT staff2
+        $this->assertTrue($hod1->can('approve', $req1));
+        $this->assertFalse($hod1->can('approve', $req2));
+
+        // HR HOD can approve ALL staff requests
+        $this->assertTrue($hrHod->can('approve', $req1));
+        $this->assertTrue($hrHod->can('approve', $req2));
+    }
+
+    public function test_organization_hierarchy_tree_structure(): void
+    {
+        $coo = User::factory()->create(['role' => 'coo', 'name' => 'COO Executive']);
+        $hod1 = User::factory()->create(['role' => 'hod', 'name' => 'Engineering HOD', 'is_hr' => false]);
+        $hrHod = User::factory()->create(['role' => 'hod', 'name' => 'HR HOD', 'is_hr' => true]);
+
+        $staffA = User::factory()->create(['role' => 'engineer', 'name' => 'Engineer A', 'assigned_hod_id' => $hod1->id]);
+        $staffB = User::factory()->create(['role' => 'reception', 'name' => 'Reception B', 'assigned_hod_id' => $hrHod->id]);
+
+        $tree = User::getHierarchyTree();
+
+        $this->assertEquals($coo->id, $tree['id']);
+        $this->assertCount(2, $tree['children']);
+
+        $hod1Node = collect($tree['children'])->firstWhere('id', $hod1->id);
+        $this->assertNotNull($hod1Node);
+        $this->assertCount(1, $hod1Node['children']);
+        $this->assertEquals('Engineer A', $hod1Node['children'][0]['name']);
+    }
+
+    public function test_leave_approval_audit_logging(): void
+    {
+        $hod = User::factory()->create(['role' => 'hod', 'is_hr' => false]);
+        $staff = User::factory()->create(['role' => 'engineer', 'assigned_hod_id' => $hod->id]);
+        $type = LeaveType::where('leave_code', 'SL')->first();
+
+        $service = app(LeaveService::class);
+        $req = $service->submitRequest($staff, $type, now()->addDays(1)->format('Y-m-d'), now()->addDays(2)->format('Y-m-d'), 'Sick leave');
+
+        $service->approve($req, $hod);
+
+        $this->assertDatabaseHas('leave_approval_logs', [
+            'leave_request_id' => $req->id,
+            'approver_id' => $hod->id,
+            'action' => 'Approved',
+            'is_backup_approver' => false,
+        ]);
+    }
+
+    public function test_leave_without_pay_unlimited_submission_and_approval(): void
+    {
+        $staff = User::factory()->create(['role' => 'engineer']);
+        $hod = User::factory()->create(['role' => 'hod']);
+        $lwp = LeaveType::where('leave_code', 'LWP')->first();
+        $this->assertNotNull($lwp);
+
+        $service = app(LeaveService::class);
+        $req = $service->submitRequest($staff, $lwp, now()->addDays(1)->format('Y-m-d'), now()->addDays(10)->format('Y-m-d'), 'Taking leave without pay');
+
+        $this->assertGreaterThan(0, $req->total_days);
+        $this->assertEquals('Pending', $req->status);
+
+        $service->approve($req, $hod);
+
+        $this->assertEquals('Approved', $req->fresh()->status);
+        $balance = LeaveBalance::where('user_id', $staff->id)->where('leave_type_id', $lwp->id)->first();
+        $this->assertNotNull($balance);
+        $this->assertEquals($req->total_days, $balance->used_days);
+    }
+
+    public function test_approved_leave_application_cannot_be_deleted(): void
+    {
+        $staff = User::factory()->create(['role' => 'engineer']);
+        $hod = User::factory()->create(['role' => 'hod']);
+        $type = LeaveType::where('leave_code', 'CL')->first();
+
+        $service = app(LeaveService::class);
+        $req = $service->submitRequest($staff, $type, now()->addDays(1)->format('Y-m-d'), now()->addDays(2)->format('Y-m-d'), 'Test Leave');
+        $service->approve($req, $hod);
+
+        $this->actingAs($hod);
+        $response = $this->delete(route('leave.destroy', $req->id));
+
+        $response->assertSessionHasErrors('error');
+        $this->assertDatabaseHas('leave_requests', ['id' => $req->id, 'status' => 'Approved']);
+    }
+
+    public function test_half_day_leave_submission_and_approval(): void
+    {
+        $staff = User::factory()->create(['role' => 'engineer']);
+        $hod = User::factory()->create(['role' => 'hod']);
+        $cl = LeaveType::where('leave_code', 'CL')->first();
+
+        $service = app(LeaveService::class);
+        $date = now()->addDays(5)->format('Y-m-d');
+        $req = $service->submitRequest($staff, $cl, $date, $date, 'Half day doctor appointment', true, 'First Half');
+
+        $this->assertEquals(0.5, $req->total_days);
+        $this->assertTrue($req->is_half_day);
+        $this->assertEquals('First Half', $req->half_day_session);
+        $this->assertEquals('Pending', $req->status);
+
+        $service->approve($req, $hod);
+
+        $this->assertEquals('Approved', $req->fresh()->status);
+        $balance = LeaveBalance::where('user_id', $staff->id)->where('leave_type_id', $cl->id)->first();
+        $this->assertNotNull($balance);
+        $this->assertEquals(0.5, $balance->used_days);
+    }
+
+    public function test_other_leave_restricted_to_hr_coo_super_admin(): void
+    {
+        $ol = LeaveType::where('leave_code', 'OL')->first();
+        $this->assertNotNull($ol);
+
+        $staff = User::factory()->create(['role' => 'engineer', 'is_hr' => false]);
+        $hrHod = User::factory()->create(['role' => 'hod', 'is_hr' => true]);
+        $coo = User::factory()->create(['role' => 'coo']);
+
+        // Standard staff is not eligible for Other Leave
+        $this->assertFalse($staff->isEligibleFor($ol));
+
+        // HR HOD and COO are eligible
+        $this->actingAs($hrHod);
+        $this->assertTrue($hrHod->isEligibleFor($ol));
+
+        $this->actingAs($coo);
+        $this->assertTrue($coo->isEligibleFor($ol));
+
+        // HR HOD can apply Other Leave for a staff member profile
+        $this->actingAs($hrHod);
+        $response = $this->post(route('leave.request'), [
+            'user_id' => $staff->id,
+            'leave_type_id' => $ol->id,
+            'from_date' => now()->addDays(2)->format('Y-m-d'),
+            'to_date' => now()->addDays(3)->format('Y-m-d'),
+            'reason' => 'Discretionary Other Leave assigned by HR',
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('leave_requests', [
+            'user_id' => $staff->id,
+            'leave_type_id' => $ol->id,
+            'reason' => 'Discretionary Other Leave assigned by HR',
+        ]);
+    }
 }

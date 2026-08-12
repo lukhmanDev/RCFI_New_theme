@@ -41,7 +41,7 @@
                         <th>Phone</th>
                         <th>Email</th>
                         <th>Address</th>
-                        @if($canManage)
+                        @if($canEditOrDelete)
                         <th style="text-align: center; width: 100px;">Action</th>
                         @endif
                     </tr>
@@ -73,7 +73,7 @@
                             <td style="max-width: 250px; white-space: normal; word-wrap: break-word;">{{ $contractor->address }}</td>
 
                             <!-- Action buttons -->
-                            @if($canManage)
+                            @if($canEditOrDelete)
                             <td style="text-align: center; white-space: nowrap;">
                                 <button onclick="openEditModal({{ json_encode($contractor) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Edit">
                                     <i class="bx bx-pencil"></i>
@@ -91,7 +91,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 6 : 5 }}" style="text-align: center; padding: 2rem;">No registered contractors found.</td>
+                            <td colspan="{{ $canEditOrDelete ? 6 : 5 }}" style="text-align: center; padding: 2rem;">No registered contractors found.</td>
                         </tr>
                     @endforelse
                 </tbody>

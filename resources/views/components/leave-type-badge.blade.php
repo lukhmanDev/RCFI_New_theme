@@ -12,6 +12,9 @@
         'MTL' => ['bg' => '#fff1f2', 'color' => '#e11d48', 'border' => '#ffe4e6', 'icon' => 'bx-female'],
         'PTL' => ['bg' => '#f0fdf4', 'color' => '#16a34a', 'border' => '#bbf7d0', 'icon' => 'bx-male'],
         'PIL' => ['bg' => '#fffbeb', 'color' => '#d97706', 'border' => '#fef3c7', 'icon' => 'bx-world'],
+        'LWP' => ['bg' => '#fef2f2', 'color' => '#dc2626', 'border' => '#fecdd3', 'icon' => 'bx-money-withdraw'],
+        'EL'  => ['bg' => '#f0fdfa', 'color' => '#0d9488', 'border' => '#99f6e4', 'icon' => 'bx-briefcase'],
+        'BL'  => ['bg' => '#f1f5f9', 'color' => '#475569', 'border' => '#cbd5e1', 'icon' => 'bx-user-x'],
         default => ['bg' => '#f8fafc', 'color' => '#475569', 'border' => '#e2e8f0', 'icon' => 'bx-tag-alt'],
     };
 @endphp

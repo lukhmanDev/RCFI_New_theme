@@ -17,6 +17,20 @@
             @csrf
 
             <div style="display: flex; flex-direction: column; gap: 1.15rem; margin-bottom: 1.5rem;">
+                @if(Auth::user() && (Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->is_hr))
+                    <div>
+                        <label class="form-label" for="leave_target_user_id" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">Apply For Staff Member Profile</label>
+                        <select class="form-select-dark" id="leave_target_user_id" name="user_id" style="width: 100%; padding: 0.65rem 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; outline: none; background: #ffffff; color: #0f172a;">
+                            <option value="{{ Auth::id() }}">Myself ({{ Auth::user()->name }})</option>
+                            @foreach(\App\Models\User::nonSuperAdmin()->orderBy('name')->get() as $u)
+                                @if($u->id !== Auth::id())
+                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->role_name }} &bull; {{ $u->email }})</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
                 <div>
                     <label class="form-label" for="leave_type_id" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">Leave Type <span style="color:#ef4444;">*</span></label>
                     <select class="form-select-dark" id="leave_type_id" name="leave_type_id" required style="width: 100%; padding: 0.65rem 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; outline: none; background: #ffffff; color: #0f172a;">
@@ -37,6 +51,29 @@
                     <div>
                         <label class="form-label" for="leave_to_date" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">To Date <span style="color:#ef4444;">*</span></label>
                         <input type="date" class="form-control-dark" id="leave_to_date" name="to_date" required onchange="calculateLeaveDays()" style="width: 100%; padding: 0.65rem 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; outline: none; background: #ffffff; color: #0f172a;">
+                    </div>
+                </div>
+
+                <!-- Half Day Leave Option -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem 1rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <label for="is_half_day_checkbox" style="font-size: 0.85rem; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="is_half_day_checkbox" name="is_half_day" value="1" onchange="toggleHalfDaySessionOptions(); calculateLeaveDays();" style="width: 17px; height: 17px; accent-color: #f59e0b; cursor: pointer;">
+                            Apply for Half Day Leave
+                        </label>
+                        <span style="background: #f3e8ff; color: #9333ea; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.55rem; border-radius: 8px;">0.5 Day</span>
+                    </div>
+
+                    <div id="half_day_session_container" style="display: none; margin-top: 0.75rem; border-top: 1px dashed #cbd5e1; padding-top: 0.65rem;">
+                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Half Day Session:</label>
+                        <div style="display: flex; gap: 1rem;">
+                            <label style="font-size: 0.82rem; font-weight: 600; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+                                <input type="radio" name="half_day_session" value="First Half" checked style="accent-color: #f59e0b;"> First Half (Morning)
+                            </label>
+                            <label style="font-size: 0.82rem; font-weight: 600; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+                                <input type="radio" name="half_day_session" value="Second Half" style="accent-color: #f59e0b;"> Second Half (Afternoon)
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -74,9 +111,18 @@
         if (modal) modal.style.display = 'none';
     }
 
+    function toggleHalfDaySessionOptions() {
+        const checkbox = document.getElementById('is_half_day_checkbox');
+        const container = document.getElementById('half_day_session_container');
+        if (checkbox && container) {
+            container.style.display = checkbox.checked ? 'block' : 'none';
+        }
+    }
+
     function calculateLeaveDays() {
         const fromVal = document.getElementById('leave_from_date').value;
         const toVal = document.getElementById('leave_to_date').value;
+        const isHalfDay = document.getElementById('is_half_day_checkbox')?.checked;
         const box = document.getElementById('leave_duration_box');
         const countSpan = document.getElementById('leave_days_count');
 
@@ -85,8 +131,11 @@
             const d2 = new Date(toVal);
             if (d2 >= d1) {
                 const diffTime = Math.abs(d2 - d1);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                countSpan.innerText = diffDays;
+                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                if (isHalfDay) {
+                    diffDays = d1.getTime() === d2.getTime() ? 0.5 : Math.max(0.5, diffDays - 0.5);
+                }
+                countSpan.innerText = diffDays + (isHalfDay ? ' (Half Day)' : '');
                 box.style.display = 'block';
             } else {
                 box.style.display = 'none';

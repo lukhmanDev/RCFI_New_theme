@@ -157,8 +157,12 @@
 
     <!-- TAB 3: LEAVE TYPE MANAGEMENT (Super Admin Only) -->
     @if($activeTab === 'types' && Auth::user() && Auth::user()->isSuperAdmin())
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
-            <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin-bottom: 1.25rem;">Policy Configuration (7 Standard Leave Types)</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">Policy Configuration (Leave Types)</h2>
+                <button type="button" wire:click="openCreateModal" style="background: #10b981; color: #ffffff; border: none; padding: 0.55rem 1.15rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                    <i class="bx bx-plus" style="font-size: 1.1rem;"></i> Add Leave Type
+                </button>
+            </div>
 
             <table class="table-custom" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
                 <thead>
@@ -314,6 +318,98 @@
                 <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
                     <button type="button" wire:click="closeRejectModal" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 0.6rem 1.15rem; border-radius: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">Cancel</button>
                     <button type="button" wire:click="confirmReject" style="background: #ef4444; color: #ffffff; border: none; border-radius: 8px; padding: 0.6rem 1.25rem; font-weight: 700; font-size: 0.88rem; cursor: pointer;">Confirm Rejection</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Create Leave Type Modal -->
+    @if($showCreateModal)
+        <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.5); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 1.5rem; overflow-y: auto;">
+            <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 580px; padding: 1.75rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin: 0;"><i class="bx bx-plus-circle" style="color: #10b981; vertical-align: middle;"></i> Add New Leave Type</h3>
+                    <button type="button" wire:click="closeCreateModal" style="background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.25rem;"><i class="bx bx-x"></i></button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Leave Code *</label>
+                            <input type="text" wire:model="newLeaveCode" placeholder="e.g. AL" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; text-transform: uppercase;">
+                            @error('newLeaveCode') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Leave Name *</label>
+                            <input type="text" wire:model="newLeaveName" placeholder="e.g. Annual Leave" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;">
+                            @error('newLeaveName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Description</label>
+                        <input type="text" wire:model="newDescription" placeholder="Brief description of leave policy" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;">
+                        @error('newDescription') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Accrual Type *</label>
+                            <select wire:model="newAccrualType" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; background: white;">
+                                <option value="Monthly">Monthly</option>
+                                <option value="Annual">Annual</option>
+                                <option value="OneTime">OneTime</option>
+                            </select>
+                            @error('newAccrualType') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Max Days / Year</label>
+                            <input type="number" step="0.5" wire:model="newMaxYear" placeholder="e.g. 12" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;">
+                            @error('newMaxYear') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Max Days Lifetime</label>
+                            <input type="number" step="0.5" wire:model="newMaxLifetime" placeholder="e.g. 30" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;">
+                            @error('newMaxLifetime') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Applicable Gender</label>
+                            <select wire:model="newApplicableGender" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; background: white;">
+                                <option value="All">All Genders</option>
+                                <option value="Male">Male Only</option>
+                                <option value="Female">Female Only</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Marital Status</label>
+                            <select wire:model="newRequiresMaritalStatus" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; background: white;">
+                                <option value="Any">Any Status</option>
+                                <option value="Married">Married Only</option>
+                                <option value="Single">Single Only</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Min Service (Years)</label>
+                            <input type="number" wire:model="newMinServiceYears" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: #334155; cursor: pointer;">
+                            <input type="checkbox" wire:model="newCarryForward" style="accent-color: #10b981; width: 16px; height: 16px;"> Carry Forward to Next Year
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: #334155; cursor: pointer;">
+                            <input type="checkbox" wire:model="newIsLifetimeOnly" style="accent-color: #10b981; width: 16px; height: 16px;"> Lifetime Only Allowance
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                    <button type="button" wire:click="closeCreateModal" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 0.6rem 1.15rem; border-radius: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">Cancel</button>
+                    <button type="button" wire:click="createType" style="background: #10b981; color: #ffffff; border: none; border-radius: 8px; padding: 0.6rem 1.25rem; font-weight: 700; font-size: 0.88rem; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">Save Leave Type</button>
                 </div>
             </div>
         </div>

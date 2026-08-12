@@ -3,12 +3,21 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 window.Pusher = Pusher;
 
-window.Echo = new Echo({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
-    enabledTransports: ['ws', 'wss'],
-});
+const broadcastDriver = window.BROADCAST_DRIVER || (import.meta.env.VITE_BROADCAST_CONNECTION ?? 'log');
+const reverbHost = import.meta.env.VITE_REVERB_HOST;
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isReverbHostLocal = !reverbHost || reverbHost === 'localhost' || reverbHost === '127.0.0.1';
+
+if ((broadcastDriver === 'reverb' || broadcastDriver === 'pusher') && import.meta.env.VITE_REVERB_APP_KEY && (!isReverbHostLocal || isLocal)) {
+    window.Echo = new Echo({
+        broadcaster: 'reverb',
+        key: import.meta.env.VITE_REVERB_APP_KEY,
+        wsHost: reverbHost || window.location.hostname,
+        wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
+        wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+        enabledTransports: ['ws', 'wss'],
+        unavailableTimeout: 1000,
+        maxReconnectionAttempts: 1,
+    });
+}

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('leave_code', 10)->unique();
             $table->string('leave_name', 50);
             $table->string('description')->nullable();
-            $table->enum('accrual_type', ['Monthly', 'Annual', 'OneTime']);
+            $table->enum('accrual_type', ['Monthly', 'Annual', 'OneTime', 'None']);
             $table->decimal('max_days_per_year', 5, 1)->nullable();
             $table->decimal('max_days_lifetime', 5, 1)->nullable();
             $table->boolean('carry_forward')->default(false);

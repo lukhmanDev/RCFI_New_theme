@@ -353,7 +353,7 @@ class Stage4ApprovalTest extends TestCase
         ]);
 
         \Illuminate\Support\Facades\Storage::fake('public');
-        $file = \Illuminate\Http\UploadedFile::fake()->image('project_before.jpg');
+        $file = \Illuminate\Http\UploadedFile::fake()->create('project_before.jpg', 100, 'image/jpeg');
 
         // Upload in 'before' category
         $response = $this->actingAs($pm)->post('/admin/projects/' . $project->id . '/upload-photo?type=Education%20Center', [
@@ -368,6 +368,46 @@ class Stage4ApprovalTest extends TestCase
         $response = $this->actingAs($pm)->delete('/admin/projects/' . $project->id . '/delete-photo/0?type=Education%20Center&category=before');
         $response->assertRedirect();
         $this->assertCount(0, $project->fresh()->files['before'] ?? $project->fresh()->files['photos_before']);
+    }
+
+    public function test_uploading_three_photos_per_project_category(): void
+    {
+        $pm = User::factory()->create([
+            'role' => 3,
+            'designation' => 'Project Manager',
+            'email' => 'pm_three_photos@example.com',
+        ]);
+
+        $project = EducationCenterProject::create([
+            'type_of_project' => 'Education Center',
+            'stage' => 3,
+            'status' => 'Pending',
+            'project_manager_id' => $pm->id,
+        ]);
+
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $file1 = \Illuminate\Http\UploadedFile::fake()->create('img1.jpg', 100, 'image/jpeg');
+        $file2 = \Illuminate\Http\UploadedFile::fake()->create('img2.jpg', 100, 'image/jpeg');
+        $file3 = \Illuminate\Http\UploadedFile::fake()->create('img3.jpg', 100, 'image/jpeg');
+
+        // Upload 3 photos at once
+        $response = $this->actingAs($pm)->post('/admin/projects/' . $project->id . '/upload-photo?type=Education%20Center', [
+            'photos' => [$file1, $file2, $file3],
+            'category' => 'before',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertCount(3, $project->fresh()->files['photos_before']);
+
+        // Attempting to upload a 4th photo fails with max limit error
+        $file4 = \Illuminate\Http\UploadedFile::fake()->create('img4.jpg', 100, 'image/jpeg');
+        $response4 = $this->actingAs($pm)->post('/admin/projects/' . $project->id . '/upload-photo?type=Education%20Center', [
+            'photo' => $file4,
+            'category' => 'before',
+        ]);
+
+        $response4->assertSessionHas('error');
+        $this->assertCount(3, $project->fresh()->files['photos_before']);
     }
 
     public function test_save_completion_details_with_total_project_cost(): void
@@ -631,7 +671,7 @@ class Stage4ApprovalTest extends TestCase
         ]);
 
         // Upload photo
-        $file = \Illuminate\Http\UploadedFile::fake()->image('before_construction.jpg');
+        $file = \Illuminate\Http\UploadedFile::fake()->create('before_construction.jpg', 100, 'image/jpeg');
         $response = $this->actingAs($pm)->post('/admin/projects/' . $project->id . '/upload-photo?type=Education%20Center', [
             'photo' => $file,
             'category' => 'before',

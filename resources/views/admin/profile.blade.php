@@ -388,7 +388,18 @@
     }
 </style>
 
+@php
+    $isSuperAdmin = Auth::user() && Auth::user()->isSuperAdmin();
+@endphp
+
 <div class="profile-page-wrapper">
+
+    @if(!$isSuperAdmin)
+        <div class="pf-alert" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;">
+            <i class="bx bx-info-circle" style="font-size: 1.3rem;"></i> 
+            <span>Your profile text details are read-only. Contact Super Admin to request text updates. You can change your profile photo below.</span>
+        </div>
+    @endif
 
     @if (session('success'))
         <div class="pf-alert pf-alert-success">
@@ -412,9 +423,12 @@
     <div class="profile-hero-card">
         <div class="profile-hero-banner"></div>
         <div class="profile-hero-content">
-            <div class="pf-avatar-wrapper">
+            <div class="pf-avatar-wrapper" style="cursor: pointer;" onclick="document.getElementById('photo').click();" title="Click to change profile photo">
                 <img src="{{ $user->profile_photo_url }}" id="profile-avatar-preview" class="pf-avatar-img" alt="{{ $user->name }}" style="width: 110px !important; height: 110px !important; min-width: 110px !important; max-width: 110px !important; min-height: 110px !important; max-height: 110px !important; border-radius: 50% !important; object-fit: cover !important; border: 4px solid #ffffff !important; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important; background: #ffffff !important; display: block !important;">
-                <div class="status-dot-active" title="Active Account"></div>
+                <div class="status-dot-active" title="Active Account" style="bottom: 2px; right: 2px;"></div>
+                <div style="position: absolute; top: -4px; right: -4px; background: #10b981; color: #ffffff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.2);" title="Change Photo">
+                    <i class="bx bx-camera"></i>
+                </div>
             </div>
             
             <div class="user-info-meta">
@@ -554,42 +568,42 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
                             <div class="pf-form-group">
                                 <label class="pf-label" for="name">Full Name</label>
-                                <input type="text" class="pf-input" id="name" name="name" value="{{ old('name', $user->name) }}" required>
+                                <input type="text" class="pf-input" id="name" name="name" value="{{ old('name', $user->name) }}" required @if(!$isSuperAdmin) readonly @endif>
                             </div>
                             
                             <div class="pf-form-group">
                                 <label class="pf-label" for="designation">Designation</label>
-                                <input type="text" class="pf-input" id="designation" name="designation" value="{{ old('designation', $user->designation) }}" placeholder="e.g. Project Manager" @if(!Auth::user()->isSuperAdmin()) readonly @endif>
+                                <input type="text" class="pf-input" id="designation" name="designation" value="{{ old('designation', $user->designation) }}" placeholder="e.g. Project Manager" readonly>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="mobile">Mobile Number</label>
-                                <input type="text" class="pf-input" id="mobile" name="mobile" value="{{ old('mobile', $user->mobile) }}" placeholder="e.g. +91 9999999999">
+                                <input type="text" class="pf-input" id="mobile" name="mobile" value="{{ old('mobile', $user->mobile) }}" placeholder="e.g. +91 9999999999" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="father_name">Father's Name</label>
-                                <input type="text" class="pf-input" id="father_name" name="father_name" value="{{ old('father_name', $user->father_name) }}" placeholder="Father's name">
+                                <input type="text" class="pf-input" id="father_name" name="father_name" value="{{ old('father_name', $user->father_name) }}" placeholder="Father's name" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="mother_name">Mother's Name</label>
-                                <input type="text" class="pf-input" id="mother_name" name="mother_name" value="{{ old('mother_name', $user->mother_name) }}" placeholder="Mother's name">
+                                <input type="text" class="pf-input" id="mother_name" name="mother_name" value="{{ old('mother_name', $user->mother_name) }}" placeholder="Mother's name" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="date_of_birth">Date of Birth</label>
-                                <input type="date" class="pf-input" id="date_of_birth" name="date_of_birth" value="{{ old('date_of_birth', $user->date_of_birth ? date('Y-m-d', strtotime($user->date_of_birth)) : '') }}">
+                                <input type="date" class="pf-input" id="date_of_birth" name="date_of_birth" value="{{ old('date_of_birth', $user->date_of_birth ? date('Y-m-d', strtotime($user->date_of_birth)) : '') }}" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="date_of_joining">Date of Joining</label>
-                                <input type="date" class="pf-input" id="date_of_joining" name="date_of_joining" value="{{ old('date_of_joining', $user->date_of_joining ? date('Y-m-d', strtotime($user->date_of_joining)) : '') }}" @if(!Auth::user()->isSuperAdmin()) readonly @endif>
+                                <input type="date" class="pf-input" id="date_of_joining" name="date_of_joining" value="{{ old('date_of_joining', $user->date_of_joining ? date('Y-m-d', strtotime($user->date_of_joining)) : '') }}" readonly>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="gender">Gender</label>
-                                <select class="pf-input" id="gender" name="gender">
+                                <select class="pf-input" id="gender" name="gender" @if(!$isSuperAdmin) disabled @endif>
                                     <option value="" {{ old('gender', $user->gender) ? '' : 'selected' }}>Select gender</option>
                                     <option value="Male" {{ old('gender', $user->gender) == 'Male' ? 'selected' : '' }}>Male</option>
                                     <option value="Female" {{ old('gender', $user->gender) == 'Female' ? 'selected' : '' }}>Female</option>
@@ -599,7 +613,7 @@
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="marital_status">Marital Status</label>
-                                <select class="pf-input" id="marital_status" name="marital_status">
+                                <select class="pf-input" id="marital_status" name="marital_status" @if(!$isSuperAdmin) disabled @endif>
                                     <option value="" {{ old('marital_status', $user->marital_status) ? '' : 'selected' }}>Select status</option>
                                     <option value="Single" {{ old('marital_status', $user->marital_status) == 'Single' ? 'selected' : '' }}>Single</option>
                                     <option value="Married" {{ old('marital_status', $user->marital_status) == 'Married' ? 'selected' : '' }}>Married</option>
@@ -616,32 +630,32 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
                             <div class="pf-form-group">
                                 <label class="pf-label" for="house_name">House Name/Number</label>
-                                <input type="text" class="pf-input" id="house_name" name="house_name" value="{{ old('house_name', $user->house_name) }}" placeholder="House name or number">
+                                <input type="text" class="pf-input" id="house_name" name="house_name" value="{{ old('house_name', $user->house_name) }}" placeholder="House name or number" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="place">Place</label>
-                                <input type="text" class="pf-input" id="place" name="place" value="{{ old('place', $user->place) }}" placeholder="Enter place">
+                                <input type="text" class="pf-input" id="place" name="place" value="{{ old('place', $user->place) }}" placeholder="Enter place" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="po">Post Office (PO)</label>
-                                <input type="text" class="pf-input" id="po" name="po" value="{{ old('po', $user->po) }}" placeholder="Post Office">
+                                <input type="text" class="pf-input" id="po" name="po" value="{{ old('po', $user->po) }}" placeholder="Post Office" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="district">District</label>
-                                <input type="text" class="pf-input" id="district" name="district" value="{{ old('district', $user->district) }}" placeholder="Enter district">
+                                <input type="text" class="pf-input" id="district" name="district" value="{{ old('district', $user->district) }}" placeholder="Enter district" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="state">State</label>
-                                <input type="text" class="pf-input" id="state" name="state" value="{{ old('state', $user->state) }}" placeholder="Enter state">
+                                <input type="text" class="pf-input" id="state" name="state" value="{{ old('state', $user->state) }}" placeholder="Enter state" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="pin_code">PIN Code</label>
-                                <input type="text" class="pf-input" id="pin_code" name="pin_code" value="{{ old('pin_code', $user->pin_code) }}" placeholder="6-digit PIN code" maxlength="10">
+                                <input type="text" class="pf-input" id="pin_code" name="pin_code" value="{{ old('pin_code', $user->pin_code) }}" placeholder="6-digit PIN code" maxlength="10" @if(!$isSuperAdmin) readonly @endif>
                             </div>
                         </div>
 
@@ -652,32 +666,32 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
                             <div class="pf-form-group">
                                 <label class="pf-label" for="aadhar_number">Aadhar Number</label>
-                                <input type="text" class="pf-input" id="aadhar_number" name="aadhar_number" value="{{ old('aadhar_number', $user->aadhar_number) }}" placeholder="12-digit Aadhar number" maxlength="20">
+                                <input type="text" class="pf-input" id="aadhar_number" name="aadhar_number" value="{{ old('aadhar_number', $user->formatted_aadhar_number !== '-' ? $user->formatted_aadhar_number : $user->aadhar_number) }}" placeholder="1234 5678 9012" maxlength="14" @if(!$isSuperAdmin) readonly @else oninput="this.value = this.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim()" @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="pan_card_number">PAN Card Number</label>
-                                <input type="text" class="pf-input" id="pan_card_number" name="pan_card_number" value="{{ old('pan_card_number', strtoupper($user->pan_card_number ?? '')) }}" placeholder="e.g. ABCDE1234F" maxlength="20" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
+                                <input type="text" class="pf-input" id="pan_card_number" name="pan_card_number" value="{{ old('pan_card_number', strtoupper($user->pan_card_number ?? '')) }}" placeholder="e.g. ABCDE1234F" maxlength="20" style="text-transform: uppercase;" @if(!$isSuperAdmin) readonly @else oninput="this.value = this.value.toUpperCase();" @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="account_number">Bank Account Number</label>
-                                <input type="text" class="pf-input" id="account_number" name="account_number" value="{{ old('account_number', $user->account_number) }}" placeholder="Account number" maxlength="30">
+                                <input type="text" class="pf-input" id="account_number" name="account_number" value="{{ old('account_number', $user->account_number) }}" placeholder="Account number" maxlength="30" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="bank_name">Bank Name</label>
-                                <input type="text" class="pf-input" id="bank_name" name="bank_name" value="{{ old('bank_name', $user->bank_name) }}" placeholder="Bank name">
+                                <input type="text" class="pf-input" id="bank_name" name="bank_name" value="{{ old('bank_name', $user->bank_name) }}" placeholder="Bank name" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="bank_branch">Bank Branch</label>
-                                <input type="text" class="pf-input" id="bank_branch" name="bank_branch" value="{{ old('bank_branch', $user->bank_branch) }}" placeholder="Branch name">
+                                <input type="text" class="pf-input" id="bank_branch" name="bank_branch" value="{{ old('bank_branch', $user->bank_branch) }}" placeholder="Branch name" @if(!$isSuperAdmin) readonly @endif>
                             </div>
 
                             <div class="pf-form-group">
                                 <label class="pf-label" for="ifsc_code">IFSC Code</label>
-                                <input type="text" class="pf-input" id="ifsc_code" name="ifsc_code" value="{{ old('ifsc_code', strtoupper($user->ifsc_code ?? '')) }}" placeholder="e.g. SBIN0001234" maxlength="20" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase();">
+                                <input type="text" class="pf-input" id="ifsc_code" name="ifsc_code" value="{{ old('ifsc_code', strtoupper($user->ifsc_code ?? '')) }}" placeholder="e.g. SBIN0001234" maxlength="20" style="text-transform: uppercase;" @if(!$isSuperAdmin) readonly @else oninput="this.value = this.value.toUpperCase();" @endif>
                             </div>
                         </div>
                         
@@ -694,7 +708,7 @@
                         
                         <div style="margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--pf-border); display: flex; justify-content: flex-end;">
                             <button type="submit" class="pf-btn">
-                                <i class="bx bx-save"></i> Save Profile Details
+                                <i class="bx bx-save"></i> {{ $isSuperAdmin ? 'Save Profile Details' : 'Update Profile Photo' }}
                             </button>
                         </div>
                     </form>
@@ -705,7 +719,7 @@
             <div class="pf-card">
                 <div class="pf-card-header">
                     <h3 class="pf-card-title"><i class="bx bx-shield-alt-2" style="color: var(--pf-success);"></i> Security & Credentials</h3>
-                    @if($user->email_verified_at)
+                    @if($isSuperAdmin && $user->email_verified_at)
                         <button type="button" id="btn-toggle-credentials" class="pf-btn pf-btn-outline" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">
                             <i class="bx bx-edit-alt"></i> Edit Credentials
                         </button>
@@ -713,7 +727,17 @@
                 </div>
                 
                 <div class="pf-card-body">
-                    @if(!$user->email_verified_at)
+                    @if(!$isSuperAdmin)
+                        <div class="security-locked-banner">
+                            <div class="security-locked-icon" style="background: #eff6ff; color: #3b82f6;">
+                                <i class="bx bxs-lock-alt"></i>
+                            </div>
+                            <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--pf-text-main); margin: 0 0 0.35rem 0;">Credentials Managed by Admin</h4>
+                            <p style="color: var(--pf-text-muted); font-size: 0.875rem; max-width: 440px; margin: 0 auto; line-height: 1.5;">
+                                Profile and credential updates can only be modified by a Super Administrator.
+                            </p>
+                        </div>
+                    @elseif(!$user->email_verified_at)
                         <!-- Clean Inline Notice when Unverified -->
                         <div class="security-locked-banner">
                             <div class="security-locked-icon">

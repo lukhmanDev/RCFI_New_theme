@@ -56,11 +56,33 @@ class LeaveRequestController extends Controller
             ]);
         }
 
-        // 2. Fetch leave requests with user leave balances & leave requests eager loaded for hover popover
-        $query = LeaveRequest::with(['user.leaveBalances.leaveType', 'user.leaveRequests', 'leaveType'])->orderBy('created_at', 'desc');
+        // 2. Fetch leave requests according to role & approval scope logic
+        $query = LeaveRequest::with(['user.leaveBalances.leaveType', 'user.leaveRequests', 'user.assignedHod', 'leaveType'])->orderBy('created_at', 'desc');
 
-        if (!$user->hasAdminAccess()) {
-            $query->where('user_id', $user->id);
+        if (!$user->isSuperAdmin() && !$user->isCoo()) {
+            if ($user->isHod()) {
+                if (!$user->is_hr) {
+                    // Filter: staff assigned to this HOD OR escalated requests (where assigned HOD is on leave) OR HOD's own requests
+                    $today = now()->format('Y-m-d');
+                    $query->where(function($q) use ($user, $today) {
+                        $q->whereHas('user', function($userQuery) use ($user) {
+                            $userQuery->where('assigned_hod_id', $user->id);
+                        })
+                        ->orWhereHas('user.assignedHod', function($hodQuery) use ($today) {
+                            $hodQuery->whereHas('leaveRequests', function($lq) use ($today) {
+                                $lq->where('status', 'Approved')
+                                  ->where('start_date', '<=', $today)
+                                  ->where('end_date', '>=', $today);
+                            });
+                        })
+                        ->orWhere('user_id', $user->id);
+                    });
+                }
+                // If $user->is_hr is true, they see ALL pending/submitted leave requests across all staff!
+            } else {
+                // Non-HOD staff see only their own leave requests
+                $query->where('user_id', $user->id);
+            }
         }
 
         $leaveRequests = $query->get();
@@ -100,13 +122,26 @@ class LeaveRequestController extends Controller
             $leaveTypeModel = LeaveType::where('leave_code', 'CL')->first() ?: LeaveType::first();
         }
 
+        $isHalfDay = $request->has('is_half_day') && ($request->input('is_half_day') == '1' || $request->input('is_half_day') == 'true' || $request->input('is_half_day') == 'on');
+        $halfDaySession = $request->input('half_day_session');
+
+        $targetUser = auth()->user();
+        if ($request->has('user_id') && $request->input('user_id')) {
+            $authUser = auth()->user();
+            if ($authUser->isSuperAdmin() || $authUser->isCoo() || (bool)$authUser->is_hr || ($authUser->isHod() && \App\Models\User::where('id', $request->input('user_id'))->where('assigned_hod_id', $authUser->id)->exists())) {
+                $targetUser = \App\Models\User::findOrFail($request->input('user_id'));
+            }
+        }
+
         try {
             $leaveService->submitRequest(
-                auth()->user(),
+                $targetUser,
                 $leaveTypeModel,
                 $startDate,
                 $endDate,
-                $request->reason
+                $request->reason,
+                $isHalfDay,
+                $halfDaySession
             );
 
             return redirect()->back()->with('success', "Leave request submitted successfully for approval!");
@@ -155,12 +190,16 @@ class LeaveRequestController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        if ($leave->status !== 'Pending') {
+            return redirect()->back()->withErrors(['error' => 'Approved leave applications cannot be deleted.']);
+        }
+
         try {
-            $leaveService->cancel($leave, auth()->user());
-            return redirect()->back()->with('success', "Leave request record cancelled/deleted successfully.");
-        } catch (\Exception $e) {
+            $leaveService->cancel($leave);
             $leave->delete();
-            return redirect()->back()->with('success', "Leave request record deleted.");
+            return redirect()->back()->with('success', "Leave request record deleted successfully.");
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to delete leave request: ' . $e->getMessage()]);
         }
     }
 
@@ -183,13 +222,15 @@ class LeaveRequestController extends Controller
             ];
         });
 
-        $balances = $staff->leaveBalances->map(function($lb) {
+        $activeTypes = LeaveType::where('is_active', true)->get();
+        $balances = $activeTypes->map(function($t) use ($staff) {
+            $lb = $staff->leaveBalances->firstWhere('leave_type_id', $t->id);
             return [
-                'type_name' => $lb->leaveType->name ?? 'Leave',
-                'type_code' => $lb->leaveType->code ?? 'LV',
-                'allocated' => $lb->allocated_days + $lb->carried_forward_days,
-                'used' => $lb->used_days,
-                'available' => $lb->balance_days,
+                'type_name' => $t->name,
+                'type_code' => $t->code,
+                'allocated' => $lb ? ($lb->allocated_days + $lb->carried_forward_days) : $t->getAccruedEntitlementToDate(),
+                'used' => $lb ? $lb->used_days : 0,
+                'available' => $lb ? $lb->balance_days : $t->getAccruedEntitlementToDate(),
             ];
         });
 

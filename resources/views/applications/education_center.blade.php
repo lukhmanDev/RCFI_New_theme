@@ -568,7 +568,7 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 1rem;">
+                    <div style="margin-top: 1rem;">
                         <label class="form-label" for="details">Additional Notes</label>
                         <textarea class="form-control-dark" id="details" name="details" style="height: 60px; resize: vertical;">{{ old('details') }}</textarea>
                     </div>
@@ -975,6 +975,8 @@
                     </div>
                 </div>
 
+
+
                 <!-- Submit Button -->
                 <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Save Changes
@@ -986,6 +988,15 @@
     <!-- Modal Scripts -->
     <script>
         var projectsMap = @json($projectsMap ?? []); window.projectsMap = projectsMap;
+
+        function toggleOrgOther(selectEl, otherId) {
+            const otherInput = document.getElementById(otherId);
+            if (otherInput) {
+                otherInput.style.display = selectEl.value === 'Others' ? 'block' : 'none';
+                if (selectEl.value !== 'Others') otherInput.value = '';
+            }
+        }
+        window.toggleOrgOther = toggleOrgOther;
 
         function toggleEducationCenterNearby(el) {
             if (!el) return;
@@ -1157,18 +1168,19 @@
             else { if (legalNo) legalNo.checked = true; }
             if (document.getElementById('edit_permitted_type')) { document.getElementById('edit_permitted_type').value = meta.permitted_type || ''; }
             document.getElementById('edit_area').value = meta.area || '';
-            if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || '';
+            if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || meta.recommender_name || '';
             if (document.getElementById('edit_recommendation_organization')) {
                 const orgSel = document.getElementById('edit_recommendation_organization');
-                orgSel.value = meta.recommendation_organization || '';
+                orgSel.value = meta.recommendation_organization || meta.recommender_org || '';
                 const orgOtherInput = document.getElementById('edit_recommendation_organization_other');
                 if (orgOtherInput) {
-                    orgOtherInput.value = meta.recommendation_organization_other || '';
-                    orgOtherInput.style.display = meta.recommendation_organization === 'Others' ? 'block' : 'none';
+                    orgOtherInput.value = meta.recommendation_organization_other || meta.recommender_org_other || '';
+                    orgOtherInput.style.display = (meta.recommendation_organization || meta.recommender_org) === 'Others' ? 'block' : 'none';
                 }
             }
-            if (document.getElementById('edit_recommendation_phone')) document.getElementById('edit_recommendation_phone').value = meta.recommendation_phone || '';
-            if (document.getElementById('edit_recommendation_position')) document.getElementById('edit_recommendation_position').value = meta.recommendation_position || '';
+            if (document.getElementById('edit_recommendation_phone')) document.getElementById('edit_recommendation_phone').value = meta.recommendation_phone || meta.recommender_phone || '';
+            if (document.getElementById('edit_recommendation_position')) document.getElementById('edit_recommendation_position').value = meta.recommendation_position || meta.recommender_position || '';
+
 
             document.getElementById('editAppModal').style.display = 'flex';
         }
@@ -1337,16 +1349,17 @@
                         ${appItem.details ? appItem.details : 'No additional notes provided.'}
                     </p>
                 </div>
-                ${(meta.recommendation_name || meta.recommendation_organization || meta.recommendation_phone || meta.recommendation_position) ? `
+                ${(meta.recommendation_name || meta.recommender_name || meta.recommendation_organization || meta.recommender_org || meta.recommendation_phone || meta.recommender_phone || meta.recommendation_position || meta.recommender_position) ? `
                 <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
                     <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details:</h5>
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                        ${meta.recommendation_name ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px;">Name:</td><td>${meta.recommendation_name}</td></tr>` : ''}
-                        ${meta.recommendation_organization ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Organization:</td><td>${meta.recommendation_organization === 'Others' ? (meta.recommendation_organization_other || 'Others') : meta.recommendation_organization}</td></tr>` : ''}
-                        ${meta.recommendation_phone ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Phone:</td><td>${meta.recommendation_phone}</td></tr>` : ''}
-                        ${meta.recommendation_position ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Position:</td><td>${meta.recommendation_position}</td></tr>` : ''}
+                        ${(meta.recommendation_name || meta.recommender_name) ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px;">Name:</td><td>${meta.recommendation_name || meta.recommender_name}</td></tr>` : ''}
+                        ${(meta.recommendation_organization || meta.recommender_org) ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Organization:</td><td>${(meta.recommendation_organization || meta.recommender_org) === 'Others' ? (meta.recommendation_organization_other || meta.recommender_org_other || 'Others') : (meta.recommendation_organization || meta.recommender_org)}</td></tr>` : ''}
+                        ${(meta.recommendation_phone || meta.recommender_phone) ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Phone:</td><td>${meta.recommendation_phone || meta.recommender_phone}</td></tr>` : ''}
+                        ${(meta.recommendation_position || meta.recommender_position) ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Position:</td><td>${meta.recommendation_position || meta.recommender_position}</td></tr>` : ''}
                     </table>
                 </div>` : ''}
+
             `;
             
             document.getElementById('details_content').innerHTML = html;

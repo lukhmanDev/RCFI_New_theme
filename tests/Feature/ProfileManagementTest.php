@@ -26,9 +26,10 @@ class ProfileManagementTest extends TestCase
         $response->assertSee('Security');
     }
 
-    public function test_user_can_update_profile_details(): void
+    public function test_super_admin_can_update_profile_details(): void
     {
         $user = User::factory()->create([
+            'role' => 'super_admin',
             'name' => 'Old Name',
             'designation' => 'Old Designation',
             'mobile' => '123456',
@@ -48,10 +49,11 @@ class ProfileManagementTest extends TestCase
         $this->assertEquals('123 New Street, New City', $user->fresh()->profile->address);
     }
 
-    public function test_non_super_admin_cannot_update_own_designation(): void
+    public function test_non_super_admin_cannot_update_profile_text_details(): void
     {
         $user = User::factory()->create([
             'role' => 3, // Project Manager
+            'name' => 'Old Name',
             'designation' => 'Old Designation',
         ]);
 
@@ -62,8 +64,29 @@ class ProfileManagementTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $this->assertEquals('New Name', $user->fresh()->name);
+        $response->assertSessionHas('error', 'Profile text details can only be modified by Super Admin. You can update your profile photo.');
+        $this->assertEquals('Old Name', $user->fresh()->name);
         $this->assertEquals('Old Designation', $user->fresh()->designation);
+    }
+
+    public function test_non_super_admin_can_update_profile_photo(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create([
+            'role' => 3, // Project Manager
+        ]);
+
+        $file = UploadedFile::fake()->create('avatar.jpg', 100, 'image/jpeg');
+
+        $response = $this->actingAs($user)->post('/admin/profile', [
+            'photo' => $file,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Profile photo updated successfully!');
+        $this->assertNotNull($user->fresh()->profile);
+        $this->assertNotNull($user->fresh()->profile->photo);
     }
 
     public function test_unverified_user_cannot_update_credentials(): void
@@ -88,6 +111,7 @@ class ProfileManagementTest extends TestCase
         Mail::fake();
 
         $user = User::factory()->create([
+            'role' => 'super_admin',
             'email_verified_at' => null,
             'email' => 'old@example.com',
         ]);

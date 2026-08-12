@@ -40,9 +40,20 @@ trait HasCategoryMeta
     public function getMetaAttribute()
     {
         $meta = [];
+        foreach ($this->attributes as $key => $value) {
+            if (!in_array($key, ['id', 'created_at', 'updated_at', 'deleted_at', 'pendingAddressData', 'virtualMeta'])) {
+                $meta[$key] = $this->getAttribute($key);
+            }
+        }
         $fields = $this->metaFields ?? [];
         foreach ($fields as $field) {
-            $meta[$field] = $this->getAttribute($field);
+            if (!array_key_exists($field, $meta)) {
+                if ($field === 'address' && !\Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
+                    $meta['address'] = null;
+                    continue;
+                }
+                $meta[$field] = $this->getAttribute($field);
+            }
         }
         $meta['rejected_reason'] = $this->getAttribute('rejected_reason');
 
@@ -96,6 +107,9 @@ trait HasCategoryMeta
             $table = $this->getTable();
             foreach ($value as $key => $val) {
                 if ($key !== 'category' && $key !== 'sponsor_status' && $key !== 'status') {
+                    if ($val === '') {
+                        $val = null;
+                    }
                     if (\Illuminate\Support\Facades\Schema::hasColumn($table, $key)) {
                         $this->setAttribute($key, $val);
                     } else {
@@ -163,6 +177,14 @@ trait HasCategoryMeta
             }
         }
         return ($relation instanceof \App\Models\ApplicantAddress) ? $relation : null;
+    }
+
+    public function getAddressAttribute()
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
+            return null;
+        }
+        return $this->getApplicantAddressObject();
     }
 
     /**

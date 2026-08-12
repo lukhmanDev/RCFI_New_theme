@@ -168,7 +168,7 @@
                             </td>
 
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
+                                <button onclick="openDetailsModal({{ e(json_encode($appItem)) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
@@ -548,33 +548,34 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommender_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="recommendation_name" name="meta[recommendation_name]" value="{{ old('meta.recommendation_name') }}" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
+                            <select class="form-select-dark" id="recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ" {{ old('meta.recommendation_organization') == 'KMJ' ? 'selected' : '' }}>KMJ</option>
                                 <option value="SYS" {{ old('meta.recommendation_organization') == 'SYS' ? 'selected' : '' }}>SYS</option>
                                 <option value="SSF" {{ old('meta.recommendation_organization') == 'SSF' ? 'selected' : '' }}>SSF</option>
                                 <option value="Others" {{ old('meta.recommendation_organization') == 'Others' ? 'selected' : '' }}>Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommender_org_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
+                            <input type="text" class="form-control-dark" id="recommendation_organization_other" name="meta[recommendation_organization_other]" value="{{ old('meta.recommendation_organization_other') }}" placeholder="Specify organization" style="margin-top: 0.5rem; display: {{ old('meta.recommendation_organization') == 'Others' ? 'block' : 'none' }};">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommender_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="recommendation_phone" name="meta[recommendation_phone]" value="{{ old('meta.recommendation_phone') }}" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommender_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="recommendation_position" name="meta[recommendation_position]" value="{{ old('meta.recommendation_position') }}" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
 
-                <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
+                <!-- Submit Button -->
+                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
                     Submit Application
                 </button>
             </form>
@@ -840,7 +841,7 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_building_area_sq">Area of proposed project - building (Sqft) *</label>
                             <input type="number" step="any" min="0" class="form-control-dark" id="edit_building_area_sq" name="meta[building_area_sq]" required>
@@ -849,7 +850,6 @@
                             <label class="form-label" for="edit_land_area_sq">Land Area (Cent) *</label>
                             <input type="number" step="any" min="0" class="form-control-dark" id="edit_land_area_sq" name="meta[land_area_sq]" required>
                         </div>
-                    </div>
                         <div>
                             <label class="form-label" for="edit_num_beneficiaries">Proposed Beneficiary (Household) *</label>
                             <input type="number" class="form-control-dark" id="edit_num_beneficiaries" name="meta[num_beneficiaries]" required>
@@ -891,40 +891,40 @@
                     </div>
                 </div>
 
-
                 <!-- Edit Recommendation Details Section -->
                 <div style="border-top: 1px solid var(--panel-border); padding-top: 1.25rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
                     <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Recommendation Details</h4>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_name">Recommender Name</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommender_name]" placeholder="Full name">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_name" name="meta[recommendation_name]" placeholder="Full name">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_organization">Organization</label>
-                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommender_org]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
+                            <select class="form-select-dark" id="edit_recommendation_organization" name="meta[recommendation_organization]" onchange="toggleOrgOther(this, 'edit_recommendation_organization_other')">
                                 <option value="">-- Select Organization --</option>
                                 <option value="KMJ">KMJ</option>
                                 <option value="SYS">SYS</option>
                                 <option value="SSF">SSF</option>
                                 <option value="Others">Others</option>
                             </select>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommender_org_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_organization_other" name="meta[recommendation_organization_other]" placeholder="Specify organization" style="margin-top: 0.5rem; display: none;">
                         </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
                             <label class="form-label" for="edit_recommendation_phone">Phone</label>
-                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommender_phone]" placeholder="Phone number">
+                            <input type="tel" class="form-control-dark" id="edit_recommendation_phone" name="meta[recommendation_phone]" placeholder="Phone number">
                         </div>
                         <div>
                             <label class="form-label" for="edit_recommendation_position">Position / Designation</label>
-                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommender_position]" placeholder="Job title / Designation">
+                            <input type="text" class="form-control-dark" id="edit_recommendation_position" name="meta[recommendation_position]" placeholder="Job title / Designation">
                         </div>
                     </div>
                 </div>
 
-                <!-- Submit Button -->                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem;">
+                <!-- Submit Button -->
+                <button type="submit" class="btn-custom" style="width: 100%; padding: 0.75rem; margin-top: 1rem;">
                     Save Changes
                 </button>
             </form>
@@ -935,7 +935,17 @@
     <script>
         var projectsMap = @json($projectsMap ?? []); window.projectsMap = projectsMap;
 
+        function toggleOrgOther(selectEl, otherId) {
+            const otherInput = document.getElementById(otherId);
+            if (otherInput) {
+                otherInput.style.display = selectEl.value === 'Others' ? 'block' : 'none';
+                if (selectEl.value !== 'Others') otherInput.value = '';
+            }
+        }
+        window.toggleOrgOther = toggleOrgOther;
+
         function toggleCulturalCenterNearby(el) {
+            if (!el) return;
             const isYes = el.value === 'Yes';
             const form = el.closest('form');
             const wrapper = form ? form.querySelector('.distance-cc-wrapper, .edit-distance-cc-wrapper') : null;
@@ -957,9 +967,9 @@
         }
 
         function closeModal() {
-        const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) modal.style.display = 'none';
-    }
+            const modal = document.getElementById('addAppModal') || document.getElementById('addModal');
+            if (modal) modal.style.display = 'none';
+        }
 
         // Edit Application Modal Toggle
         function openEditModal(appItem) {
@@ -968,15 +978,20 @@
                 return;
             }
             const form = document.getElementById('editAppForm');
-            form.action = "{{ url('admin/applications') }}/" + appItem.id;
+            if (form) form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
-            document.getElementById('edit_applicant_name').value = appItem.applicant_name;
-            document.getElementById('edit_proposed_budget').value = appItem.amount_requested || '';
-            document.getElementById('edit_status').value = appItem.status;
-            document.getElementById('edit_details').value = appItem.details || '';
+            const setField = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val !== undefined && val !== null ? val : '';
+            };
+
+            setField('edit_applicant_name', appItem.applicant_name);
+            setField('edit_proposed_budget', appItem.amount_requested);
+            setField('edit_status', appItem.status);
+            setField('edit_details', appItem.details);
 
             // Meta fields mapping
-                        const meta = appItem.meta || {};
+            const meta = appItem.meta || {};
             
             const getVal = (primary, alts = []) => {
                 if (meta[primary] !== undefined && meta[primary] !== null && meta[primary] !== '') return meta[primary];
@@ -986,11 +1001,6 @@
                     if (appItem[a] !== undefined && appItem[a] !== null && appItem[a] !== '') return appItem[a];
                 }
                 return '';
-            };
-
-            const setField = (id, val) => {
-                const el = document.getElementById(id);
-                if (el) el.value = val;
             };
 
             setField('edit_house_name', getVal('house_name'));
@@ -1032,9 +1042,8 @@
             setField('edit_recommendation_position', recPos);
             setField('edit_recommender_position', recPos);
 
-            document.getElementById('edit_pin_code').value = meta.pin_code || meta.pin || appItem.pin_code || '';
-            document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
-            document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
+            setField('edit_contact_number_1', meta.contact_number_1);
+            setField('edit_contact_number_2', meta.contact_number_2);
             const subVal = (meta.submitted_before || '').toLowerCase();
             const subYes = document.getElementById('edit_submitted_before_yes');
             const subNo = document.getElementById('edit_submitted_before_no');
@@ -1047,27 +1056,26 @@
             if (recVal === 'yes') {
                 if (recYes) {
                     recYes.checked = true;
-                    toggleFinancialSupportPurpose(recYes);
+                    if (typeof toggleFinancialSupportPurpose === 'function') toggleFinancialSupportPurpose(recYes);
                 }
             } else {
                 if (recNo) {
                     recNo.checked = true;
-                    toggleFinancialSupportPurpose(recNo);
+                    if (typeof toggleFinancialSupportPurpose === 'function') toggleFinancialSupportPurpose(recNo);
                 }
             }
-            const editPurp = document.getElementById('edit_financial_support_purpose');
-            if (editPurp) { editPurp.value = meta.financial_support_purpose || ''; }
+            setField('edit_financial_support_purpose', meta.financial_support_purpose);
             
-            document.getElementById('edit_mahallu_name').value = meta.mahallu_name || '';
-            if (document.getElementById('edit_locality_pin_code')) { document.getElementById('edit_locality_pin_code').value = meta.locality_pin_code || meta.locality_pin || ''; }
-            document.getElementById('edit_locality_place').value = meta.locality_place || '';
-            document.getElementById('edit_locality_village').value = meta.locality_village || '';
-            if (document.getElementById('edit_locality_post')) { document.getElementById('edit_locality_post').value = meta.locality_post || meta.locality_post_office || ''; }
-            if (document.getElementById('edit_locality_panchayath')) { document.getElementById('edit_locality_panchayath').value = meta.locality_panchayath || meta.locality_panchayat || ''; }
-            document.getElementById('edit_locality_district').value = meta.locality_district || '';
-            document.getElementById('edit_locality_state').value = meta.locality_state || '';
-            document.getElementById('edit_families_in_mahallu').value = meta.families_in_mahallu || '';
-            document.getElementById('edit_requirement').value = meta.requirement || 'New construction';
+            setField('edit_mahallu_name', meta.mahallu_name);
+            setField('edit_locality_pin_code', meta.locality_pin_code || meta.locality_pin);
+            setField('edit_locality_place', meta.locality_place);
+            setField('edit_locality_village', meta.locality_village);
+            setField('edit_locality_post', meta.locality_post || meta.locality_post_office);
+            setField('edit_locality_panchayath', meta.locality_panchayath || meta.locality_panchayat);
+            setField('edit_locality_district', meta.locality_district);
+            setField('edit_locality_state', meta.locality_state);
+            setField('edit_families_in_mahallu', meta.families_in_mahallu);
+            setField('edit_requirement', meta.requirement || 'New construction');
 
             const siteHasVal = (meta.site_has_building || 'No').toLowerCase();
             const siteHasYes = document.getElementById('edit_site_has_building_yes');
@@ -1082,14 +1090,14 @@
             if (statusSelect) {
                 if (presets.includes(statusVal)) {
                     statusSelect.value = statusVal;
-                    toggleCurrentStatusOther(statusSelect);
+                    if (typeof toggleCurrentStatusOther === 'function') toggleCurrentStatusOther(statusSelect);
                 } else if (statusVal || meta.status_of_current_building_other) {
                     statusSelect.value = 'Other';
-                    toggleCurrentStatusOther(statusSelect);
+                    if (typeof toggleCurrentStatusOther === 'function') toggleCurrentStatusOther(statusSelect);
                     if (statusOtherInput) statusOtherInput.value = meta.status_of_current_building_other || statusVal;
                 } else {
                     statusSelect.value = '';
-                    toggleCurrentStatusOther(statusSelect);
+                    if (typeof toggleCurrentStatusOther === 'function') toggleCurrentStatusOther(statusSelect);
                 }
             }
             const ccNearVal = ((meta.cultural_center_nearby || meta.education_center_nearby || 'No').toString()).toLowerCase();
@@ -1104,50 +1112,39 @@
                     toggleCulturalCenterNearby(ccNearNo);
                 }
             }
-            const distCcInput = document.getElementById('edit_distance_cultural_centre');
-            if (distCcInput) distCcInput.value = meta.distance_cultural_centre || meta.distance_education_center || '';
-            document.getElementById('edit_benefited_households').value = meta.benefited_households || '';
+            setField('edit_distance_cultural_centre', meta.distance_cultural_centre || meta.distance_education_center);
+            setField('edit_benefited_households', meta.benefited_households);
 
-            document.getElementById('edit_project_type').value = meta.project_type || 'CC only';
-            document.getElementById('edit_building_area_sq').value = meta.building_area_sq || '';
-            document.getElementById('edit_land_area_sq').value = meta.land_area_sq || '';
-            document.getElementById('edit_num_beneficiaries').value = meta.num_beneficiaries || '';
+            setField('edit_project_type', meta.project_type || 'CC only');
+            setField('edit_building_area_sq', meta.building_area_sq);
+            setField('edit_land_area_sq', meta.land_area_sq);
+            setField('edit_num_beneficiaries', meta.num_beneficiaries);
             const legalVal = (meta.legal_approvals_status || 'No').toLowerCase();
             const legalYes = document.getElementById('edit_legal_approvals_status_yes');
             const legalNo = document.getElementById('edit_legal_approvals_status_no');
             if (legalVal === 'yes') { if (legalYes) legalYes.checked = true; }
             else { if (legalNo) legalNo.checked = true; }
-            if (document.getElementById('edit_permitted_type')) { document.getElementById('edit_permitted_type').value = meta.permitted_type || ''; }
-            document.getElementById('edit_area').value = meta.area || '';
+            setField('edit_permitted_type', meta.permitted_type);
+            setField('edit_area', meta.area);
 
-            if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || '';
             if (document.getElementById('edit_recommendation_organization')) {
                 const orgSel = document.getElementById('edit_recommendation_organization');
-                orgSel.value = meta.recommendation_organization || '';
+                orgSel.value = meta.recommendation_organization || meta.recommender_org || '';
                 const orgOtherInput = document.getElementById('edit_recommendation_organization_other');
                 if (orgOtherInput) {
-                    orgOtherInput.value = meta.recommendation_organization_other || '';
-                    orgOtherInput.style.display = meta.recommendation_organization === 'Others' ? 'block' : 'none';
+                    orgOtherInput.value = meta.recommendation_organization_other || meta.recommender_org_other || '';
+                    orgOtherInput.style.display = (meta.recommendation_organization || meta.recommender_org) === 'Others' ? 'block' : 'none';
                 }
             }
-            if (document.getElementById('edit_recommendation_phone')) document.getElementById('edit_recommendation_phone').value = meta.recommendation_phone || '';
-            if (document.getElementById('edit_recommendation_position')) document.getElementById('edit_recommendation_position').value = meta.recommendation_position || '';
 
-            document.getElementById('editAppModal').style.display = 'flex';
+            const editModal = document.getElementById('editAppModal');
+            if (editModal) editModal.style.display = 'flex';
         }
 
-
-        function toggleOrgOther(selectEl, otherId) {
-            const otherInput = document.getElementById(otherId);
-            if (otherInput) {
-                otherInput.style.display = selectEl.value === 'Others' ? 'block' : 'none';
-                if (selectEl.value !== 'Others') otherInput.value = '';
-            }
-        }
         function closeEditModal() {
-        const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) modal.style.display = 'none';
-    }
+            const modal = document.getElementById('editAppModal') || document.getElementById('editModal');
+            if (modal) modal.style.display = 'none';
+        }
 
         // View Details Modal Toggle
                 function openDetailsModal(appItem) {
@@ -1264,7 +1261,7 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Building Area (Sqft):</td><td>${formatVal(meta.building_area_sq)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Land Area (Cent):</td><td>${formatVal(meta.land_area_sq)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">${appItem.amount_requested ? '₹' + Number(appItem.amount_requested).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Beneficiary (Household):</td><td>${formatVal(meta.num_beneficiaries)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Beneficiary (Household):</td><td>${formatVal(meta.num_beneficiaries || meta.benefited_households)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Legal Approvals:</td><td>${formatVal(meta.legal_approvals_status)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Type of Permit:</td><td>${formatVal(meta.permitted_type)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Permitted Area:</td><td>${formatVal(meta.area)}</td></tr>

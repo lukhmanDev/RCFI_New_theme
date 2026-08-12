@@ -22,6 +22,45 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
+        if (!$user) {
+            return redirect()->back()->with('error', 'Unauthenticated.');
+        }
+
+        // If user is not SuperAdmin, process photo upload if provided
+        if (!$user->isSuperAdmin()) {
+            if (!$request->hasFile('photo')) {
+                return redirect()->back()->with('error', 'Profile text details can only be modified by Super Admin. You can update your profile photo.');
+            }
+
+            $request->validate([
+                'photo' => ['required', 'file', 'mimes:jpeg,png,jpg,gif,svg,webp,avif', 'max:10240'],
+            ]);
+
+            $photoFile = $request->file('photo');
+            $ext = strtolower($photoFile->getClientOriginalExtension());
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'])) {
+                $ext = 'jpg';
+            }
+            $filename = 'profile_' . $user->id . '_' . time() . '.' . $ext;
+            $targetPath = public_path('uploads/profiles/' . $filename);
+            
+            $this->compressAndSaveImage($photoFile, $targetPath, 2 * 1024 * 1024);
+
+            if ($user->profile && $user->profile->photo) {
+                $oldPath = public_path($user->profile->photo);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            $user->profile()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['photo' => 'uploads/profiles/' . $filename]
+            );
+
+            return redirect()->back()->with('success', 'Profile photo updated successfully!');
+        }
+
         $validated = $request->validate([
             'name'            => ['required', 'string', 'min:2', 'max:255'],
             'designation'     => ['nullable', 'string', 'max:255'],
@@ -155,6 +194,10 @@ class ProfileController extends Controller
     public function updateCredentials(Request $request)
     {
         $user = Auth::user();
+
+        if (!$user || !$user->isSuperAdmin()) {
+            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin can update credentials.');
+        }
 
         if (!$user->email_verified_at) {
             return redirect()->back()->withErrors(['Please verify your email before changing your email or password.']);

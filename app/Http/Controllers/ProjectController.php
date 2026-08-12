@@ -148,6 +148,21 @@ class ProjectController extends Controller
 
 
 
+    /**
+     * Find a project by ID across all category models.
+     * Returns the first match found, or null if not found.
+     */
+    private function findProjectInAnyModel($id)
+    {
+        foreach ($this->categories as $slug => $config) {
+            $project = $config['model']::find($id);
+            if ($project) {
+                return $project;
+            }
+        }
+        return null;
+    }
+
     private function resolveActiveCategory(Request $request)
     {
         $id = $request->route('id');
@@ -260,7 +275,13 @@ class ProjectController extends Controller
         $hasAddrTable = \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses');
         $relations = $isSocialAid ? ($hasAddrTable ? ['application.cluster', 'application.address'] : ['application.cluster']) : ['donor', 'projectManager', 'engineer', 'application'];
 
-        $projectQuery = $model::with($relations);
+        $projectQuery = $model::with($relations)
+            ->withSum(['projectExpenses as total_allocated' => function ($q) {
+                $q->where('type', 'material');
+            }], 'amount')
+            ->withSum(['projectExpenses as total_spent' => function ($q) {
+                $q->where('type', 'spent');
+            }], 'amount');
         if ($isSocialAid) {
             $projectQuery->orderByRaw("CASE 
                 WHEN LOWER(status) = 'active' THEN 1 
@@ -274,7 +295,6 @@ class ProjectController extends Controller
 
         $donors = Donor::all();
         $managers = User::whereIn('role', [3, '3', 'project_manager', 'Project Manager'])
-            ->orWhere('designation', 'like', '%project manager%')
             ->get();
 
         $engineers = User::whereIn('role', [6, '6', 'engineer', 'Engineer'])
@@ -649,11 +669,15 @@ class ProjectController extends Controller
         }
 
         $request->validate([
-            'application_id' => 'required'
+            'application_id'            => 'required',
+            'total_beneficiary_peoples' => 'nullable|numeric|min:0',
+            'total_family'              => 'nullable|numeric|min:0',
         ]);
 
         $oldApplicationId = $project->application_id;
         $applicationId = $request->input('application_id');
+        $totalBeneficiaryPeoples = $request->input('total_beneficiary_peoples') ?? $request->input('num_benefited_people');
+        $totalFamily = $request->input('total_family') ?? $request->input('total_families');
 
         $appModels = [
             'Education Center' => \App\Models\EducationCenterApplication::class,
@@ -698,6 +722,13 @@ class ProjectController extends Controller
         }
 
         $project->application_id = $applicationId;
+        if ($totalBeneficiaryPeoples !== null && $totalBeneficiaryPeoples !== '') {
+            $project->total_beneficiary_peoples = (int)$totalBeneficiaryPeoples;
+        }
+        if ($totalFamily !== null && $totalFamily !== '') {
+            $project->total_family = (int)$totalFamily;
+        }
+
         if (in_array($project->type_of_project, ['Drinking Water - Individual Level', 'Drinking Water - Group Level']) && $applicationId) {
             $project->status = 'Running';
             $statusRecord = $project->projectStatus;
@@ -713,20 +744,6 @@ class ProjectController extends Controller
         }
         $project->save();
 
-        $appModels = [
-            'Education Center' => \App\Models\EducationCenterApplication::class,
-            'Cultural Center' => \App\Models\CulturalCenterApplication::class,
-            'Hospital or Clinics' => \App\Models\HospitalClinicApplication::class,
-            'Shops and Others' => \App\Models\ShopOtherApplication::class,
-            'House' => \App\Models\HouseApplication::class,
-            'Drinking Water - Group Level' => \App\Models\DrinkingWaterGroupApplication::class,
-            'Drinking Water - Individual Level' => \App\Models\DrinkingWaterIndividualApplication::class,
-            'Orphan Care' => \App\Models\OrphanCareApplication::class,
-            'Differently Abled' => \App\Models\DifferentlyAbledApplication::class,
-            'Family Aid' => \App\Models\FamilyAidApplication::class,
-            'General' => \App\Models\GeneralApplication::class
-        ];
-        
         $appClass = $appModels[$project->type_of_project] ?? null;
         if ($appClass) {
             // Revert old application status to Pending
@@ -743,6 +760,19 @@ class ProjectController extends Controller
                 $newApp = $appClass::find($applicationId);
                 if ($newApp) {
                     $newApp->status = 'Approved';
+                    if ($totalBeneficiaryPeoples !== null && $totalBeneficiaryPeoples !== '') {
+                        if (\Illuminate\Support\Facades\Schema::hasColumn($newApp->getTable(), 'total_beneficiary_peoples')) {
+                            $newApp->total_beneficiary_peoples = (int)$totalBeneficiaryPeoples;
+                        }
+                        if (\Illuminate\Support\Facades\Schema::hasColumn($newApp->getTable(), 'num_benefited_people')) {
+                            $newApp->num_benefited_people = (int)$totalBeneficiaryPeoples;
+                        }
+                    }
+                    if ($totalFamily !== null && $totalFamily !== '') {
+                        if (\Illuminate\Support\Facades\Schema::hasColumn($newApp->getTable(), 'total_family')) {
+                            $newApp->total_family = (int)$totalFamily;
+                        }
+                    }
                     $newApp->save();
                 }
             }
@@ -1034,7 +1064,14 @@ class ProjectController extends Controller
         $isSocialAid = in_array($category, ['orphan-care', 'differently-abled', 'family-aid']);
 
         $hasAddrTable = \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses');
-        $relations = $hasAddrTable ? ['application.cluster', 'application.address', 'donor', 'projectManager', 'funds'] : ['application.cluster', 'donor', 'projectManager', 'funds'];
+        $relations = ['donor', 'projectManager', 'application'];
+        if ($isSocialAid) {
+            $relations[] = 'funds';
+            $relations[] = 'application.cluster';
+        }
+        if ($hasAddrTable) {
+            $relations[] = 'application.address';
+        }
         $projects = $this->scopeProjectsForUser($model::with($relations), $user)->get();
 
         // Apply filters if passed from frontend
@@ -1256,177 +1293,164 @@ class ProjectController extends Controller
             ];
         }
 
-        $callback = function() use ($projects, $headers, $isSocialAid, $isOrphanCare, $config) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($file, $headers);
+        $rows = [];
+        foreach ($projects as $project) {
+            $app = $project->application;
+            $appMeta = $app->meta ?? [];
 
-            foreach ($projects as $project) {
-                $app = $project->application;
-                $appMeta = $app->meta ?? [];
+            $agencyName = $app?->agency_name 
+                ?? ($appMeta['agency_name'] ?? null) 
+                ?? ($project->donor?->name ?? null) 
+                ?? ($project->agency ?? null) 
+                ?? ($project->funds?->first()?->donor ?? null) 
+                ?? ($project->funds?->first()?->agency ?? null) 
+                ?? ($project->sponsor && $project->sponsor !== 'Sponsored' ? $project->sponsor : 'N/A');
 
-                $agencyName = $app?->agency_name 
-                    ?? ($appMeta['agency_name'] ?? null) 
-                    ?? ($project->donor?->name ?? null) 
-                    ?? ($project->agency ?? null) 
-                    ?? ($project->funds?->first()?->donor ?? null) 
-                    ?? ($project->funds?->first()?->agency ?? null) 
-                    ?? ($project->sponsor && $project->sponsor !== 'Sponsored' ? $project->sponsor : 'N/A');
-
-                if ($isOrphanCare) {
-                    $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
-                    $addr = $app?->address;
-                    fputcsv($file, [
-                        $project->project_id,
-                        $project->agency_project_no ?? ($app?->agency_number ?? ($appMeta['agency_number'] ?? 'N/A')),
-                        $agencyName,
-                        $project->project_name ?? ($app?->applicant_name ?? ($appMeta['applicant_name'] ?? 'N/A')),
-                        $appId,
-                        $app?->application_date ?? ($appMeta['application_date'] ?? ($app?->created_at ? $app->created_at->format('Y-m-d') : 'N/A')),
-                        $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
-                        $app?->father_death_date ?? ($appMeta['father_death_date'] ?? 'N/A'),
-                        $app?->father_death_cause ?? ($appMeta['father_death_cause'] ?? 'N/A'),
-                        $app?->grandfather_name ?? ($appMeta['grandfather_name'] ?? 'N/A'),
-                        $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
-                        $app?->mother_alive_status ?? ($appMeta['mother_alive_status'] ?? 'N/A'),
-                        $app?->mother_death_date ?? ($appMeta['mother_death_date'] ?? 'N/A'),
-                        $app?->mother_death_cause ?? ($appMeta['mother_death_cause'] ?? 'N/A'),
-                        $app?->mother_remarried_status ?? ($appMeta['mother_remarried_status'] ?? 'N/A'),
-                        $app?->mothers_father_name ?? ($appMeta['mothers_father_name'] ?? 'N/A'),
-                        $app?->guardian_name ?? ($appMeta['guardian_name'] ?? 'N/A'),
-                        $app?->guardian_relation ?? ($appMeta['guardian_relation'] ?? 'N/A'),
-                        $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
-                        $app?->age ?? ($appMeta['age'] ?? 'N/A'),
-                        $app?->dob ?? ($appMeta['dob'] ?? 'N/A'),
-                        $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? 'N/A')),
-                        $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? 'N/A')),
-                        $app?->whatsapp_number ?? ($appMeta['whatsapp_number'] ?? 'N/A'),
-                        $app?->contact_email ?? ($appMeta['contact_email'] ?? 'N/A'),
-                        $app?->aadhar_number ?? ($appMeta['aadhar_number'] ?? 'N/A'),
-                        $addr?->house_name ?? ($app?->house_name ?? ($appMeta['house_name'] ?? 'N/A')),
-                        $app?->house_type ?? ($appMeta['house_type'] ?? 'N/A'),
-                        $addr?->place ?? ($app?->place ?? ($appMeta['place'] ?? 'N/A')),
-                        $addr?->post_office ?? ($app?->post_office ?? ($appMeta['post_office'] ?? 'N/A')),
-                        $addr?->pin_code ?? ($app?->pin_code ?? ($appMeta['pin_code'] ?? 'N/A')),
-                        $app?->town ?? ($appMeta['town'] ?? 'N/A'),
-                        $addr?->district ?? ($app?->district ?? ($appMeta['district'] ?? 'N/A')),
-                        $addr?->state ?? ($app?->state ?? ($appMeta['state'] ?? 'N/A')),
-                        $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
-                        $app?->school_name ?? ($appMeta['school_name'] ?? 'N/A'),
-                        $app?->school_class ?? ($appMeta['school_class'] ?? 'N/A'),
-                        $app?->madrassa_name ?? ($appMeta['madrassa_name'] ?? 'N/A'),
-                        $app?->madrassa_class ?? ($appMeta['madrassa_class'] ?? 'N/A'),
-                        $app?->not_studying_reason ?? ($appMeta['not_studying_reason'] ?? 'N/A'),
-                        $app?->health_status ?? ($appMeta['health_status'] ?? 'N/A'),
-                        $app?->monthly_income ?? ($appMeta['monthly_income'] ?? 'N/A'),
-                        $app?->monthly_expense ?? ($appMeta['monthly_expense'] ?? 'N/A'),
-                        $app?->siblings_male ?? ($appMeta['siblings_male'] ?? 'N/A'),
-                        $app?->siblings_female ?? ($appMeta['siblings_female'] ?? 'N/A'),
-                        $app?->siblings_total ?? ($appMeta['siblings_total'] ?? 'N/A'),
-                        $app?->amount_requested ?? ($appMeta['amount_requested'] ?? 'N/A'),
-                        $app?->sponsorship_details ?? ($appMeta['sponsorship_details'] ?? 'N/A'),
-                        $app?->sponsor_status ?? ($project->sponsor ?? 'N/A'),
-                        $app?->current_beneficiaries ?? ($appMeta['current_beneficiaries'] ?? 'N/A'),
-                        $app?->recommender_name ?? ($appMeta['recommender_name'] ?? 'N/A'),
-                        $app?->recommender_org ?? ($appMeta['recommender_org'] ?? 'N/A'),
-                        $app?->recommender_phone ?? ($appMeta['recommender_phone'] ?? 'N/A'),
-                        $app?->recommender_position ?? ($appMeta['recommender_position'] ?? 'N/A'),
-                        $app?->additional_note ?? ($appMeta['additional_note'] ?? 'N/A'),
-                        $project->theme ?? 'N/A',
-                        $project->subtheme ?? 'N/A',
-                        $project->activity ?? 'N/A',
-                        $project->project_spec ?? 'N/A',
-                        $project->unit ?? 'N/A',
-                        'Stage ' . $project->stage,
-                        $project->status ?? 'Active',
-                        $project->remarks ?? 'N/A',
-                        $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
-                    ]);
-                } elseif ($isSocialAid) {
-                    $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
-                    fputcsv($file, [
-                        $project->project_id,
-                        $project->agency_project_no ?? ($app?->agency_number ?? ($appMeta['agency_number'] ?? 'N/A')),
-                        $agencyName,
-                        $project->project_name ?? ($app?->applicant_name ?? ($appMeta['applicant_name'] ?? 'N/A')),
-                        $appId,
-                        $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
-                        $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
-                        $appMeta['guardian_name'] ?? 'N/A',
-                        $appMeta['guardian_relation'] ?? 'N/A',
-                        $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
-                        $appMeta['age'] ?? 'N/A',
-                        $appMeta['dob'] ?? 'N/A',
-                        $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? 'N/A')),
-                        $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? 'N/A')),
-                        $appMeta['whatsapp_number'] ?? 'N/A',
-                        $appMeta['contact_email'] ?? 'N/A',
-                        $appMeta['aadhar_number'] ?? 'N/A',
-                        $appMeta['house_name'] ?? 'N/A',
-                        $app?->place ?? ($appMeta['place'] ?? 'N/A'),
-                        $appMeta['post_office'] ?? 'N/A',
-                        $appMeta['pin_code'] ?? 'N/A',
-                        $appMeta['town'] ?? 'N/A',
-                        $app?->district ?? ($appMeta['district'] ?? 'N/A'),
-                        $app?->state ?? ($appMeta['state'] ?? 'N/A'),
-                        $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
-                        $appMeta['school_name'] ?? 'N/A',
-                        $appMeta['school_class'] ?? 'N/A',
-                        $appMeta['madrassa_name'] ?? 'N/A',
-                        $appMeta['madrassa_class'] ?? 'N/A',
-                        $appMeta['health_status'] ?? 'N/A',
-                        $appMeta['monthly_income'] ?? 'N/A',
-                        $appMeta['monthly_expense'] ?? 'N/A',
-                        $app?->sponsor_status ?? ($project->sponsor ?? 'N/A'),
-                        $project->theme ?? 'N/A',
-                        $project->subtheme ?? 'N/A',
-                        $project->activity ?? 'N/A',
-                        $project->project_spec ?? 'N/A',
-                        $project->unit ?? 'N/A',
-                        'Stage ' . $project->stage,
-                        $project->status ?? 'Active',
-                        $project->remarks ?? 'N/A',
-                        $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
-                    ]);
-                } else {
-                    $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
-                    fputcsv($file, [
-                        $project->project_id,
-                        $project->agency_project_no ?? 'N/A',
-                        $project->project_name ?? 'N/A',
-                        $project->donor ? $project->donor->name : ($agencyName !== 'N/A' ? $agencyName : 'N/A'),
-                        $project->projectManager ? $project->projectManager->name : 'N/A',
-                        $project->available_budget ?? '0',
-                        $project->type_of_project ?? $config['name'],
-                        $appId,
-                        $app?->applicant_name ?? ($project->project_name ?? 'N/A'),
-                        $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
-                        $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
-                        $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? 'N/A'),
-                        $app?->place ?? ($appMeta['place'] ?? 'N/A'),
-                        $app?->district ?? ($appMeta['district'] ?? 'N/A'),
-                        $app?->state ?? ($appMeta['state'] ?? 'N/A'),
-                        $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
-                        $project->remarks ?? 'N/A',
-                        'Stage ' . $project->stage,
-                        $project->status ?? 'Active',
-                        $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
-                    ]);
-                }
+            if ($isOrphanCare) {
+                $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
+                $addr = $app?->address;
+                $row = [
+                    $project->project_id,
+                    $project->agency_project_no ?? ($app?->agency_number ?? ($appMeta['agency_number'] ?? 'N/A')),
+                    $agencyName,
+                    $project->project_name ?? ($app?->applicant_name ?? ($appMeta['applicant_name'] ?? 'N/A')),
+                    $appId,
+                    $app?->application_date ?? ($appMeta['application_date'] ?? ($app?->created_at ? $app->created_at->format('Y-m-d') : 'N/A')),
+                    $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                    $app?->father_death_date ?? ($appMeta['father_death_date'] ?? 'N/A'),
+                    $app?->father_death_cause ?? ($appMeta['father_death_cause'] ?? 'N/A'),
+                    $app?->grandfather_name ?? ($appMeta['grandfather_name'] ?? 'N/A'),
+                    $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                    $app?->mother_alive_status ?? ($appMeta['mother_alive_status'] ?? 'N/A'),
+                    $app?->mother_death_date ?? ($appMeta['mother_death_date'] ?? 'N/A'),
+                    $app?->mother_death_cause ?? ($appMeta['mother_death_cause'] ?? 'N/A'),
+                    $app?->mother_remarried_status ?? ($appMeta['mother_remarried_status'] ?? 'N/A'),
+                    $app?->mothers_father_name ?? ($appMeta['mothers_father_name'] ?? 'N/A'),
+                    $app?->guardian_name ?? ($appMeta['guardian_name'] ?? 'N/A'),
+                    $app?->guardian_relation ?? ($appMeta['guardian_relation'] ?? 'N/A'),
+                    $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
+                    $app?->age ?? ($appMeta['age'] ?? 'N/A'),
+                    $app?->dob ?? ($appMeta['dob'] ?? 'N/A'),
+                    $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? 'N/A')),
+                    $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? 'N/A')),
+                    $app?->whatsapp_number ?? ($appMeta['whatsapp_number'] ?? 'N/A'),
+                    $app?->contact_email ?? ($appMeta['contact_email'] ?? 'N/A'),
+                    $app?->aadhar_number ?? ($appMeta['aadhar_number'] ?? 'N/A'),
+                    $addr?->house_name ?? ($app?->house_name ?? ($appMeta['house_name'] ?? 'N/A')),
+                    $app?->house_type ?? ($appMeta['house_type'] ?? 'N/A'),
+                    $addr?->place ?? ($app?->place ?? ($appMeta['place'] ?? 'N/A')),
+                    $addr?->post_office ?? ($app?->post_office ?? ($appMeta['post_office'] ?? 'N/A')),
+                    $addr?->pin_code ?? ($app?->pin_code ?? ($appMeta['pin_code'] ?? 'N/A')),
+                    $app?->town ?? ($appMeta['town'] ?? 'N/A'),
+                    $addr?->district ?? ($app?->district ?? ($appMeta['district'] ?? 'N/A')),
+                    $addr?->state ?? ($app?->state ?? ($appMeta['state'] ?? 'N/A')),
+                    $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
+                    $app?->school_name ?? ($appMeta['school_name'] ?? 'N/A'),
+                    $app?->school_class ?? ($appMeta['school_class'] ?? 'N/A'),
+                    $app?->madrassa_name ?? ($appMeta['madrassa_name'] ?? 'N/A'),
+                    $app?->madrassa_class ?? ($appMeta['madrassa_class'] ?? 'N/A'),
+                    $app?->not_studying_reason ?? ($appMeta['not_studying_reason'] ?? 'N/A'),
+                    $app?->health_status ?? ($appMeta['health_status'] ?? 'N/A'),
+                    $app?->monthly_income ?? ($appMeta['monthly_income'] ?? 'N/A'),
+                    $app?->monthly_expense ?? ($appMeta['monthly_expense'] ?? 'N/A'),
+                    $app?->siblings_male ?? ($appMeta['siblings_male'] ?? 'N/A'),
+                    $app?->siblings_female ?? ($appMeta['siblings_female'] ?? 'N/A'),
+                    $app?->siblings_total ?? ($appMeta['siblings_total'] ?? 'N/A'),
+                    $app?->amount_requested ?? ($appMeta['amount_requested'] ?? 'N/A'),
+                    $app?->sponsorship_details ?? ($appMeta['sponsorship_details'] ?? 'N/A'),
+                    $app?->sponsor_status ?? ($project->sponsor ?? 'N/A'),
+                    $app?->current_beneficiaries ?? ($appMeta['current_beneficiaries'] ?? 'N/A'),
+                    $app?->recommender_name ?? ($appMeta['recommender_name'] ?? 'N/A'),
+                    $app?->recommender_org ?? ($appMeta['recommender_org'] ?? 'N/A'),
+                    $app?->recommender_phone ?? ($appMeta['recommender_phone'] ?? 'N/A'),
+                    $app?->recommender_position ?? ($appMeta['recommender_position'] ?? 'N/A'),
+                    $app?->additional_note ?? ($appMeta['additional_note'] ?? 'N/A'),
+                    $project->theme ?? 'N/A',
+                    $project->subtheme ?? 'N/A',
+                    $project->activity ?? 'N/A',
+                    $project->project_spec ?? 'N/A',
+                    $project->unit ?? 'N/A',
+                    'Stage ' . $project->stage,
+                    $project->status ?? 'Active',
+                    $project->remarks ?? 'N/A',
+                    $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
+                ];
+            } elseif ($isSocialAid) {
+                $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
+                $row = [
+                    $project->project_id,
+                    $project->agency_project_no ?? ($app?->agency_number ?? ($appMeta['agency_number'] ?? 'N/A')),
+                    $agencyName,
+                    $project->project_name ?? ($app?->applicant_name ?? ($appMeta['applicant_name'] ?? 'N/A')),
+                    $appId,
+                    $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                    $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                    $appMeta['guardian_name'] ?? 'N/A',
+                    $appMeta['guardian_relation'] ?? 'N/A',
+                    $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
+                    $appMeta['age'] ?? 'N/A',
+                    $appMeta['dob'] ?? 'N/A',
+                    $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? 'N/A')),
+                    $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? 'N/A')),
+                    $appMeta['whatsapp_number'] ?? 'N/A',
+                    $appMeta['contact_email'] ?? 'N/A',
+                    $appMeta['aadhar_number'] ?? 'N/A',
+                    $appMeta['house_name'] ?? 'N/A',
+                    $app?->place ?? ($appMeta['place'] ?? 'N/A'),
+                    $appMeta['post_office'] ?? 'N/A',
+                    $appMeta['pin_code'] ?? 'N/A',
+                    $appMeta['town'] ?? 'N/A',
+                    $app?->district ?? ($appMeta['district'] ?? 'N/A'),
+                    $app?->state ?? ($appMeta['state'] ?? 'N/A'),
+                    $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
+                    $appMeta['school_name'] ?? 'N/A',
+                    $appMeta['school_class'] ?? 'N/A',
+                    $appMeta['madrassa_name'] ?? 'N/A',
+                    $appMeta['madrassa_class'] ?? 'N/A',
+                    $appMeta['health_status'] ?? 'N/A',
+                    $appMeta['monthly_income'] ?? 'N/A',
+                    $appMeta['monthly_expense'] ?? 'N/A',
+                    $app?->sponsor_status ?? ($project->sponsor ?? 'N/A'),
+                    $project->theme ?? 'N/A',
+                    $project->subtheme ?? 'N/A',
+                    $project->activity ?? 'N/A',
+                    $project->project_spec ?? 'N/A',
+                    $project->unit ?? 'N/A',
+                    'Stage ' . $project->stage,
+                    $project->status ?? 'Active',
+                    $project->remarks ?? 'N/A',
+                    $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
+                ];
+            } else {
+                $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
+                $row = [
+                    $project->project_id,
+                    $project->agency_project_no ?? 'N/A',
+                    $project->project_name ?? 'N/A',
+                    $project->donor ? $project->donor->name : ($agencyName !== 'N/A' ? $agencyName : 'N/A'),
+                    $project->projectManager ? $project->projectManager->name : 'N/A',
+                    $project->available_budget ?? '0',
+                    $project->type_of_project ?? $config['name'],
+                    $appId,
+                    $app?->applicant_name ?? ($project->project_name ?? 'N/A'),
+                    $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                    $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                    $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? 'N/A'),
+                    $app?->place ?? ($appMeta['place'] ?? 'N/A'),
+                    $app?->district ?? ($appMeta['district'] ?? 'N/A'),
+                    $app?->state ?? ($appMeta['state'] ?? 'N/A'),
+                    $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A'),
+                    $project->remarks ?? 'N/A',
+                    'Stage ' . $project->stage,
+                    $project->status ?? 'Active',
+                    $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
+                ];
             }
+            $rows[] = array_map([$this, 'formatCsvCell'], $row);
+        }
 
-            fclose($file);
-        };
-
-        $filename = str_replace(' ', '_', strtolower($config['name'])) . '_projects_full_' . date('Ymd_His') . '.csv';
-
-        return response()->stream($callback, 200, [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ]);
+        $filename = str_replace(' ', '_', strtolower($config['name'])) . '_projects_full_' . date('Ymd_His') . '.xls';
+        return \App\Services\ExcelExportHelper::streamDownload($filename, $headers, $rows);
     }
 
     public function uploadFile(Request $request, $id)
@@ -2092,25 +2116,55 @@ class ProjectController extends Controller
         }
 
         $request->validate([
-            'photo' => 'required|file|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:10240', // 10MB max
+            'photo' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:10240',
+            'photos' => 'nullable|array',
+            'photos.*' => 'file|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:10240',
             'category' => 'nullable|string|in:before,starting,inbetween,after,banner,stone,inauguration'
         ]);
 
-        if ($project->type_of_project === 'General') {
-            $files = $project->files ?? [];
-            $totalGeneralPhotos = count(array_unique(array_merge(
-                $files['photos_after'] ?? ($files['photos'] ?? []),
-                $files['photos_before'] ?? [],
-                $files['photos_inbetween'] ?? [],
-                $files['photos_inauguration'] ?? []
-            )));
-            if ($totalGeneralPhotos >= 3) {
-                return redirect()->back()->with('error', 'Maximum limit reached. General projects can have a maximum of 3 photos.');
-            }
+        $filesToUpload = [];
+        if ($request->hasFile('photos')) {
+            $rawFiles = $request->file('photos');
+            $filesToUpload = is_array($rawFiles) ? $rawFiles : [$rawFiles];
+        } elseif ($request->hasFile('photo')) {
+            $filesToUpload = [$request->file('photo')];
         }
 
-        if ($request->hasFile('photo')) {
-            $uploadedFile = $request->file('photo');
+        if (empty($filesToUpload)) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Please select at least one photo to upload.'], 400);
+            }
+            return redirect()->back()->with('error', 'Please select at least one photo to upload.');
+        }
+
+        $files = $project->files ?? [];
+        $rawCategory = $request->input('category') ?: ($request->query('category') ?: 'after');
+        $category = str_replace('photos_', '', strtolower(trim($rawCategory)));
+        if (!in_array($category, ['before', 'starting', 'inbetween', 'after', 'banner', 'stone', 'inauguration'])) {
+            $category = 'after';
+        }
+        $key = 'photos_' . $category;
+
+        $existing = array_values(array_unique(array_filter(array_merge(
+            (array)($files[$key] ?? []),
+            (array)($files[$category . '_photos'] ?? []),
+            (array)($files[$category] ?? [])
+        ))));
+
+        if (count($existing) >= 3) {
+            $msg = 'Maximum limit reached. Each section can store a maximum of 3 photos. Please delete an existing photo to upload a new one.';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 400);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        $remainingSlots = max(0, 3 - count($existing));
+        $filesToProcess = array_slice($filesToUpload, 0, $remainingSlots);
+        $newPathsAdded = [];
+
+        foreach ($filesToProcess as $uploadedFile) {
+            if (!$uploadedFile) continue;
             $ext = strtolower($uploadedFile->getClientOriginalExtension());
             if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'])) {
                 $ext = 'jpg';
@@ -2118,69 +2172,67 @@ class ProjectController extends Controller
             $filename = 'photo_' . time() . '_' . uniqid() . '.' . $ext;
             $targetPath = public_path('uploads/projects/' . $project->id . '/' . $filename);
             $this->compressAndSaveImage($uploadedFile, $targetPath, 2 * 1024 * 1024);
-            
-            $files = $project->files ?? [];
-            $rawCategory = $request->input('category') ?: ($request->query('category') ?: 'after');
-            $category = str_replace('photos_', '', strtolower(trim($rawCategory)));
-            if (!in_array($category, ['before', 'starting', 'inbetween', 'after', 'banner', 'stone', 'inauguration'])) {
-                $category = 'after';
-            }
-            $key = 'photos_' . $category;
-            
-            // Delete old photos in this category (strictly 1 photo allowed per section, replace old image)
-            $existing = array_unique(array_filter(array_merge(
-                (array)($files[$key] ?? []),
-                (array)($files[$category . '_photos'] ?? []),
-                (array)($files[$category] ?? [])
-            )));
-            foreach ($existing as $oldPhotoPath) {
-                if ($oldPhotoPath && is_string($oldPhotoPath)) {
-                    $oldFullPath = public_path($oldPhotoPath);
-                    if ($oldFullPath !== $targetPath && file_exists($oldFullPath)) {
-                        @unlink($oldFullPath);
-                    }
-                }
-            }
 
             $newPhotoPath = 'uploads/projects/' . $project->id . '/' . $filename;
-            
-            $files[$key] = [$newPhotoPath];
-            $files[$category . '_photos'] = [$newPhotoPath];
-            
-            if ($category === 'after') {
-                $files['photos'] = [$newPhotoPath];
-            }
-
-            $project->files = $files;
-            $project->save();
-
-            $photoIndex = 0;
-            $deleteUrl = route('projects.delete_photo', [$project->id, 0]) . '?category=' . $category;
-
-            try {
-                ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'upload_photo', [
-                    'category' => $category,
-                    'photo_url' => asset($newPhotoPath),
-                    'photo_index' => 0,
-                    'delete_url' => $deleteUrl,
-                    'total_photos' => 1
-                ]);
-            } catch (\Exception $e) {}
-
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Photo uploaded successfully!',
-                    'category' => $category,
-                    'photo_url' => asset($newPhotoPath),
-                    'photo_index' => 0,
-                    'delete_url' => $deleteUrl,
-                    'total_photos' => 1
-                ]);
-            }
-
-            return redirect()->route('projects.show', $id)->with('success', 'Photo uploaded successfully!');
+            $existing[] = $newPhotoPath;
+            $newPathsAdded[] = $newPhotoPath;
         }
+
+        $existing = array_values(array_unique(array_filter($existing)));
+        $existing = array_slice($existing, 0, 3);
+
+        $files[$key] = $existing;
+        $files[$category . '_photos'] = $existing;
+
+        if ($category === 'after') {
+            $files['photos'] = $existing;
+        }
+
+        $project->files = $files;
+        $project->save();
+
+        $projectPhoto = $project->projectPhoto;
+        if ($projectPhoto && \Illuminate\Support\Facades\Schema::hasColumn('project_photos', $key)) {
+            $projectPhoto->$key = empty($existing) ? null : json_encode($existing);
+            $projectPhoto->save();
+        }
+        $photosList = [];
+        foreach ($existing as $i => $path) {
+            $photosList[] = [
+                'url' => asset($path),
+                'index' => $i,
+                'delete_url' => route('projects.delete_photo', [$project->id, $i]) . '?category=' . $category,
+            ];
+        }
+
+        $lastAddedPath = !empty($newPathsAdded) ? end($newPathsAdded) : (end($existing) ?: '');
+        $lastPhotoIndex = max(0, count($existing) - 1);
+        $deleteUrl = route('projects.delete_photo', [$project->id, $lastPhotoIndex]) . '?category=' . $category;
+
+        try {
+            ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'upload_photo', [
+                'category' => $category,
+                'photo_url' => asset($lastAddedPath),
+                'photo_index' => $lastPhotoIndex,
+                'delete_url' => $deleteUrl,
+                'total_photos' => count($existing)
+            ]);
+        } catch (\Exception $e) {}
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Photos uploaded successfully!',
+                'category' => $category,
+                'photos' => $photosList,
+                'photo_url' => asset($lastAddedPath),
+                'photo_index' => $lastPhotoIndex,
+                'delete_url' => $deleteUrl,
+                'total_photos' => count($existing)
+            ]);
+        }
+
+        return redirect()->route('projects.show', $id)->with('success', 'Photos uploaded successfully!');
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => false, 'message' => 'Photo upload failed.'], 400);
@@ -2292,11 +2344,20 @@ class ProjectController extends Controller
             $projectPhoto->save();
         }
 
+        $deletePhotosList = [];
+        foreach ($photoPaths as $i => $path) {
+            $deletePhotosList[] = [
+                'url' => asset($path),
+                'index' => $i,
+                'delete_url' => route('projects.delete_photo', [$project->id, $i]) . '?category=' . $category,
+            ];
+        }
+
         try {
             ProjectUpdated::dispatch($project->id, $category, auth()->id(), 'delete_photo', [
                 'category' => $category,
                 'photo_index' => 0,
-                'total_photos' => 0
+                'total_photos' => count($photoPaths)
             ]);
         } catch (\Exception $e) {}
 
@@ -2305,8 +2366,9 @@ class ProjectController extends Controller
                 'success' => true,
                 'message' => 'Photo deleted successfully!',
                 'category' => $category,
+                'photos' => $deletePhotosList,
                 'photo_index' => 0,
-                'total_photos' => 0
+                'total_photos' => count($photoPaths)
             ]);
         }
 
@@ -3424,6 +3486,26 @@ class ProjectController extends Controller
         }
 
         return redirect()->back()->with('success', 'Site study report saved successfully.');
+    }
+
+    protected function formatCsvCell($value)
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        $strVal = is_array($value) ? json_encode($value) : (string) $value;
+        $trimmed = trim($strVal);
+
+        if ((preg_match('/^\+?\d{8,20}$/', $trimmed) === 1) || (preg_match('/^0\d+$/', $trimmed) === 1)) {
+            return '="' . $trimmed . '"';
+        }
+
+        return $strVal;
     }
 }
 

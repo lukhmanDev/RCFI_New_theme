@@ -16,7 +16,6 @@ class DrinkingWaterIndividualApplication extends Model
         'applicant_name',
         'pin',
         'location',
-        'address',
         'village',
         'post',
         'panchayath',

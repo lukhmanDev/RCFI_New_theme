@@ -182,7 +182,7 @@
                             </td>
 
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
+                                <button onclick="openDetailsModal({{ e(json_encode($appItem)) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
@@ -316,7 +316,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="age">Age *</label>
-                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                         <div>
                             <label class="form-label" for="marital_status">Marital Status *</label>
@@ -354,7 +354,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="total_members">Total Members *</label>
-                            <input type="number" class="form-control-dark" id="total_members" name="meta[total_members]" value="{{ old('meta.total_members') }}" readonly required>
+                            <input type="number" class="form-control-dark" id="total_members" name="meta[total_members]" value="{{ old('meta.total_members') }}" readonly>
                         </div>
                     </div>
 
@@ -595,7 +595,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_age">Age *</label>
-                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                         <div>
                             <label class="form-label" for="edit_marital_status">Marital Status *</label>
@@ -633,7 +633,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_total_members">Total Members *</label>
-                            <input type="number" class="form-control-dark" id="edit_total_members" name="meta[total_members]" readonly required>
+                            <input type="number" class="form-control-dark" id="edit_total_members" name="meta[total_members]" readonly>
                         </div>
                     </div>
 

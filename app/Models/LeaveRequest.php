@@ -18,6 +18,8 @@ class LeaveRequest extends Model
         'start_date',
         'end_date',
         'total_days',
+        'is_half_day',
+        'half_day_session',
         'reason',
         'status',
         'applied_on',
@@ -32,6 +34,7 @@ class LeaveRequest extends Model
         'applied_on'  => 'datetime',
         'approved_on' => 'datetime',
         'total_days'  => 'float',
+        'is_half_day' => 'boolean',
     ];
 
     public function toBroadcastArray(): array
@@ -44,6 +47,8 @@ class LeaveRequest extends Model
             'start_date' => $this->start_date ? $this->start_date->format('Y-m-d') : null,
             'end_date' => $this->end_date ? $this->end_date->format('Y-m-d') : null,
             'total_days' => $this->total_days,
+            'is_half_day' => $this->is_half_day,
+            'half_day_session' => $this->half_day_session,
             'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : now()->toIso8601String(),
         ];
     }

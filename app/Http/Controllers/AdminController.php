@@ -194,8 +194,9 @@ class AdminController extends Controller
 
     public function socialAidFundReport(\Illuminate\Http\Request $request)
     {
-        if (!auth()->check() || !auth()->user()->isSuperAdmin()) {
-            abort(403, 'Unauthorized access. Only Super Admin can view the Social Aid Fund Report.');
+        $user = auth()->user();
+        if (!auth()->check() || !($user->isSuperAdmin() || $user->isCoo() || $user->isHod() || $user->isSocialAid())) {
+            abort(403, 'Unauthorized access. Only Super Admin, COO, HOD, and Social Aid Manager can view the Social Aid Fund Report.');
         }
 
         // Fetch Orphan Care funds
@@ -591,9 +592,6 @@ class AdminController extends Controller
     public function projectReport(Request $request)
     {
         $projectCategories = [
-            'orphan-care' => ['model' => \App\Models\OrphanCareProject::class, 'name' => 'Orphan Care', 'slug' => 'orphan-care'],
-            'differently-abled' => ['model' => \App\Models\DifferentlyAbledProject::class, 'name' => 'Differently Abled', 'slug' => 'differently-abled'],
-            'family-aid' => ['model' => \App\Models\FamilyAidProject::class, 'name' => 'Family Aid', 'slug' => 'family-aid'],
             'education-center' => ['model' => \App\Models\EducationCenterProject::class, 'name' => 'Education Center', 'slug' => 'education-center'],
             'cultural-center' => ['model' => \App\Models\CulturalCenterProject::class, 'name' => 'Cultural Center', 'slug' => 'cultural-center'],
             'hospital-or-clinics' => ['model' => \App\Models\HospitalClinicProject::class, 'name' => 'Hospital or Clinics', 'slug' => 'hospital-or-clinics'],
@@ -789,9 +787,6 @@ class AdminController extends Controller
     public function singleProjectReport(Request $request, $id = null)
     {
         $projectCategories = [
-            'orphan-care' => ['model' => \App\Models\OrphanCareProject::class, 'name' => 'Orphan Care'],
-            'differently-abled' => ['model' => \App\Models\DifferentlyAbledProject::class, 'name' => 'Differently Abled'],
-            'family-aid' => ['model' => \App\Models\FamilyAidProject::class, 'name' => 'Family Aid'],
             'education-center' => ['model' => \App\Models\EducationCenterProject::class, 'name' => 'Education Center'],
             'cultural-center' => ['model' => \App\Models\CulturalCenterProject::class, 'name' => 'Cultural Center'],
             'hospital-or-clinics' => ['model' => \App\Models\HospitalClinicProject::class, 'name' => 'Hospital or Clinics'],

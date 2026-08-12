@@ -273,10 +273,6 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="address">Address *</label>
-                        <textarea class="form-control-dark" id="address" name="meta[address]" style="height: 50px;" required>{{ old('meta.address') }}</textarea>
-                    </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
@@ -354,7 +350,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="num_benefited_people">No. Of Benefited People *</label>
-                            <input type="number" class="form-control-dark" id="num_benefited_people" name="meta[num_benefited_people]" value="{{ old('meta.num_benefited_people') }}" readonly required>
+                            <input type="number" class="form-control-dark" id="num_benefited_people" name="meta[num_benefited_people]" value="{{ old('meta.num_benefited_people') }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -544,10 +540,6 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="edit_address">Address *</label>
-                        <textarea class="form-control-dark" id="edit_address" name="meta[address]" style="height: 50px;" required></textarea>
-                    </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
@@ -621,7 +613,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_num_benefited_people">No. Of Benefited People *</label>
-                            <input type="number" class="form-control-dark" id="edit_num_benefited_people" name="meta[num_benefited_people]" readonly required>
+                            <input type="number" class="form-control-dark" id="edit_num_benefited_people" name="meta[num_benefited_people]" readonly>
                         </div>
                     </div>
                 </div>
@@ -1044,7 +1036,6 @@
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Applicant Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(meta.location)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Address:</td><td>${formatVal(meta.address)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.village)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post:</td><td>${formatVal(meta.post)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.panchayath)}</td></tr>

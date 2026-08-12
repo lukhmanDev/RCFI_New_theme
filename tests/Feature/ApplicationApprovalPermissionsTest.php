@@ -612,7 +612,7 @@ class ApplicationApprovalPermissionsTest extends TestCase
         $this->assertEquals('New Place', $app->fresh()->place);
 
         \Illuminate\Support\Facades\Storage::fake('public');
-        $file = \Illuminate\Http\UploadedFile::fake()->image('student.jpg');
+        $file = \Illuminate\Http\UploadedFile::fake()->create('student.jpg', 100, 'image/jpeg');
 
         $response = $this->actingAs($coo)->post("/admin/projects/orphan-care/{$project->id}/upload-photo", [
             'student_photo' => $file

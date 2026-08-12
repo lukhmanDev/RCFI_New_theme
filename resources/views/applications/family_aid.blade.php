@@ -170,7 +170,7 @@
                             </td>
 
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openDetailsModal({{ json_encode($appItem) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
+                                <button onclick="openDetailsModal({{ e(json_encode($appItem)) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
@@ -290,7 +290,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="age">Age *</label>
-                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                            <input type="number" class="form-control-dark" id="age" name="meta[age]" value="{{ old('meta.age') }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                         <div>
                             <label class="form-label" for="aadhar_number">Aadhaar Number *</label>
@@ -355,7 +355,7 @@
                     <div style="display: grid; grid-template-columns: 1.8fr 1fr 1fr 1.2fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="children_total">Number of children in the family *</label>
-                            <input type="number" class="form-control-dark" id="children_total" name="meta[children_total]" readonly value="{{ old('meta.children_total') }}" required>
+                            <input type="number" class="form-control-dark" id="children_total" name="meta[children_total]" readonly value="{{ old('meta.children_total') }}">
                         </div>
                         <div>
                             <label class="form-label" for="children_male">Male *</label>
@@ -584,7 +584,7 @@
                         </div>
                         <div>
                             <label class="form-label" for="edit_age">Age *</label>
-                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;" required>
+                            <input type="number" class="form-control-dark" id="edit_age" name="meta[age]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                         <div>
                             <label class="form-label" for="edit_aadhar_number">Aadhaar Number *</label>
@@ -641,7 +641,7 @@
                     <div style="display: grid; grid-template-columns: 1.8fr 1fr 1fr 1.2fr; gap: 1rem; margin-bottom: 1rem;">
                         <div>
                             <label class="form-label" for="edit_children_total">Number of children in the family *</label>
-                            <input type="number" class="form-control-dark" id="edit_children_total" name="meta[children_total]" readonly required>
+                            <input type="number" class="form-control-dark" id="edit_children_total" name="meta[children_total]" readonly>
                         </div>
                         <div>
                             <label class="form-label" for="edit_children_male">Male *</label>

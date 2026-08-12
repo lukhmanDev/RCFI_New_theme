@@ -48,6 +48,7 @@ class CulturalCenterApplication extends Model
         'requirement',
         'building_area_sq',
         'land_area_sq',
+        'num_beneficiaries',
         'amount_requested',
         'legal_approvals_status',
         'permitted_type',

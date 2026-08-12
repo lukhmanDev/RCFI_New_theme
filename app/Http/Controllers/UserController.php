@@ -18,26 +18,35 @@ class UserController extends Controller
     public function index()
     {
         $this->checkAdmin();
-        $users = User::where('id', '!=', auth()->id())->orderBy('created_at', 'desc')->get();
+        $authUser = auth()->user();
+        $users = User::nonSuperAdmin()->where('id', '!=', $authUser->id)->forHod($authUser)->orderBy('created_at', 'desc')->get();
 
         $today = now()->format('Y-m-d');
-        $onLeaveCount = User::whereHas('leaveRequests', function($q) use ($today) {
+        $onLeaveCount = User::forHod($authUser)->whereHas('leaveRequests', function($q) use ($today) {
             $q->where('status', 'Approved')
               ->where('start_date', '<=', $today)
               ->where('end_date', '>=', $today);
         })->count();
 
-        return view('admin.users', compact('users', 'onLeaveCount'));
+        $hods = User::where(function($q) {
+            $q->whereIn('role', ['hod', '4', 'HOD'])->orWhere('is_hr', true);
+        })->where('is_suspended', false)->orderBy('name', 'asc')->get();
+
+        return view('admin.users', compact('users', 'onLeaveCount', 'hods'));
     }
 
     public function store(Request $request)
     {
         $this->checkAdmin();
         
+        if (!auth()->user()->isSuperAdmin()) {
+            return redirect()->route('users')->withErrors(['Only Super Admin can add new staff members.']);
+        }
+        
         $rules = [
             'name'           => ['required', 'string', 'min:2', 'max:255'],
             'email'          => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'mobile'         => ['required', 'string', 'max:15'],
+            'mobile'         => ['required', 'string', 'regex:/^[0-9]{10}$/'],
             'father_name'    => ['required', 'string', 'max:255'],
             'mother_name'    => ['required', 'string', 'max:255'],
             'date_of_birth'  => ['required', 'date'],
@@ -49,7 +58,7 @@ class UserController extends Controller
             'po'             => ['required', 'string', 'max:255'],
             'district'       => ['required', 'string', 'max:255'],
             'state'          => ['required', 'string', 'max:255'],
-            'pin_code'       => ['required', 'string', 'max:10'],
+            'pin_code'       => ['required', 'string', 'regex:/^[0-9]{6}$/'],
             'aadhar_number'  => ['required', 'string', 'max:20'],
             'pan_card_number'=> ['required', 'string', 'max:20'],
             'account_number' => ['required', 'string', 'max:30'],
@@ -58,17 +67,46 @@ class UserController extends Controller
             'ifsc_code'      => ['required', 'string', 'max:20'],
             'designation'    => ['required', 'string', 'max:255'],
             'password'       => ['required', 'string', 'min:8'],
+            'hod_id'          => ['nullable', 'exists:users,id'],
+            'assigned_hod_id' => ['nullable', 'exists:users,id'],
+            'is_hr'           => ['nullable', 'boolean'],
+            'Is_hr'           => ['nullable', 'boolean'],
         ];
 
         if (auth()->user()->isSuperAdmin()) {
             $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,social_aid,employee,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,Social Aid,Social Aid Manager,Employee,1,2,3,4,5,6,7,8,9'];
         }
 
-        $data = $request->validate($rules);
+        $messages = [
+            'mobile.regex'   => 'Mobile number must be exactly 10 digits.',
+            'pin_code.regex' => 'PIN code must be exactly 6 digits.',
+        ];
+
+        $data = $request->validate($rules, $messages);
 
         if (!auth()->user()->isSuperAdmin()) {
             $data['role'] = 'others'; // default to 'others'
         }
+
+        $tempUser = new User();
+        $tempUser->role = $data['role'] ?? 'others';
+        $normalizedRole = $tempUser->role;
+        $excludedRoles = ['super_admin', 'coo', 'hod'];
+
+        $hodId = $request->input('hod_id') ?: $request->input('assigned_hod_id');
+
+        if (!in_array($normalizedRole, $excludedRoles)) {
+            if (empty($hodId)) {
+                return redirect()->back()->withInput()->withErrors(['assigned_hod_id' => 'Please assign an HOD before creating this staff member.']);
+            }
+            $data['hod_id'] = $hodId;
+            $data['assigned_hod_id'] = $hodId;
+        } else {
+            $data['hod_id'] = null;
+            $data['assigned_hod_id'] = null;
+        }
+
+        $data['is_hr'] = $request->boolean('is_hr') || $request->boolean('Is_hr');
 
         if (!empty($data['pan_card_number'])) {
             $data['pan_card_number'] = strtoupper($data['pan_card_number']);
@@ -97,7 +135,7 @@ class UserController extends Controller
         $rules = [
             'name'           => ['required', 'string', 'min:2', 'max:255'],
             'email'          => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'mobile'         => ['required', 'string', 'max:15'],
+            'mobile'         => ['required', 'string', 'regex:/^[0-9]{10}$/'],
             'father_name'    => ['required', 'string', 'max:255'],
             'mother_name'    => ['required', 'string', 'max:255'],
             'date_of_birth'  => ['required', 'date'],
@@ -109,7 +147,7 @@ class UserController extends Controller
             'po'             => ['required', 'string', 'max:255'],
             'district'       => ['required', 'string', 'max:255'],
             'state'          => ['required', 'string', 'max:255'],
-            'pin_code'       => ['required', 'string', 'max:10'],
+            'pin_code'       => ['required', 'string', 'regex:/^[0-9]{6}$/'],
             'aadhar_number'  => ['required', 'string', 'max:20'],
             'pan_card_number'=> ['required', 'string', 'max:20'],
             'account_number' => ['required', 'string', 'max:30'],
@@ -118,18 +156,47 @@ class UserController extends Controller
             'ifsc_code'      => ['required', 'string', 'max:20'],
             'designation'    => ['required', 'string', 'max:255'],
             'password'       => ['nullable', 'string', 'min:8'],
+            'hod_id'          => ['nullable', 'exists:users,id'],
+            'assigned_hod_id' => ['nullable', 'exists:users,id'],
+            'is_hr'           => ['nullable', 'boolean'],
+            'Is_hr'           => ['nullable', 'boolean'],
         ];
 
         if (auth()->user()->isSuperAdmin()) {
             $rules['role'] = ['required', 'string', 'in:super_admin,coo,project_manager,hod,others,engineer,reception,social_aid,employee,Super Admin,COO,Project Manager,HOD,Others,Engineer,Reception,Social Aid,Social Aid Manager,Employee,1,2,3,4,5,6,7,8,9'];
         }
 
-        $data = $request->validate($rules);
+        $messages = [
+            'mobile.regex'   => 'Mobile number must be exactly 10 digits.',
+            'pin_code.regex' => 'PIN code must be exactly 6 digits.',
+        ];
+
+        $data = $request->validate($rules, $messages);
 
         if (!auth()->user()->isSuperAdmin()) {
             $data['role'] = $user->role;
             $data['designation'] = $user->designation;
         }
+
+        $tempUser = new User();
+        $tempUser->role = $data['role'] ?? $user->role;
+        $normalizedRole = $tempUser->role;
+        $excludedRoles = ['super_admin', 'coo', 'hod'];
+
+        $hodId = $request->input('hod_id') ?: $request->input('assigned_hod_id');
+
+        if (!in_array($normalizedRole, $excludedRoles)) {
+            if (empty($hodId)) {
+                return redirect()->back()->withInput()->withErrors(['assigned_hod_id' => 'Please assign an HOD before saving this staff member.']);
+            }
+            $data['hod_id'] = $hodId;
+            $data['assigned_hod_id'] = $hodId;
+        } else {
+            $data['hod_id'] = null;
+            $data['assigned_hod_id'] = null;
+        }
+
+        $data['is_hr'] = $request->boolean('is_hr') || $request->boolean('Is_hr');
 
         if (!empty($data['pan_card_number'])) {
             $data['pan_card_number'] = strtoupper($data['pan_card_number']);
@@ -256,6 +323,11 @@ class UserController extends Controller
                 'designation'     => $user->designation ?? 'N/A',
                 'role'            => $rolesMap[$user->role] ?? 'User',
                 'raw_role'        => $user->role,
+                'is_hr'           => (bool)$user->is_hr,
+                'Is_hr'           => (bool)$user->is_hr,
+                'assigned_hod_id' => $user->hod_id ?? $user->assigned_hod_id,
+                'hod_id'          => $user->hod_id ?? $user->assigned_hod_id,
+                'assigned_hod_name' => $user->assignedHod ? $user->assignedHod->name : null,
                 'is_pm_or_engineer' => $isPmOrEngineer,
                 'address'         => $user->profile->address ?? 'N/A',
                 'is_suspended'    => $user->is_suspended,

@@ -34,7 +34,33 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'role' => 'string',
         'is_suspended' => 'boolean',
+        'is_hr' => 'boolean',
+        'Is_hr' => 'boolean',
+        'hod_id' => 'integer',
+        'assigned_hod_id' => 'integer',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($user) {
+            if (isset($user->attributes['hod_id']) && !isset($user->attributes['assigned_hod_id'])) {
+                $user->attributes['assigned_hod_id'] = $user->attributes['hod_id'];
+            } elseif (isset($user->attributes['assigned_hod_id']) && !isset($user->attributes['hod_id'])) {
+                $user->attributes['hod_id'] = $user->attributes['assigned_hod_id'];
+            } elseif (isset($user->attributes['hod_id']) && isset($user->attributes['assigned_hod_id'])) {
+                $val = $user->attributes['hod_id'] ?: $user->attributes['assigned_hod_id'];
+                $user->attributes['hod_id'] = $val;
+                $user->attributes['assigned_hod_id'] = $val;
+            }
+
+            if ($user->is_hr) {
+                // Auto-flip rule: Ensure only one user can be is_hr = true system-wide
+                static::where('id', '!=', $user->id)->where('is_hr', true)->update(['is_hr' => false]);
+            }
+        });
+    }
 
     public function getRoleAttribute($value)
     {
@@ -128,6 +154,25 @@ class User extends Authenticatable
         return $map[$this->role] ?? ucwords(str_replace('_', ' ', $this->role));
     }
 
+    public function scopeForHod($query, $user = null)
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return $query;
+        }
+
+        $isPureHod = ($user->isHod() && !$user->isSuperAdmin() && !$user->isCoo() && !(bool)$user->is_hr);
+
+        if ($isPureHod) {
+            return $query->where(function($q) use ($user) {
+                $q->where('assigned_hod_id', $user->id)
+                  ->orWhere('hod_id', $user->id);
+            });
+        }
+
+        return $query;
+    }
+
     public function isSuperAdmin(): bool
     {
         $roleLower = strtolower(trim($this->role ?? ''));
@@ -176,7 +221,12 @@ class User extends Authenticatable
     public function isOthers(): bool
     {
         $roleLower = strtolower(trim($this->role ?? ''));
-        return in_array($roleLower, ['others', '5']);
+        return in_array($roleLower, ['others', 'other', '5']);
+    }
+
+    public function isOther(): bool
+    {
+        return $this->isOthers();
     }
 
     public function isEmployee(): bool
@@ -324,10 +374,174 @@ class User extends Authenticatable
         return $this->hasMany(LeaveBalance::class, 'user_id');
     }
 
+    public function getHodIdAttribute($value)
+    {
+        return $value ?? $this->attributes['assigned_hod_id'] ?? null;
+    }
+
+    public function setHodIdAttribute($value)
+    {
+        $this->attributes['hod_id'] = $value;
+        $this->attributes['assigned_hod_id'] = $value;
+    }
+
+    public function getAssignedHodIdAttribute($value)
+    {
+        return $value ?? $this->attributes['hod_id'] ?? null;
+    }
+
+    public function setAssignedHodIdAttribute($value)
+    {
+        $this->attributes['assigned_hod_id'] = $value;
+        $this->attributes['hod_id'] = $value;
+    }
+
+    public function getIsHrUpperAttribute()
+    {
+        return (bool)($this->attributes['is_hr'] ?? false);
+    }
+
+    public function setIsHrUpperAttribute($value)
+    {
+        $this->attributes['is_hr'] = (bool)$value;
+    }
+
+    public function hod()
+    {
+        return $this->belongsTo(User::class, 'hod_id');
+    }
+
+    public function assignedHod()
+    {
+        return $this->belongsTo(User::class, 'assigned_hod_id');
+    }
+
+    public function subordinates()
+    {
+        return $this->hasMany(User::class, 'hod_id');
+    }
+
+    public function assignedStaff()
+    {
+        return $this->hasMany(User::class, 'assigned_hod_id');
+    }
+
+    public function isHrHod(): bool
+    {
+        return $this->isHod() && (bool)$this->is_hr;
+    }
+
+    public static function getHrHod(): ?User
+    {
+        return static::where('role', 'hod')->where('is_hr', true)->first()
+            ?? static::where('is_hr', true)->first();
+    }
+
+    /**
+     * DSA Tree representation of the organization hierarchy.
+     * Root: COO
+     *   ├── HOD 1
+     *   │    ├── Staff A
+     *   │    └── Staff B
+     *   ├── HOD 2
+     *   ├── HOD 3 (HR)
+     */
+    public static function getHierarchyTree(): array
+    {
+        $currentUser = auth()->user();
+
+        if ($currentUser && $currentUser->isHod() && !$currentUser->isSuperAdmin() && !$currentUser->isCoo() && !$currentUser->is_hr) {
+            $hod = static::with('assignedStaff')->find($currentUser->id) ?? $currentUser;
+            return [
+                'id' => $hod->id,
+                'name' => $hod->name,
+                'role' => $hod->role_name,
+                'designation' => $hod->designation ?? 'Head of Department',
+                'email' => $hod->email,
+                'mobile' => $hod->mobile,
+                'is_suspended' => (bool)$hod->is_suspended,
+                'is_hr' => (bool)$hod->is_hr,
+                'children' => ($hod->assignedStaff ?? collect())->map(function($staff) {
+                    return [
+                        'id' => $staff->id,
+                        'name' => $staff->name,
+                        'role' => $staff->role_name,
+                        'designation' => $staff->designation ?? 'Staff Member',
+                        'email' => $staff->email,
+                        'mobile' => $staff->mobile,
+                        'is_suspended' => (bool)$staff->is_suspended,
+                        'is_hr' => (bool)$staff->is_hr,
+                        'children' => [],
+                    ];
+                })->toArray(),
+            ];
+        }
+
+        $coo = static::where('role', 'coo')->first()
+            ?? static::where('role', 'super_admin')->first();
+
+        $hods = static::where('role', 'hod')->with('assignedStaff')->get();
+
+        $tree = [
+            'id' => $coo ? $coo->id : null,
+            'name' => $coo ? $coo->name : 'COO',
+            'role' => $coo ? $coo->role_name : 'Chief Operating Officer',
+            'designation' => $coo ? ($coo->designation ?? 'Chief Operating Officer') : 'Chief Operating Officer',
+            'email' => $coo ? $coo->email : '',
+            'mobile' => $coo ? $coo->mobile : '',
+            'is_suspended' => $coo ? (bool)$coo->is_suspended : false,
+            'is_hr' => false,
+            'children' => [],
+        ];
+
+        foreach ($hods as $hod) {
+            $hodNode = [
+                'id' => $hod->id,
+                'name' => $hod->name,
+                'role' => $hod->role_name,
+                'designation' => $hod->designation ?? 'Head of Department',
+                'email' => $hod->email,
+                'mobile' => $hod->mobile,
+                'is_suspended' => (bool)$hod->is_suspended,
+                'is_hr' => (bool)$hod->is_hr,
+                'children' => [],
+            ];
+
+            foreach ($hod->assignedStaff as $staff) {
+                $hodNode['children'][] = [
+                    'id' => $staff->id,
+                    'name' => $staff->name,
+                    'role' => $staff->role_name,
+                    'designation' => $staff->designation ?? 'Staff Member',
+                    'email' => $staff->email,
+                    'mobile' => $staff->mobile,
+                    'is_suspended' => (bool)$staff->is_suspended,
+                    'is_hr' => (bool)$staff->is_hr,
+                    'children' => [],
+                ];
+            }
+
+            $tree['children'][] = $hodNode;
+        }
+
+        return $tree;
+    }
+
     public function isEligibleFor(LeaveType $type): bool
     {
         if (!$type->is_active) {
             return false;
+        }
+
+        // Other Leave (OL) can only be granted / assigned by HR HOD, COO, or Super Admin
+        if ($type->leave_code === 'OL' || $type->leave_code === 'OTHER') {
+            $actor = auth()->user() ?? $this;
+            return $actor->isSuperAdmin() || $actor->isCoo() || (bool)$actor->is_hr;
+        }
+
+        // Leave Without Pay (LWP) is available to all users unconditionally
+        if ($type->leave_code === 'LWP' || ($type->accrual_type === 'None' && $type->leave_code !== 'OL')) {
+            return true;
         }
 
         // Gender check
@@ -416,5 +630,28 @@ class User extends Authenticatable
             'dates' => null,
             'is_on_leave' => false,
         ];
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(\App\Models\Attendance::class, 'user_id');
+    }
+
+    public function scopeNonSuperAdmin($query)
+    {
+        return $query->whereNotIn('role', ['super_admin', 'Super Admin', '1', 1])
+                     ->where('email', '!=', 'sdigibeat@gmail.com');
+    }
+
+    public function getFormattedAadharNumberAttribute(): string
+    {
+        if (!$this->aadhar_number) {
+            return '-';
+        }
+        $cleaned = preg_replace('/\D/', '', $this->aadhar_number);
+        if (strlen($cleaned) === 12) {
+            return substr($cleaned, 0, 4) . ' ' . substr($cleaned, 4, 4) . ' ' . substr($cleaned, 8, 4);
+        }
+        return $this->aadhar_number;
     }
 }

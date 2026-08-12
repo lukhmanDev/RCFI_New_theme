@@ -15,11 +15,20 @@ class ContractorController extends Controller
         return ($user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || strtolower($user->designation ?? '') === 'project manager' || strtolower($user->designation ?? '') === 'engineer');
     }
 
+    private function canEditOrDeleteContractor($user)
+    {
+        if (!$user) {
+            return false;
+        }
+        return $user->isSuperAdmin() || $user->isCoo();
+    }
+
     public function index()
     {
         $contractors = Contractor::orderBy('created_at', 'desc')->get();
         $canManage = $this->canManageContractors(auth()->user());
-        return view('admin.contractors', compact('contractors', 'canManage'));
+        $canEditOrDelete = $this->canEditOrDeleteContractor(auth()->user());
+        return view('admin.contractors', compact('contractors', 'canManage', 'canEditOrDelete'));
     }
 
     public function store(Request $request)
@@ -43,8 +52,8 @@ class ContractorController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (!$this->canManageContractors(auth()->user())) {
-            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin, Project Manager, and Engineer can edit contractors.');
+        if (!$this->canEditOrDeleteContractor(auth()->user())) {
+            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin and COO can edit or delete contractors.');
         }
 
         $contractor = Contractor::findOrFail($id);
@@ -64,8 +73,8 @@ class ContractorController extends Controller
 
     public function destroy($id)
     {
-        if (!$this->canManageContractors(auth()->user())) {
-            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin, Project Manager, and Engineer can delete contractors.');
+        if (!$this->canEditOrDeleteContractor(auth()->user())) {
+            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin and COO can edit or delete contractors.');
         }
 
         $contractor = Contractor::findOrFail($id);

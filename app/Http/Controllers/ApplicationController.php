@@ -211,9 +211,9 @@ class ApplicationController extends Controller
             $rules['agency_number'] = ['required', 'string', 'max:255'];
         }
 
+        $meta = $request->input('meta', []);
         if ($request->hasFile('student_photo')) {
             $path = $request->file('student_photo')->store('student_photos', 'public');
-            $meta = $request->input('meta', []);
             $meta['student_photo'] = '/storage/' . $path;
             $request->merge(['meta' => $meta]);
         }
@@ -244,10 +244,11 @@ class ApplicationController extends Controller
         if ($config) {
             $model = $config['model'];
             
-            // Check if reg_number is unique
+            // Check if reg_number is unique if column exists
             if ($request->filled('meta.reg_number')) {
                 $regNumber = $request->input('meta.reg_number');
-                if ($model::where('reg_number', $regNumber)->exists()) {
+                $tableName = (new $model)->getTable();
+                if (\Illuminate\Support\Facades\Schema::hasColumn($tableName, 'reg_number') && $model::where('reg_number', $regNumber)->exists()) {
                     return back()->withInput()->withErrors([
                         'meta.reg_number' => 'The registration number has already been taken.'
                     ]);
@@ -286,30 +287,40 @@ class ApplicationController extends Controller
 
             $categoryName = $data['category'] ?? ($config['name'] ?? '');
             unset($data['category']);
-            foreach ($addressFields as $f) {
-                unset($data[$f]);
+            if (\Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
+                foreach ($addressFields as $f) {
+                    unset($data[$f]);
+                }
+            } else {
+                $data = array_merge($data, array_filter($addressData));
+            }
+
+            $tableName = (new $model)->getTable();
+            $tableColumns = \Illuminate\Support\Facades\Schema::getColumnListing($tableName);
+            foreach ($data as $k => $v) {
+                if ($k !== 'meta' && !in_array($k, $tableColumns)) {
+                    if ($v !== null && $v !== '') {
+                        $data['meta'][$k] = $v;
+                    }
+                    unset($data[$k]);
+                }
             }
 
             $appItem = $model::create($data);
             if (!empty(array_filter($addressData)) && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
-                $appItem->address()->updateOrCreate([], array_filter($addressData));
+                try {
+                    $appItem->address()->updateOrCreate([], array_filter($addressData));
+                } catch (\Throwable $e) {
+                    \Log::warning('Applicant address creation warning: ' . $e->getMessage());
+                }
             }
 
             try {
                 broadcast(new \App\Events\ApplicationCreated($appItem))->toOthers();
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 \Log::warning('ApplicationCreated broadcast error: ' . $e->getMessage());
             }
 
-            try {
-                \App\Models\Notification::create([
-                    'title' => 'New Application',
-                    'message' => 'A new application by "' . $data['applicant_name'] . '" has been registered under ' . $categoryName . '.',
-                    'url' => route('applications.category', $redirectCategory)
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('Notification creation failed: ' . $e->getMessage());
-            }
             return redirect()->route('applications.category', $redirectCategory)->with('success', 'Application registered successfully!');
         }
 
@@ -469,11 +480,26 @@ class ApplicationController extends Controller
             unset($data['details']);
 
             unset($data['category']);
-            foreach ($addressFields as $f) {
-                unset($data[$f]);
+            if (\Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
+                foreach ($addressFields as $f) {
+                    unset($data[$f]);
+                }
+            } else {
+                $data = array_merge($data, array_filter($addressData));
             }
 
             $application = $model::findOrFail($id);
+            $tableName = $application->getTable();
+            $tableColumns = \Illuminate\Support\Facades\Schema::getColumnListing($tableName);
+            foreach ($data as $k => $v) {
+                if ($k !== 'meta' && !in_array($k, $tableColumns)) {
+                    if ($v !== null && $v !== '') {
+                        $data['meta'][$k] = $v;
+                    }
+                    unset($data[$k]);
+                }
+            }
+
             $application->update($data);
             if (!empty(array_filter($addressData)) && \Illuminate\Support\Facades\Schema::hasTable('applicant_addresses')) {
                 $application->address()->updateOrCreate([], array_filter($addressData));
@@ -642,47 +668,37 @@ class ApplicationController extends Controller
         ];
         $prefix = $prefixes[$category] ?? 'APP';
 
-        $callback = function() use ($applications, $headers, $metaKeys, $prefix) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, $headers);
+        $rows = [];
+        foreach ($applications as $appItem) {
+            $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
+            $appId = 'APLRCFI' . $appYear . $prefix . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
+            $createdAt = $appItem->created_at ? (is_string($appItem->created_at) ? date('Y-m-d H:i:s', strtotime($appItem->created_at)) : $appItem->created_at->format('Y-m-d H:i:s')) : '';
 
-            foreach ($applications as $appItem) {
-                $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
-                $appId = 'APLRCFI' . $appYear . $prefix . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
+            $row = [
+                $appId,
+                $appItem->applicant_name,
+                $appItem->amount_requested,
+                $appItem->status,
+                $appItem->contact_email,
+                $appItem->details,
+                $createdAt
+            ];
 
-                $row = [
-                    $appId,
-                    $appItem->applicant_name,
-                    $appItem->amount_requested,
-                    $appItem->status,
-                    $appItem->contact_email,
-                    $appItem->details,
-                    $appItem->created_at
-                ];
-
-                $meta = $appItem->meta;
-                if (is_string($meta)) {
-                    $meta = json_decode($meta, true);
-                }
-                foreach ($metaKeys as $key) {
-                    $row[] = $meta[$key] ?? '';
-                }
-
-                fputcsv($file, $row);
+            $meta = $appItem->meta;
+            if (is_string($meta)) {
+                $meta = json_decode($meta, true);
+            }
+            foreach ($metaKeys as $key) {
+                $val = $meta[$key] ?? '';
+                $row[] = $this->formatCsvCell($val, (string)$key);
             }
 
-            fclose($file);
-        };
+            $rows[] = $row;
+        }
 
-        $filename = str_replace(' ', '_', strtolower($config['name'])) . '_applications_' . date('Ymd_His') . '.csv';
+        $filename = str_replace(' ', '_', strtolower($config['name'])) . '_applications_' . date('Ymd_His') . '.xls';
 
-        return response()->stream($callback, 200, [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ]);
+        return \App\Services\ExcelExportHelper::streamDownload($filename, $headers, $rows);
     }
 
     public function showAll()
@@ -730,6 +746,12 @@ class ApplicationController extends Controller
 
             $app->cluster_id = $request->input('cluster_id');
             $app->agency_number = $request->input('agency_number');
+            if ($request->filled('agency_name')) {
+                $app->agency_name = $request->input('agency_name');
+            }
+            if ($request->filled('application_date')) {
+                $app->application_date = $request->input('application_date');
+            }
         }
 
         $app->status = 'Approved';
@@ -738,10 +760,10 @@ class ApplicationController extends Controller
         try {
             \App\Models\Notification::create([
                 'title' => 'Application Approved',
-                'message' => 'Application for "' . $app->applicant_name . '" has been approved.',
+                'message' => 'Application for "' . ($app->applicant_name ?? 'Applicant') . '" has been approved.',
                 'url' => route('applications.category', $category)
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Notification creation failed: ' . $e->getMessage());
         }
 
@@ -982,7 +1004,7 @@ class ApplicationController extends Controller
         $pmUserIds = array_values(array_unique(array_filter($pmUserIds)));
 
         $projectManagers = \App\Models\User::where(function($q) use ($pmUserIds) {
-            $q->whereIn('role', ['project_manager', 'engineer', 'super_admin', '3', '6', '1', 'Project Manager', 'Engineer', 'Super Admin'])
+            $q->whereIn('role', ['project_manager', '3', 'Project Manager'])
               ->orWhereIn('id', $pmUserIds);
         })->orderBy('name', 'asc')->get();
 
@@ -1074,7 +1096,7 @@ class ApplicationController extends Controller
             $runningProjectParam
         ) {
             $project = $projectsMap[$appItem->id] ?? null;
-            $addr = $appItem->address ?? null;
+            $addr = (\Illuminate\Support\Facades\Schema::hasTable('applicant_addresses') && method_exists($appItem, 'address')) ? ($appItem->address ?? null) : null;
 
             // 1. Project Manager Filter
             if ($pmIdParam !== 'all' && !empty($pmIdParam)) {
@@ -1411,98 +1433,77 @@ class ApplicationController extends Controller
             'general' => 'GN'
         ];
 
-        $callback = function() use ($allApprovedApps, $headers, $metaKeys, $prefixes) {
-            $file = fopen('php://output', 'w');
-            // Write UTF-8 BOM for Excel UTF-8 decoding
-            fputs($file, "\xEF\xBB\xBF");
-            fputcsv($file, $headers);
+        $rows = [];
+        foreach ($allApprovedApps as $appItem) {
+            $prefix = $prefixes[$appItem->category_slug] ?? 'APP';
+            $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
+            $appId = 'APLRCFI' . $appYear . $prefix . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
 
-            $rowCount = 0;
-            foreach ($allApprovedApps as $appItem) {
-                $prefix = $prefixes[$appItem->category_slug] ?? 'APP';
-                $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
-                $appId = 'APLRCFI' . $appYear . $prefix . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
+            $regNo = $appItem->reg_number ?? ($appItem->meta['reg_number'] ?? 'N/A');
+            $clusterCode = $appItem->cluster ? $appItem->cluster->code : 'N/A';
+            $clusterName = $appItem->cluster ? $appItem->cluster->name : 'N/A';
 
-                $regNo = $appItem->reg_number ?? ($appItem->meta['reg_number'] ?? 'N/A');
-                $clusterCode = $appItem->cluster ? $appItem->cluster->code : 'N/A';
-                $clusterName = $appItem->cluster ? $appItem->cluster->name : 'N/A';
+            $addr = $appItem->address;
+            $houseName = $addr->house_name ?? ($appItem->house_name ?? ($appItem->meta['house_name'] ?? ''));
+            $place = $addr->place ?? ($appItem->place ?? ($appItem->meta['place'] ?? ''));
+            $postOffice = $addr->post_office ?? ($appItem->post_office ?? ($appItem->meta['post_office'] ?? ''));
+            $town = $addr->town ?? ($appItem->town ?? ($appItem->meta['town'] ?? ''));
+            $village = $addr->village ?? ($appItem->village ?? ($appItem->meta['village'] ?? ''));
+            $panchayat = $addr->panchayat ?? ($appItem->panchayat ?? ($appItem->meta['panchayat'] ?? ''));
+            $district = $addr->district ?? ($appItem->district ?? ($appItem->meta['district'] ?? ''));
+            $state = $addr->state ?? ($appItem->state ?? ($appItem->meta['state'] ?? ''));
+            $pinCode = $addr->pin_code ?? ($appItem->pin_code ?? ($appItem->meta['pin_code'] ?? ''));
+            $contact1 = $addr->contact_number_1 ?? ($appItem->contact_number_1 ?? ($appItem->mobile ?? ''));
+            $contact2 = $addr->contact_number_2 ?? ($appItem->contact_number_2 ?? ($appItem->mobile_2 ?? ''));
+            $createdAt = $appItem->created_at ? (is_string($appItem->created_at) ? date('Y-m-d H:i:s', strtotime($appItem->created_at)) : $appItem->created_at->format('Y-m-d H:i:s')) : '';
+            $updatedAt = $appItem->updated_at ? (is_string($appItem->updated_at) ? date('Y-m-d H:i:s', strtotime($appItem->updated_at)) : $appItem->updated_at->format('Y-m-d H:i:s')) : '';
 
-                $addr = $appItem->address;
-                $houseName = $addr->house_name ?? ($appItem->house_name ?? ($appItem->meta['house_name'] ?? ''));
-                $place = $addr->place ?? ($appItem->place ?? ($appItem->meta['place'] ?? ''));
-                $postOffice = $addr->post_office ?? ($appItem->post_office ?? ($appItem->meta['post_office'] ?? ''));
-                $town = $addr->town ?? ($appItem->town ?? ($appItem->meta['town'] ?? ''));
-                $village = $addr->village ?? ($appItem->village ?? ($appItem->meta['village'] ?? ''));
-                $panchayat = $addr->panchayat ?? ($appItem->panchayat ?? ($appItem->meta['panchayat'] ?? ''));
-                $district = $addr->district ?? ($appItem->district ?? ($appItem->meta['district'] ?? ''));
-                $state = $addr->state ?? ($appItem->state ?? ($appItem->meta['state'] ?? ''));
-                $pinCode = $addr->pin_code ?? ($appItem->pin_code ?? ($appItem->meta['pin_code'] ?? ''));
-                $contact1 = $addr->contact_number_1 ?? ($appItem->contact_number_1 ?? ($appItem->mobile ?? ''));
-                $contact2 = $addr->contact_number_2 ?? ($appItem->contact_number_2 ?? ($appItem->mobile_2 ?? ''));
+            $row = [
+                $appId,
+                $this->formatCsvCell($regNo, 'reg_number'),
+                $appItem->category_name,
+                $appItem->applicant_name,
+                $appItem->amount_requested,
+                $appItem->status,
+                $appItem->sponsor_status ?? 'N/A',
+                $clusterCode,
+                $clusterName,
+                $this->formatCsvCell($appItem->agency_number ?? 'N/A', 'agency_number'),
+                $appItem->contact_email ?? 'N/A',
+                $this->formatCsvCell($contact1, 'contact_number_1'),
+                $this->formatCsvCell($contact2, 'contact_number_2'),
+                $houseName,
+                $place,
+                $postOffice,
+                $town,
+                $village,
+                $panchayat,
+                $district,
+                $state,
+                $this->formatCsvCell($pinCode, 'pin_code'),
+                $appItem->details ?? ($appItem->additional_note ?? ''),
+                $createdAt,
+                $updatedAt
+            ];
 
-                $row = [
-                    $appId,
-                    $regNo,
-                    $appItem->category_name,
-                    $appItem->applicant_name,
-                    $appItem->amount_requested,
-                    $appItem->status,
-                    $appItem->sponsor_status ?? 'N/A',
-                    $clusterCode,
-                    $clusterName,
-                    $appItem->agency_number ?? 'N/A',
-                    $appItem->contact_email ?? 'N/A',
-                    $contact1,
-                    $contact2,
-                    $houseName,
-                    $place,
-                    $postOffice,
-                    $town,
-                    $village,
-                    $panchayat,
-                    $district,
-                    $state,
-                    $pinCode,
-                    $appItem->details ?? ($appItem->additional_note ?? ''),
-                    $appItem->created_at,
-                    $appItem->updated_at
-                ];
-
-                $meta = $appItem->meta;
-                if (is_string($meta)) {
-                    $meta = json_decode($meta, true);
-                }
-                foreach ($metaKeys as $key) {
-                    $val = $meta[$key] ?? '';
-                    $row[] = is_array($val) ? json_encode($val) : $val;
-                }
-
-                fputcsv($file, $row);
-
-                $rowCount++;
-                if ($rowCount % 50 === 0) {
-                    if (ob_get_level() > 0) {
-                        ob_flush();
-                    }
-                    flush();
-                }
+            $meta = $appItem->meta;
+            if (is_string($meta)) {
+                $meta = json_decode($meta, true);
+            }
+            foreach ($metaKeys as $key) {
+                $val = $meta[$key] ?? '';
+                $row[] = $this->formatCsvCell($val, (string)$key);
             }
 
-            fclose($file);
-        };
+            $rows[] = $row;
+        }
 
         $catNameStr = ($categoryParam !== 'all' && isset($this->categories[$categoryParam]))
             ? str_replace(' ', '_', strtolower($this->categories[$categoryParam]['name']))
             : 'all_categories';
-        $filename = 'approved_applications_' . $catNameStr . '_' . date('Ymd_His') . '.csv';
+        $filename = 'approved_applications_' . $catNameStr . '_' . date('Ymd_His') . '.xls';
 
-        return response()->stream($callback, 200, [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ]);
+        return \App\Services\ExcelExportHelper::streamDownload($filename, $headers, $rows);
     }
 
     private function scopeProjectsForUser($query, $user)
@@ -1690,6 +1691,37 @@ class ApplicationController extends Controller
             }
             return redirect()->back()->with('error', 'Failed to update sponsor status: ' . $e->getMessage());
         }
+    }
+
+    protected function formatCsvCell($value, string $keyName = '')
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        $strVal = is_array($value) ? json_encode($value) : (string) $value;
+        $lowerKey = strtolower($keyName);
+
+        $isPhoneOrIdKey = str_contains($lowerKey, 'contact') 
+            || str_contains($lowerKey, 'mobile') 
+            || str_contains($lowerKey, 'phone') 
+            || str_contains($lowerKey, 'whatsapp') 
+            || str_contains($lowerKey, 'aadhar') 
+            || str_contains($lowerKey, 'pin') 
+            || str_contains($lowerKey, 'reg');
+
+        $trimmed = trim($strVal);
+        $isNumericLong = (preg_match('/^\+?\d{8,20}$/', $trimmed) === 1) || (preg_match('/^0\d+$/', $trimmed) === 1);
+
+        if ($isPhoneOrIdKey || $isNumericLong) {
+            return '="' . $trimmed . '"';
+        }
+
+        return $strVal;
     }
 }
 

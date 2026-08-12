@@ -12,6 +12,7 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveType;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class RoleDashboard extends Component
 {
@@ -78,6 +79,41 @@ class RoleDashboard extends Component
         $myRunningProjects = $myAssignedProjects->where('status', 'Running')->count();
         $myCompletedProjects = $myAssignedProjects->where('status', 'Completed')->count();
 
+        // ── Beneficiary & Family Totals ──────────────────────────────────────────
+        $totalBeneficiaryPeoples = 0;
+        $totalBeneficiaryFamily  = 0;
+        if ($hasProjects && Schema::hasColumn('projects', 'total_beneficiary_peoples')) {
+            $totalBeneficiaryPeoples = (int) Project::whereNotNull('total_beneficiary_peoples')
+                ->sum('total_beneficiary_peoples');
+            $totalBeneficiaryFamily  = (int) Project::whereNotNull('total_family')
+                ->sum('total_family');
+        }
+
+        // ── Year-wise chart (last 5 years) ───────────────────────────────────────
+        $currentYear = (int) now()->format('Y');
+        $yearLabels  = [];
+        $yearPeoples = [];
+        $yearFamilies = [];
+        for ($y = $currentYear - 4; $y <= $currentYear; $y++) {
+            $yearLabels[] = (string) $y;
+            if ($hasProjects && Schema::hasColumn('projects', 'total_beneficiary_peoples')) {
+                $yearPeoples[]  = (int) Project::whereYear('created_at', $y)
+                    ->whereNotNull('total_beneficiary_peoples')
+                    ->sum('total_beneficiary_peoples');
+                $yearFamilies[] = (int) Project::whereYear('created_at', $y)
+                    ->whereNotNull('total_family')
+                    ->sum('total_family');
+            } else {
+                $yearPeoples[]  = 0;
+                $yearFamilies[] = 0;
+            }
+        }
+        $beneficiaryChartData = [
+            'labels'   => $yearLabels,
+            'peoples'  => $yearPeoples,
+            'families' => $yearFamilies,
+        ];
+
         // Leave Balances & Status for current user
         $year = now()->year;
         $activeTypes = LeaveType::where('is_active', true)->get();
@@ -113,6 +149,13 @@ class RoleDashboard extends Component
 
         $currentLeave = $user->current_leave;
 
+        // My Recent Leave Applications History
+        $myRecentLeaveRequests = LeaveRequest::with('leaveType')
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->take(6)
+            ->get();
+
         // Pending Leave Requests for Approver Roles
         $pendingLeaveApprovals = LeaveRequest::with(['user', 'leaveType'])
             ->where('status', 'Pending')
@@ -121,21 +164,25 @@ class RoleDashboard extends Component
             ->get();
 
         return view('livewire.role-dashboard', [
-            'user' => $user,
-            'totalApplications' => $totalApplications,
-            'pendingCount' => $pendingCount,
-            'approvedCount' => $approvedCount,
-            'underReviewCount' => $underReviewCount,
-            'rejectedCount' => $rejectedCount,
-            'totalProjects' => $totalProjects,
-            'runningProjects' => $runningProjects,
-            'completedProjects' => $completedProjects,
-            'myAssignedProjects' => $myAssignedProjects,
-            'myRunningProjects' => $myRunningProjects,
-            'myCompletedProjects' => $myCompletedProjects,
-            'myLeaveBalances' => $myLeaveBalances,
-            'currentLeave' => $currentLeave,
-            'pendingLeaveApprovals' => $pendingLeaveApprovals,
+            'user'                     => $user,
+            'totalApplications'        => $totalApplications,
+            'pendingCount'             => $pendingCount,
+            'approvedCount'            => $approvedCount,
+            'underReviewCount'         => $underReviewCount,
+            'rejectedCount'            => $rejectedCount,
+            'totalProjects'            => $totalProjects,
+            'runningProjects'          => $runningProjects,
+            'completedProjects'        => $completedProjects,
+            'myAssignedProjects'       => $myAssignedProjects,
+            'myRunningProjects'        => $myRunningProjects,
+            'myCompletedProjects'      => $myCompletedProjects,
+            'myLeaveBalances'          => $myLeaveBalances,
+            'currentLeave'             => $currentLeave,
+            'myRecentLeaveRequests'    => $myRecentLeaveRequests,
+            'pendingLeaveApprovals'    => $pendingLeaveApprovals,
+            'totalBeneficiaryPeoples'  => $totalBeneficiaryPeoples,
+            'totalBeneficiaryFamily'   => $totalBeneficiaryFamily,
+            'beneficiaryChartData'     => $beneficiaryChartData,
         ]);
     }
 }

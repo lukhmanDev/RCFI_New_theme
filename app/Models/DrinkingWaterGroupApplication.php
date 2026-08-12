@@ -23,7 +23,6 @@ class DrinkingWaterGroupApplication extends Model
         'aadhar_number',
         'pin',
         'location',
-        'address',
         'village',
         'post',
         'panchayath',

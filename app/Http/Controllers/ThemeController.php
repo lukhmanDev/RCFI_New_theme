@@ -16,13 +16,22 @@ class ThemeController extends Controller
         return $user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']);
     }
 
+    private function canEditOrDelete($user)
+    {
+        if (!$user) {
+            return false;
+        }
+        return $user->isSuperAdmin() || $user->isCoo();
+    }
+
     public function index()
     {
         $themes = Theme::withCount('subthemes')->orderBy('name', 'asc')->get();
         $subthemes = Subtheme::with('theme')->orderBy('name', 'asc')->get();
         $canManage = $this->canManageThemes(auth()->user());
+        $canEditOrDelete = $this->canEditOrDelete(auth()->user());
 
-        return view('admin.themes', compact('themes', 'subthemes', 'canManage'));
+        return view('admin.themes', compact('themes', 'subthemes', 'canManage', 'canEditOrDelete'));
     }
 
     public function storeTheme(Request $request)
@@ -45,8 +54,8 @@ class ThemeController extends Controller
 
     public function updateTheme(Request $request, $id)
     {
-        if (!$this->canManageThemes(auth()->user())) {
-            return redirect()->back()->with('error', 'Unauthorized action.');
+        if (!$this->canEditOrDelete(auth()->user())) {
+            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin and COO can edit or delete themes.');
         }
 
         $theme = Theme::findOrFail($id);
@@ -65,8 +74,8 @@ class ThemeController extends Controller
 
     public function destroyTheme($id)
     {
-        if (!$this->canManageThemes(auth()->user())) {
-            return redirect()->back()->with('error', 'Unauthorized action.');
+        if (!$this->canEditOrDelete(auth()->user())) {
+            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin and COO can edit or delete themes.');
         }
 
         $theme = Theme::findOrFail($id);
@@ -99,8 +108,8 @@ class ThemeController extends Controller
 
     public function updateSubtheme(Request $request, $id)
     {
-        if (!$this->canManageThemes(auth()->user())) {
-            return redirect()->back()->with('error', 'Unauthorized action.');
+        if (!$this->canEditOrDelete(auth()->user())) {
+            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin and COO can edit or delete subthemes.');
         }
 
         $subtheme = Subtheme::findOrFail($id);
@@ -120,8 +129,8 @@ class ThemeController extends Controller
 
     public function destroySubtheme($id)
     {
-        if (!$this->canManageThemes(auth()->user())) {
-            return redirect()->back()->with('error', 'Unauthorized action.');
+        if (!$this->canEditOrDelete(auth()->user())) {
+            return redirect()->back()->with('error', 'Unauthorized action. Only Super Admin and COO can edit or delete subthemes.');
         }
 
         $subtheme = Subtheme::findOrFail($id);

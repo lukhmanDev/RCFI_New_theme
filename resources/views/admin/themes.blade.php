@@ -113,7 +113,7 @@
                         <th>Theme Name</th>
                         <th style="text-align: center; width: 200px;">Subthemes Count</th>
                         <th style="text-align: center; width: 120px;">Status</th>
-                        @if($canManage)
+                        @if($canEditOrDelete)
                         <th style="text-align: center; width: 140px;">Action</th>
                         @endif
                     </tr>
@@ -142,7 +142,7 @@
                                     </span>
                                 @endif
                             </td>
-                            @if($canManage)
+                            @if($canEditOrDelete)
                             <td style="text-align: center; white-space: nowrap; width: 110px;">
                                 <div style="display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
                                     <button type="button" onclick="openEditThemeModal({{ json_encode($theme) }})" class="btn-custom" style="background: transparent; color: #0284c7; border: 1px solid #0284c7; width: 32px; height: 32px; padding: 0; font-size: 1rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="Edit Theme">
@@ -162,7 +162,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 5 : 4 }}" style="text-align: center; padding: 2.5rem; color: #64748b;">No themes registered yet.</td>
+                            <td colspan="{{ $canEditOrDelete ? 5 : 4 }}" style="text-align: center; padding: 2.5rem; color: #64748b;">No themes registered yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -203,7 +203,7 @@
                         <th>Subtheme Name</th>
                         <th>Parent Theme</th>
                         <th style="text-align: center; width: 120px;">Status</th>
-                        @if($canManage)
+                        @if($canEditOrDelete)
                         <th style="text-align: center; width: 140px;">Action</th>
                         @endif
                     </tr>
@@ -231,7 +231,7 @@
                                     </span>
                                 @endif
                             </td>
-                            @if($canManage)
+                            @if($canEditOrDelete)
                             <td style="text-align: center; white-space: nowrap; width: 110px;">
                                 <div style="display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
                                     <button type="button" onclick="openEditSubthemeModal({{ json_encode($sub) }})" class="btn-custom" style="background: transparent; color: #0284c7; border: 1px solid #0284c7; width: 32px; height: 32px; padding: 0; font-size: 1rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="Edit Subtheme">
@@ -251,7 +251,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 5 : 4 }}" style="text-align: center; padding: 2.5rem; color: #64748b;">No subthemes registered yet.</td>
+                            <td colspan="{{ $canEditOrDelete ? 5 : 4 }}" style="text-align: center; padding: 2.5rem; color: #64748b;">No subthemes registered yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

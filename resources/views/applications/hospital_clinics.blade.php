@@ -97,7 +97,6 @@
                         <th>Name of Applicant</th>
                         <th>Place</th>
                         <th>District</th>
-                        <th>Project Type</th>
                         <th>Requirement</th>
                         <th>Bed Counts</th>
                         <th style="text-align: center;">Status</th>
@@ -116,7 +115,6 @@
                                 $appItem->applicant_name ?? '',
                                 $appItem->place ?? '',
                                 $appItem->district ?? $meta['district'] ?? '',
-                                $meta['project_type'] ?? $appItem->project_type ?? '',
                                 $appItem->village ?? $appItem->town ?? '',
                                 $appItem->panchayat ?? $appItem->panchayath ?? '',
                                 $appItem->status ?? '',
@@ -146,9 +144,6 @@
 
                             <!-- District -->
                             <td>{{ $appItem->district ?? $meta['district'] ?? $meta['locality_district'] ?? 'N/A' }}</td>
-
-                            <!-- Project Type -->
-                            <td>{{ !empty($meta['project_type']) ? ucwords($meta['project_type']) : (!empty($appItem->project_type) ? ucwords($appItem->project_type) : 'N/A') }}</td>
 
                             <!-- Requirement -->
                             <td>{{ $meta['requirement'] ?? 'N/A' }}</td>
@@ -816,6 +811,15 @@
     <!-- Modal Scripts -->
     <script>
         var projectsMap = @json($projectsMap ?? []); window.projectsMap = projectsMap;
+
+        function toggleOrgOther(selectEl, otherId) {
+            const otherInput = document.getElementById(otherId);
+            if (otherInput) {
+                otherInput.style.display = selectEl.value === 'Others' ? 'block' : 'none';
+                if (selectEl.value !== 'Others') otherInput.value = '';
+            }
+        }
+        window.toggleOrgOther = toggleOrgOther;
 
         // Add Application Modal Toggle
         function openModal() {

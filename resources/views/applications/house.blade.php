@@ -97,7 +97,6 @@
                         <th>Name of Applicant</th>
                         <th>Place</th>
                         <th>District</th>
-                        <th>Project Type</th>
                         <th>Accommodation</th>
                         <th>Desired Model</th>
                         <th style="text-align: center;">Status</th>
@@ -146,9 +145,6 @@
 
                             <!-- District -->
                             <td>{{ $appItem->district ?? $meta['district'] ?? $meta['locality_district'] ?? 'N/A' }}</td>
-
-                            <!-- Project Type -->
-                            <td>{{ !empty($meta['project_type']) ? ucwords($meta['project_type']) : (!empty($meta['desired_model']) ? ucwords($meta['desired_model']) : (!empty($appItem->project_type) ? ucwords($appItem->project_type) : 'N/A')) }}</td>
 
                             <!-- Accommodation -->
                             <td>{{ $meta['accommodation_details'] ?? 'N/A' }}</td>
@@ -200,7 +196,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" style="text-align: center; padding: 2rem;">No house applications registered yet.</td>
+                            <td colspan="8" style="text-align: center; padding: 2rem;">No house applications registered yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -243,8 +239,8 @@
     </div>
 
     <!-- Add Application Modal Dialog -->
-    <div id="addAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto;" onclick="closeModal()">
-        <div class="panel" style="width: 100%; max-width: 700px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <div id="addAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: flex-start; justify-content: center; z-index: 1000; overflow-y: auto; padding: 2rem 1rem;" onclick="closeModal()">
+        <div class="panel" style="width: 100%; max-width: 700px; margin: 0 auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547;" onclick="event.stopPropagation()">
             
             <button onclick="closeModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
@@ -360,16 +356,16 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="num_children">Number of Children *</label>
-                            <input type="number" class="form-control-dark" id="num_children" name="meta[num_children]" value="{{ old('meta.num_children') }}" required>
-                        </div>
-                        <div>
                             <label class="form-label" for="num_male_children">Male Children *</label>
-                            <input type="number" class="form-control-dark" id="num_male_children" name="meta[num_male_children]" value="{{ old('meta.num_male_children') }}" required>
+                            <input type="number" class="form-control-dark" id="num_male_children" name="meta[num_male_children]" value="{{ old('meta.num_male_children', 0) }}" min="0" required>
                         </div>
                         <div>
                             <label class="form-label" for="num_female_children">Female Children *</label>
-                            <input type="number" class="form-control-dark" id="num_female_children" name="meta[num_female_children]" value="{{ old('meta.num_female_children') }}" required>
+                            <input type="number" class="form-control-dark" id="num_female_children" name="meta[num_female_children]" value="{{ old('meta.num_female_children', 0) }}" min="0" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="num_children">Number of Children *</label>
+                            <input type="number" class="form-control-dark" id="num_children" name="meta[num_children]" value="{{ old('meta.num_children', 0) }}" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                     </div>
                 </div>
@@ -558,8 +554,8 @@
     </div>
 
     <!-- Edit Application Modal Dialog -->
-    <div id="editAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto;" onclick="closeEditModal()">
-        <div class="panel" style="width: 100%; max-width: 700px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <div id="editAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: flex-start; justify-content: center; z-index: 1000; overflow-y: auto; padding: 2rem 1rem;" onclick="closeEditModal()">
+        <div class="panel" style="width: 100%; max-width: 700px; margin: 0 auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547;" onclick="event.stopPropagation()">
             
             <button onclick="closeEditModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
@@ -676,16 +672,16 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label class="form-label" for="edit_num_children">Number of Children *</label>
-                            <input type="number" class="form-control-dark" id="edit_num_children" name="meta[num_children]" required>
-                        </div>
-                        <div>
                             <label class="form-label" for="edit_num_male_children">Male Children *</label>
-                            <input type="number" class="form-control-dark" id="edit_num_male_children" name="meta[num_male_children]" required>
+                            <input type="number" class="form-control-dark" id="edit_num_male_children" name="meta[num_male_children]" min="0" required>
                         </div>
                         <div>
                             <label class="form-label" for="edit_num_female_children">Female Children *</label>
-                            <input type="number" class="form-control-dark" id="edit_num_female_children" name="meta[num_female_children]" required>
+                            <input type="number" class="form-control-dark" id="edit_num_female_children" name="meta[num_female_children]" min="0" required>
+                        </div>
+                        <div>
+                            <label class="form-label" for="edit_num_children">Number of Children *</label>
+                            <input type="number" class="form-control-dark" id="edit_num_children" name="meta[num_children]" readonly style="background-color: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
                         </div>
                     </div>
                 </div>
@@ -963,9 +959,9 @@
             document.getElementById('edit_contact_number_2').value = meta.contact_number_2 || '';
             document.getElementById('edit_education').value = meta.education || '';
             document.getElementById('edit_married').value = meta.married || 'Yes';
-            document.getElementById('edit_num_children').value = meta.num_children || 0;
             document.getElementById('edit_num_male_children').value = meta.num_male_children || 0;
             document.getElementById('edit_num_female_children').value = meta.num_female_children || 0;
+            document.getElementById('edit_num_children').value = (parseInt(meta.num_male_children) || 0) + (parseInt(meta.num_female_children) || 0);
 
             document.getElementById('edit_has_occupation').value = meta.has_occupation || 'Yes';
             document.getElementById('edit_monthly_income').value = meta.monthly_income || 0;
@@ -1260,6 +1256,44 @@
             });
         @endif
     
+        // Auto-calculate Total Children in House Application Add Modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const maleAdd = document.getElementById('num_male_children');
+            const femaleAdd = document.getElementById('num_female_children');
+            const totalAdd = document.getElementById('num_children');
+
+            function calcTotalAdd() {
+                if (maleAdd && femaleAdd && totalAdd) {
+                    const m = parseInt(maleAdd.value) || 0;
+                    const f = parseInt(femaleAdd.value) || 0;
+                    totalAdd.value = m + f;
+                }
+            }
+
+            if (maleAdd && femaleAdd && totalAdd) {
+                maleAdd.addEventListener('input', calcTotalAdd);
+                femaleAdd.addEventListener('input', calcTotalAdd);
+                calcTotalAdd();
+            }
+
+            const maleEdit = document.getElementById('edit_num_male_children');
+            const femaleEdit = document.getElementById('edit_num_female_children');
+            const totalEdit = document.getElementById('edit_num_children');
+
+            function calcTotalEdit() {
+                if (maleEdit && femaleEdit && totalEdit) {
+                    const m = parseInt(maleEdit.value) || 0;
+                    const f = parseInt(femaleEdit.value) || 0;
+                    totalEdit.value = m + f;
+                }
+            }
+
+            if (maleEdit && femaleEdit && totalEdit) {
+                maleEdit.addEventListener('input', calcTotalEdit);
+                femaleEdit.addEventListener('input', calcTotalEdit);
+            }
+        });
+
         // Global Window Bindings
         window.openModal = openModal;
         window.closeModal = closeModal;

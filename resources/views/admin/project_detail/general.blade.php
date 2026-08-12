@@ -309,7 +309,7 @@
                     <div class="details-label">Agency Project No</div><div class="details-colon">:</div><div class="details-value">{{ $project->agency_project_no ?? 'N/A' }}</div>
                     <div class="details-label">Agency Name</div><div class="details-colon">:</div><div class="details-value">{{ $project->donor ? $project->donor->name : 'N/A' }}</div>
                     <div class="details-label">Project Manager</div><div class="details-colon">:</div><div class="details-value">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</div>
-                    <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">₹{{ number_format($project->available_budget, 2) }}</div>
+                    <div class="details-label">Available Budget</div><div class="details-colon">:</div><div class="details-value">{!! "&#x20B9;" !!}{{ number_format($project->available_budget, 2) }}</div>
                     <div class="details-label">Type of Project</div><div class="details-colon">:</div><div class="details-value">{{ $project->type_of_project }}</div>
                     <div class="details-label">Theme</div><div class="details-colon">:</div><div class="details-value">{{ $project->theme ?? 'N/A' }}</div>
                     <div class="details-label">Subtheme</div><div class="details-colon">:</div><div class="details-value">{{ $project->subtheme ?? 'N/A' }}</div>
@@ -381,7 +381,7 @@
                         <div style="flex: 1; min-width: 220px;">
                             <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Select Phase</label>
                             <select id="project-phase-select" onchange="onPhaseSelectChange()" style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; cursor: pointer;">
-                                <option value="">— Select phase —</option>
+                                <option value="">â€” Select phase â€”</option>
                                 @foreach($phases as $phase)
                                     <option value="{{ $phase }}" {{ $currentPhase === $phase ? 'selected' : '' }}>{{ $phase }}</option>
                                 @endforeach
@@ -389,7 +389,7 @@
                         </div>
                         <div id="phase-custom-box" style="flex: 1; min-width: 180px; {{ $currentPhase === 'Other' ? '' : 'display: none;' }}">
                             <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Describe (Other)</label>
-                            <input type="text" id="project-phase-custom" placeholder="Enter custom status…" maxlength="255"
+                            <input type="text" id="project-phase-custom" placeholder="Enter custom statusâ€¦" maxlength="255"
                                    value="{{ $currentCustom }}"
                                    style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main); font-size: 0.9rem; outline: none; box-sizing: border-box;">
                         </div>
@@ -433,8 +433,8 @@
                                     'General' => 'GN'
                                 ];
                                 $prefix = $prefixes[$project->type_of_project] ?? 'APP';
-                                $formattedAppId = $app ? 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT) : '—';
-                                $applicantName = $app ? $app->applicant_name : '—';
+                                $formattedAppId = $app ? 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT) : 'â€”';
+                                $applicantName = $app ? $app->applicant_name : 'â€”';
                             @endphp
                             <div onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked and cannot be changed.', 'warning'); } else { alert('Assigned application is locked and cannot be changed.'); }" style="cursor: pointer; flex-grow: 1;">
                                 <select name="application_id" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.9rem; pointer-events: none; opacity: 0.75;" required>
@@ -446,37 +446,50 @@
                             </button>
                         </div>
                     @else
-                        <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
+                        <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; flex-direction: column; gap: 0.85rem; max-width: 600px; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.15rem; border-radius: 8px;">
                             @csrf
-                            <select name="application_id" onchange="updateRealtimeApplicationDetails(this.value)" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; flex-grow: 1; outline: none; font-size: 0.9rem;" required>
-                                <option value="">Select an application to assign...</option>
-                                @foreach($allApplications as $app)
-                                    @php
-                                        $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
-                                        $prefixes = [
-                                            'Education Center' => 'EC',
-                                            'Cultural Center' => 'CC',
-                                            'Hospital or Clinics' => 'HC',
-                                            'Shops and Others' => 'SO',
-                                            'House' => 'HS',
-                                            'Drinking Water - Group Level' => 'DWG',
-                                            'Drinking Water - Individual Level' => 'DWI',
-                                            'Orphan Care' => 'OC',
-                                            'Differently Abled' => 'DA',
-                                            'Family Aid' => 'FA',
-                                            'General' => 'GN'
-                                        ];
-                                        $prefix = $prefixes[$project->type_of_project] ?? 'APP';
-                                        $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
-                                        $isSelected = $project->application_id == $app->id ? 'selected' : '';
-                                    @endphp
-                                    <option value="{{ $app->id }}" {{ $isSelected }}>
-                                        {{ $formattedAppId }} - {{ $app->applicant_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer;">
-                                Assign
+                            <div>
+                                <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Select Application <span style="color:#ef4444;">*</span></label>
+                                <select name="application_id" onchange="updateRealtimeApplicationDetails(this.value)" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.55rem 0.85rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.9rem;" required>
+                                    <option value="">Select an application to assign...</option>
+                                    @foreach($allApplications as $app)
+                                        @php
+                                            $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
+                                            $prefixes = [
+                                                'Education Center' => 'EC',
+                                                'Cultural Center' => 'CC',
+                                                'Hospital or Clinics' => 'HC',
+                                                'Shops and Others' => 'SO',
+                                                'House' => 'HS',
+                                                'Drinking Water - Group Level' => 'DWG',
+                                                'Drinking Water - Individual Level' => 'DWI',
+                                                'Orphan Care' => 'OC',
+                                                'Differently Abled' => 'DA',
+                                                'Family Aid' => 'FA',
+                                                'General' => 'GN'
+                                            ];
+                                            $prefix = $prefixes[$project->type_of_project] ?? 'APP';
+                                            $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
+                                            $isSelected = $project->application_id == $app->id ? 'selected' : '';
+                                        @endphp
+                                        <option value="{{ $app->id }}" {{ $isSelected }}>
+                                            {{ $formattedAppId }} - {{ $app->applicant_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Total Beneficiary Peoples <span style="color:#ef4444;">*</span></label>
+                                    <input type="number" min="0" name="total_beneficiary_peoples" value="{{ old('total_beneficiary_peoples', $project->total_beneficiary_peoples ?? $project->num_benefited_people ?? '') }}" placeholder="Enter total beneficiary peoples" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.55rem 0.85rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.88rem;" required>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Total Family <span style="color:#ef4444;">*</span></label>
+                                    <input type="number" min="0" name="total_family" value="{{ old('total_family', $project->total_family ?? '') }}" placeholder="Enter total family" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.55rem 0.85rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.88rem;" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer; align-self: flex-start; margin-top: 0.25rem;">
+                                Assign Application
                             </button>
                         </form>
                     @endif
@@ -487,8 +500,24 @@
 
         <!-- ================= STAGE 2 PANEL (APPLICANT DETAIL) ================= -->
         <div class="stage-content-panel" id="stage-content-2">
-            <div class="detail-header-panel">
+            @php
+                $appYear = ($application && !empty($application->created_at)) ? date('y', strtotime($application->created_at)) : '24';
+                $prefixes = [
+                    'Education Center' => 'EC', 'Cultural Center' => 'CC', 'Hospital or Clinics' => 'HC',
+                    'Shops and Others' => 'SO', 'House' => 'HS',
+                    'Drinking Water - Group Level' => 'DWG', 'Drinking Water - Individual Level' => 'DWI',
+                    'Orphan Care' => 'OC', 'Differently Abled' => 'DA', 'Family Aid' => 'FA', 'General' => 'GN'
+                ];
+                $prefix = $prefixes[$project->type_of_project] ?? 'APP';
+                $appId = $application ? ('APLRCFI' . $appYear . $prefix . str_pad($application->id, 5, '0', STR_PAD_LEFT)) : 'N/A';
+            @endphp
+            <div class="detail-header-panel" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2>APPLICANT DETAIL</h2>
+                @if($application)
+                <span style="font-size: 0.8rem; font-weight: 700; color: #10b981; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); padding: 0.3rem 0.85rem; border-radius: 20px; letter-spacing: 0.04em; white-space: nowrap;">
+                    App ID: {{ $appId }}
+                </span>
+                @endif
             </div>
             <div style="padding: 1.5rem;">
                 @php
@@ -540,8 +569,8 @@
                                     'General' => 'GN'
                                 ];
                                 $prefix = $prefixes[$project->type_of_project] ?? 'APP';
-                                $formattedAppId = $app ? 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT) : '—';
-                                $applicantName = $app ? $app->applicant_name : '—';
+                                $formattedAppId = $app ? 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT) : 'â€”';
+                                $applicantName = $app ? $app->applicant_name : 'â€”';
                             @endphp
                             <div onclick="if(typeof showToast === 'function') { showToast('Assigned application is locked after Stage 4 approval.', 'warning'); } else { alert('Assigned application is locked after Stage 4 approval.'); }" style="cursor: pointer; flex-grow: 1;">
                                 <select name="application_id" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.9rem; pointer-events: none; opacity: 0.75;" required>
@@ -553,37 +582,50 @@
                             </button>
                         </div>
                     @else
-                        <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; max-width: 500px;">
+                        <form action="{{ route('projects.assign_application', $project->id) }}" method="POST" style="display: flex; flex-direction: column; gap: 0.85rem; max-width: 600px; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.15rem; border-radius: 8px;">
                             @csrf
-                            <select name="application_id" onchange="updateRealtimeApplicationDetails(this.value)" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.5rem 1rem; border-radius: 6px; flex-grow: 1; outline: none; font-size: 0.9rem;" required>
-                                <option value="">Select an application to assign...</option>
-                                @foreach($allApplications as $app)
-                                    @php
-                                        $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
-                                        $prefixes = [
-                                            'Education Center' => 'EC',
-                                            'Cultural Center' => 'CC',
-                                            'Hospital or Clinics' => 'HC',
-                                            'Shops and Others' => 'SO',
-                                            'House' => 'HS',
-                                            'Drinking Water - Group Level' => 'DWG',
-                                            'Drinking Water - Individual Level' => 'DWI',
-                                            'Orphan Care' => 'OC',
-                                            'Differently Abled' => 'DA',
-                                            'Family Aid' => 'FA',
-                                            'General' => 'GN'
-                                        ];
-                                        $prefix = $prefixes[$project->type_of_project] ?? 'APP';
-                                        $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
-                                        $isSelected = $project->application_id == $app->id ? 'selected' : '';
-                                    @endphp
-                                    <option value="{{ $app->id }}" {{ $isSelected }}>
-                                        {{ $formattedAppId }} - {{ $app->applicant_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer;">
-                                {{ !empty($project->application_id) ? 'Change' : 'Assign' }}
+                            <div>
+                                <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Select Application <span style="color:#ef4444;">*</span></label>
+                                <select name="application_id" onchange="updateRealtimeApplicationDetails(this.value)" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.55rem 0.85rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.9rem;" required>
+                                    <option value="">Select an application to assign...</option>
+                                    @foreach($allApplications as $app)
+                                        @php
+                                            $appYear = !empty($app->created_at) ? date('y', strtotime($app->created_at)) : '24';
+                                            $prefixes = [
+                                                'Education Center' => 'EC',
+                                                'Cultural Center' => 'CC',
+                                                'Hospital or Clinics' => 'HC',
+                                                'Shops and Others' => 'SO',
+                                                'House' => 'HS',
+                                                'Drinking Water - Group Level' => 'DWG',
+                                                'Drinking Water - Individual Level' => 'DWI',
+                                                'Orphan Care' => 'OC',
+                                                'Differently Abled' => 'DA',
+                                                'Family Aid' => 'FA',
+                                                'General' => 'GN'
+                                            ];
+                                            $prefix = $prefixes[$project->type_of_project] ?? 'APP';
+                                            $formattedAppId = 'APLRCFI' . $appYear . $prefix . str_pad($app->id, 5, '0', STR_PAD_LEFT);
+                                            $isSelected = $project->application_id == $app->id ? 'selected' : '';
+                                        @endphp
+                                        <option value="{{ $app->id }}" {{ $isSelected }}>
+                                            {{ $formattedAppId }} - {{ $app->applicant_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Total Beneficiary Peoples <span style="color:#ef4444;">*</span></label>
+                                    <input type="number" min="0" name="total_beneficiary_peoples" value="{{ old('total_beneficiary_peoples', $project->total_beneficiary_peoples ?? $project->num_benefited_people ?? '') }}" placeholder="Enter total beneficiary peoples" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.55rem 0.85rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.88rem;" required>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Total Family <span style="color:#ef4444;">*</span></label>
+                                    <input type="number" min="0" name="total_family" value="{{ old('total_family', $project->total_family ?? '') }}" placeholder="Enter total family" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.55rem 0.85rem; border-radius: 6px; width: 100%; outline: none; font-size: 0.88rem;" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-custom" style="padding: 0.55rem 1.25rem; white-space: nowrap; cursor: pointer; align-self: flex-start; margin-top: 0.25rem;">
+                                {{ !empty($project->application_id) ? 'Change & Save Details' : 'Assign Application' }}
                             </button>
                         </form>
                     @endif
@@ -673,7 +715,7 @@
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Land Area (Sq):</td><td>{!! $formatVal($metaData['land_area_sq'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Classrooms Count:</td><td>{!! $formatVal($metaData['num_classrooms'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Students:</td><td>{!! $formatVal($metaData['num_students'] ?? null) !!}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">{{ $application->amount_requested ? '₹' . number_format($application->amount_requested) : 'N/A' }}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Proposed Budget:</td><td style="color: var(--accent-green); font-weight: 600;">{{ $application->amount_requested ? '&#x20B9;' . number_format($application->amount_requested) : 'N/A' }}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Legal Approvals:</td><td>{!! $formatVal($metaData['legal_approvals_status'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Permitted Area:</td><td>{!! $formatVal($metaData['area'] ?? null) !!}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Review Status:</td><td style="font-weight: 600; color: var(--text-main);">{{ $application->status }}</td></tr>
@@ -762,7 +804,7 @@
                                 <form action="{{ route('projects.approve', $project->id) }}" method="POST" style="display: flex; gap: 0.75rem; flex-grow: 1; align-items: center; margin: 0;">
                                     @csrf
                                     <input type="hidden" name="action" value="reject">
-                                    <input type="text" name="remarks" placeholder="Provide rejection reason (optional)…" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: var(--text-main); padding: 0.5rem; border-radius: 6px; flex-grow: 1; font-size: 0.85rem; outline: none;">
+                                    <input type="text" name="remarks" placeholder="Provide rejection reason (optional)â€¦" style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: var(--text-main); padding: 0.5rem; border-radius: 6px; flex-grow: 1; font-size: 0.85rem; outline: none;">
                                     <button type="submit" class="btn-danger-custom" style="padding: 0.55rem 1.5rem; background: #eb3b5a; border-color: #eb3b5a; color: #ffffff; font-weight: 700; cursor: pointer;">
                                         <i class="bx bx-x-circle"></i> Reject
                                     </button>
@@ -776,13 +818,13 @@
                                 <form action="{{ route('projects.approve', $project->id) }}" method="POST">
                                     @csrf
                                     <input type="hidden" name="action" value="submit">
-                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px;">
+                                    <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: #ffffff; font-weight: 700; padding: 0.6rem 1.8rem; cursor: pointer; border-radius: 6px;">
                                         <i class="bx bx-send"></i> Submit for HOD/COO Approval
                                     </button>
                                 </form>
                             @elseif($project->status === 'Pending Approval')
                                 <div style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #8cf5c6; padding: 0.85rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; display: inline-block;">
-                                    <i class="bx bx-check-circle"></i> Submitted — awaiting HOD/COO Approval.
+                                    <i class="bx bx-check-circle"></i> Submitted â€” awaiting HOD/COO Approval.
                                 </div>
                             @endif
                         @endif
@@ -864,19 +906,19 @@
                     <!-- Project Budget Card -->
                     <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid #10b981;">
                         <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Project Budget</div>
-                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--text-main);">₹{{ number_format($project->available_budget, 2) }}</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--text-main);">{!! "&#x20B9;" !!}{{ number_format($project->available_budget, 2) }}</div>
                     </div>
 
                     <!-- Total Allocated Card -->
                     <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(6, 182, 212, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid var(--accent-cyan);">
                         <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Total Allocated</div>
-                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($totalAmount, 2) }}</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($totalAmount, 2) }}</div>
                     </div>
 
                     <!-- Total Card (Allocated + Community Contribution) -->
                     <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(129, 140, 248, 0.2); padding: 1.25rem; border-radius: 8px; border-left: 4px solid #818cf8;">
                         <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Total</div>
-                        <div style="font-size: 1.3rem; font-weight: 700; color: #818cf8;">₹{{ number_format($grandTotal, 2) }}</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #818cf8;">{!! "&#x20B9;" !!}{{ number_format($grandTotal, 2) }}</div>
                     </div>
                 </div>
 
@@ -905,7 +947,7 @@
                                 <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $item['material'] }}</td>
                                 <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">
                                     <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
-                                        <span>₹ {{ number_format($item['amount'], 2) }}</span>
+                                        <span>&#x20B9; {{ number_format($item['amount'], 2) }}</span>
                                         @if($isProjectManager && $hasApplication && !$isLockedForEditing)
                                             <button onclick="openEditMaterialModal({{ $index }}, '{{ addslashes($item['material']) }}', {{ $item['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
                                                 <i class="bx bx-pencil"></i>
@@ -924,7 +966,7 @@
                         @endforeach
                         <tr style="border-top: 2px solid var(--panel-border);">
                             <td style="font-weight: 700; color: var(--accent-cyan);">Total</td>
-                            <td style="text-align: right; font-weight: 700; color: var(--accent-cyan);">₹ {{ number_format($totalAmount, 2) }}</td>
+                            <td style="text-align: right; font-weight: 700; color: var(--accent-cyan);">&#x20B9; {{ number_format($totalAmount, 2) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -963,7 +1005,7 @@
                                 <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $item['item'] }}</td>
                                 <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">
                                     <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
-                                        <span>₹ {{ number_format($item['amount'], 2) }}</span>
+                                        <span>&#x20B9; {{ number_format($item['amount'], 2) }}</span>
                                         @if($isProjectManager && $hasApplication && !$isLockedForEditing)
                                             <button onclick="openEditCommContribModal({{ $index }}, '{{ addslashes($item['item']) }}', {{ $item['amount'] }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
                                                 <i class="bx bx-pencil"></i>
@@ -982,7 +1024,7 @@
                         @endforeach
                         <tr style="border-top: 2px solid var(--panel-border);">
                             <td style="font-weight: 700; color: var(--accent-cyan);">Total</td>
-                            <td style="text-align: right; font-weight: 700; color: var(--accent-cyan);">₹ {{ number_format($commTotal, 2) }}</td>
+                            <td style="text-align: right; font-weight: 700; color: var(--accent-cyan);">&#x20B9; {{ number_format($commTotal, 2) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1101,7 +1143,7 @@
                                 <!-- Total Budget Card -->
                                 <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 0.5rem 0.75rem; border-radius: 6px;">
                                     <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Total Allocated</div>
-                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">₹{{ number_format($stage5TotalBudget, 2) }}</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">{!! "&#x20B9;" !!}{{ number_format($stage5TotalBudget, 2) }}</span>
                                 </div>
                                 <!-- Balance Card -->
                                 <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px;">
@@ -1109,7 +1151,7 @@
                                         <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--accent-cyan); border-radius: 50%;"></span>
                                         <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Total Balance</span>
                                     </div>
-                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($stage5BalanceAmount, 2) }}</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($stage5BalanceAmount, 2) }}</span>
                                     <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.1rem;">{{ number_format($stage5BalancePercentage, 1) }}% left</div>
                                 </div>
                                 <!-- Expense Card -->
@@ -1118,7 +1160,7 @@
                                         <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--accent-red); border-radius: 50%;"></span>
                                         <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Total Expenses</span>
                                     </div>
-                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-red);">₹{{ number_format($stage5SpentAmount, 2) }}</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-red);">{!! "&#x20B9;" !!}{{ number_format($stage5SpentAmount, 2) }}</span>
                                     <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.1rem;">{{ number_format($stage5SpentPercentage, 1) }}% spent</div>
                                 </div>
                             </div>
@@ -1150,7 +1192,7 @@
                                 <!-- Total Budget Card -->
                                 <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--panel-border); padding: 0.5rem 0.75rem; border-radius: 6px;">
                                     <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Total Contribution</div>
-                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">₹{{ number_format($stage5CommTotal, 2) }}</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">{!! "&#x20B9;" !!}{{ number_format($stage5CommTotal, 2) }}</span>
                                 </div>
                                 <!-- Balance Card -->
                                 <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px;">
@@ -1158,7 +1200,7 @@
                                         <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--accent-cyan); border-radius: 50%;"></span>
                                         <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Total Balance</span>
                                     </div>
-                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-cyan);">₹{{ number_format($stage5CommBalance, 2) }}</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($stage5CommBalance, 2) }}</span>
                                     <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.1rem;">{{ number_format($stage5CommBalancePercentage, 1) }}% left</div>
                                 </div>
                                 <!-- Expense Card -->
@@ -1167,7 +1209,7 @@
                                         <span style="display: inline-block; width: 6px; height: 6px; background-color: var(--accent-red); border-radius: 50%;"></span>
                                         <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Total Expenses</span>
                                     </div>
-                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-red);">₹{{ number_format($stage5CommSpent, 2) }}</span>
+                                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-red);">{!! "&#x20B9;" !!}{{ number_format($stage5CommSpent, 2) }}</span>
                                     <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.1rem;">{{ number_format($stage5CommSpentPercentage, 1) }}% spent</div>
                                 </div>
                             </div>
@@ -1210,10 +1252,10 @@
                                     <td style="font-weight: 700; color: var(--text-main); vertical-align: middle;">
                                         <i class="bx bx-package" style="color: var(--accent-cyan); margin-right: 0.5rem;"></i>{{ $material['material'] }}
                                     </td>
-                                    <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">₹{{ number_format($material['amount'], 2) }}</td>
-                                    <td style="text-align: right; font-weight: 600; color: var(--accent-red); vertical-align: middle;">₹{{ number_format($itemTotalSpent, 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">{!! "&#x20B9;" !!}{{ number_format($material['amount'], 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--accent-red); vertical-align: middle;">{!! "&#x20B9;" !!}{{ number_format($itemTotalSpent, 2) }}</td>
                                     <td style="text-align: right; font-weight: 600; color: {{ $itemBalance >= 0 ? 'var(--accent-cyan)' : 'var(--accent-red)' }}; vertical-align: middle;">
-                                        ₹{{ number_format($itemBalance, 2) }}
+                                        {!! "&#x20B9;" !!}{{ number_format($itemBalance, 2) }}
                                     </td>
                                     <td style="text-align: center; vertical-align: middle;">
                                         @if($isProjectManager && $hasApplication && !$isLockedForEditing)
@@ -1236,7 +1278,7 @@
                                             <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">
                                                 Qty: {{ $expense['quantity'] ?? 1 }}
                                             </td>
-                                            <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">₹{{ number_format($expense['amount'], 2) }}</td>
+                                            <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">{!! "&#x20B9;" !!}{{ number_format($expense['amount'], 2) }}</td>
                                             <td></td>
                                             <td style="text-align: center; vertical-align: middle;">
                                                 @if($isProjectManager && $hasApplication && !$isLockedForEditing)
@@ -1300,10 +1342,10 @@
                                     <td style="font-weight: 700; color: var(--text-main); vertical-align: middle;">
                                         <i class="bx bx-group" style="color: var(--accent-cyan); margin-right: 0.5rem;"></i>{{ $comm['item'] }}
                                     </td>
-                                    <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">₹{{ number_format($comm['amount'], 2) }}</td>
-                                    <td style="text-align: right; font-weight: 600; color: var(--accent-red); vertical-align: middle;">₹{{ number_format($itemTotalCommSpent, 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--text-main); vertical-align: middle;">{!! "&#x20B9;" !!}{{ number_format($comm['amount'], 2) }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--accent-red); vertical-align: middle;">{!! "&#x20B9;" !!}{{ number_format($itemTotalCommSpent, 2) }}</td>
                                     <td style="text-align: right; font-weight: 600; color: {{ $itemCommBalance >= 0 ? 'var(--accent-cyan)' : 'var(--accent-red)' }}; vertical-align: middle;">
-                                        ₹{{ number_format($itemCommBalance, 2) }}
+                                        {!! "&#x20B9;" !!}{{ number_format($itemCommBalance, 2) }}
                                     </td>
                                     <td style="text-align: center; vertical-align: middle;">
                                         @if($isProjectManager && $hasApplication && !$isLockedForEditing)
@@ -1326,7 +1368,7 @@
                                             <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">
                                                 Qty: {{ $expense['quantity'] ?? 1 }}
                                             </td>
-                                            <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">₹{{ number_format($expense['amount'], 2) }}</td>
+                                            <td style="text-align: right; color: var(--text-muted); font-size: 0.85rem; vertical-align: middle;">{!! "&#x20B9;" !!}{{ number_format($expense['amount'], 2) }}</td>
                                             <td></td>
                                             <td style="text-align: center; vertical-align: middle;">
                                                 @if($isProjectManager && $hasApplication && !$isLockedForEditing)
@@ -1505,7 +1547,7 @@
                             @if($isProjectManager && !$isLockedForEditing)
                                 <form action="{{ route('projects.update_map_link', $project->id) }}" method="POST" style="margin: 0; display: inline-flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                                     @csrf
-                                    <input type="url" name="location_map_link" placeholder="Paste Google Maps URL here…" required style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
+                                    <input type="url" name="location_map_link" placeholder="Paste Google Maps URL hereâ€¦" required style="background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc; padding: 0.45rem 0.75rem; border-radius: 6px; font-size: 0.8rem; width: 220px; outline: none;" value="{{ $locationMapLink }}">
                                     <button type="submit" class="btn-custom" style="padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
                                         <i class="bx bx-save"></i> Save Link
                                     </button>
@@ -1608,18 +1650,24 @@
                             <div class="photo-card" data-category="{{ $key }}">
                                 <h4 class="photo-card-header">
                                     <span class="photo-card-title">{{ $colData['title'] }}</span>
-                                    <span style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted); flex-shrink: 0;">{{ count($colData['photos']) }}</span>
+                                    <span style="font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted); flex-shrink: 0;">{{ count($colData['photos']) }} / 3</span>
                                 </h4>
 
                                 @if($isProjectManager)
-                                    <form action="{{ route('projects.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
-                                        @csrf
-                                        <input type="hidden" name="category" value="{{ $key }}">
-                                        <input type="file" name="photo" accept="image/*" required style="font-size: 0.75rem; color: var(--text-muted); width: 100%;">
-                                        <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; width: 100%;">
-                                            <i class="bx bx-upload"></i> {{ !empty($colData['photos']) ? 'Replace Photo' : 'Upload Photo' }}
-                                        </button>
-                                    </form>
+                                    @if(count($colData['photos']) < 3)
+                                        <form action="{{ route('projects.upload_photo', $project->id) }}" method="POST" enctype="multipart/form-data" style="margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                                            @csrf
+                                            <input type="hidden" name="category" value="{{ $key }}">
+                                            <input type="file" name="photos[]" multiple accept="image/*" required style="font-size: 0.75rem; color: var(--text-muted); width: 100%;">
+                                            <button type="submit" class="btn-custom" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; width: 100%;">
+                                                <i class="bx bx-upload"></i> Upload Photos (Max 3)
+                                            </button>
+                                        </form>
+                                    @else
+                                        <div style="font-size: 0.75rem; color: #f59e0b; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.35rem 0.5rem; border-radius: 6px; text-align: center; margin-bottom: 0.75rem; font-weight: 600;">
+                                            Maximum 3 photos reached.
+                                        </div>
+                                    @endif
                                 @endif
 
                                 <div class="photo-list-container">
@@ -1687,33 +1735,33 @@
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
-                                        Total Grands (₹)
+                                        Total Grands (&#x20B9;)
                                         <span style="font-size: 0.75rem; color: var(--accent-cyan); margin-left: 0.3rem;">(auto)</span>
                                     </label>
                                     <input type="text" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;" value="{{ number_format($finTotalGrands, 2) }}">
                                 </div>
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
-                                        Community Contribution (₹)
+                                        Community Contribution (&#x20B9;)
                                         <span style="font-size: 0.75rem; color: var(--accent-cyan); margin-left: 0.3rem;">(auto)</span>
                                     </label>
                                     <input type="text" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;" value="{{ number_format($finCommContrib, 2) }}">
                                 </div>
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Leverage (₹)</label>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Leverage (&#x20B9;)</label>
                                     <input type="number" name="amount_paid_by_donor" id="fin_amount_paid_by_donor" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('amount_paid_by_donor', $compDetails['amount_paid_by_donor'] ?? 0) }}">
                                 </div>
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Any Other (₹)</label>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Any Other (&#x20B9;)</label>
                                     <input type="number" name="any_other" id="fin_any_other" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('any_other', $compDetails['any_other'] ?? 0) }}">
                                 </div>
                                 <div>
-                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Deductions (₹)</label>
+                                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Deductions (&#x20B9;)</label>
                                     <input type="number" name="deductions" id="fin_deductions" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="{{ old('deductions', $compDetails['deductions'] ?? 0) }}">
                                 </div>
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
-                                        Total Project Cost (₹)
+                                        Total Project Cost (&#x20B9;)
                                         <span style="font-size: 0.75rem; color: #10b981; margin-left: 0.3rem;">(auto)</span>
                                     </label>
                                     <input type="number" name="total_project_cost" id="fin_total_project_cost" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid rgba(16,185,129,0.4); background-color: rgba(16,185,129,0.05); color: #10b981; cursor: not-allowed; font-weight: 700; font-size: 1rem;" value="{{ old('total_project_cost', $compDetails['total_project_cost'] ?? $project->available_budget) }}">
@@ -1754,22 +1802,22 @@
                     @else
                         <div class="details-grid">
                             <div class="details-label">Total Grands</div><div class="details-colon">:</div>
-                            <div class="details-value">₹{{ number_format($compDetails['total_amount'] ?? $project->available_budget, 2) }}</div>
+                            <div class="details-value">{!! "&#x20B9;" !!}{{ number_format($compDetails['total_amount'] ?? $project->available_budget, 2) }}</div>
 
                             <div class="details-label">Community Contribution</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['community_contribution'] ?? 0, 2) }}</div>
+                            <div class="details-value" style="color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($compDetails['community_contribution'] ?? 0, 2) }}</div>
 
                             <div class="details-label">Leverage</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-cyan);">₹{{ number_format($compDetails['amount_paid_by_donor'] ?? 0, 2) }}</div>
+                            <div class="details-value" style="color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($compDetails['amount_paid_by_donor'] ?? 0, 2) }}</div>
 
                             <div class="details-label">Any Other</div><div class="details-colon">:</div>
-                            <div class="details-value">₹{{ number_format($compDetails['any_other'] ?? 0, 2) }}</div>
+                            <div class="details-value">{!! "&#x20B9;" !!}{{ number_format($compDetails['any_other'] ?? 0, 2) }}</div>
 
                             <div class="details-label">Deductions</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-red);">₹{{ number_format($compDetails['deductions'] ?? 0, 2) }}</div>
+                            <div class="details-value" style="color: var(--accent-red);">{!! "&#x20B9;" !!}{{ number_format($compDetails['deductions'] ?? 0, 2) }}</div>
 
                             <div class="details-label" style="font-weight: 700;">Total Project Cost</div><div class="details-colon">:</div>
-                            <div class="details-value" style="font-weight: 700; color: #10b981;">₹{{ number_format(($compDetails['total_amount'] ?? $project->available_budget) + ($compDetails['community_contribution'] ?? 0) + ($compDetails['amount_paid_by_donor'] ?? 0) + ($compDetails['any_other'] ?? 0) - ($compDetails['deductions'] ?? 0), 2) }}</div>
+                            <div class="details-value" style="font-weight: 700; color: #10b981;">{!! "&#x20B9;" !!}{{ number_format(($compDetails['total_amount'] ?? $project->available_budget) + ($compDetails['community_contribution'] ?? 0) + ($compDetails['amount_paid_by_donor'] ?? 0) + ($compDetails['any_other'] ?? 0) - ($compDetails['deductions'] ?? 0), 2) }}</div>
 
                             <div class="details-label">Completion Status</div><div class="details-colon">:</div>
                             <div class="details-value">
@@ -1789,7 +1837,7 @@
 
                     @if($project->status === 'Completed')
                         <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1.5rem; border-radius: 8px; display: flex; flex-direction: column; gap: 0.75rem;">
-                            <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; text-transform: uppercase;">✓ Project Completed & Finalized</h4>
+                            <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; text-transform: uppercase;">âœ“ Project Completed & Finalized</h4>
                             @php
                                 $cooStatus = $project->projectStatus;
                                 $cooApprovedAt = $cooStatus ? $cooStatus->coo_approved_at : null;
@@ -1824,7 +1872,7 @@
                                     <input type="hidden" name="action" value="finalize_approval">
                                     <div style="width: 100%; max-width: 500px;">
                                         <label for="remarks" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Approval Remarks (Optional):</label>
-                                        <textarea name="remarks" id="remarks" rows="3" placeholder="Enter final approval remarks…" style="width: 100%; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical;"></textarea>
+                                        <textarea name="remarks" id="remarks" rows="3" placeholder="Enter final approval remarksâ€¦" style="width: 100%; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #ffffff; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical;"></textarea>
                                     </div>
                                     <button type="submit" class="btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: #ffffff; cursor: pointer; font-weight: 700; padding: 0.6rem 1.8rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem;">
                                         <i class="bx bx-check-circle"></i> Finalize Project Approval & Complete
@@ -1893,54 +1941,71 @@
                     const titleText = c.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
                     if (titleText.includes(searchKey) || c.getAttribute('data-category') === category) {
                         return c;
-                    }
-                }
-
-                const categoryMap = {
-                    'before': 0, 'starting': 1, 'inbetween': 2, 'after': 3, 'banner': 4, 'stone': 5, 'inauguration': 6
-                };
-                const idx = categoryMap[catLower];
-                if (idx !== undefined && cards[idx]) return cards[idx];
-
                 return null;
             }
 
             function renderPhotoInDOM(data) {
                 const category = data.category || 'after';
-                const photoUrl = data.photo_url || data.path;
-                const deleteUrl = data.delete_url || (`{{ url('admin/projects/' . $project->id . '/delete-photo') }}/${data.photo_index ?? data.index}?category=${category}`);
-                const totalPhotos = data.total_photos !== undefined ? data.total_photos : ((data.photo_index ?? data.index) + 1);
+                const photos = data.photos || [];
+                const totalPhotos = data.total_photos !== undefined ? data.total_photos : photos.length;
 
                 const targetCard = findTargetPhotoCard(category);
+                if (!targetCard) return;
 
-                if (targetCard) {
-                    const badge = targetCard.querySelector('.photo-card-header span:last-child');
-                    if (badge) badge.textContent = totalPhotos;
+                const badge = targetCard.querySelector('.photo-card-header span:last-child');
+                if (badge) badge.textContent = `${totalPhotos} / 3`;
 
-                    const container = targetCard.querySelector('.photo-list-container');
-                    if (container) {
-                        container.innerHTML = '';
-                        const photoDiv = document.createElement('div');
-                        photoDiv.style.cssText = 'position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease;';
-                        
-                        photoDiv.innerHTML = `
-                            <a href="${photoUrl}" target="_blank" style="display: block; line-height: 0;">
-                                <img src="${photoUrl}" style="width: 100%; max-height: 280px; object-fit: contain; background: rgba(0, 0, 0, 0.3); display: block;" alt="Photo ${totalPhotos}">
-                            </a>
-                            <form action="${deleteUrl}" method="POST" style="position: absolute; top: 0.3rem; right: 0.3rem; margin: 0;">
-                                <input type="hidden" name="_token" value="${csrfToken}">
-                                <input type="hidden" name="_method" value="DELETE">
-                                <button type="submit" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(231,76,60,0.9); border: none; color: #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.5);" title="Delete Photo">
-                                    <i class="bx bx-trash" style="font-size: 0.8rem;"></i>
-                                </button>
-                            </form>
-                            <div style="padding: 0.3rem 0.5rem; font-size: 0.72rem; color: var(--text-muted);">
-                                Photo ${totalPhotos}
-                            </div>
-                        `;
-                        container.appendChild(photoDiv);
+                let form = targetCard.querySelector('form[action*="upload_photo"], form[action*="upload-photo"]');
+                let maxMsg = targetCard.querySelector('.max-photos-msg');
+
+                if (totalPhotos >= 3) {
+                    if (form) form.style.display = 'none';
+                    if (!maxMsg) {
+                        maxMsg = document.createElement('div');
+                        maxMsg.className = 'max-photos-msg';
+                        maxMsg.style.cssText = 'font-size: 0.75rem; color: #f59e0b; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.35rem 0.5rem; border-radius: 6px; text-align: center; margin-bottom: 0.75rem; font-weight: 600;';
+                        maxMsg.textContent = 'Maximum 3 photos reached.';
+                        if (form) form.parentNode.insertBefore(maxMsg, form.nextSibling);
+                    } else {
+                        maxMsg.style.display = 'block';
                     }
+                } else {
+                    if (form) form.style.display = 'flex';
+                    if (maxMsg) maxMsg.style.display = 'none';
                 }
+
+                const container = targetCard.querySelector('.photo-list-container');
+                if (!container) return;
+
+                container.innerHTML = '';
+
+                if (photos.length === 0) {
+                    const cardTitle = targetCard.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
+                    container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
+                    return;
+                }
+
+                photos.forEach((p, idx) => {
+                    const photoDiv = document.createElement('div');
+                    photoDiv.style.cssText = 'position: relative; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.3s ease;';
+
+                    photoDiv.innerHTML = `
+                        <a href="${p.url}" target="_blank" style="display: block; line-height: 0;">
+                            <img src="${p.url}" style="width: 100%; height: 120px; object-fit: cover; display: block;" alt="Photo ${idx + 1}">
+                        </a>
+                        <form action="${p.delete_url}" method="POST" style="position: absolute; top: 0.3rem; right: 0.3rem; margin: 0;">
+                            <input type="hidden" name="_token" value="${csrfToken}">
+                            <input type="hidden" name="_method" value="DELETE">
+                            <button type="submit" style="width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(231,76,60,0.9); border: none; color: #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.5);" title="Delete Photo">
+                                <i class="bx bx-trash" style="font-size: 0.8rem;"></i>
+                            </button>
+                        </form>
+                        <div style="padding: 0.3rem 0.5rem; font-size: 0.72rem; color: var(--text-muted);">
+                            Photo ${idx + 1}
+                        </div>
+                    `;
+                    container.appendChild(photoDiv);
+                });
             }
 
             if (window.__photoSubmitHandler) {
@@ -2010,9 +2075,6 @@
                     const doDelete = async () => {
                         form.dataset.submitting = 'true';
 
-                        const photoItem = form.closest('div[style*="position: relative"]');
-                        const card = form.closest('.photo-card');
-
                         try {
                             const response = await fetch(action, {
                                 method: 'POST',
@@ -2026,24 +2088,7 @@
                             const data = await response.json();
 
                             if (data.success) {
-                                if (photoItem) {
-                                    photoItem.style.transition = 'all 0.3s ease';
-                                    photoItem.style.opacity = '0';
-                                    photoItem.style.transform = 'scale(0.8)';
-                                    setTimeout(() => {
-                                        photoItem.remove();
-                                        if (card) {
-                                            const badge = card.querySelector('.photo-card-header span:last-child');
-                                            if (badge && data.total_photos !== undefined) badge.textContent = data.total_photos;
-
-                                            const container = card.querySelector('.photo-list-container');
-                                            if (container && (data.total_photos === 0 || container.children.length === 0)) {
-                                                const cardTitle = card.querySelector('.photo-card-title')?.textContent?.toLowerCase() || '';
-                                                container.innerHTML = `<div class="photo-empty-state">No ${cardTitle} photos yet.</div>`;
-                                            }
-                                        }
-                                    }, 300);
-                                }
+                                renderPhotoInDOM(data);
                                 if (typeof showToast === 'function') {
                                     showToast(data.message || 'Photo deleted successfully!', 'success');
                                 }
@@ -2293,7 +2338,7 @@
             const projectType = formatVal(getVal(['project_type', 'applying_for', 'office_application_type']));
             const buildingArea = formatVal(getVal(['building_area_sq']));
             const landArea = formatVal(getVal(['land_area_sq']));
-            const budget = app.amount_requested ? '₹' + Number(app.amount_requested).toLocaleString() : 'N/A';
+            const budget = app.amount_requested ? '&#x20B9;' + Number(app.amount_requested).toLocaleString() : 'N/A';
             const legalApprovals = formatVal(getVal(['legal_approvals_status']));
             const areaZone = formatVal(getVal(['area', 'project_area']));
             const appStatus = app.status || 'Pending';
@@ -2643,7 +2688,7 @@
                     <input type="text" name="material" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. cement, bricks">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (&#x20B9;)</label>
                     <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 5000">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -2666,7 +2711,7 @@
                     <input type="text" id="editMaterialName" name="material" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (&#x20B9;)</label>
                     <input type="number" id="editMaterialAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -2693,7 +2738,7 @@
                     <input type="number" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 50">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (&#x20B9;)</label>
                     <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 4000">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -2721,7 +2766,7 @@
                     <input type="number" id="editExpenseQuantity" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (&#x20B9;)</label>
                     <input type="number" id="editExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -2743,7 +2788,7 @@
                     <input type="text" name="item" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. Community Contribution, Other, Local Donations">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (&#x20B9;)</label>
                     <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 5000">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -2766,7 +2811,7 @@
                     <input type="text" id="editCommContribName" name="item" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (&#x20B9;)</label>
                     <input type="number" id="editCommContribAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -2904,7 +2949,7 @@
                     <input type="number" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 50">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (&#x20B9;)</label>
                     <input type="number" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" placeholder="e.g. 1500">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -2932,7 +2977,7 @@
                     <input type="number" id="editCommExpenseQuantity" name="quantity" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (₹)</label>
+                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Amount (&#x20B9;)</label>
                     <input type="number" id="editCommExpenseAmount" name="amount" required min="0" step="any" class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -3005,3 +3050,4 @@
     </div>
 
 @endsection
+

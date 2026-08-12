@@ -38,17 +38,15 @@ class ClusterController extends Controller
 
         $clusters = Cluster::orderBy('created_at', 'desc')->get();
 
-        $csvHeaders = [
+        $headers = [
             'Code', 'Cluster Name', 'Institution Name', 'Head of Institute', 'Head Contact No',
             'Place', 'Post Office', 'Village', 'Panchayath', 'District', 'State',
             'Contact No', 'Coordinator Name', 'Coordinator Contact', 'Remarks',
         ];
 
         $rows = [];
-        $rows[] = implode(',', array_map(fn($h) => '"' . $h . '"', $csvHeaders));
-
         foreach ($clusters as $c) {
-            $row = [
+            $rows[] = [
                 $c->code,
                 $c->name,
                 $c->institution_name,
@@ -65,15 +63,10 @@ class ClusterController extends Controller
                 $c->cordinator_contact_number,
                 $c->remarks,
             ];
-            $rows[] = implode(',', array_map(fn($v) => '"' . str_replace('"', '""', $v ?? '') . '"', $row));
         }
 
-        $csvContent = implode("\n", $rows);
-
-        return response($csvContent, 200, [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="clusters_' . date('Y-m-d') . '.csv"',
-        ]);
+        $filename = 'clusters_' . date('Y-m-d') . '.xls';
+        return \App\Services\ExcelExportHelper::streamDownload($filename, $headers, $rows);
     }
 
     public function store(Request $request)
