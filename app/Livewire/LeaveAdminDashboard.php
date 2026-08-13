@@ -63,6 +63,11 @@ class LeaveAdminDashboard extends Component
 
     protected function getListeners(): array
     {
+        $driver = config('broadcasting.default');
+        if (!$driver || in_array($driver, ['null', 'log'])) {
+            return [];
+        }
+
         return [
             'echo-private:leave-approvals,LeaveRequestSubmitted' => 'refreshData',
             'echo-private:leave-approvals,LeaveRequestApproved'  => 'refreshData',

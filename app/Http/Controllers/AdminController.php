@@ -200,14 +200,15 @@ class AdminController extends Controller
         }
 
         // Fetch Orphan Care funds
-        $orphanFunds = \App\Models\OrphanCareFund::with(['project', 'project.projectManager', 'project.donor', 'donorModel'])->get()->map(function($f) {
-            $app = null;
-            if ($f->project && $f->project->application_id) {
-                $app = \App\Models\OrphanCareApplication::find($f->project->application_id);
+        $orphanFunds = \App\Models\OrphanCareFund::with(['project.application.cluster', 'project.projectManager', 'project.donor', 'donorModel'])->get()->map(function($f) {
+            $app = $f->project->application ?? null;
+            if (!$app && $f->project && $f->project->application_id) {
+                $app = \App\Models\OrphanCareApplication::with('cluster')->find($f->project->application_id);
             }
             $donorName = $f->donor ?? $f->agency ?? 'N/A';
-            $donorShort = $f->donorModel->short_name ?? null;
-            $displayDonor = $f->donorModel ? ($donorShort ? "{$f->donorModel->name} ({$donorShort})" : $f->donorModel->name) : $donorName;
+            $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
+
+            $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
 
             return [
                 'id' => $f->id,
@@ -222,6 +223,7 @@ class AdminController extends Controller
                 'donor' => $donorName,
                 'agency' => $displayDonor,
                 'sponsor' => $f->project->sponsor ?? $displayDonor,
+                'cluster' => $clusterName ?: 'N/A',
                 'theme' => $f->project->theme ?? 'N/A',
                 'subtheme' => $f->project->subtheme ?? 'N/A',
                 'activity' => $f->project->activity ?? 'N/A',
@@ -238,14 +240,15 @@ class AdminController extends Controller
         });
 
         // Fetch Differently Abled funds
-        $daFunds = \App\Models\DifferentlyAbledFund::with(['project', 'project.projectManager', 'project.donor', 'donorModel'])->get()->map(function($f) {
-            $app = null;
-            if ($f->project && $f->project->application_id) {
-                $app = \App\Models\DifferentlyAbledApplication::find($f->project->application_id);
+        $daFunds = \App\Models\DifferentlyAbledFund::with(['project.application.cluster', 'project.projectManager', 'project.donor', 'donorModel'])->get()->map(function($f) {
+            $app = $f->project->application ?? null;
+            if (!$app && $f->project && $f->project->application_id) {
+                $app = \App\Models\DifferentlyAbledApplication::with('cluster')->find($f->project->application_id);
             }
             $donorName = $f->donor ?? $f->agency ?? 'N/A';
-            $donorShort = $f->donorModel->short_name ?? null;
-            $displayDonor = $f->donorModel ? ($donorShort ? "{$f->donorModel->name} ({$donorShort})" : $f->donorModel->name) : $donorName;
+            $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
+
+            $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
 
             return [
                 'id' => $f->id,
@@ -260,6 +263,7 @@ class AdminController extends Controller
                 'donor' => $donorName,
                 'agency' => $displayDonor,
                 'sponsor' => $f->project->sponsor ?? $displayDonor,
+                'cluster' => $clusterName ?: 'N/A',
                 'theme' => $f->project->theme ?? 'N/A',
                 'subtheme' => $f->project->subtheme ?? 'N/A',
                 'activity' => $f->project->activity ?? 'N/A',
@@ -276,14 +280,15 @@ class AdminController extends Controller
         });
 
         // Fetch Family Aid funds
-        $faFunds = \App\Models\FamilyAidFund::with(['project', 'project.projectManager', 'project.donor', 'donorModel'])->get()->map(function($f) {
-            $app = null;
-            if ($f->project && $f->project->application_id) {
-                $app = \App\Models\FamilyAidApplication::find($f->project->application_id);
+        $faFunds = \App\Models\FamilyAidFund::with(['project.application.cluster', 'project.projectManager', 'project.donor', 'donorModel'])->get()->map(function($f) {
+            $app = $f->project->application ?? null;
+            if (!$app && $f->project && $f->project->application_id) {
+                $app = \App\Models\FamilyAidApplication::with('cluster')->find($f->project->application_id);
             }
             $donorName = $f->donor ?? $f->agency ?? 'N/A';
-            $donorShort = $f->donorModel->short_name ?? null;
-            $displayDonor = $f->donorModel ? ($donorShort ? "{$f->donorModel->name} ({$donorShort})" : $f->donorModel->name) : $donorName;
+            $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
+
+            $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
 
             return [
                 'id' => $f->id,
@@ -298,6 +303,7 @@ class AdminController extends Controller
                 'donor' => $donorName,
                 'agency' => $displayDonor,
                 'sponsor' => $f->project->sponsor ?? $displayDonor,
+                'cluster' => $clusterName ?: 'N/A',
                 'theme' => $f->project->theme ?? 'N/A',
                 'subtheme' => $f->project->subtheme ?? 'N/A',
                 'activity' => $f->project->activity ?? 'N/A',
@@ -330,13 +336,14 @@ class AdminController extends Controller
 
             $callback = function() use ($allFunds) {
                 $file = fopen('php://output', 'w');
-                fputcsv($file, ['#', 'Date', 'Category', 'Agency Project No', 'Project ID', 'Beneficiary / Applicant', 'Agency / Sponsor', 'Amount (INR)']);
+                fputcsv($file, ['#', 'Date', 'Category', 'Cluster', 'Agency Project No', 'Project ID', 'Beneficiary / Applicant', 'Agency / Sponsor', 'Amount (INR)']);
 
                 foreach ($allFunds as $index => $row) {
                     fputcsv($file, [
                         $index + 1,
                         $row['formatted_date'],
                         $row['category'],
+                        $row['cluster'],
                         $row['agency_project_no'],
                         $row['project_id'],
                         $row['applicant_name'],
@@ -363,6 +370,11 @@ class AdminController extends Controller
 
         $agencies = $allFunds->pluck('agency')->unique()->filter()->sort()->values();
 
+        $dbClusters = \App\Models\Cluster::orderBy('name')->pluck('name');
+        $clusters = $dbClusters->concat($allFunds->pluck('cluster'))->filter(function($val) {
+            return $val && $val !== 'N/A';
+        })->unique()->sort()->values();
+
         $agencySummary = $allFunds->groupBy('agency')->map(function($items, $agencyName) {
             return [
                 'agency' => $agencyName ?: 'Unassigned / Direct',
@@ -383,6 +395,7 @@ class AdminController extends Controller
             'daCount',
             'faCount',
             'agencies',
+            'clusters',
             'agencySummary'
         ));
     }
@@ -626,9 +639,6 @@ class AdminController extends Controller
                     foreach ($proj->funds as $f) {
                         if ($f->donorModel) {
                             $dName = $f->donorModel->name;
-                            if (!empty($f->donorModel->short_name)) {
-                                $dName .= ' (' . $f->donorModel->short_name . ')';
-                            }
                             $donorNames->push($dName);
                         } elseif (!empty($f->donor)) {
                             $donorNames->push($f->donor);
@@ -742,7 +752,7 @@ class AdminController extends Controller
 
             $callback = function() use ($allProjects) {
                 $file = fopen('php://output', 'w');
-                fputcsv($file, ['SL', 'Project ID', 'Project Name', 'Category', 'Agency Project No', 'Sponsor / Donor', 'Stage', 'Status', 'Total Amount (INR)', 'Created Date']);
+                fputcsv($file, ['SL', 'Project ID', 'Project Name', 'Category', 'Agency Project No', 'Sponsor / Donor', 'Status']);
 
                 $sl = 1;
                 foreach ($allProjects as $row) {
@@ -753,10 +763,7 @@ class AdminController extends Controller
                         $row['category'],
                         $row['agency_project_no'],
                         $row['sponsor'],
-                        'Stage ' . $row['stage'],
-                        $row['status'],
-                        number_format($row['amount'], 2, '.', ''),
-                        $row['formatted_created_date']
+                        $row['status']
                     ]);
                 }
                 fclose($file);
@@ -868,8 +875,16 @@ class AdminController extends Controller
             $projectManager = \App\Models\User::find($projectObj->project_manager_id);
         }
 
-        if (isset($projectObj->engineer_id)) {
+        if (isset($projectObj->engineer_id) && !empty($projectObj->engineer_id)) {
             $engineer = \App\Models\User::find($projectObj->engineer_id);
+        }
+
+        $hod = null;
+        if ($projectManager) {
+            $hodId = $projectManager->assigned_hod_id ?? $projectManager->hod_id;
+            if ($hodId) {
+                $hod = \App\Models\User::find($hodId);
+            }
         }
 
         if (isset($projectObj->contractor_id)) {
@@ -978,6 +993,70 @@ class AdminController extends Controller
             $programmes = $projectObj->programmes;
         }
 
+        // Extract project photos for slideshow gallery
+        $pFiles = [];
+        if (isset($projectObj->files) && is_array($projectObj->files)) {
+            $pFiles = $projectObj->files;
+        }
+
+        $photoRecord = \App\Models\ProjectPhoto::where('project_id', $projectObj->id)
+            ->where('project_type', $projectTypeMorph)
+            ->first();
+        if (!$photoRecord) {
+            $photoRecord = \App\Models\ProjectPhoto::where('project_id', $projectObj->id)->first();
+        }
+
+        $allProjectPhotos = [];
+        $photoCategoryLabels = [
+            'photos_after'        => 'Completed Project',
+            'after_photos'        => 'Completed Project',
+            'photos_inauguration' => 'Inauguration',
+            'photos_stone'        => 'Foundation Stone',
+            'photos_banner'       => 'Project Banner',
+            'photos_inbetween'    => 'In-between Progress',
+            'photos_starting'     => 'Starting Phase',
+            'photos_before'       => 'Before Construction',
+            'photos'              => 'Project Photo',
+        ];
+
+        foreach ($photoCategoryLabels as $catKey => $catLabel) {
+            $rawList = $pFiles[$catKey] ?? null;
+            if (empty($rawList) && $photoRecord && isset($photoRecord->{$catKey})) {
+                $rawList = $photoRecord->{$catKey};
+            }
+
+            if (!empty($rawList)) {
+                $arr = [];
+                if (is_array($rawList)) {
+                    $arr = $rawList;
+                } elseif (is_string($rawList)) {
+                    $decoded = json_decode($rawList, true);
+                    $arr = is_array($decoded) ? $decoded : [$rawList];
+                }
+
+                foreach ($arr as $imgPath) {
+                    if (!empty($imgPath) && is_string($imgPath)) {
+                        $allProjectPhotos[] = [
+                            'url' => asset($imgPath),
+                            'path' => $imgPath,
+                            'category' => $catLabel,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Deduplicate photo objects by path
+        $uniquePhotos = [];
+        $seenPaths = [];
+        foreach ($allProjectPhotos as $photo) {
+            if (!in_array($photo['path'], $seenPaths)) {
+                $seenPaths[] = $photo['path'];
+                $uniquePhotos[] = $photo;
+            }
+        }
+        $allProjectPhotos = $uniquePhotos;
+
         if ($request->has('pdf') || $request->has('print') || $request->has('download')) {
             $isSocialAid = in_array($categorySlug, ['orphan-care', 'family-aid', 'differently-abled']) 
                 || str_contains($categorySlug, 'orphan') 
@@ -993,6 +1072,7 @@ class AdminController extends Controller
                 'allProjectsList',
                 'projectManager',
                 'engineer',
+                'hod',
                 'contractor',
                 'application',
                 'projectDocument',
@@ -1008,7 +1088,8 @@ class AdminController extends Controller
                 'anyOther',
                 'deductions',
                 'totalProjectCost',
-                'docFields'
+                'docFields',
+                'allProjectPhotos'
             ));
         }
 
@@ -1019,6 +1100,7 @@ class AdminController extends Controller
             'allProjectsList',
             'projectManager',
             'engineer',
+            'hod',
             'contractor',
             'application',
             'projectDocument',
@@ -1034,7 +1116,8 @@ class AdminController extends Controller
             'anyOther',
             'deductions',
             'totalProjectCost',
-            'docFields'
+            'docFields',
+            'allProjectPhotos'
         ));
     }
 

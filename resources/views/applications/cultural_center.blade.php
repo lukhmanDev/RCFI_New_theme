@@ -168,7 +168,7 @@
                             </td>
 
                             <td style="text-align: center; white-space: nowrap;">
-                                <button onclick="openDetailsModal({{ e(json_encode($appItem)) }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
+                                <button onclick="openDetailsModal({{ $appItem->id }})" class="btn-custom" style="background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 0.4rem; font-size: 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-right: 0.5rem; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;" title="Details"><i class="bx bx-show"></i></button>
 
                                 @if($appItem->status !== 'Approved' && Auth::user()->canApproveApplications())
                                     @if($appItem->status === 'Pending' && !isset($projectsMap[$appItem->id]))
@@ -1146,8 +1146,14 @@
             if (modal) modal.style.display = 'none';
         }
 
+        var applicationsMap = @json($applications->keyBy('id'));
+
         // View Details Modal Toggle
-                function openDetailsModal(appItem) {
+        function openDetailsModal(appItem) {
+            if (typeof appItem === 'number' || typeof appItem === 'string') {
+                appItem = applicationsMap[appItem] || appItem;
+            }
+            if (!appItem || typeof appItem !== 'object') return;
             currentDetailsAppItem = appItem;
             
             // Populate status actions in the modal footer dynamically
@@ -1156,7 +1162,8 @@
                 let statusHtml = '';
                 const approveUrl = `{{ url('admin/applications') }}/{{ $categorySlug }}/${appItem.id}/approve`;
                 const rejectUrl = `{{ url('admin/applications') }}/{{ $categorySlug }}/${appItem.id}/reject`;
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
 
                 if (appItem.status === 'Pending') {
                     statusHtml = `

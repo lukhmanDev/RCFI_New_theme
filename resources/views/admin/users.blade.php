@@ -110,20 +110,6 @@
                 </span>
             </div>
         </div>
-
-        <!-- Avg. Attendance -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
-            <div style="background: #fce7f3; color: #ec4899; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">
-                <i class="bx bx-bar-chart-alt-2"></i>
-            </div>
-            <div>
-                <span style="color: #64748b; font-size: 0.78rem; font-weight: 600; display: block;">Avg. Attendance</span>
-                <h2 style="color: #0f172a; font-size: 1.65rem; font-weight: 800; margin: 0.1rem 0;">94%</h2>
-                <span style="color: #10b981; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.2rem;">
-                    <i class="bx bx-trending-up"></i> ↑ 5% <span style="color: #94a3b8; font-weight: 500;">from last month</span>
-                </span>
-            </div>
-        </div>
     </div>
 
     <!-- Filter and Search Bar -->
@@ -298,7 +284,7 @@
                         </button>
                         
                         @if($user->id !== Auth::id())
-                            <form action="{{ route('users.toggle_suspend', $user->id) }}" method="POST" style="flex: 1; margin: 0;">
+                            <form action="{{ route('users.toggle_suspend', $user->id) }}" method="POST" onsubmit="return handleToggleSuspend(event, {{ $user->id }}, this);" style="flex: 1; margin: 0;">
                                 @csrf
                                 @if($user->is_suspended)
                                     <button type="submit" style="width: 100%; background: #fffbeb; border: 1px solid #fef3c7; color: #d97706; padding: 0.45rem 0.25rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
@@ -990,11 +976,16 @@
             const modal = document.getElementById('addUserModal');
             if (modal) {
                 modal.style.display = "flex";
-                toggleRoleFields('add');
+                try {
+                    toggleRoleFields('add');
+                } catch(e) {
+                    console.warn(e);
+                }
             } else {
                 console.error('addUserModal not found in DOM');
             }
         }
+        window.openAddStaffModal = openAddStaffModal;
 
         function closeAddStaffModal() {
             const modal = document.getElementById('addUserModal');
@@ -1242,6 +1233,55 @@
             if (modal) modal.style.display = 'none';
         }
 
+        function handleToggleSuspend(e, userId, form) {
+            if (e) e.preventDefault();
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn) btn.disabled = true;
+
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (btn) btn.disabled = false;
+                if (data.success) {
+                    const card = form.closest('.staff-row');
+                    if (card) {
+                        card.setAttribute('data-status', data.is_suspended ? 'suspended' : 'active');
+                    }
+                    if (data.is_suspended) {
+                        form.innerHTML = `
+                            @csrf
+                            <button type="submit" style="width: 100%; background: #fffbeb; border: 1px solid #fef3c7; color: #d97706; padding: 0.45rem 0.25rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                                <i class="bx bx-lock-open" style="font-size: 0.9rem;"></i> Activate
+                            </button>
+                        `;
+                    } else {
+                        form.innerHTML = `
+                            @csrf
+                            <button type="submit" style="width: 100%; background: #fef2f2; border: 1px solid #fee2e2; color: #ef4444; padding: 0.45rem 0.25rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                                <i class="bx bx-block" style="font-size: 0.9rem;"></i> Suspend
+                            </button>
+                        `;
+                    }
+                } else {
+                    alert(data.message || 'Action failed');
+                }
+            })
+            .catch(err => {
+                if (btn) btn.disabled = false;
+                console.error(err);
+                form.submit();
+            });
+            return false;
+        }
+
         // Global Window Bindings for inline onclick handlers
         window.openAddStaffModal = openAddStaffModal;
         window.closeAddStaffModal = closeAddStaffModal;
@@ -1251,6 +1291,7 @@
         window.closeEditModal = closeEditModal;
         window.openViewModal = openViewModal;
         window.closeViewModal = closeViewModal;
+        window.handleToggleSuspend = handleToggleSuspend;
 
         // Close open modals when pressing Escape key
         document.addEventListener('keydown', function(e) {

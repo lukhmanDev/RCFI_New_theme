@@ -133,6 +133,76 @@
         </div>
     </div>
 
+    <!-- Theme-Wise Performance & Impact Breakdown Table -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <h3 style="color: #0f172a; font-size: 1.1rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="bx bx-category" style="color: #6366f1; font-size: 1.3rem;"></i>
+                    Theme-Wise Overview & Performance
+                </h3>
+                <p style="color: #64748b; font-size: 0.82rem; margin: 0.25rem 0 0;">
+                    Real-time applications, active/completed projects, budget & beneficiary impact broken down by theme
+                </p>
+            </div>
+            <a href="{{ route('themes.index') }}" style="display: inline-flex; align-items: center; gap: 0.35rem; background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; padding: 0.45rem 0.85rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease;">
+                <i class="bx bx-cog"></i> Manage Themes
+            </a>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem;">
+                <thead>
+                    <tr style="background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 0.73rem; letter-spacing: 0.04em;">
+                        <th style="padding: 0.85rem 1rem; text-align: left; border-top: 1px solid #e2e8f0; border-bottom: 2px solid #e2e8f0; border-top-left-radius: 10px;">#</th>
+                        <th style="padding: 0.85rem 1rem; text-align: left; border-top: 1px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;">Theme Name</th>
+                        <th style="padding: 0.85rem 1rem; text-align: center; border-top: 1px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;">Subthemes</th>
+                        <th style="padding: 0.85rem 1rem; text-align: center; border-top: 1px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;">Total Projects</th>
+                        <th style="padding: 0.85rem 1rem; text-align: center; border-top: 1px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;">Running</th>
+                        <th style="padding: 0.85rem 1rem; text-align: center; border-top: 1px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;">Completed</th>
+                        <th style="padding: 0.85rem 1rem; text-align: right; border-top: 1px solid #e2e8f0; border-bottom: 2px solid #e2e8f0; border-top-right-radius: 10px;">Beneficiaries</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($themeSummaryData as $index => $item)
+                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc';" onmouseout="this.style.background='transparent';">
+                            <td style="padding: 0.85rem 1rem; color: #94a3b8; font-weight: 600;">{{ $index + 1 }}</td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <div style="font-weight: 700; color: #0f172a;">{{ $item['name'] }}</div>
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;">
+                                <span style="background: #f1f5f9; color: #475569; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 700; font-size: 0.78rem;" title="{{ implode(', ', $item['subthemes_list']) }}">
+                                    {{ $item['subthemes_count'] }} Subthemes
+                                </span>
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 700; color: #334155;">
+                                {{ number_format($item['total_projects']) }}
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;">
+                                <span style="background: #f3e8ff; color: #7c3aed; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 800; font-size: 0.78rem;">
+                                    {{ number_format($item['running_projects']) }}
+                                </span>
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;">
+                                <span style="background: #ecfdf5; color: #059669; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 800; font-size: 0.78rem;">
+                                    {{ number_format($item['completed_projects']) }}
+                                </span>
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: right;">
+                                <div style="font-weight: 700; color: #0ea5e9;">{{ number_format($item['benefited_peoples']) }} <span style="font-weight: 500; font-size: 0.75rem; color: #64748b;">peoples</span></div>
+                                <div style="font-size: 0.74rem; color: #10b981; font-weight: 600;">{{ number_format($item['benefited_families']) }} <span style="font-weight: 500; color: #64748b;">families</span></div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" style="padding: 2rem; text-align: center; color: #94a3b8;">No theme data available.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Request Leave Modal Dialog Component -->
     @include('partials.leave_request_modal')
 

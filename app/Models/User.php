@@ -632,11 +632,6 @@ class User extends Authenticatable
         ];
     }
 
-    public function attendances()
-    {
-        return $this->hasMany(\App\Models\Attendance::class, 'user_id');
-    }
-
     public function scopeNonSuperAdmin($query)
     {
         return $query->whereNotIn('role', ['super_admin', 'Super Admin', '1', 1])

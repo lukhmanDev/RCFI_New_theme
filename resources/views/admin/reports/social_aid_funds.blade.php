@@ -198,6 +198,13 @@
                 @endforeach
             </select>
 
+            <select id="clusterFilter" class="filter-input" onchange="filterReportTable()">
+                <option value="">All Clusters</option>
+                @foreach($clusters as $cl)
+                    <option value="{{ strtolower($cl) }}">{{ $cl }}</option>
+                @endforeach
+            </select>
+
             <!-- Date Wise Filter -->
             <div style="display: flex; align-items: center; gap: 0.35rem; background: #ffffff; border: 1px solid #cbd5e1; padding: 0.25rem 0.5rem; border-radius: 8px;">
                 <span style="font-size: 0.8rem; font-weight: 600; color: #475569; white-space: nowrap;"><i class="bx bx-calendar" style="color: #10b981;"></i> Date:</span>
@@ -247,6 +254,7 @@
                         <th>Transfer Date</th>
                         <th>Created Date</th>
                         <th>Category</th>
+                        <th>Cluster</th>
                         <th>Agency Project No</th>
                         <th>RCFI ID</th>
                         <th>Beneficiary / Applicant</th>
@@ -269,15 +277,20 @@
                                 $catBadgeColor = '#059669';
                                 $catBg = 'rgba(5, 150, 105, 0.1)';
                             }
-                            $searchStr = strtolower($fund['category'] . ' ' . $fund['agency_project_no'] . ' ' . $fund['project_id'] . ' ' . $fund['applicant_name'] . ' ' . $fund['agency'] . ' ' . $fund['formatted_date'] . ' ' . $fund['formatted_created_date']);
+                            $searchStr = strtolower($fund['category'] . ' ' . ($fund['cluster'] ?? '') . ' ' . $fund['agency_project_no'] . ' ' . $fund['project_id'] . ' ' . $fund['applicant_name'] . ' ' . $fund['agency'] . ' ' . $fund['formatted_date'] . ' ' . $fund['formatted_created_date']);
                         @endphp
-                        <tr class="fund-row" data-search="{{ $searchStr }}" data-category="{{ strtolower($fund['category']) }}" data-agency="{{ strtolower($fund['agency']) }}" data-date="{{ $fund['date'] }}" data-created-date="{{ $fund['created_date'] }}" data-amount="{{ $fund['amount'] }}">
+                        <tr class="fund-row" data-search="{{ $searchStr }}" data-category="{{ strtolower($fund['category']) }}" data-cluster="{{ strtolower($fund['cluster'] ?? '') }}" data-agency="{{ strtolower($fund['agency']) }}" data-date="{{ $fund['date'] }}" data-created-date="{{ $fund['created_date'] }}" data-amount="{{ $fund['amount'] }}">
                             <td style="color: #64748b; font-size: 0.82rem;">{{ $index + 1 }}</td>
                             <td style="font-weight: 600; color: #334155;">{{ $fund['formatted_date'] }}</td>
                             <td style="font-size: 0.82rem; color: #64748b; font-weight: 500;">{{ $fund['formatted_created_date'] }}</td>
                             <td>
                                 <span style="background-color: {{ $catBg }}; color: {{ $catBadgeColor }}; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">
                                     {{ $fund['category'] }}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.78rem; font-weight: 600; white-space: nowrap;">
+                                    <i class="bx bx-map-pin" style="vertical-align: middle; color: #8b5cf6; margin-right: 2px;"></i> {{ $fund['cluster'] ?? 'N/A' }}
                                 </span>
                             </td>
                             <td style="font-weight: 700; color: #10b981;">
@@ -292,6 +305,7 @@
                                          'applicant_id' => $fund['applicant_id'] ?? 'N/A',
                                          'category' => $fund['category'],
                                          'category_slug' => $fund['category_slug'],
+                                         'cluster' => $fund['cluster'] ?? 'N/A',
                                          'agency' => $fund['agency'],
                                          'sponsor' => $fund['sponsor'] ?? $fund['agency'],
                                          'photo' => $fund['photo'] ?? null,
@@ -330,7 +344,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 2.5rem; color: #64748b;">No fund transfer records found.</td>
+                            <td colspan="9" style="text-align: center; padding: 2.5rem; color: #64748b;">No fund transfer records found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -441,6 +455,7 @@
             const searchVal = document.getElementById('reportSearch').value.toLowerCase();
             const catVal = document.getElementById('categoryFilter').value.toLowerCase();
             const agencyVal = document.getElementById('agencyFilter').value.toLowerCase();
+            const clusterVal = document.getElementById('clusterFilter') ? document.getElementById('clusterFilter').value.toLowerCase() : '';
             const dateType = document.getElementById('dateTypeFilter') ? document.getElementById('dateTypeFilter').value : 'transfer';
             const fromDate = document.getElementById('fromDateFilter').value;
             const toDate = document.getElementById('toDateFilter').value;
@@ -453,6 +468,7 @@
                 const searchData = row.getAttribute('data-search') || '';
                 const categoryData = row.getAttribute('data-category') || '';
                 const agencyData = row.getAttribute('data-agency') || '';
+                const clusterData = row.getAttribute('data-cluster') || '';
                 const rowDate = (dateType === 'created')
                     ? (row.getAttribute('data-created-date') || row.getAttribute('data-date') || '')
                     : (row.getAttribute('data-date') || '');
@@ -461,6 +477,7 @@
                 const matchesSearch = !searchVal || searchData.includes(searchVal);
                 const matchesCat = !catVal || categoryData.includes(catVal);
                 const matchesAgency = !agencyVal || agencyData.includes(agencyVal);
+                const matchesCluster = !clusterVal || clusterData.includes(clusterVal);
 
                 let matchesDate = true;
                 if (fromDate && rowDate) {
@@ -470,7 +487,7 @@
                     matchesDate = matchesDate && (rowDate <= toDate);
                 }
 
-                if (matchesSearch && matchesCat && matchesAgency && matchesDate) {
+                if (matchesSearch && matchesCat && matchesAgency && matchesCluster && matchesDate) {
                     row.style.display = '';
                     visibleCount++;
                     visibleTotal += rowAmount;
@@ -561,8 +578,8 @@
                             <div style="font-weight: 700; color: #0284c7;">${data.agency_project_no || 'N/A'}</div>
                         </div>
                         <div>
-                            <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Applicant ID</div>
-                            <div style="font-weight: 700; color: #1e293b;">${data.applicant_id || 'N/A'}</div>
+                            <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Cluster</div>
+                            <div style="font-weight: 700; color: #8b5cf6;">${data.cluster || 'N/A'}</div>
                         </div>
                         <div>
                             <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Sponsor / Agency</div>
@@ -668,12 +685,12 @@
                                 <strong style="color: #1e293b; font-size: 0.9rem;">${data.agency || 'N/A'}</strong>
                             </div>
                             <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 8px;">
-                                <span style="color: #94a3b8; font-size: 0.75rem; display: block; font-weight: 600; text-transform: uppercase;">Available Budget</span>
-                                <strong style="color: #059669; font-size: 0.9rem;">${formattedBudget}</strong>
+                                <span style="color: #94a3b8; font-size: 0.75rem; display: block; font-weight: 600; text-transform: uppercase;">Cluster</span>
+                                <strong style="color: #8b5cf6; font-size: 0.9rem;">${data.cluster || 'N/A'}</strong>
                             </div>
                             <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 8px;">
-                                <span style="color: #94a3b8; font-size: 0.75rem; display: block; font-weight: 600; text-transform: uppercase;">Theme / Subtheme</span>
-                                <strong style="color: #334155; font-size: 0.85rem;">${data.theme || 'N/A'} ${data.subtheme && data.subtheme !== 'N/A' ? ' / ' + data.subtheme : ''}</strong>
+                                <span style="color: #94a3b8; font-size: 0.75rem; display: block; font-weight: 600; text-transform: uppercase;">Available Budget</span>
+                                <strong style="color: #059669; font-size: 0.9rem;">${formattedBudget}</strong>
                             </div>
                             <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 8px;">
                                 <span style="color: #94a3b8; font-size: 0.75rem; display: block; font-weight: 600; text-transform: uppercase;">Location</span>

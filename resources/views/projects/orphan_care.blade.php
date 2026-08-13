@@ -11,7 +11,8 @@
 
 @section('content')
 
-<!-- Back Button Header -->
+<link rel="stylesheet" href="{{ asset('css/projects_common.css') }}">
+<script src="{{ asset('js/projects_common.js') }}"></script>
 <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
     <a href="{{ route('projects.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
         <i class="bx bx-left-arrow-alt"></i> Back to Dashboard
@@ -815,9 +816,10 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            initProjectFilters();
-        });";
+    function updateExportUrl() {
+        const btns = document.querySelectorAll('.btn-export-csv');
+        if (!btns.length) return;
+        const baseUrl = "{{ route('admin.reports.social_aid_funds', ['category' => 'orphan-care', 'export' => 'csv']) }}";
         const params = new URLSearchParams();
         
         const searchVal = document.getElementById('tableSearch')?.value;
@@ -924,12 +926,11 @@
             } else {
                 alert(msg);
             }
+            window.location.reload();
         } catch (err) {
             console.error(err);
             form.reset();
-            if (typeof showToast === 'function') {
-                showToast('Programme added successfully!', 'success');
-            }
+            window.location.reload();
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
@@ -1070,25 +1071,32 @@
             projectId = param;
         }
 
-        if (!projectId) return;
-
-        const form = document.getElementById('addProgrammeForm');
-        if (form) {
-            form.action = `/admin/projects/orphan-care/${projectId}/add-programme`;
-            form.reset();
+        if (!projectId) {
+            projectId = "{{ $project->id ?? '' }}";
         }
-
-        const nameElem = document.getElementById('prog_modal_student_name');
-        if (nameElem) nameElem.textContent = projectName || 'N/A';
-
-        const agencyElem = document.getElementById('prog_modal_agency_no');
-        if (agencyElem) agencyElem.textContent = agencyNo || 'N/A';
 
         const modal = document.getElementById('addProgrammeModal');
         if (modal) {
-            modal.style.display = 'flex';
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.style.setProperty('z-index', '999999', 'important');
+            modal.style.setProperty('display', 'flex', 'important');
+
+            if (projectId) {
+                const form = document.getElementById('addProgrammeForm');
+                if (form) {
+                    form.action = `/admin/projects/orphan-care/${projectId}/add-programme`;
+                }
+            }
+
+            const nameElem = document.getElementById('prog_modal_student_name');
+            if (nameElem && projectName) nameElem.textContent = projectName;
+
+            const agencyElem = document.getElementById('prog_modal_agency_no');
+            if (agencyElem && agencyNo) agencyElem.textContent = agencyNo;
         }
-    }
+    };
 
     function closeAddProgrammeModal() {
         const modal = document.getElementById("addProgrammeModal");

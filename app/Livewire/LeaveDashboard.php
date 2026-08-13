@@ -26,6 +26,11 @@ class LeaveDashboard extends Component
 
     protected function getListeners(): array
     {
+        $driver = config('broadcasting.default');
+        if (!$driver || in_array($driver, ['null', 'log'])) {
+            return [];
+        }
+
         $userId = Auth::id();
         return [
             "echo-private:user.{$userId},LeaveRequestApproved" => 'refreshDashboard',

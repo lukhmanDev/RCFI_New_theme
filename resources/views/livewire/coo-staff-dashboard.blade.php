@@ -47,7 +47,7 @@
     </div>
 
     <!-- Executive Stat Cards -->
-    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; width: 100%;">
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; width: 100%;">
         <!-- Total Staff -->
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02); display: flex; align-items: center; gap: 1rem;">
             <div style="background: #eff6ff; color: #3b82f6; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">
@@ -57,18 +57,6 @@
                 <span style="color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Total Staff</span>
                 <h2 style="color: #0f172a; font-size: 1.6rem; font-weight: 800; margin: 0.1rem 0;">{{ $totalStaffCount }}</h2>
                 <span style="color: #3b82f6; font-size: 0.75rem; font-weight: 600;">{{ $activeStaffCount }} Active / {{ $suspendedStaffCount }} Suspended</span>
-            </div>
-        </div>
-
-        <!-- Attendance Rate -->
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02); display: flex; align-items: center; gap: 1rem;">
-            <div style="background: #ecfdf5; color: #10b981; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">
-                <i class="bx bx-line-chart"></i>
-            </div>
-            <div>
-                <span style="color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Attendance Rate</span>
-                <h2 style="color: #10b981; font-size: 1.6rem; font-weight: 800; margin: 0.1rem 0;">{{ $attendanceRate }}%</h2>
-                <span style="color: #059669; font-size: 0.75rem; font-weight: 600;">{{ $presentTodayCount }} Present Today ({{ $lateTodayCount }} Late)</span>
             </div>
         </div>
 
@@ -444,53 +432,6 @@
         </div>
     @endif
 
-    <!-- TAB 2: TODAY'S ATTENDANCE OVERSIGHT -->
-    @if($activeTab === 'attendance')
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
-            <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 1.25rem;">Real-Time Operational Attendance Sheet ({{ now()->format('l, F d, Y') }})</h2>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-                    <h3 style="font-size: 0.95rem; font-weight: 800; color: #059669; margin-top: 0; margin-bottom: 0.75rem;"><i class="bx bx-check-circle"></i> Present Staff Today ({{ $presentTodayCount }})</h3>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 350px; overflow-y: auto;">
-                        @forelse($todayAttendances->whereIn('status', ['Present', 'Late']) as $att)
-                            <div style="background: #ffffff; padding: 0.6rem 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong style="color: #0f172a; font-size: 0.85rem; display: block;">{{ $att->user->name ?? 'User' }}</strong>
-                                    <span style="font-size: 0.75rem; color: #64748b;">{{ $att->user->designation ?? $att->user->role }}</span>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span style="font-size: 0.75rem; font-weight: 700; color: #10b981; display: block;">In: {{ $att->formatted_clock_in }}</span>
-                                    <span style="font-size: 0.7rem; color: #64748b;">Out: {{ $att->formatted_clock_out }}</span>
-                                </div>
-                            </div>
-                        @empty
-                            <div style="color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 1rem;">No staff clocked in yet today.</div>
-                        @endforelse
-                    </div>
-                </div>
-
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-                    <h3 style="font-size: 0.95rem; font-weight: 800; color: #d97706; margin-top: 0; margin-bottom: 0.75rem;"><i class="bx bx-calendar-event"></i> Staff On Leave Today ({{ count($staffOnLeaveToday) }})</h3>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 350px; overflow-y: auto;">
-                        @forelse($staffOnLeaveToday as $leave)
-                            <div style="background: #ffffff; padding: 0.6rem 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong style="color: #0f172a; font-size: 0.85rem; display: block;">{{ $leave->user->name ?? 'User' }}</strong>
-                                    <span style="font-size: 0.75rem; color: #d97706; font-weight: 700;">{{ $leave->leaveType->leave_name ?? 'Leave' }}</span>
-                                </div>
-                                <span style="font-size: 0.75rem; color: #475569; font-weight: 600;">
-                                    {{ \Carbon\Carbon::parse($leave->start_date)->format('M d') }} &mdash; {{ \Carbon\Carbon::parse($leave->end_date)->format('M d') }}
-                                </span>
-                            </div>
-                        @empty
-                            <div style="color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 1rem;">No staff on approved leave today.</div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
 
     <!-- TAB 3: LEAVE QUEUE APPROVALS -->
     @if($activeTab === 'leave')
@@ -834,8 +775,9 @@
     <!-- ADD NEW STAFF MODAL -->
     @if($showAddStaffModal)
         <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 1200; padding: 1.5rem;">
-            <div style="background: #ffffff; border-radius: 20px; width: 100%; max-width: 820px; max-height: 90vh; overflow-y: auto; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.25);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0;">
+            <div style="background: #ffffff; border-radius: 20px; width: 100%; max-width: 820px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden;">
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem 1rem 2rem; border-bottom: 1px solid #e2e8f0; background: #ffffff;">
                     <div>
                         <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;"><i class="bx bx-user-plus" style="color:#10b981; margin-right:0.4rem;"></i> Register New Staff Member</h3>
                         <span style="font-size: 0.8rem; color: #64748b;">All fields marked with <span style="color:#ef4444;">*</span> are mandatory</span>
@@ -843,201 +785,205 @@
                     <button type="button" wire:click="closeAddStaffModal" style="background: #f1f5f9; border: none; font-size: 1.4rem; color: #64748b; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">&times;</button>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-                    <!-- Section 1: Personal Information -->
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-                        <h4 style="font-size: 0.88rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;"><i class="bx bx-user" style="color: #10b981; margin-right: 0.35rem;"></i> Personal Information</h4>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Full Name <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addName" placeholder="Enter full name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                <form wire:submit.prevent="createStaff" style="display: flex; flex-direction: column; flex: 1; overflow: hidden; margin: 0;">
+                    <div style="padding: 1.5rem 2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; flex: 1;">
+                        <!-- Section 1: Personal Information -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+                            <h4 style="font-size: 0.88rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;"><i class="bx bx-user" style="color: #10b981; margin-right: 0.35rem;"></i> Personal Information</h4>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Full Name <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addName" placeholder="Enter full name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Email Address <span style="color:#ef4444;">*</span></label>
+                                    <input type="email" wire:model="addEmail" placeholder="Enter email address" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addEmail') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Mobile Number <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addMobile" placeholder="10-digit mobile number" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addMobile') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Father's Name <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addFatherName" placeholder="Enter father's name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addFatherName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Mother's Name <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addMotherName" placeholder="Enter mother's name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addMotherName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Date of Birth <span style="color:#ef4444;">*</span></label>
+                                    <input type="date" wire:model="addDateOfBirth" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addDateOfBirth') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Date of Joining <span style="color:#ef4444;">*</span></label>
+                                    <input type="date" wire:model="addDateOfJoining" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addDateOfJoining') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Gender <span style="color:#ef4444;">*</span></label>
+                                    <select wire:model="addGender" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; background: white;">
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    @error('addGender') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Marital Status <span style="color:#ef4444;">*</span></label>
+                                    <select wire:model="addMaritalStatus" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; background: white;">
+                                        <option value="Single">Single</option>
+                                        <option value="Married">Married</option>
+                                        <option value="Divorced">Divorced</option>
+                                        <option value="Widowed">Widowed</option>
+                                    </select>
+                                    @error('addMaritalStatus') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
                             </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Email Address <span style="color:#ef4444;">*</span></label>
-                                <input type="email" wire:model="addEmail" placeholder="Enter email address" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addEmail') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Section 2: Address Information -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+                            <h4 style="font-size: 0.88rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;"><i class="bx bx-home-alt" style="color: #3b82f6; margin-right: 0.35rem;"></i> Permanent Address</h4>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">House Name/Number <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addHouseName" placeholder="House name or number" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addHouseName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Place <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addPlace" placeholder="Enter place" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addPlace') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Post Office (P.O.) <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addPo" placeholder="Post office name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addPo') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">District <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addDistrict" placeholder="Enter district" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addDistrict') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">State <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addState" placeholder="Enter state" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addState') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">PIN Code <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addPinCode" placeholder="6-digit PIN code" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addPinCode') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
                             </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Mobile Number <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addMobile" placeholder="10-digit mobile number" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addMobile') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Section 3: ID & Banking Details -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+                            <h4 style="font-size: 0.88rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;"><i class="bx bx-id-card" style="color: #8b5cf6; margin-right: 0.35rem;"></i> Identity Verification & Banking</h4>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Aadhar Number <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model.blur="addAadharNumber" placeholder="1234 5678 9012" maxlength="14" oninput="this.value = this.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim()" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addAadharNumber') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">PAN Card Number <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addPanCardNumber" placeholder="10-character PAN" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; text-transform: uppercase;">
+                                    @error('addPanCardNumber') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Bank Account Number <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addAccountNumber" placeholder="Account number" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addAccountNumber') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Bank Name <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addBankName" placeholder="Bank name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addBankName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Bank Branch <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addBankBranch" placeholder="Branch name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addBankBranch') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">IFSC Code <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addIfscCode" placeholder="IFSC Code" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; text-transform: uppercase;">
+                                    @error('addIfscCode') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
                             </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Father's Name <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addFatherName" placeholder="Enter father's name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addFatherName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Mother's Name <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addMotherName" placeholder="Enter mother's name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addMotherName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Date of Birth <span style="color:#ef4444;">*</span></label>
-                                <input type="date" wire:model="addDateOfBirth" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addDateOfBirth') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Date of Joining <span style="color:#ef4444;">*</span></label>
-                                <input type="date" wire:model="addDateOfJoining" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addDateOfJoining') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Gender <span style="color:#ef4444;">*</span></label>
-                                <select wire:model="addGender" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; background: white;">
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                                @error('addGender') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Marital Status <span style="color:#ef4444;">*</span></label>
-                                <select wire:model="addMaritalStatus" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; background: white;">
-                                    <option value="Single">Single</option>
-                                    <option value="Married">Married</option>
-                                    <option value="Divorced">Divorced</option>
-                                    <option value="Widowed">Widowed</option>
-                                </select>
-                                @error('addMaritalStatus') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Section 4: Account Credentials & Role -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+                            <h4 style="font-size: 0.88rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;"><i class="bx bx-lock-alt" style="color: #f59e0b; margin-right: 0.35rem;"></i> Account & Role Settings</h4>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Official Designation <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" wire:model="addDesignation" placeholder="e.g. Senior Project Manager" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addDesignation') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">User Role <span style="color:#ef4444;">*</span></label>
+                                    <select wire:model.live="addRole" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; background: white;">
+                                        <option value="coo">COO</option>
+                                        <option value="project_manager">Project Manager</option>
+                                        <option value="hod">HOD</option>
+                                        <option value="social_aid">Social Aid Manager</option>
+                                        <option value="engineer">Engineer</option>
+                                        <option value="reception">Reception</option>
+                                        <option value="employee">Employee</option>
+                                        <option value="others">Others</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    @if($addRole === 'hod')
+                                        <div style="display: flex; align-items: center; background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
+                                            <label style="display: flex; align-items: center; gap: 0.5rem; color: #6b21a8; font-weight: 700; font-size: 0.85rem; cursor: pointer; margin: 0;">
+                                                <input type="checkbox" wire:model="addIsHr" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+                                                <i class="bx bx-shield-quarter" style="font-size: 1.1rem;"></i> Designate as Central HR HOD
+                                            </label>
+                                        </div>
+                                    @elseif(!in_array($addRole, ['super_admin', 'coo']))
+                                        <div>
+                                            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Assigned HOD <span style="color:#ef4444;">*</span></label>
+                                            <select wire:model="addHodId" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; background: white;">
+                                                <option value="">-- Select Assigned HOD --</option>
+                                                @foreach($hods as $h)
+                                                    <option value="{{ $h->id }}">{{ $h->name }} (HOD)</option>
+                                                @endforeach
+                                            </select>
+                                            @error('addHodId') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                        </div>
+                                    @endif
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Password <span style="color:#ef4444;">*</span></label>
+                                    <input type="password" wire:model="addPassword" placeholder="Minimum 8 characters" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                    @error('addPassword') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Section 2: Address Information -->
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-                        <h4 style="font-size: 0.88rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;"><i class="bx bx-home-alt" style="color: #3b82f6; margin-right: 0.35rem;"></i> Permanent Address</h4>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">House Name/Number <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addHouseName" placeholder="House name or number" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addHouseName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Place <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addPlace" placeholder="Enter place" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addPlace') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Post Office (P.O.) <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addPo" placeholder="Post office name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addPo') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">District <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addDistrict" placeholder="Enter district" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addDistrict') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">State <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addState" placeholder="Enter state" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addState') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">PIN Code <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addPinCode" placeholder="6-digit PIN code" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addPinCode') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                        </div>
+                    <!-- Footer -->
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 2rem; border-top: 1px solid #e2e8f0; background: #ffffff;">
+                        <button type="button" wire:click="closeAddStaffModal" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 0.65rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">Cancel</button>
+                        <button type="submit" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; border-radius: 10px; padding: 0.65rem 1.5rem; font-weight: 700; font-size: 0.88rem; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">Save Staff</button>
                     </div>
-
-                    <!-- Section 3: ID & Banking Details -->
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-                        <h4 style="font-size: 0.88rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;"><i class="bx bx-id-card" style="color: #8b5cf6; margin-right: 0.35rem;"></i> Identity Verification & Banking</h4>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Aadhar Number <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model.blur="addAadharNumber" placeholder="1234 5678 9012" maxlength="14" oninput="this.value = this.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim()" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addAadharNumber') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">PAN Card Number <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addPanCardNumber" placeholder="10-character PAN" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; text-transform: uppercase;">
-                                @error('addPanCardNumber') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Bank Account Number <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addAccountNumber" placeholder="Account number" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addAccountNumber') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Bank Name <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addBankName" placeholder="Bank name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addBankName') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Bank Branch <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addBankBranch" placeholder="Branch name" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addBankBranch') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">IFSC Code <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addIfscCode" placeholder="IFSC Code" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; text-transform: uppercase;">
-                                @error('addIfscCode') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section 4: Account Credentials & Role -->
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-                        <h4 style="font-size: 0.88rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;"><i class="bx bx-lock-alt" style="color: #f59e0b; margin-right: 0.35rem;"></i> Account & Role Settings</h4>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Official Designation <span style="color:#ef4444;">*</span></label>
-                                <input type="text" wire:model="addDesignation" placeholder="e.g. Senior Project Manager" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addDesignation') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">User Role <span style="color:#ef4444;">*</span></label>
-                                <select wire:model.live="addRole" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; background: white;">
-                                    <option value="coo">COO</option>
-                                    <option value="project_manager">Project Manager</option>
-                                    <option value="hod">HOD</option>
-                                    <option value="social_aid">Social Aid Manager</option>
-                                    <option value="engineer">Engineer</option>
-                                    <option value="reception">Reception</option>
-                                    <option value="employee">Employee</option>
-                                    <option value="others">Others</option>
-                                </select>
-                            </div>
-                            <div>
-                             @if($addRole === 'hod')
-                                 <div style="display: flex; align-items: center; background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
-                                     <label style="display: flex; align-items: center; gap: 0.5rem; color: #6b21a8; font-weight: 700; font-size: 0.85rem; cursor: pointer; margin: 0;">
-                                         <input type="checkbox" wire:model="addIsHr" value="1" style="width: 18px; height: 18px; cursor: pointer;">
-                                         <i class="bx bx-shield-quarter" style="font-size: 1.1rem;"></i> Designate as Central HR HOD
-                                     </label>
-                                 </div>
-                             @elseif(!in_array($addRole, ['super_admin', 'coo']))
-                                 <div>
-                                     <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Assigned HOD <span style="color:#ef4444;">*</span></label>
-                                     <select wire:model="addHodId" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; background: white;">
-                                         <option value="">-- Select Assigned HOD --</option>
-                                         @foreach($hods as $h)
-                                             <option value="{{ $h->id }}">{{ $h->name }} (HOD)</option>
-                                         @endforeach
-                                     </select>
-                                     @error('addHodId') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                                 </div>
-                             @endif</div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Password <span style="color:#ef4444;">*</span></label>
-                                <input type="password" wire:model="addPassword" placeholder="Minimum 8 characters" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
-                                @error('addPassword') <span style="color: #ef4444; font-size: 0.75rem;">{{ $message }}</span> @enderror
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
-                    <button type="button" wire:click="closeAddStaffModal" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 0.65rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">Cancel</button>
-                    <button type="button" wire:click="createStaff" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; border-radius: 10px; padding: 0.65rem 1.5rem; font-weight: 700; font-size: 0.88rem; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">Save Staff</button>
-                </div>
+                </form>
             </div>
         </div>
     @endif

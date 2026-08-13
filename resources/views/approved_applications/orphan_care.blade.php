@@ -83,9 +83,9 @@
                             }
                             $searchStr = strtolower(implode(' ', array_filter($searchTerms)));
                         @endphp
-                        <tr class="app-row" data-search="{{ $searchStr }}" data-cluster="{{ $appItem->cluster_id ?? '' }}" data-sponsor="{{ strtolower($appItem->sponsor_status ?? 'not sponsored') }}" data-place="{{ $appItem->place ?? '' }}" onclick="openDetailsModal({{ e(json_encode($appItem)) }})">
+                        <tr class="app-row" data-search="{{ $searchStr }}" data-cluster="{{ $appItem->cluster_id ?? '' }}" data-sponsor="{{ strtolower($appItem->sponsor_status ?? 'not sponsored') }}" data-place="{{ $appItem->place ?? '' }}" onclick="openDetailsModal({{ $appItem->id }})">
                             <td style="font-weight: 600;">
-                                <a href="javascript:void(0)" onclick="event.stopPropagation(); openDetailsModal({{ e(json_encode($appItem)) }})" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Application Details">
+                                <a href="javascript:void(0)" onclick="event.stopPropagation(); openDetailsModal({{ $appItem->id }})" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Application Details">
                                     {{ $appId }}
                                 </a>
                             </td>
@@ -167,9 +167,14 @@
 
     <!-- Script Block -->
     <script>
+        var applicationsMap = @json($applications->keyBy('id'));
         var currentDetailsAppItem = null;
 
         function openDetailsModal(appItem, isProjectApproved = false) {
+            if (typeof appItem === 'number' || typeof appItem === 'string') {
+                appItem = applicationsMap[appItem] || appItem;
+            }
+            if (!appItem || typeof appItem !== 'object') return;
             currentDetailsAppItem = appItem;
             
             // Populate status actions in the modal footer dynamically

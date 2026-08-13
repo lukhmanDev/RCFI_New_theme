@@ -5,7 +5,6 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\User;
-use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\LeaveBalance;
 use App\Models\Project;
@@ -491,22 +490,19 @@ class CooStaffDashboard extends Component
 
         // Fetch Today's Attendance Keyed by User ID (non-super-admin, excluding logged-in user & forHod)
         $nonSuperAdminIds = User::nonSuperAdmin()->where('id', '!=', $currentUser->id)->forHod($currentUser)->pluck('id');
-        $todayAttendances = Attendance::where('date', $today)
-            ->whereIn('user_id', $nonSuperAdminIds)
-            ->get()
-            ->keyBy('user_id');
+        $todayAttendances = collect();
 
         // Overall Operational Statistics (Excludes Super Admin, Logged-in User & Scoped for HOD)
         $totalStaffCount = User::nonSuperAdmin()->where('id', '!=', $currentUser->id)->forHod($currentUser)->count();
         $activeStaffCount = User::nonSuperAdmin()->where('id', '!=', $currentUser->id)->forHod($currentUser)->where('is_suspended', false)->count();
         $suspendedStaffCount = User::nonSuperAdmin()->where('id', '!=', $currentUser->id)->forHod($currentUser)->where('is_suspended', true)->count();
 
-        $presentTodayCount = $todayAttendances->whereIn('status', ['Present', 'Late'])->count();
-        $lateTodayCount = $todayAttendances->where('status', 'Late')->count();
-        $absentTodayCount = $todayAttendances->where('status', 'Absent')->count();
-        $onLeaveTodayCount = $todayAttendances->where('status', 'OnLeave')->count();
+        $presentTodayCount = 0;
+        $lateTodayCount = 0;
+        $absentTodayCount = 0;
+        $onLeaveTodayCount = 0;
 
-        $attendanceRate = $activeStaffCount > 0 ? round(($presentTodayCount / $activeStaffCount) * 100, 1) : 0;
+        $attendanceRate = 0;
 
         // Pending Leave Requests Queue (Excludes Super Admin & Scoped for HOD)
         $pendingLeaveRequests = LeaveRequest::with(['user', 'leaveType'])
@@ -551,7 +547,7 @@ class CooStaffDashboard extends Component
             }
         }
 
-        $selectedUserAttendance = $selectedUser ? Attendance::where('user_id', $selectedUser->id)->orderBy('date', 'desc')->take(10)->get() : collect();
+        $selectedUserAttendance = collect();
 
         $hods = User::whereIn('role', ['hod', '4', 'HOD'])->orWhere('is_hr', true)->orderBy('name')->get();
         $hierarchyTree = User::getHierarchyTree();

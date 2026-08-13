@@ -35,6 +35,11 @@ trait ListensForEntityChanges
 
     public function getListeners(): array
     {
+        $driver = config('broadcasting.default');
+        if (!$driver || in_array($driver, ['null', 'log'])) {
+            return [];
+        }
+
         $listeners = [];
         $channels = $this->dashboardChannels();
         $watchedEvents = $this->watchedEvents();

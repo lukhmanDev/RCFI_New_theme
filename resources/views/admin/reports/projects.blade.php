@@ -70,35 +70,6 @@
                 <span style="color: var(--text-muted); font-size: 0.78rem; font-weight: 600;">finished</span>
             </div>
         </div>
-
-        <!-- Suspended -->
-        <div class="stat-widget-card" style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px; padding: 1.25rem 1.4rem; box-shadow: 0 4px 18px rgba(0,0,0,0.03); transition: all 0.25s ease; position: relative; overflow: hidden;">
-            <div style="position: absolute; right: -10px; top: -10px; width: 70px; height: 70px; background: rgba(239, 68, 68, 0.04); border-radius: 50%; pointer-events: none;"></div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
-                <span style="color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Suspended</span>
-                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                    <i class="bx bxs-error-circle"></i>
-                </div>
-            </div>
-            <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-                <span style="color: #ef4444; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">{{ number_format($suspendedProjects) }}</span>
-                <span style="color: var(--text-muted); font-size: 0.78rem; font-weight: 600;">on hold</span>
-            </div>
-        </div>
-
-        <!-- Total Transferred -->
-        <div class="stat-widget-card" style="background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px; padding: 1.25rem 1.4rem; box-shadow: 0 4px 18px rgba(0,0,0,0.03); transition: all 0.25s ease; position: relative; overflow: hidden;">
-            <div style="position: absolute; right: -10px; top: -10px; width: 70px; height: 70px; background: rgba(16, 185, 129, 0.04); border-radius: 50%; pointer-events: none;"></div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
-                <span style="color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Total Transferred</span>
-                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.1); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                    <i class="bx bx-rupee"></i>
-                </div>
-            </div>
-            <div style="display: flex; align-items: baseline; gap: 0.35rem;">
-                <span style="color: #059669; font-size: 1.65rem; font-weight: 800; letter-spacing: -0.02em;">₹{{ number_format($totalAmount, 2) }}</span>
-            </div>
-        </div>
     </div>
 
     <!-- Filter Toolbar -->
@@ -134,31 +105,6 @@
                         <option value="Completed" {{ request('status') === 'Completed' ? 'selected' : '' }}>Completed</option>
                         <option value="Suspended" {{ request('status') === 'Suspended' ? 'selected' : '' }}>Suspended</option>
                     </select>
-                </div>
-
-                <!-- Date Preset -->
-                <div style="width: 150px;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.45rem;">Date Preset</label>
-                    <select name="date_preset" id="date_preset_select" class="form-control-dark" style="width: 100%; border-radius: 10px; height: 42px; font-size: 0.88rem; border: 1px solid var(--panel-border); background: rgba(148, 163, 184, 0.05); color: var(--text-main); font-weight: 500; cursor: pointer; transition: all 0.2s ease;" onchange="handlePresetChange(this)">
-                        <option value="">All Time</option>
-                        <option value="today" {{ request('date_preset') === 'today' ? 'selected' : '' }}>Today</option>
-                        <option value="this_week" {{ request('date_preset') === 'this_week' ? 'selected' : '' }}>This Week</option>
-                        <option value="this_month" {{ request('date_preset') === 'this_month' ? 'selected' : '' }}>This Month</option>
-                        <option value="this_year" {{ request('date_preset') === 'this_year' ? 'selected' : '' }}>This Year</option>
-                        <option value="custom" {{ (request('date_preset') === 'custom' || (request('from_date') && request('to_date'))) ? 'selected' : '' }}>Custom Range</option>
-                    </select>
-                </div>
-
-                <!-- From Date -->
-                <div id="from_date_container" style="width: 140px; display: {{ (request('date_preset') === 'custom' || (request('from_date') && request('to_date'))) ? 'block' : 'none' }};">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.45rem;">From Date</label>
-                    <input type="date" name="from_date" value="{{ request('from_date') }}" class="form-control-dark" style="width: 100%; border-radius: 10px; height: 42px; font-size: 0.88rem; border: 1px solid var(--panel-border); background: rgba(148, 163, 184, 0.05); color: var(--text-main);">
-                </div>
-
-                <!-- To Date -->
-                <div id="to_date_container" style="width: 140px; display: {{ (request('date_preset') === 'custom' || (request('from_date') && request('to_date'))) ? 'block' : 'none' }};">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.45rem;">To Date</label>
-                    <input type="date" name="to_date" value="{{ request('to_date') }}" class="form-control-dark" style="width: 100%; border-radius: 10px; height: 42px; font-size: 0.88rem; border: 1px solid var(--panel-border); background: rgba(148, 163, 184, 0.05); color: var(--text-main);">
                 </div>
 
                 <!-- Actions -->
@@ -210,10 +156,7 @@
                         <th style="padding: 1rem 1.1rem; text-align: left; border-bottom: 1px solid var(--panel-border);">Category</th>
                         <th style="padding: 1rem 1.1rem; text-align: left; border-bottom: 1px solid var(--panel-border);">Agency No</th>
                         <th style="padding: 1rem 1.1rem; text-align: left; border-bottom: 1px solid var(--panel-border);">Sponsor / Donor</th>
-                        <th style="padding: 1rem 1.1rem; text-align: center; border-bottom: 1px solid var(--panel-border);">Stage</th>
                         <th style="padding: 1rem 1.1rem; text-align: center; border-bottom: 1px solid var(--panel-border);">Status</th>
-                        <th style="padding: 1rem 1.1rem; text-align: right; border-bottom: 1px solid var(--panel-border);">Total Amount</th>
-                        <th style="padding: 1rem 1.1rem; text-align: center; border-bottom: 1px solid var(--panel-border);">Created Date</th>
                         <th style="padding: 1rem 1.1rem; text-align: center; width: 90px; border-bottom: 1px solid var(--panel-border);">Action</th>
                     </tr>
                 </thead>
@@ -265,11 +208,6 @@
                                 {{ $row['sponsor'] }}
                             </td>
                             <td style="padding: 1rem 1.1rem; text-align: center; border-bottom: 1px solid var(--panel-border);">
-                                <span style="background: rgba(148, 163, 184, 0.12); color: #475569; border: 1px solid rgba(148, 163, 184, 0.25); padding: 0.2rem 0.55rem; border-radius: 6px; font-weight: 700; font-size: 0.78rem; display: inline-block;">
-                                    Stage {{ $row['stage'] }}
-                                </span>
-                            </td>
-                            <td style="padding: 1rem 1.1rem; text-align: center; border-bottom: 1px solid var(--panel-border);">
                                 @if($row['status'] === 'Active')
                                     <span style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 800; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.03em; display: inline-block;">
                                         Active
@@ -284,16 +222,10 @@
                                     </span>
                                 @endif
                             </td>
-                            <td style="padding: 1rem 1.1rem; text-align: right; font-weight: 800; color: #059669; font-size: 0.95rem; border-bottom: 1px solid var(--panel-border);">
-                                ₹{{ number_format($row['amount'], 2) }}
-                            </td>
-                            <td style="padding: 1rem 1.1rem; text-align: center; color: var(--text-muted); font-size: 0.84rem; font-weight: 500; border-bottom: 1px solid var(--panel-border);">
-                                {{ $row['formatted_created_date'] }}
-                            </td>
                             <td style="padding: 1rem 1.1rem; text-align: center; border-bottom: 1px solid var(--panel-border);">
                                 <div style="display: inline-flex; gap: 0.4rem; align-items: center; justify-content: center;">
                                     <a href="{{ route('admin.reports.single_project', [$row['id'], 'category' => $row['category_slug']]) }}" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); color: #10b981; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; transition: all 0.15s ease;" title="Single Project Report" onmouseover="this.style.background='#10b981'; this.style.color='#ffffff';" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'; this.style.color='#10b981';">
-                                        <i class="bx bxs-file-doc"></i>
+                                        <i class="bx bxs-report"></i>
                                     </a>
                                     <a href="{{ $row['url'] }}" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); color: #6366f1; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem; transition: all 0.15s ease;" title="View Project Details" onmouseover="this.style.background='#6366f1'; this.style.color='#ffffff';" onmouseout="this.style.background='rgba(99, 102, 241, 0.1)'; this.style.color='#6366f1';">
                                         <i class="bx bx-right-arrow-alt"></i>
@@ -303,7 +235,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" style="padding: 3.5rem 1rem; text-align: center; color: var(--text-muted);">
+                            <td colspan="8" style="padding: 3.5rem 1rem; text-align: center; color: var(--text-muted);">
                                 <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(148, 163, 184, 0.1); color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem;">
                                     <i class="bx bx-folder-open"></i>
                                 </div>

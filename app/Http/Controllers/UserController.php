@@ -340,12 +340,15 @@ class UserController extends Controller
         ]);
     }
 
-    public function toggleSuspend($id)
+    public function toggleSuspend(Request $request, $id)
     {
         $this->checkAdmin();
         $user = User::findOrFail($id);
 
         if (auth()->id() == $user->id) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'You cannot suspend your own logged-in account.'], 400);
+            }
             return redirect()->route('users')->withErrors(['You cannot suspend your own logged-in account.']);
         }
 
@@ -353,6 +356,16 @@ class UserController extends Controller
         $user->save();
 
         $statusStr = $user->is_suspended ? 'suspended' : 'unsuspended';
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'is_suspended' => $user->is_suspended,
+                'status_label' => $user->is_suspended ? 'Suspended' : 'Active',
+                'message' => "User account {$statusStr} successfully!"
+            ]);
+        }
+
         return redirect()->route('users')->with('success', "User account {$statusStr} successfully!");
     }
 

@@ -20,6 +20,29 @@
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"><\/script>');
         }
         window.BROADCAST_DRIVER = "{{ config('broadcasting.default', env('BROADCAST_CONNECTION', 'log')) }}";
+        if (typeof window.Echo === 'undefined') {
+            const createDummyEcho = function() {
+                const dummyChannel = {
+                    listen: function() { return dummyChannel; },
+                    listenToAll: function() { return dummyChannel; },
+                    stopListening: function() { return dummyChannel; },
+                    whisper: function() { return dummyChannel; },
+                    error: function() { return dummyChannel; },
+                    subscribed: function() { return dummyChannel; },
+                };
+                return {
+                    private: function() { return dummyChannel; },
+                    channel: function() { return dummyChannel; },
+                    encryptedPrivate: function() { return dummyChannel; },
+                    join: function() { return dummyChannel; },
+                    leave: function() {},
+                    leaveChannel: function() {},
+                    disconnect: function() {},
+                    socketId: function() { return undefined; },
+                };
+            };
+            window.Echo = createDummyEcho();
+        }
     </script>
     @vite(['resources/js/app.js'])
 
@@ -1949,9 +1972,16 @@
                 scripts.forEach(oldScript => {
                     try {
                         const newScript = document.createElement('script');
-                        newScript.textContent = oldScript.textContent;
+                        if (oldScript.src) {
+                            newScript.src = oldScript.src;
+                            newScript.async = false;
+                        } else {
+                            newScript.textContent = oldScript.textContent;
+                        }
                         for (let attr of oldScript.attributes) {
-                            newScript.setAttribute(attr.name, attr.value);
+                            if (attr.name !== 'src') {
+                                newScript.setAttribute(attr.name, attr.value);
+                            }
                         }
                         document.body.appendChild(newScript);
                         if (newScript.parentNode) {
