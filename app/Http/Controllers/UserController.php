@@ -296,9 +296,20 @@ class UserController extends Controller
             }
         }
 
+        $leaveBalances = \App\Models\LeaveBalance::with('leaveType')->where('user_id', $user->id)->get()->map(function($b) {
+            return [
+                'leave_code' => $b->leaveType->leave_code ?? 'Type',
+                'leave_name' => $b->leaveType->name ?? 'Leave',
+                'balance_days' => (float)$b->balance_days,
+                'used_days' => (float)$b->used_days,
+                'total_days' => (float)$b->total_days,
+            ];
+        });
+
         return response()->json([
             'success' => true,
             'user' => [
+                'id'              => $user->id,
                 'name'            => $user->name,
                 'email'           => $user->email,
                 'mobile'          => $user->mobile ?? 'N/A',
@@ -315,6 +326,7 @@ class UserController extends Controller
                 'state'           => $user->state ?? 'N/A',
                 'pin_code'        => $user->pin_code ?? 'N/A',
                 'aadhar_number'   => $user->aadhar_number ?? 'N/A',
+                'formatted_aadhar_number' => $user->formatted_aadhar_number ?? ($user->aadhar_number ?? 'N/A'),
                 'pan_card_number' => $user->pan_card_number ?? 'N/A',
                 'account_number'  => $user->account_number ?? 'N/A',
                 'bank_name'       => $user->bank_name ?? 'N/A',
@@ -334,6 +346,7 @@ class UserController extends Controller
                 'photo_url'       => ($user->profile && $user->profile->photo) ? asset($user->profile->photo) : ($user->photo ? asset($user->photo) : null),
             ],
             'projects' => $projects,
+            'leave_balances' => $leaveBalances,
             'running_projects_count' => $runningCount,
             'completed_projects_count' => $completedCount,
             'total_projects_count' => is_countable($projects) ? count($projects) : 0,

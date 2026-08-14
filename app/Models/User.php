@@ -246,8 +246,10 @@ class User extends Authenticatable
         $isCoo = ($this->isCoo() || $this->role == 2 || $this->role === 'coo' || str_contains($designationLower, 'coo'));
         $isHod = ($this->isHod() || $this->role == 4 || $this->role === 'hod' || str_contains($designationLower, 'hod'));
         $isSuperAdmin = ($this->isSuperAdmin() || $this->role == 1 || $this->role === 'super_admin');
+        $isSocialAid = ($this->isSocialAid() || $this->role == 8 || $this->role === 'social_aid' || str_contains($designationLower, 'social aid'));
+        $isPm = ($this->isPm() || $this->role == 3 || $this->role === 'project_manager' || str_contains($designationLower, 'project manager'));
 
-        return $isSuperAdmin || $isCoo || $isHod;
+        return $isSuperAdmin || $isCoo || $isHod || $isSocialAid || $isPm;
     }
 
     public function canAssignApplications(): bool

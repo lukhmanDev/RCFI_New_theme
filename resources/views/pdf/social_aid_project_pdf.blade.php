@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Social Aid Report - {{ $projectObj->project_id ?? ($project->project_id ?? 'PDF') }}</title>
+    <title>Social Aid Report - {{ $project->project_id ?? 'PDF' }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
         @page {
             size: A4;
-            margin: 12mm 15mm 12mm 15mm;
+            margin: 10mm 12mm 10mm 12mm;
         }
 
         * {
@@ -15,13 +20,19 @@
         }
 
         body {
-            font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-            color: #18181b;
+            font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: #0f172a;
             background-color: #ffffff;
             margin: 0;
             padding: 0;
-            font-size: 12.5px;
-            line-height: 1.6;
+            font-size: 11.5px;
+            line-height: 1.45;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
         }
 
         /* Top Action Bar (Hidden in Print) */
@@ -55,18 +66,22 @@
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .btn-print:hover {
+            background: #059669;
         }
 
         /* Watermark Background */
         .watermark-bg {
             position: fixed;
-            top: 45%;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            opacity: 0.07;
-            width: 580px;
-            max-width: 90%;
+            opacity: 0.035;
+            width: 480px;
+            max-width: 85%;
             pointer-events: none;
             z-index: -1;
             text-align: center;
@@ -77,112 +92,169 @@
             height: auto;
         }
 
-        /* Header Layout Grid */
-        .header-layout-table {
+        /* Header Top Branding */
+        .doc-header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 25px;
+            margin-bottom: 12px;
         }
 
-        .photo-td {
-            width: 140px;
-            vertical-align: top;
+        .doc-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 1.1;
         }
 
-        .photo-card-box {
-            width: 130px;
-            height: 155px;
-            border-radius: 18px;
-            border: 1px solid #d4d4d8;
-            padding: 4px;
-            background: #ffffff;
+        .doc-subtitle {
+            font-size: 10px;
+            color: #00b074;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .doc-meta-box {
+            text-align: right;
+            font-size: 11px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .doc-meta-box strong {
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        /* Profile Summary Card */
+        .profile-card {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 12px;
             overflow: hidden;
         }
 
-        .photo-card-box img {
+        .photo-cell {
+            width: 120px;
+            padding: 8px;
+            vertical-align: middle;
+            text-align: center;
+            border-right: 1px solid #e2e8f0;
+            background: #ffffff;
+        }
+
+        .photo-box {
+            width: 96px;
+            height: 116px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            padding: 2px;
+            background: #ffffff;
+            margin: 0 auto;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-box img {
             width: 100%;
             height: 100%;
-            border-radius: 14px;
+            border-radius: 4px;
             object-fit: cover;
         }
 
         .photo-placeholder {
             width: 100%;
             height: 100%;
-            border-radius: 14px;
-            background: #f4f4f5;
+            border-radius: 4px;
+            background: #f1f5f9;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #a1a1aa;
+            color: #94a3b8;
         }
 
-        .info-middle-td {
+        .beneficiary-cell {
+            padding: 8px 12px;
             vertical-align: top;
-            padding-left: 20px;
-            padding-right: 18px;
+            width: 44%;
+            border-right: 1px solid #e2e8f0;
         }
 
-        .divider-td {
-            width: 1px;
-            background-color: #27272a;
+        .project-cell {
+            padding: 8px 12px;
             vertical-align: top;
+            width: 44%;
         }
 
-        .info-right-td {
-            width: 38%;
-            vertical-align: top;
-            padding-left: 20px;
-        }
-
-        /* Mini Info Table for Header */
-        .mini-info-table {
+        /* Two Column Field Table inside profile card */
+        .card-table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .mini-info-table td {
-            padding: 4px 0;
+        .card-table td {
+            padding: 2.5px 0;
             vertical-align: top;
-            font-size: 12px;
-            text-transform: uppercase;
+            font-size: 10.5px;
         }
 
-        .mini-info-table td.lbl {
+        .card-table td.lbl {
+            width: 82px;
             font-weight: 700;
-            color: #27272a;
-            white-space: nowrap;
+            color: #64748b;
+            text-transform: uppercase;
+            font-size: 9.5px;
+            letter-spacing: 0.03em;
         }
 
-        .mini-info-table td.cln {
-            width: 14px;
+        .card-table td.cln {
+            width: 10px;
             text-align: center;
             font-weight: 700;
-            color: #27272a;
+            color: #94a3b8;
         }
 
-        .mini-info-table td.val {
+        .card-table td.val {
             font-weight: 700;
-            color: #09090b;
+            color: #0f172a;
             word-break: break-word;
         }
 
-        /* Section Headings with Full Horizontal Rule */
-        .section-header-table {
+        /* Modern Section Headings */
+        .section-header {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 24px;
-            margin-bottom: 12px;
+            margin-top: 10px;
+            margin-bottom: 6px;
             page-break-after: avoid;
         }
 
-        .section-title-td {
+        .section-badge-td {
             white-space: nowrap;
-            font-size: 13.5px;
-            font-weight: 700;
-            color: #18181b;
-            padding-right: 12px;
+            padding-right: 8px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            background: #f1f5f9;
+            color: #0f172a;
+            font-size: 10.5px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+            border-left: 3px solid #00b074;
         }
 
         .section-line-td {
@@ -191,95 +263,125 @@
         }
 
         .section-line-td div {
-            border-bottom: 1px solid #52525b;
+            border-bottom: 1px solid #e2e8f0;
             width: 100%;
         }
 
-        /* Details Grid Table (Aligned Labels & Colons) */
-        .details-grid-table {
+        /* Two Column Grid Sections */
+        .grid-2col-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 14px;
+            margin-bottom: 4px;
         }
 
-        .details-grid-table td {
-            padding: 5.5px 0;
+        .grid-2col-table > tbody > tr > td {
+            width: 50%;
             vertical-align: top;
-            font-size: 12px;
+        }
+
+        .grid-2col-table > tbody > tr > td:first-child {
+            padding-right: 10px;
+        }
+
+        .grid-2col-table > tbody > tr > td:last-child {
+            padding-left: 10px;
+            border-left: 1px solid #f1f5f9;
+        }
+
+        /* Field Row Table */
+        .field-list-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .field-list-table tr {
+            border-bottom: 1px solid #f8fafc;
+        }
+
+        .field-list-table td {
+            padding: 3px 0;
+            vertical-align: top;
+            font-size: 10.5px;
+        }
+
+        .field-list-table td.lbl {
+            width: 110px;
+            font-weight: 600;
+            color: #64748b;
             text-transform: uppercase;
+            font-size: 9.5px;
+            letter-spacing: 0.02em;
         }
 
-        .details-grid-table td.lbl {
-            width: 205px;
-            font-weight: 700;
-            color: #27272a;
-            white-space: nowrap;
-        }
-
-        .details-grid-table td.cln {
-            width: 16px;
+        .field-list-table td.cln {
+            width: 10px;
             text-align: center;
+            color: #cbd5e1;
             font-weight: 700;
-            color: #27272a;
         }
 
-        .details-grid-table td.val {
-            font-weight: 700;
-            color: #09090b;
+        .field-list-table td.val {
+            font-weight: 600;
+            color: #0f172a;
             word-break: break-word;
         }
 
-        /* Tables Styling for Page 2 */
+        /* Page 2 Data Tables */
         .pdf-data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-            margin-bottom: 20px;
-            font-size: 10.5px;
+            margin-top: 6px;
+            margin-bottom: 16px;
+            font-size: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
         }
 
         .pdf-data-table thead th {
             background-color: #00b074 !important;
             color: #ffffff !important;
-            padding: 8.5px 10px;
+            padding: 7px 9px;
             text-align: left;
             font-weight: 700;
-            font-size: 10px;
+            font-size: 9.5px;
             text-transform: uppercase;
             letter-spacing: 0.03em;
             border: none;
         }
 
+        .pdf-data-table tbody tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+
         .pdf-data-table tbody td {
-            padding: 8.5px 10px;
-            border-bottom: 1px solid #e4e4e7;
-            color: #27272a;
+            padding: 6.5px 9px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #1e293b;
             vertical-align: middle;
         }
 
         .pdf-data-table tfoot td {
-            padding: 9px 10px;
-            font-weight: 700;
-            color: #00b074;
-            border-top: 1.5px solid #00b074;
-            font-size: 11px;
+            background-color: #f1f5f9;
+            padding: 7px 9px;
+            border-top: 1.5px solid #cbd5e1;
         }
 
-        /* Document & Checklist Badge Grid UI */
+        /* Document Badges Grid */
         .doc-checklist-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px 6px;
+            gap: 3px 5px;
             align-items: center;
         }
 
         .doc-badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 9.5px;
+            gap: 3px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 8.5px;
             font-weight: 600;
             line-height: 1.2;
             white-space: nowrap;
@@ -287,14 +389,14 @@
 
         .doc-badge.is-checked {
             background-color: #ecfdf5;
-            color: #047857;
+            color: #065f46;
             border: 1px solid #a7f3d0;
         }
 
         .doc-badge.is-checked .doc-icon {
             font-weight: 800;
             color: #059669;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .doc-badge.is-unchecked {
@@ -305,7 +407,11 @@
 
         .doc-badge.is-unchecked .doc-icon {
             color: #cbd5e1;
-            font-size: 9px;
+            font-size: 8px;
+        }
+
+        .section-header, .grid-2col-table, .pdf-data-table, .profile-card {
+            page-break-inside: avoid;
         }
 
         .page-break {
@@ -319,8 +425,11 @@
             body {
                 padding: 0;
             }
+            .section-header, .grid-2col-table, .pdf-data-table, .profile-card {
+                page-break-inside: avoid;
+            }
             @page {
-                margin: 10mm 12mm;
+                margin: 8mm 10mm;
             }
         }
     </style>
@@ -329,108 +438,160 @@
 
     <!-- WATERMARK LOGO -->
     <div class="watermark-bg">
-        <img src="{{ asset('images/logo_collapsed.png') }}" alt="Watermark">
+        <img src="{{ asset('images/pdf logo.png') }}" alt="Watermark">
     </div>
 
     <!-- TOP ACTION BAR -->
     <div class="pdf-actions-bar">
-        <h3>Social Aid Project Report &bull; {{ $projectObj->project_id ?? ($project->project_id ?? 'Report') }}</h3>
+        <h3>Social Aid Project Report &bull; {{ $project->project_id ?? 'Report' }}</h3>
         <button onclick="window.print()" class="btn-print">
             &#128438; &nbsp;Print / Save PDF
         </button>
     </div>
 
-    <!-- DOCUMENT HEADER (Voucher-style) -->
-    <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
+    <!-- DOCUMENT HEADER -->
+    <table class="doc-header-table">
         <tr>
-            <td style="vertical-align:top;">
-                <div style="font-size:22px; font-weight:900; color:#09090b; margin:0; text-transform:uppercase; letter-spacing:-0.3px;">Social Aid Report</div>
-                <div style="font-size:10.5px; color:#71717a; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; margin-top:3px;">
-                    @php
-                        $docCategoryName = '';
-                        if(isset($projectObj->type_of_project)) $docCategoryName = $projectObj->type_of_project;
-                        elseif(isset($project->type_of_project)) $docCategoryName = $project->type_of_project;
-                    @endphp
-                    {{ $docCategoryName ?: 'Orphan Care / Differently Abled / Family Aid' }} &bull; RCFI
+            <td style="vertical-align: middle;">
+                <div class="doc-title">Social Aid Report</div>
+                <div class="doc-subtitle">
+                    {{ $project->type_of_project ?? 'Orphan Care / Differently Abled / Family Aid' }} &bull; RCFI
                 </div>
             </td>
-            <td style="text-align:right; vertical-align:top;">
-                <img src="{{ asset('images/logo.png') }}" alt="RCFI Logo" style="height:42px; width:auto; object-fit:contain; margin-bottom:5px;"><br>
-                <div style="font-size:11.5px; color:#3f3f46; line-height:1.9; text-align:right;">
-                    <strong style="color:#09090b;">Project ID:</strong> {{ $projectObj->project_id ?? ($project->project_id ?? '—') }}<br>
-                    <strong style="color:#09090b;">Generated:</strong> {{ date('d-M-Y H:i') }}
+            <td style="text-align: right; vertical-align: middle;">
+                <img src="{{ asset('images/logo.png') }}" alt="RCFI Logo" style="height: 38px; width: auto; object-fit: contain; margin-bottom: 2px;"><br>
+                <div class="doc-meta-box">
+                    <strong>Project ID:</strong> {{ $project->project_id ?? '—' }} &nbsp;|&nbsp; 
+                    <strong>Generated:</strong> {{ date('d-M-Y H:i') }}
                 </div>
             </td>
         </tr>
     </table>
-    <hr style="border:none; border-top:1.5px solid #d4d4d8; margin:12px 0 18px;">
-
 
     @php
-        $app = $application ?? ($projectObj->application ?? null);
-        $meta = $app->meta ?? [];
-        
-        $beneficiaryName = strtoupper($projectObj->project_name 
+        $app = $application ?? ($project->application ?? null);
+        $meta = (isset($app->meta) && is_array($app->meta)) ? $app->meta : [];
+
+        // Beneficiary Info
+        $beneficiaryName = strtoupper($project->beneficiary_name 
             ?? ($app?->applicant_name 
-            ?? ($meta['applicant_name'] ?? ($meta['name_of_orphan'] ?? 'N/A'))));
+            ?? ($project->project_name 
+            ?? ($meta['applicant_name'] ?? ($meta['name_of_orphan'] ?? 'N/A')))));
+
+        $dob = $project->dob ?? ($app?->dob ?? ($meta['dob'] ?? ($meta['date_of_birth'] ?? 'N/A')));
+        if ($dob !== 'N/A') {
+            try { $dob = \Carbon\Carbon::parse($dob)->format('d-M-Y'); } catch(\Exception $e) {}
+        }
+
+        $age = $project->age ?? ($app?->age ?? ($meta['age'] ?? 'N/A'));
+        $place = strtoupper($project->place ?? ($app?->place ?? ($meta['place'] ?? 'N/A')));
+        
+        $contactNo = $project->contact_number 
+            ?? ($app?->contact_number_1 
+            ?? ($app?->mobile_1 
+            ?? ($meta['contact_number_1'] ?? ($meta['mobile_1'] ?? ($app?->contact_number_2 ?? ($app?->mobile_2 ?? ($meta['mobile_2'] ?? 'N/A')))))));
 
         $photoSrc = null;
-        if ($app) {
-            if ($app->student_photo) {
-                $photoSrc = asset('storage/' . $app->student_photo);
-            } elseif (isset($meta['student_photo']) && $meta['student_photo']) {
-                $photoSrc = asset('storage/' . $meta['student_photo']);
-            } elseif ($app->photo) {
-                $photoSrc = asset('storage/' . $app->photo);
-            } elseif (isset($meta['photo']) && $meta['photo']) {
-                $photoSrc = asset('storage/' . $meta['photo']);
-            }
-        }
-        if (!$photoSrc && isset($projectObj->photo) && $projectObj->photo) {
-            $photoSrc = asset('storage/' . $projectObj->photo);
+        if (!empty($project->photo)) {
+            $photoSrc = asset('storage/' . $project->photo);
+        } elseif ($app && !empty($app->student_photo)) {
+            $photoSrc = asset('storage/' . $app->student_photo);
+        } elseif (!empty($meta['student_photo'])) {
+            $photoSrc = asset('storage/' . $meta['student_photo']);
+        } elseif ($app && !empty($app->photo)) {
+            $photoSrc = asset('storage/' . $app->photo);
+        } elseif (!empty($meta['photo'])) {
+            $photoSrc = asset('storage/' . $meta['photo']);
         }
 
-        $dob = $app?->dob ?? ($meta['dob'] ?? ($meta['date_of_birth'] ?? 'N/A'));
-        $age = $app?->age ?? ($meta['age'] ?? 'N/A');
-        $place = strtoupper($app?->place ?? ($meta['place'] ?? 'N/A'));
-        $contactNo = $app?->mobile_1 ?? ($meta['mobile_1'] ?? ($meta['contact_number_1'] ?? ($app?->mobile_2 ?? ($meta['mobile_2'] ?? 'N/A'))));
-
-        $projectId = $projectObj->project_id ?? ($project->project_id ?? 'N/A');
-        $agencyName = strtoupper($app?->agency_name ?? ($meta['agency_name'] ?? ($projectObj->agency ?? ($projectObj->sponsor ?? 'N/A'))));
-        $agencyId = $projectObj->agency_project_no ?? ($app?->agency_number ?? ($meta['agency_number'] ?? 'N/A'));
-        $clusterCode = strtoupper($app?->cluster?->code ?? ($app?->cluster?->name ?? ($meta['cluster'] ?? 'N/A')));
+        // Project Info
+        $projectId = $project->project_id ?? 'N/A';
+        $agencyNameResolved = $project->donor?->name 
+            ?? ($app?->agency_name 
+            ?? ($meta['agency_name'] 
+            ?? ($project->agency_name ?? null)));
+        if ((!$agencyNameResolved || is_numeric($agencyNameResolved)) && !empty($project->donor_id)) {
+            $agencyNameResolved = \App\Models\Donor::find($project->donor_id)?->name ?? $agencyNameResolved;
+        }
+        if (is_numeric($agencyNameResolved)) {
+            $agencyNameResolved = \App\Models\Donor::find($agencyNameResolved)?->name ?? 'N/A';
+        }
+        $agencyName = strtoupper($agencyNameResolved ?: 'N/A');
+        $agencyId = $project->agency_project_no ?? ($app?->agency_number ?? ($meta['agency_number'] ?? 'N/A'));
+        $clusterCode = strtoupper($project->cluster_code ?? ($app?->cluster?->name ?? ($app?->cluster?->code ?? ($meta['cluster'] ?? 'N/A'))));
         
         $sponsoredDate = 'N/A';
-        if (isset($projectObj->created_at)) {
-            $sponsoredDate = $projectObj->created_at->format('d/m/Y');
-        } elseif ($app && isset($app->created_at)) {
-            $sponsoredDate = $app->created_at->format('d/m/Y');
+        if (!empty($project->sponsored_date)) {
+            $sponsoredDate = \Carbon\Carbon::parse($project->sponsored_date)->format('d-M-Y');
+        } elseif (!empty($project->created_at)) {
+            $sponsoredDate = $project->created_at->format('d-M-Y');
+        } elseif ($app && !empty($app->created_at)) {
+            $sponsoredDate = $app->created_at->format('d-M-Y');
         }
+
+        // Family Details
+        $fatherName = strtoupper($project->father_name ?? ($app?->father_name ?? ($meta['father_name'] ?? 'N/A')));
+        $grandFatherName = strtoupper($project->grand_father_name ?? ($project->grandfather_name ?? ($app?->grandfather_name ?? ($app?->fathers_father ?? ($meta['grandfather_name'] ?? ($meta['fathers_father'] ?? 'N/A'))))));
+        $motherName = strtoupper($project->mother_name ?? ($app?->mother_name ?? ($meta['mother_name'] ?? 'N/A')));
+        $motherFatherName = strtoupper($project->mother_father_name ?? ($project->mothers_father_name ?? ($app?->mothers_father_name ?? ($app?->mother_father_name ?? ($meta['mothers_father_name'] ?? ($meta['mothers_father'] ?? 'N/A'))))));
+        
+        $guardianName = strtoupper($project->guardian_name ?? ($app?->guardian_name ?? ($meta['guardian_name'] ?? 'N/A')));
+        $guardianRelation = strtoupper($project->guardian_relation ?? ($app?->guardian_relation ?? ($meta['guardian_relation'] ?? '')));
+
+        $brothers = $project->brothers_count ?? ($app?->siblings_male ?? ($app?->children_male ?? ($app?->male_members ?? ($meta['brothers_count'] ?? ($meta['brothers'] ?? 0)))));
+        $sisters = $project->sisters_count ?? ($app?->siblings_female ?? ($app?->children_female ?? ($app?->female_members ?? ($meta['sisters_count'] ?? ($meta['sisters'] ?? 0)))));
+        $totalSiblings = $project->family_members ?? ($app?->siblings_total ?? ($app?->children_total ?? ($app?->total_members ?? ($meta['family_members'] ?? ($brothers + $sisters)))));
+
+        $phone1 = $project->mobile_1 ?? ($app?->contact_number_1 ?? ($app?->mobile_1 ?? ($meta['contact_number_1'] ?? ($meta['mobile_1'] ?? $contactNo))));
+        $phone2 = $project->mobile_2 ?? ($app?->contact_number_2 ?? ($app?->mobile_2 ?? ($meta['contact_number_2'] ?? ($meta['mobile_2'] ?? '—'))));
+        $whatsapp = $project->whatsapp_number ?? ($app?->whatsapp_number ?? ($meta['whatsapp_number'] ?? ($meta['whatsapp'] ?? $phone1)));
+
+        // Address Details
+        $houseName = strtoupper($project->house_name ?? ($app?->house_name ?? ($meta['house_name'] ?? 'N/A')));
+        $postOffice = strtoupper($project->post_office ?? ($app?->post_office ?? ($meta['post_office'] ?? ($meta['po'] ?? 'N/A'))));
+        $panchayat = strtoupper($project->panchayat ?? ($app?->panchayat ?? ($meta['panchayat'] ?? ($meta['panjayath'] ?? 'N/A'))));
+        $village = strtoupper($project->village ?? ($app?->village ?? ($meta['village'] ?? 'N/A')));
+        $district = strtoupper($project->district ?? ($app?->district ?? ($meta['district'] ?? ($meta['dist'] ?? 'MALAPPURAM'))));
+        $state = strtoupper($project->state ?? ($app?->state ?? ($meta['state'] ?? 'KERALA')));
+        $pinCode = $project->pin_code ?? ($app?->pin_code ?? ($meta['pin_code'] ?? ($meta['pincode'] ?? '673641')));
+
+        // Socio-Economic Details
+        $schoolName = strtoupper($project->school_name ?? ($app?->school_name ?? ($app?->studying_institution ?? ($meta['school_name'] ?? ($meta['school'] ?? ($app?->school_class ?? ($meta['school_class'] ?? 'N/A')))))));
+        $madrassaName = strtoupper($project->madrassa_name ?? ($app?->madrassa_name ?? ($meta['madrassa_name'] ?? ($meta['madrassa'] ?? ($app?->madrassa_class ?? ($meta['madrassa_class'] ?? 'N/A'))))));
+        $notStudying = strtoupper($project->not_studying_reason ?? ($app?->not_studying_reason ?? ($meta['not_studying_reason'] ?? '—')));
+        $healthStatus = strtoupper($project->health_status ?? ($app?->health_status ?? ($app?->disability_type ?? ($meta['health_status'] ?? 'OK'))));
+        $income = $project->monthly_income ?? ($app?->monthly_income ?? ($meta['monthly_income'] ?? ($meta['income'] ?? 1000)));
+        $expense = $project->monthly_expense ?? ($app?->monthly_expense ?? ($app?->monthly_cost ?? ($meta['monthly_expense'] ?? ($meta['expense'] ?? 1000))));
+        $houseType = strtoupper($project->house_type ?? ($app?->house_type ?? ($app?->residence_info ?? ($app?->accommodation ?? ($meta['house_type'] ?? 'OWN HOUSE')))));
+
+        // Funds and Programmes collections
+        $projectFunds = (isset($funds) && count($funds) > 0) ? $funds : ($project->funds ?? collect());
+        $projectProgrammes = (isset($programmes) && count($programmes) > 0) ? $programmes : ($project->programmes ?? collect());
     @endphp
 
-    <!-- HEADER BLOCK GRID -->
-    <table class="header-layout-table">
+    <!-- PROFILE SUMMARY CARD -->
+    <table class="profile-card">
         <tr>
             <!-- PHOTO BOX -->
-            <td class="photo-td">
-                <div class="photo-card-box">
+            <td class="photo-cell">
+                <div class="photo-box">
                     @if($photoSrc)
                         <img src="{{ $photoSrc }}" alt="Photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="photo-placeholder" style="display: none;">
-                            <svg width="42" height="42" fill="#a1a1aa" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <svg width="36" height="36" fill="#94a3b8" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                         </div>
                     @else
                         <div class="photo-placeholder">
-                            <svg width="42" height="42" fill="#a1a1aa" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <svg width="36" height="36" fill="#94a3b8" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                         </div>
                     @endif
                 </div>
             </td>
 
-            <!-- BENEFICIARY INFO MIDDLE -->
-            <td class="info-middle-td">
-                <table class="mini-info-table">
-                    <tr><td class="lbl" style="width: 105px;">NAME</td><td class="cln">:</td><td class="val">{{ $beneficiaryName }}</td></tr>
+            <!-- BENEFICIARY INFO -->
+            <td class="beneficiary-cell">
+                <table class="card-table">
+                    <tr><td class="lbl">NAME</td><td class="cln">:</td><td class="val">{{ $beneficiaryName }}</td></tr>
                     <tr><td class="lbl">DOB</td><td class="cln">:</td><td class="val">{{ $dob }}</td></tr>
                     <tr><td class="lbl">AGE</td><td class="cln">:</td><td class="val">{{ $age }}</td></tr>
                     <tr><td class="lbl">PLACE</td><td class="cln">:</td><td class="val">{{ $place }}</td></tr>
@@ -438,188 +599,114 @@
                 </table>
             </td>
 
-            <!-- VERTICAL DIVIDER -->
-            <td class="divider-td"></td>
-
-            <!-- PROJECT INFO RIGHT -->
-            <td class="info-right-td">
-                <table class="mini-info-table">
-                    <tr><td class="lbl" style="width: 125px;">PROJECT ID</td><td class="cln">:</td><td class="val">{{ $projectId }}</td></tr>
+            <!-- PROJECT INFO -->
+            <td class="project-cell">
+                <table class="card-table">
+                    <tr><td class="lbl">PROJECT ID</td><td class="cln">:</td><td class="val">{{ $projectId }}</td></tr>
                     <tr><td class="lbl">AGENCY</td><td class="cln">:</td><td class="val">{{ $agencyName }}</td></tr>
                     <tr><td class="lbl">AGENCY ID</td><td class="cln">:</td><td class="val">{{ $agencyId }}</td></tr>
                     <tr><td class="lbl">CLUSTER</td><td class="cln">:</td><td class="val">{{ $clusterCode }}</td></tr>
-                    <tr><td class="lbl">SPONSERED DATE</td><td class="cln">:</td><td class="val">{{ $sponsoredDate }}</td></tr>
+                    <tr><td class="lbl">SPONSORED DATE</td><td class="cln">:</td><td class="val">{{ $sponsoredDate }}</td></tr>
                 </table>
             </td>
         </tr>
     </table>
 
     <!-- SECTION 1: FAMILY DETAILS -->
-    <table class="section-header-table">
+    <table class="section-header">
         <tr>
-            <td class="section-title-td">Family Detals</td>
+            <td class="section-badge-td"><span class="section-badge">Family Details</span></td>
             <td class="section-line-td"><div></div></td>
         </tr>
     </table>
-    <table class="details-grid-table">
-        <tr>
-            <td class="lbl">FATHER NAME</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->father_name ?? ($meta['father_name'] ?? 'N/A')) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">GRAND FATHER</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->grand_father_name ?? ($meta['grand_father_name'] ?? ($meta['grandfather_name'] ?? 'N/A'))) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">MOTHER</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->mother_name ?? ($meta['mother_name'] ?? 'N/A')) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">MOTHER'S FATHER</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->mother_father_name ?? ($meta['mother_father_name'] ?? ($meta['mothers_father'] ?? 'N/A'))) }}</td>
-        </tr>
-        @php
-            $guardianName = strtoupper($app?->guardian_name ?? ($meta['guardian_name'] ?? 'N/A'));
-            $guardianRelation = strtoupper($app?->guardian_relation ?? ($meta['guardian_relation'] ?? 'FATHER'));
-        @endphp
-        <tr>
-            <td class="lbl">GUARDIAN</td>
-            <td class="cln">:</td>
-            <td class="val">{{ $guardianName }} @if($guardianRelation) ( {{ $guardianRelation }} ) @endif</td>
-        </tr>
-        @php
-            $brothers = $meta['brothers_count'] ?? ($meta['brothers'] ?? 0);
-            $sisters = $meta['sisters_count'] ?? ($meta['sisters'] ?? 0);
-            $totalSiblings = $app?->family_members ?? ($meta['family_members'] ?? ($brothers + $sisters));
-        @endphp
-        <tr>
-            <td class="lbl">SIBILINGS</td>
-            <td class="cln">:</td>
-            <td class="val">{{ $totalSiblings }} ( BROTHOR :{{ $brothers }} , SISTERS :{{ $sisters }} )</td>
-        </tr>
-        @php
-            $phone1 = $app?->mobile_1 ?? ($meta['mobile_1'] ?? ($meta['contact_number_1'] ?? 'N/A'));
-            $phone2 = $app?->mobile_2 ?? ($meta['mobile_2'] ?? ($meta['contact_number_2'] ?? $phone1));
-            $whatsapp = $meta['whatsapp'] ?? ($meta['whatsapp_number'] ?? $phone1);
-        @endphp
-        <tr>
-            <td class="lbl">PHONE 1</td>
-            <td class="cln">:</td>
-            <td class="val">{{ $phone1 }} , PHONE 2 : {{ $phone2 }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">WHATSAPP</td>
-            <td class="cln">:</td>
-            <td class="val">{{ $whatsapp }}</td>
-        </tr>
+
+    <table class="grid-2col-table">
+        <tbody>
+            <tr>
+                <td>
+                    <table class="field-list-table">
+                        <tr><td class="lbl">Father Name</td><td class="cln">:</td><td class="val">{{ $fatherName }}</td></tr>
+                        <tr><td class="lbl">Grand Father</td><td class="cln">:</td><td class="val">{{ $grandFatherName }}</td></tr>
+                        <tr><td class="lbl">Mother</td><td class="cln">:</td><td class="val">{{ $motherName }}</td></tr>
+                        <tr><td class="lbl">Mother's Father</td><td class="cln">:</td><td class="val">{{ $motherFatherName }}</td></tr>
+                    </table>
+                </td>
+                <td>
+                    <table class="field-list-table">
+                        <tr><td class="lbl">Guardian</td><td class="cln">:</td><td class="val">{{ $guardianName }} @if($guardianRelation) <span style="font-weight:400; color:#64748b;">({{ $guardianRelation }})</span> @endif</td></tr>
+                        <tr><td class="lbl">Siblings</td><td class="cln">:</td><td class="val">{{ $totalSiblings }} <span style="font-weight:400; color:#64748b;">(Brothers: {{ $brothers }}, Sisters: {{ $sisters }})</span></td></tr>
+                        <tr><td class="lbl">Phone 1 & 2</td><td class="cln">:</td><td class="val">{{ $phone1 }} @if($phone2 && $phone2 !== '—' && $phone2 !== $phone1) , {{ $phone2 }} @endif</td></tr>
+                        <tr><td class="lbl">WhatsApp</td><td class="cln">:</td><td class="val">{{ $whatsapp }}</td></tr>
+                    </table>
+                </td>
+            </tr>
+        </tbody>
     </table>
 
     <!-- SECTION 2: ADDRESS DETAILS -->
-    <table class="section-header-table">
+    <table class="section-header">
         <tr>
-            <td class="section-title-td">Address Detals</td>
+            <td class="section-badge-td"><span class="section-badge">Address Details</span></td>
             <td class="section-line-td"><div></div></td>
         </tr>
     </table>
-    <table class="details-grid-table">
-        <tr>
-            <td class="lbl">HOUSE NAME</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->house_name ?? ($meta['house_name'] ?? 'N/A')) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">PLACE</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->place ?? ($meta['place'] ?? 'N/A')) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">POST</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->post_office ?? ($meta['post_office'] ?? ($meta['po'] ?? 'N/A'))) }} P/O</td>
-        </tr>
-        <tr>
-            <td class="lbl">PANJAYATH</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->panchayat ?? ($meta['panchayat'] ?? ($meta['panjayath'] ?? 'N/A'))) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">VILLAGE</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->village ?? ($meta['village'] ?? 'N/A')) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">DISTRICT</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->district ?? ($meta['district'] ?? ($meta['dist'] ?? 'MALAPPURAM'))) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">STATE</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->state ?? ($meta['state'] ?? 'KERALA')) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">PINCODE</td>
-            <td class="cln">:</td>
-            <td class="val">{{ $app?->pin_code ?? ($meta['pin_code'] ?? ($meta['pincode'] ?? '673641')) }}</td>
-        </tr>
+
+    <table class="grid-2col-table">
+        <tbody>
+            <tr>
+                <td>
+                    <table class="field-list-table">
+                        <tr><td class="lbl">House Name</td><td class="cln">:</td><td class="val">{{ $houseName }}</td></tr>
+                        <tr><td class="lbl">Place</td><td class="cln">:</td><td class="val">{{ $place }}</td></tr>
+                        <tr><td class="lbl">Post Office</td><td class="cln">:</td><td class="val">{{ $postOffice }} P/O</td></tr>
+                        <tr><td class="lbl">Panchayat</td><td class="cln">:</td><td class="val">{{ $panchayat }}</td></tr>
+                    </table>
+                </td>
+                <td>
+                    <table class="field-list-table">
+                        <tr><td class="lbl">Village</td><td class="cln">:</td><td class="val">{{ $village }}</td></tr>
+                        <tr><td class="lbl">District</td><td class="cln">:</td><td class="val">{{ $district }}</td></tr>
+                        <tr><td class="lbl">State</td><td class="cln">:</td><td class="val">{{ $state }}</td></tr>
+                        <tr><td class="lbl">Pincode</td><td class="cln">:</td><td class="val">{{ $pinCode }}</td></tr>
+                    </table>
+                </td>
+            </tr>
+        </tbody>
     </table>
 
-    <!-- SECTION 3: EDUCATION DETAILS -->
-    <table class="section-header-table">
+    <!-- SECTION 3: EDUCATION & SOCIO-ECONOMIC DETAILS -->
+    <table class="section-header">
         <tr>
-            <td class="section-title-td">Education Detals</td>
+            <td class="section-badge-td"><span class="section-badge">Education & Socio-Economic Details</span></td>
             <td class="section-line-td"><div></div></td>
         </tr>
     </table>
-    <table class="details-grid-table">
-        <tr>
-            <td class="lbl">SCHOOL</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->school_name ?? ($meta['school_name'] ?? ($meta['school'] ?? ($app?->school_class ?? ($meta['school_class'] ?? 'N/A'))))) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">MADRASSA</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->madrassa_name ?? ($meta['madrassa_name'] ?? ($meta['madrassa'] ?? ($app?->madrassa_class ?? ($meta['madrassa_class'] ?? 'N/A'))))) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">iF NOT STUDYING</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->not_studying_reason ?? ($meta['not_studying_reason'] ?? '')) }}</td>
-        </tr>
-        <tr>
-            <td class="lbl">HEALTH STATUS</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->health_status ?? ($meta['health_status'] ?? 'OK')) }}</td>
-        </tr>
-        @php
-            $income = $meta['monthly_income'] ?? ($meta['income'] ?? 1000);
-            $expense = $meta['monthly_expense'] ?? ($meta['expense'] ?? 1000);
-        @endphp
-        <tr>
-            <td class="lbl">MONTHLY INCOME</td>
-            <td class="cln">:</td>
-            <td class="val">{{ $income }} ( EXPENSE : {{ $expense }} )</td>
-        </tr>
-        <tr>
-            <td class="lbl">HOUSE TYPE</td>
-            <td class="cln">:</td>
-            <td class="val">{{ strtoupper($app?->house_type ?? ($meta['house_type'] ?? 'OWN HOUSE')) }}</td>
-        </tr>
+
+    <table class="grid-2col-table">
+        <tbody>
+            <tr>
+                <td>
+                    <table class="field-list-table">
+                        <tr><td class="lbl">School</td><td class="cln">:</td><td class="val">{{ $schoolName }}</td></tr>
+                        <tr><td class="lbl">Madrassa</td><td class="cln">:</td><td class="val">{{ $madrassaName }}</td></tr>
+                        <tr><td class="lbl">If Not Studying</td><td class="cln">:</td><td class="val">{{ $notStudying }}</td></tr>
+                    </table>
+                </td>
+                <td>
+                    <table class="field-list-table">
+                        <tr><td class="lbl">Health Status</td><td class="cln">:</td><td class="val">{{ $healthStatus }}</td></tr>
+                        <tr><td class="lbl">Monthly Income</td><td class="cln">:</td><td class="val">₹{{ number_format((float)$income, 0) }} <span style="font-weight:400; color:#64748b;">(Expense: ₹{{ number_format((float)$expense, 0) }})</span></td></tr>
+                        <tr><td class="lbl">House Type</td><td class="cln">:</td><td class="val">{{ $houseType }}</td></tr>
+                    </table>
+                </td>
+            </tr>
+        </tbody>
     </table>
 
-
-    <!-- PAGE BREAK FOR PAGE 2 -->
-    <div class="page-break"></div>
-
-    <!-- SECTION 4: FINANCIAL DETAILS (PAGE 2) -->
-    <table class="section-header-table" style="margin-top: 10px;">
+    <!-- SECTION 4: FINANCIAL DETAILS -->
+    <table class="section-header" style="margin-top: 5px;">
         <tr>
-            <td class="section-title-td">Financial Detals</td>
+            <td class="section-badge-td"><span class="section-badge">Financial Details</span></td>
             <td class="section-line-td"><div></div></td>
         </tr>
     </table>
@@ -627,31 +714,31 @@
     <table class="pdf-data-table">
         <thead>
             <tr>
-                <th style="width: 8%;">SERIAL NO</th>
-                <th style="width: 22%;">DATE OF FUND TRANSFERRED</th>
-                <th style="width: 14%;">AMOUNT</th>
+                <th style="width: 8%; text-align: center;">SL NO</th>
+                <th style="width: 20%;">DATE TRANSFERRED</th>
+                <th style="width: 15%;">AMOUNT</th>
                 <th style="width: 18%;">AGENCY</th>
-                <th style="width: 14%;">ACCOUNT NAME</th>
-                <th style="width: 14%;">ACCOUNT NUMBER</th>
-                <th style="width: 10%;">IFSC NUMBER</th>
+                <th style="width: 15%;">ACCOUNT NAME</th>
+                <th style="width: 14%;">ACCOUNT NO</th>
+                <th style="width: 10%;">IFSC CODE</th>
             </tr>
         </thead>
         <tbody>
             @php $totalFundAmount = 0; @endphp
-            @forelse($funds as $idx => $fund)
+            @forelse($projectFunds as $idx => $fund)
                 @php
                     $fAmt = (float)($fund->amount ?? 0);
                     $totalFundAmount += $fAmt;
                     $fDate = '—';
-                    if (isset($fund->date)) {
+                    if (!empty($fund->date)) {
                         $fDate = \Carbon\Carbon::parse($fund->date)->format('d-M-Y');
-                    } elseif (isset($fund->created_at)) {
+                    } elseif (!empty($fund->created_at)) {
                         $fDate = $fund->created_at->format('d-M-Y');
                     }
                 @endphp
                 <tr>
-                    <td style="text-align: center;">{{ $idx + 1 }}</td>
-                    <td>{{ $fDate }}</td>
+                    <td style="text-align: center; font-weight: 700; color: #64748b;">{{ $idx + 1 }}</td>
+                    <td style="font-weight: 600;">{{ $fDate }}</td>
                     <td style="color: #00b074; font-weight: 700;">₹{{ number_format($fAmt, 2) }}</td>
                     <td>{{ $fund->agency ?? ($fund->donor ?? ($agencyName !== 'N/A' ? $agencyName : '—')) }}</td>
                     <td>{{ $fund->account_name ?? '—' }}</td>
@@ -660,15 +747,15 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" style="text-align: center; color: #71717a; padding: 12px;">No financial records transferred yet.</td>
+                    <td colspan="7" style="text-align: center; color: #94a3b8; padding: 14px;">No financial records transferred yet.</td>
                 </tr>
             @endforelse
         </tbody>
-        @if($funds->count() > 0)
+        @if(count($projectFunds) > 0)
         <tfoot>
             <tr>
-                <td colspan="2" style="font-weight: 700; color: #18181b;">Total</td>
-                <td style="color: #00b074; font-weight: 700; font-size: 10px;">₹{{ number_format($totalFundAmount, 2) }}</td>
+                <td colspan="2" style="font-weight: 800; color: #0f172a; text-transform: uppercase;">Total Transferred</td>
+                <td style="color: #00b074; font-weight: 800; font-size: 11px;">₹{{ number_format($totalFundAmount, 2) }}</td>
                 <td colspan="4"></td>
             </tr>
         </tfoot>
@@ -676,9 +763,9 @@
     </table>
 
     <!-- SECTION 5: REPORT DETAILS (PAGE 2) -->
-    <table class="section-header-table" style="margin-top: 25px;">
+    <table class="section-header" style="margin-top: 18px;">
         <tr>
-            <td class="section-title-td">Report Detals</td>
+            <td class="section-badge-td"><span class="section-badge">Programme & Report Details</span></td>
             <td class="section-line-td"><div></div></td>
         </tr>
     </table>
@@ -686,30 +773,30 @@
     <table class="pdf-data-table">
         <thead>
             <tr>
-                <th style="width: 6%;">SERIAL NO</th>
-                <th style="width: 20%;">PROGRAMME NAME</th>
-                <th style="width: 11%;">DATE</th>
-                <th style="width: 10%;">PLACE</th>
-                <th style="width: 13%;">REMARKS</th>
-                <th style="width: 40%;">CHECKLIST & DOCUMENTS</th>
+                <th style="width: 6%; text-align: center;">SL NO</th>
+                <th style="width: 22%;">PROGRAMME NAME</th>
+                <th style="width: 12%;">DATE</th>
+                <th style="width: 12%;">PLACE</th>
+                <th style="width: 14%;">REMARKS</th>
+                <th style="width: 34%;">CHECKLIST & DOCUMENTS</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($programmes as $pidx => $prog)
+            @forelse($projectProgrammes as $pidx => $prog)
                 @php
                     $pDate = '—';
-                    if (isset($prog->date)) {
+                    if (!empty($prog->date)) {
                         $pDate = \Carbon\Carbon::parse($prog->date)->format('d-M-Y');
-                    } elseif (isset($prog->created_at)) {
+                    } elseif (!empty($prog->created_at)) {
                         $pDate = $prog->created_at->format('d-M-Y');
                     }
                 @endphp
                 <tr>
-                    <td style="text-align: center;">{{ $pidx + 1 }}</td>
-                    <td style="font-weight: 700; color: #18181b;">{{ $prog->name ?? ($prog->programme_name ?? 'Report Collection Programme') }}</td>
-                    <td>{{ $pDate }}</td>
-                    <td>{{ $prog->place ?: '-' }}</td>
-                    <td>{{ $prog->remarks ?: '-' }}</td>
+                    <td style="text-align: center; font-weight: 700; color: #64748b;">{{ $pidx + 1 }}</td>
+                    <td style="font-weight: 700; color: #0f172a;">{{ $prog->name ?? ($prog->programme_name ?? 'Report Collection Programme') }}</td>
+                    <td style="font-weight: 600;">{{ $pDate }}</td>
+                    <td>{{ $prog->place ?: '—' }}</td>
+                    <td>{{ $prog->remarks ?: '—' }}</td>
                     <td>
                         <div class="doc-checklist-grid">
                             <span class="doc-badge {{ $prog->present_ticked ? 'is-checked' : 'is-unchecked' }}">
@@ -735,7 +822,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" style="text-align: center; color: #71717a; padding: 12px;">No programme reports added yet.</td>
+                    <td colspan="6" style="text-align: center; color: #94a3b8; padding: 14px;">No programme reports added yet.</td>
                 </tr>
             @endforelse
         </tbody>

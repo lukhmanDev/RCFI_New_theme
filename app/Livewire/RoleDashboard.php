@@ -177,60 +177,128 @@ class RoleDashboard extends Component
         }
 
         // Real-time Application Counts
-        $hasApps = \Illuminate\Support\Facades\Schema::hasTable('applications');
-        $totalApplications = $hasApps ? DB::table('applications')->count() : 0;
-        $pendingCount = $hasApps ? DB::table('applications')->where('status', 'Pending')->count() : 0;
-        $approvedCount = $hasApps ? DB::table('applications')->where('status', 'Approved')->count() : 0;
-        $underReviewCount = $hasApps ? DB::table('applications')->where('status', 'Under Review')->count() : 0;
-        $rejectedCount = $hasApps ? DB::table('applications')->where('status', 'Rejected')->count() : 0;
-        
-        // Real-time Project Counts
-        $hasProjects = \Illuminate\Support\Facades\Schema::hasTable('projects');
-        $totalProjects = $hasProjects ? Project::count() : 0;
-        $runningProjects = $hasProjects ? Project::where('status', 'Running')->count() : 0;
-        $completedProjects = $hasProjects ? Project::where('status', 'Completed')->count() : 0;
+        $appTables = [
+            'education_center_applications',
+            'cultural_center_applications',
+            'hospital_clinic_applications',
+            'shop_other_applications',
+            'house_applications',
+            'drinking_water_individual_applications',
+            'drinking_water_group_applications',
+            'general_applications',
+            'orphan_care_applications',
+            'differently_abled_applications',
+            'family_aid_applications',
+            'applications',
+        ];
 
-        // My assigned projects
-        $myAssignedProjects = $hasProjects ? Project::where('engineer_id', $user->id)
-            ->orWhere('project_manager_id', $user->id)
-            ->get() : collect();
+        $totalApplications = 0;
+        $pendingCount = 0;
+        $approvedCount = 0;
+        $underReviewCount = 0;
+        $rejectedCount = 0;
 
-        $myRunningProjects = $myAssignedProjects->where('status', 'Running')->count();
-        $myCompletedProjects = $myAssignedProjects->where('status', 'Completed')->count();
-
-        // ── Beneficiary & Family Totals ──────────────────────────────────────────
-        $totalBeneficiaryPeoples = 0;
-        $totalBeneficiaryFamily  = 0;
-        if ($hasProjects && Schema::hasColumn('projects', 'total_beneficiary_peoples')) {
-            $totalBeneficiaryPeoples = (int) Project::whereNotNull('total_beneficiary_peoples')
-                ->sum('total_beneficiary_peoples');
-            $totalBeneficiaryFamily  = (int) Project::whereNotNull('total_family')
-                ->sum('total_family');
-        }
-
-        // ── Year-wise chart (last 5 years) ───────────────────────────────────────
-        $currentYear = (int) now()->format('Y');
-        $yearLabels  = [];
-        $yearPeoples = [];
-        $yearFamilies = [];
-        for ($y = $currentYear - 4; $y <= $currentYear; $y++) {
-            $yearLabels[] = (string) $y;
-            if ($hasProjects && Schema::hasColumn('projects', 'total_beneficiary_peoples')) {
-                $yearPeoples[]  = (int) Project::whereYear('created_at', $y)
-                    ->whereNotNull('total_beneficiary_peoples')
-                    ->sum('total_beneficiary_peoples');
-                $yearFamilies[] = (int) Project::whereYear('created_at', $y)
-                    ->whereNotNull('total_family')
-                    ->sum('total_family');
-            } else {
-                $yearPeoples[]  = 0;
-                $yearFamilies[] = 0;
+        foreach ($appTables as $tbl) {
+            if (!Schema::hasTable($tbl)) continue;
+            $totalApplications += DB::table($tbl)->count();
+            if (Schema::hasColumn($tbl, 'status')) {
+                $pendingCount += DB::table($tbl)->where('status', 'Pending')->count();
+                $approvedCount += DB::table($tbl)->where('status', 'Approved')->count();
+                $underReviewCount += DB::table($tbl)->whereIn('status', ['Under Review', 'In Review', 'Processing'])->count();
+                $rejectedCount += DB::table($tbl)->where('status', 'Rejected')->count();
             }
         }
+        
+        // Real-time Project Counts & Beneficiary Totals across all project categories
+        $projectTables = [
+            'education_center_projects',
+            'cultural_center_projects',
+            'hospital_clinic_projects',
+            'shop_other_projects',
+            'house_projects',
+            'drinking_water_individual_projects',
+            'drinking_water_group_projects',
+            'general_projects',
+            'orphan_care_projects',
+            'differently_abled_projects',
+            'family_aid_projects',
+            'projects',
+        ];
+
+        $totalProjects = 0;
+        $runningProjects = 0;
+        $completedProjects = 0;
+        $myAssignedProjects = collect();
+        $myRunningProjects = 0;
+        $myCompletedProjects = 0;
+        $totalBeneficiaryPeoples = 0;
+        $totalBeneficiaryFamily = 0;
+
+        $currentYear = (int) now()->format('Y');
+        $yearLabels = [];
+        $yearPeoplesMap = array_fill_keys(range($currentYear - 4, $currentYear), 0);
+        $yearFamiliesMap = array_fill_keys(range($currentYear - 4, $currentYear), 0);
+
+        for ($y = $currentYear - 4; $y <= $currentYear; $y++) {
+            $yearLabels[] = (string)$y;
+        }
+
+        foreach ($projectTables as $tbl) {
+            if (!Schema::hasTable($tbl)) continue;
+
+            $totalProjects += DB::table($tbl)->count();
+
+            if (Schema::hasColumn($tbl, 'status')) {
+                $runningProjects += DB::table($tbl)->whereIn('status', ['Running', 'Active', 'Approved'])->count();
+                $completedProjects += DB::table($tbl)->where('status', 'Completed')->count();
+            }
+
+            if (Schema::hasColumn($tbl, 'total_beneficiary_peoples')) {
+                $totalBeneficiaryPeoples += (int) DB::table($tbl)->whereNotNull('total_beneficiary_peoples')->sum('total_beneficiary_peoples');
+            }
+            if (Schema::hasColumn($tbl, 'total_family')) {
+                $totalBeneficiaryFamily += (int) DB::table($tbl)->whereNotNull('total_family')->sum('total_family');
+            }
+
+            // User assigned
+            if (Schema::hasColumn($tbl, 'project_manager_id') || Schema::hasColumn($tbl, 'engineer_id') || Schema::hasColumn($tbl, 'manager_id')) {
+                $myProjects = DB::table($tbl)->where(function($q) use ($user, $tbl) {
+                    if (Schema::hasColumn($tbl, 'project_manager_id')) $q->orWhere('project_manager_id', $user->id);
+                    if (Schema::hasColumn($tbl, 'manager_id')) $q->orWhere('manager_id', $user->id);
+                    if (Schema::hasColumn($tbl, 'engineer_id')) $q->orWhere('engineer_id', $user->id);
+                })->get();
+
+                foreach ($myProjects as $mp) {
+                    $myAssignedProjects->push($mp);
+                    $st = $mp->status ?? 'Active';
+                    if (in_array($st, ['Running', 'Active', 'Approved'])) $myRunningProjects++;
+                    if ($st === 'Completed') $myCompletedProjects++;
+                }
+            }
+
+            // Year-wise sums
+            if (Schema::hasColumn($tbl, 'created_at')) {
+                for ($y = $currentYear - 4; $y <= $currentYear; $y++) {
+                    if (Schema::hasColumn($tbl, 'total_beneficiary_peoples')) {
+                        $yearPeoplesMap[$y] += (int) DB::table($tbl)
+                            ->whereYear('created_at', $y)
+                            ->whereNotNull('total_beneficiary_peoples')
+                            ->sum('total_beneficiary_peoples');
+                    }
+                    if (Schema::hasColumn($tbl, 'total_family')) {
+                        $yearFamiliesMap[$y] += (int) DB::table($tbl)
+                            ->whereYear('created_at', $y)
+                            ->whereNotNull('total_family')
+                            ->sum('total_family');
+                    }
+                }
+            }
+        }
+
         $beneficiaryChartData = [
             'labels'   => $yearLabels,
-            'peoples'  => $yearPeoples,
-            'families' => $yearFamilies,
+            'peoples'  => array_values($yearPeoplesMap),
+            'families' => array_values($yearFamiliesMap),
         ];
 
         // Leave Balances & Status for current user

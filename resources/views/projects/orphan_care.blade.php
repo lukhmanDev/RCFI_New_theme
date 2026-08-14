@@ -244,15 +244,58 @@
         resize: vertical;
         min-height: 80px;
     }
+
+    /* Executive Toolbar Styling */
+    .filter-select-modern {
+        height: 38px;
+        padding: 0 0.75rem;
+        font-size: 0.84rem;
+        font-weight: 600;
+        border-radius: 8px;
+        background-color: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #cbd5e1;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+    .filter-select-modern:focus, .filter-select-modern:hover {
+        border-color: #10b981;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .btn-action-animated {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-action-animated:hover {
+        transform: translateY(-1px);
+    }
+    .btn-action-animated:active {
+        transform: translateY(0);
+    }
 </style>
 
-<div class="group-header-panel" style="display: flex; justify-content: space-between; align-items: center;">
-    <span>Orphan Care PROJECT LIST</span>
-    @if(Auth::user() && Auth::user()->canDownloadExcel())
-    <a href="{{ route('projects.export', 'orphan-care') }}" class="excel-export-btn btn-custom" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);">
-        <i class="bx bxs-file-export" style="font-size: 1.1rem;"></i> Export Excel
-    </a>
-    @endif
+<!-- EXECUTIVE PAGE HEADER -->
+<div class="no-auto-align" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; background: #ffffff; padding: 1.25rem 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+            <h1 style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">Orphan Care Projects</h1>
+            <span id="projectCountBadge" style="font-size: 0.75rem; font-weight: 800; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.2rem 0.65rem; border-radius: 20px;">
+                {{ count($projects) }} {{ count($projects) === 1 ? 'Project' : 'Projects' }}
+            </span>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin: 0.2rem 0 0 0;">Manage, filter, monitor progress, and export orphan care beneficiary projects.</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        @if(Auth::user() && Auth::user()->canDownloadExcel())
+        <a id="excelExportBtn" href="{{ route('projects.export', 'orphan-care') }}" class="btn-action-animated excel-export-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0.55rem 1.25rem; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" title="Download Excel report with all filtered data">
+            Export Excel
+        </a>
+        @endif
+    </div>
 </div>
 
 @if (session('success'))
@@ -297,11 +340,14 @@
         $ag = $pApp?->agency_name 
             ?? ($pMeta['agency_name'] ?? null) 
             ?? ($p->donor?->name ?? null) 
-            ?? ($p->agency ?? null) 
-            ?? ($p->funds?->first()?->donor ?? null) 
-            ?? ($p->funds?->first()?->agency ?? null) 
-            ?? ($p->sponsor && $p->sponsor !== 'Sponsored' ? $p->sponsor : null);
-        if ($ag && trim($ag) !== '' && $ag !== 'N/A') $filterAgencies->push(trim($ag));
+            ?? ($p->agency_name ?? null);
+        if ((!$ag || is_numeric($ag)) && $p->donor_id) {
+            $ag = \App\Models\Donor::find($p->donor_id)?->name ?? $ag;
+        }
+        if ($ag && is_numeric($ag)) {
+            $ag = \App\Models\Donor::find($ag)?->name;
+        }
+        if ($ag && trim($ag) !== '' && strtolower($ag) !== 'n/a' && !is_numeric($ag)) $filterAgencies->push(trim($ag));
 
         $cl = $pApp?->cluster?->name ?? ($pMeta['cluster'] ?? null);
         if ($cl && trim($cl) !== '') $filterClusters->push(trim($cl));
@@ -317,94 +363,106 @@
     $filterGenders = $filterGenders->unique()->sort()->values();
 @endphp
 
-<div class="controls-row" style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between; background: #ffffff; padding: 1.1rem 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px -2px rgba(0,0,0,0.04);">
-    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; flex: 1;">
-        <!-- State Filter -->
-        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <label for="stateFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">State</label>
-            <select id="stateFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 130px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
-                <option value="all">All States</option>
-                @foreach($filterStates as $st)
-                    <option value="{{ strtolower($st) }}">{{ $st }}</option>
-                @endforeach
-            </select>
+<!-- FLOATING FILTER & SEARCH TOOLBAR -->
+<div class="no-auto-align" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);">
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between;">
+        
+        <!-- Filter Dropdowns Grid -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; flex: 1;">
+            
+            <!-- State -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 130px; flex: 1;">
+                <label for="stateFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    State
+                </label>
+                <select id="stateFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All States</option>
+                    @foreach($filterStates as $st)
+                        <option value="{{ strtolower($st) }}">{{ $st }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- District -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 130px; flex: 1;">
+                <label for="districtFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    District
+                </label>
+                <select id="districtFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Districts</option>
+                    @foreach($filterDistricts as $dt)
+                        <option value="{{ strtolower($dt) }}">{{ $dt }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Agency -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; flex: 1;">
+                <label for="agencyFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Agency
+                </label>
+                <select id="agencyFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Agencies</option>
+                    @foreach($filterAgencies as $ag)
+                        <option value="{{ strtolower($ag) }}">{{ $ag }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Cluster -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 130px; flex: 1;">
+                <label for="clusterFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Cluster
+                </label>
+                <select id="clusterFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Clusters</option>
+                    @foreach($filterClusters as $cl)
+                        <option value="{{ strtolower($cl) }}">{{ $cl }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Gender -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 110px; flex: 1;">
+                <label for="genderFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Gender
+                </label>
+                <select id="genderFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Genders</option>
+                    @foreach($filterGenders as $gn)
+                        <option value="{{ strtolower($gn) }}">{{ ucfirst($gn) }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Status -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 120px; flex: 1;">
+                <label for="statusFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Status
+                </label>
+                <select id="statusFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+
+            <!-- Reset Button -->
+            <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                <button type="button" onclick="resetFilters()" class="btn-action-animated" style="height: 38px; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 0 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;" title="Reset all filters">
+                    Reset
+                </button>
+            </div>
         </div>
 
-        <!-- District Filter -->
-        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <label for="districtFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">District</label>
-            <select id="districtFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 130px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
-                <option value="all">All Districts</option>
-                @foreach($filterDistricts as $dt)
-                    <option value="{{ strtolower($dt) }}">{{ $dt }}</option>
-                @endforeach
-            </select>
+        <!-- Live Search Bar -->
+        <div style="display: flex; align-items: flex-end; min-width: 250px;">
+            <div style="position: relative; width: 100%;">
+                <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search projects..." style="width: 100%; height: 38px; padding: 0 1rem; font-size: 0.85rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; color: #1e293b; outline: none; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(16, 185, 129, 0.1)';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
+            </div>
         </div>
 
-        <!-- Agency Filter -->
-        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <label for="agencyFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">Agency</label>
-            <select id="agencyFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 140px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
-                <option value="all">All Agencies</option>
-                @foreach($filterAgencies as $ag)
-                    <option value="{{ strtolower($ag) }}">{{ $ag }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Cluster Filter -->
-        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <label for="clusterFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">Cluster</label>
-            <select id="clusterFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 130px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
-                <option value="all">All Clusters</option>
-                @foreach($filterClusters as $cl)
-                    <option value="{{ strtolower($cl) }}">{{ $cl }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Gender Filter -->
-        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <label for="genderFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">Gender</label>
-            <select id="genderFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 500; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 120px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
-                <option value="all">All Genders</option>
-                @foreach($filterGenders as $gn)
-                    <option value="{{ strtolower($gn) }}">{{ ucfirst($gn) }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Status Filter -->
-        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-            <label for="statusFilter" style="font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.03em;">Status</label>
-            <select id="statusFilter" onchange="filterTable()" style="height: 38px; padding: 0 0.75rem; font-size: 0.85rem; font-weight: 600; border-radius: 6px; background-color: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; outline: none; cursor: pointer; min-width: 130px; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc';">
-                <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="suspended">Suspended</option>
-                <option value="completed">Completed</option>
-            </select>
-        </div>
-
-        <!-- Reset Button -->
-        <div style="display: flex; flex-direction: column; justify-content: flex-end;">
-            <button type="button" onclick="resetFilters()" class="btn-custom" style="height: 38px; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 0 0.85rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; transition: all 0.2s;" title="Reset all filters" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='#ffffff';">
-                <i class="bx bx-refresh" style="font-size: 1.1rem;"></i> Reset
-            </button>
-        </div>
-
-        @if(Auth::user() && Auth::user()->canDownloadExcel())
-        <div style="display: flex; flex-direction: column; justify-content: flex-end;">
-            <a id="excelExportBtn" href="{{ route('projects.export', 'orphan-care') }}" class="btn-custom excel-export-btn" style="height: 38px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0 1rem; border-radius: 6px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); white-space: nowrap;" title="Download Excel report with all filtered data">
-                <i class="bx bxs-file-export" style="font-size: 1.1rem;"></i> Export Excel
-            </a>
-        </div>
-        @endif
-    </div>
-
-    <div style="display: flex; gap: 0.75rem; align-items: flex-end;">
-        <div class="search-container" style="margin: 0;">
-            <input type="text" id="tableSearch" onkeyup="filterTable()" class="form-control-dark" style="width: 200px; height: 38px; padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;" placeholder="Search projects...">
-        </div>
     </div>
 </div>
 
@@ -433,10 +491,14 @@
                         $rowAgencyName = $app?->agency_name 
                             ?? ($appMeta['agency_name'] ?? null) 
                             ?? ($project->donor?->name ?? null) 
-                            ?? ($project->agency ?? null) 
-                            ?? ($project->funds?->first()?->donor ?? null) 
-                            ?? ($project->funds?->first()?->agency ?? null) 
-                            ?? ($project->sponsor && $project->sponsor !== 'Sponsored' ? $project->sponsor : 'N/A');
+                            ?? ($project->agency_name ?? null);
+                        if ((!$rowAgencyName || is_numeric($rowAgencyName)) && $project->donor_id) {
+                            $rowAgencyName = \App\Models\Donor::find($project->donor_id)?->name ?? $rowAgencyName;
+                        }
+                        if ($rowAgencyName && is_numeric($rowAgencyName)) {
+                            $rowAgencyName = \App\Models\Donor::find($rowAgencyName)?->name ?? 'N/A';
+                        }
+                        $rowAgencyName = ($rowAgencyName && trim($rowAgencyName) !== '' && strtolower($rowAgencyName) !== 'n/a') ? $rowAgencyName : 'N/A';
 
                         $searchTerms = [
                             $project->project_id,
@@ -530,7 +592,7 @@
                             </button>
                             @endif
 
-                            <button type="button" data-id="{{ $project->id }}" data-name="{{ $project->project_name ?? '' }}" data-agency="{{ $project->agency_project_no ?? '' }}" onclick="openAddProgrammeModal(this)" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
+                            <button type="button" data-id="{{ $project->id }}" data-name="{{ $app?->applicant_name ?? ($appMeta['applicant_name'] ?? '') }}" data-agency="{{ $project->agency_project_no ?? '' }}" onclick="openAddProgrammeModal(this)" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
                                 <i class="bx bx-plus-circle"></i>
                             </button>
 
@@ -549,191 +611,7 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="addProjectModal">
-    <div class="modal-content-custom">
-        <div class="modal-header-custom">
-            <h3>Add Orphan Care Project</h3>
-            <button type="button" class="modal-close-btn" onclick="closeModal()" title="Close">&times;</button>
-        </div>
-        <form action="{{ route('projects.store') }}" method="POST">
-            @csrf
-            <input type="hidden" name="redirect_category" value="orphan-care">
-
-            <div class="modal-body-custom">
-                <div class="form-group-custom">
-                    <label for="project_name">Project Name</label>
-                    <input type="text" name="project_name" id="project_name" required placeholder="Enter project name">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="sponsor">Sponsor</label>
-                    <input type="text" name="sponsor" id="sponsor" required placeholder="Enter sponsor name">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="project_spec">Project Spec</label>
-                    <textarea name="project_spec" id="project_spec" rows="3" placeholder="Enter project specifications"></textarea>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="agency_project_no">Agency Project No.</label>
-                    <input type="text" name="agency_project_no" id="agency_project_no" required placeholder="Enter agency project number">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="add_theme">Theme</label>
-                    <select name="theme" id="add_theme" required onchange="populateSubthemes('add_theme', 'add_subtheme')">
-                        <option value="">Select Theme</option>
-                        @foreach($themes as $t)
-                            <option value="{{ $t->name }}" data-theme-id="{{ $t->id }}">{{ $t->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="add_subtheme">Subtheme</label>
-                    <select name="subtheme" id="add_subtheme" required>
-                        <option value="">Select Subtheme</option>
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="add_activity">Activity</label>
-                    <input type="text" name="activity" id="add_activity" required placeholder="Enter activity">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="type_of_project">Type of Project</label>
-                    <input type="text" value="Orphan Care" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: var(--text-muted);">
-                    <input type="hidden" name="type_of_project" value="Orphan Care">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="remarks">Remarks</label>
-                    <textarea name="remarks" id="remarks" rows="3" placeholder="Enter remarks..."></textarea>
-                </div>
-
-                <div style="text-align: center; margin-top: 1.5rem;">
-                    <button type="submit" class="btn-custom" style="padding: 0.75rem 2rem;">Submit</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="modal-overlay" id="editProjectModal">
-    <div class="modal-content-custom">
-        <div class="modal-header-custom">
-            <h3>Edit Orphan Care Project</h3>
-            <button type="button" class="modal-close-btn" onclick="closeEditModal()" title="Close">&times;</button>
-        </div>
-        <form id="editProjectForm" method="POST">
-            @csrf
-            @method('PUT')
-            <input type="hidden" name="redirect_category" value="orphan-care">
-
-            <div class="modal-body-custom">
-                <div class="form-group-custom">
-                    <label for="edit_project_name">Project Name</label>
-                    <input type="text" name="project_name" id="edit_project_name" required placeholder="Enter project name">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_sponsor">Sponsor</label>
-                    <input type="text" name="sponsor" id="edit_sponsor" required placeholder="Enter sponsor name">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_project_spec">Project Spec</label>
-                    <textarea name="project_spec" id="edit_project_spec" rows="3" placeholder="Enter project specifications"></textarea>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_agency_project_no">Agency Project No.</label>
-                    <input type="text" name="agency_project_no" id="edit_agency_project_no" required>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_theme">Theme</label>
-                    <select name="theme" id="edit_theme" required onchange="populateSubthemes('edit_theme', 'edit_subtheme')">
-                        <option value="">Select Theme</option>
-                        @foreach($themes as $t)
-                            <option value="{{ $t->name }}" data-theme-id="{{ $t->id }}">{{ $t->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_subtheme">Subtheme</label>
-                    <select name="subtheme" id="edit_subtheme" required>
-                        <option value="">Select Subtheme</option>
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_activity">Activity</label>
-                    <input type="text" name="activity" id="edit_activity" required placeholder="Enter activity">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_type_of_project">Type of Project</label>
-                    <input type="text" value="Orphan Care" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: var(--text-muted);">
-                    <input type="hidden" name="type_of_project" value="Orphan Care">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_remarks">Remarks</label>
-                    <textarea name="remarks" id="edit_remarks" rows="3"></textarea>
-                </div>
-
-                <div style="text-align: center; margin-top: 1.5rem;">
-                    <button type="submit" class="btn-custom" style="padding: 0.75rem 2rem;">Update Project</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script>
-    function openModal() {
-        const modal = document.getElementById('addProjectModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
-        if (modal) modal.style.display = "flex";
-    }
-
-    function closeModal() {
-        const modal = document.getElementById('addProjectModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) {
-            modal.style.display = 'none';
-        } else {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-        }
-    }
-
-    function openEditModal(project) {
-        const form = document.getElementById('editProjectForm');
-        form.setAttribute('action', `/admin/projects/${project.id}`);
-
-        document.getElementById('edit_project_name').value = project.project_name || '';
-        document.getElementById('edit_sponsor').value = project.sponsor || '';
-        document.getElementById('edit_project_spec').value = project.project_spec || '';
-        document.getElementById('edit_agency_project_no').value = project.agency_project_no || '';
-        document.getElementById('edit_remarks').value = project.remarks || '';
-        const currentProj = (typeof project !== 'undefined' ? project : (typeof projectData !== 'undefined' ? projectData : {}));
-        document.getElementById('edit_theme').value = currentProj.theme || '';
-        populateSubthemes('edit_theme', 'edit_subtheme', currentProj.subtheme || '');
-        document.getElementById('edit_activity').value = currentProj.activity || '';
-
-        document.getElementById('editProjectModal').style.display = 'flex';
-    }
-
-    function closeEditModal() {
-        const modal = document.getElementById('editProjectModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) {
-            modal.style.display = 'none';
-        } else {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-        }
-    }
 
     function initProjectFilters() {
             const filterManager = document.getElementById('filterManager');
@@ -785,41 +663,58 @@
         function filterTable() {
             const input = document.getElementById('tableSearch');
             const filter = input ? input.value.toLowerCase().trim() : '';
-            const selManager = (document.getElementById('filterManager')?.value || '').toLowerCase().trim();
-            const selAgency = (document.getElementById('filterAgency')?.value || '').toLowerCase().trim();
-            const selDistrict = (document.getElementById('filterDistrict')?.value || '').toLowerCase().trim();
-            const selState = (document.getElementById('filterState')?.value || '').toLowerCase().trim();
+            const selState = (document.getElementById('stateFilter')?.value || 'all').toLowerCase().trim();
+            const selDistrict = (document.getElementById('districtFilter')?.value || 'all').toLowerCase().trim();
+            const selAgency = (document.getElementById('agencyFilter')?.value || 'all').toLowerCase().trim();
+            const selCluster = (document.getElementById('clusterFilter')?.value || 'all').toLowerCase().trim();
+            const selGender = (document.getElementById('genderFilter')?.value || 'all').toLowerCase().trim();
+            const selStatus = (document.getElementById('statusFilter')?.value || 'all').toLowerCase().trim();
 
             const table = document.getElementById('projectsTable');
             if (!table) return;
 
+            let visibleCount = 0;
             const rows = table.querySelectorAll('tbody tr.project-row');
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
-                const rManager = (row.getAttribute('data-manager') || '').toLowerCase();
-                const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
-                const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
+                const rSearch = (row.getAttribute('data-search') || row.textContent || '').toLowerCase();
                 const rState = (row.getAttribute('data-state') || '').toLowerCase();
-                const rText = (row.textContent || row.innerText || '').toLowerCase();
+                const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
+                const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
+                const rCluster = (row.getAttribute('data-cluster') || '').toLowerCase();
+                const rGender = (row.getAttribute('data-gender') || '').toLowerCase();
+                const rStatus = (row.getAttribute('data-status') || '').toLowerCase();
 
-                const matchesSearch = !filter || rText.includes(filter);
-                const matchesManager = !selManager || rManager === selManager;
-                const matchesAgency = !selAgency || rAgency === selAgency;
-                const matchesDistrict = !selDistrict || rDistrict === selDistrict;
-                const matchesState = !selState || rState === selState;
+                const matchesSearch = !filter || rSearch.includes(filter);
+                const matchesState = selState === 'all' || rState === selState;
+                const matchesDistrict = selDistrict === 'all' || rDistrict === selDistrict;
+                const matchesAgency = selAgency === 'all' || rAgency === selAgency;
+                const matchesCluster = selCluster === 'all' || rCluster === selCluster;
+                const matchesGender = selGender === 'all' || rGender === selGender;
+                const matchesStatus = selStatus === 'all' || rStatus === selStatus;
 
-                if (matchesSearch && matchesManager && matchesAgency && matchesDistrict && matchesState) {
+                if (matchesSearch && matchesState && matchesDistrict && matchesAgency && matchesCluster && matchesGender && matchesStatus) {
                     row.style.display = '';
+                    visibleCount++;
                 } else {
                     row.style.display = 'none';
                 }
             }
+
+            const countBadge = document.getElementById('projectCountBadge');
+            if (countBadge) {
+                countBadge.textContent = `${visibleCount} ${visibleCount === 1 ? 'Project' : 'Projects'}`;
+            }
+
+            if (typeof updateExportUrl === 'function') {
+                updateExportUrl();
+            }
         }
 
     function updateExportUrl() {
-        const btns = document.querySelectorAll('.btn-export-csv');
+        const btns = document.querySelectorAll('.btn-export-csv, #excelExportBtn');
         if (!btns.length) return;
-        const baseUrl = "{{ route('admin.reports.social_aid_funds', ['category' => 'orphan-care', 'export' => 'csv']) }}";
+        const baseUrl = "{{ route('projects.export', 'orphan-care') }}";
         const params = new URLSearchParams();
         
         const searchVal = document.getElementById('tableSearch')?.value;
@@ -828,6 +723,7 @@
         const agencyVal = document.getElementById('agencyFilter')?.value;
         const clusterVal = document.getElementById('clusterFilter')?.value;
         const genderVal = document.getElementById('genderFilter')?.value;
+        const statusVal = document.getElementById('statusFilter')?.value;
 
         if (searchVal) params.append('search', searchVal);
         if (stateVal && stateVal !== 'all') params.append('state', stateVal);
@@ -835,10 +731,15 @@
         if (agencyVal && agencyVal !== 'all') params.append('agency', agencyVal);
         if (clusterVal && clusterVal !== 'all') params.append('cluster', clusterVal);
         if (genderVal && genderVal !== 'all') params.append('gender', genderVal);
+        if (statusVal && statusVal !== 'all') params.append('status', statusVal);
 
         const queryString = params.toString();
         const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
-        btns.forEach(btn => btn.href = fullUrl);
+        btns.forEach(btn => {
+            if (btn.classList.contains('excel-export-btn') || btn.id === 'excelExportBtn') {
+                btn.href = fullUrl;
+            }
+        });
     }
     window.updateExportUrl = updateExportUrl;
 
@@ -849,6 +750,7 @@
         if (document.getElementById('agencyFilter')) document.getElementById('agencyFilter').value = 'all';
         if (document.getElementById('clusterFilter')) document.getElementById('clusterFilter').value = 'all';
         if (document.getElementById('genderFilter')) document.getElementById('genderFilter').value = 'all';
+        if (document.getElementById('statusFilter')) document.getElementById('statusFilter').value = 'all';
         filterTable();
     }
     window.resetFilters = resetFilters;

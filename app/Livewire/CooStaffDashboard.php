@@ -135,6 +135,53 @@ class CooStaffDashboard extends Component
         $this->activeTab = $tab;
     }
 
+    public function openAddStaffModal(): void
+    {
+        if (!Auth::user() || !Auth::user()->isSuperAdmin()) {
+            $this->errorMessage = 'Only Super Admin can register new staff members.';
+            return;
+        }
+        $this->resetAddStaffForm();
+        $this->showAddStaffModal = true;
+    }
+
+    public function closeAddStaffModal(): void
+    {
+        $this->showAddStaffModal = false;
+        $this->resetAddStaffForm();
+    }
+
+    public function resetAddStaffForm(): void
+    {
+        $this->resetValidation();
+        $this->addName = '';
+        $this->addEmail = '';
+        $this->addMobile = '';
+        $this->addFatherName = '';
+        $this->addMotherName = '';
+        $this->addDateOfBirth = '';
+        $this->addDateOfJoining = '';
+        $this->addGender = 'Male';
+        $this->addMaritalStatus = 'Single';
+        $this->addHouseName = '';
+        $this->addPlace = '';
+        $this->addPo = '';
+        $this->addDistrict = '';
+        $this->addState = 'Kerala';
+        $this->addPinCode = '';
+        $this->addAadharNumber = '';
+        $this->addPanCardNumber = '';
+        $this->addAccountNumber = '';
+        $this->addBankName = '';
+        $this->addBankBranch = '';
+        $this->addIfscCode = '';
+        $this->addDesignation = '';
+        $this->addRole = 'engineer';
+        $this->addPassword = '';
+        $this->addHodId = null;
+        $this->addIsHr = false;
+    }
+
     public function viewStaff(int $userId): void
     {
         $this->selectedUserId = $userId;
@@ -277,50 +324,7 @@ class CooStaffDashboard extends Component
         $this->successMessage = "User {$user->name} has been {$statusText}.";
     }
 
-    public function openAddStaffModal(): void
-    {
-        if (!Auth::user()->isSuperAdmin()) {
-            $this->errorMessage = 'Only Super Admin can register new staff members.';
-            return;
-        }
-        $this->resetAddStaffForm();
-        $this->showAddStaffModal = true;
-    }
 
-    public function closeAddStaffModal(): void
-    {
-        $this->showAddStaffModal = false;
-    }
-
-    public function resetAddStaffForm(): void
-    {
-        $this->addHodId = null;
-        $this->addIsHr = false;
-        $this->addName = '';
-        $this->addEmail = '';
-        $this->addMobile = '';
-        $this->addDesignation = '';
-        $this->addRole = 'engineer';
-        $this->addFatherName = '';
-        $this->addMotherName = '';
-        $this->addDateOfBirth = '';
-        $this->addDateOfJoining = now()->format('Y-m-d');
-        $this->addGender = 'Male';
-        $this->addMaritalStatus = 'Single';
-        $this->addHouseName = '';
-        $this->addPlace = '';
-        $this->addPo = '';
-        $this->addDistrict = '';
-        $this->addState = 'Kerala';
-        $this->addPinCode = '';
-        $this->addAadharNumber = '';
-        $this->addPanCardNumber = '';
-        $this->addAccountNumber = '';
-        $this->addBankName = '';
-        $this->addBankBranch = '';
-        $this->addIfscCode = '';
-        $this->addPassword = '';
-    }
 
     public function updatedAddAadharNumber($val): void
     {
@@ -413,6 +417,9 @@ class CooStaffDashboard extends Component
             ]);
 
             $this->successMessage = "Staff member {$user->name} registered successfully!";
+            $this->resetAddStaffForm();
+            $this->dispatch('staff-created');
+            $this->resetPage();
             $this->closeAddStaffModal();
         } catch (\Exception $e) {
             $this->errorMessage = 'Failed to create staff: ' . $e->getMessage();
@@ -448,7 +455,9 @@ class CooStaffDashboard extends Component
     public function confirmRejectLeave(LeaveService $leaveService): void
     {
         $this->validate([
-            'rejectRemarks' => 'required|string|max:1000',
+            'rejectRemarks' => 'required|string|min:3|max:500',
+        ], [
+            'rejectRemarks.required' => 'Please provide a reason for rejecting this leave.',
         ]);
 
         $currentUser = Auth::user();
@@ -456,9 +465,8 @@ class CooStaffDashboard extends Component
 
         try {
             $leaveService->reject($req, $currentUser, $this->rejectRemarks);
-            $this->successMessage = "Leave request #{$req->id} rejected successfully.";
-            $this->showRejectLeaveModal = false;
-            $this->rejectLeaveId = null;
+            $this->successMessage = "Leave request #{$req->id} for {$req->user->name} has been rejected.";
+            $this->closeRejectLeaveModal();
         } catch (\Exception $e) {
             $this->errorMessage = $e->getMessage();
         }
@@ -469,67 +477,93 @@ class CooStaffDashboard extends Component
         $today = now()->format('Y-m-d');
         $currentUser = Auth::user();
 
-        // Staff Directory Query (Hides Super Admin, Logged in User & Scoped for HOD)
-        $staffQuery = User::nonSuperAdmin()
+        // 1. Single aggregate query for overall operational stats (Super fast)
+        $staffStats = User::nonSuperAdmin()
             ->where('id', '!=', $currentUser->id)
             ->forHod($currentUser)
-            ->when($this->search, function ($q) {
-                $q->where(function ($sub) {
-                    $sub->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%')
-                        ->orWhere('mobile', 'like', '%' . $this->search . '%')
-                        ->orWhere('designation', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->when($this->roleFilter, fn($q) => $q->where('role', $this->roleFilter))
-            ->when($this->statusFilter === 'active', fn($q) => $q->where('is_suspended', false))
-            ->when($this->statusFilter === 'suspended', fn($q) => $q->where('is_suspended', true))
-            ->orderBy('name', 'asc');
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN is_suspended = 1 THEN 1 ELSE 0 END) as suspended, SUM(CASE WHEN is_suspended = 0 THEN 1 ELSE 0 END) as active')
+            ->first();
 
-        $staffList = $staffQuery->paginate(15);
-
-        // Fetch Today's Attendance Keyed by User ID (non-super-admin, excluding logged-in user & forHod)
-        $nonSuperAdminIds = User::nonSuperAdmin()->where('id', '!=', $currentUser->id)->forHod($currentUser)->pluck('id');
-        $todayAttendances = collect();
-
-        // Overall Operational Statistics (Excludes Super Admin, Logged-in User & Scoped for HOD)
-        $totalStaffCount = User::nonSuperAdmin()->where('id', '!=', $currentUser->id)->forHod($currentUser)->count();
-        $activeStaffCount = User::nonSuperAdmin()->where('id', '!=', $currentUser->id)->forHod($currentUser)->where('is_suspended', false)->count();
-        $suspendedStaffCount = User::nonSuperAdmin()->where('id', '!=', $currentUser->id)->forHod($currentUser)->where('is_suspended', true)->count();
+        $totalStaffCount = (int)($staffStats->total ?? 0);
+        $activeStaffCount = (int)($staffStats->active ?? 0);
+        $suspendedStaffCount = (int)($staffStats->suspended ?? 0);
 
         $presentTodayCount = 0;
         $lateTodayCount = 0;
         $absentTodayCount = 0;
         $onLeaveTodayCount = 0;
-
         $attendanceRate = 0;
+        $todayAttendances = collect();
 
-        // Pending Leave Requests Queue (Excludes Super Admin & Scoped for HOD)
-        $pendingLeaveRequests = LeaveRequest::with(['user', 'leaveType'])
-            ->whereHas('user', fn($q) => $q->nonSuperAdmin()->forHod($currentUser))
-            ->where('status', 'Pending')
-            ->orderBy('created_at', 'asc')
-            ->get();
+        // 2. Staff Directory Query (Only when on directory tab)
+        if ($this->activeTab === 'directory') {
+            $staffQuery = User::nonSuperAdmin()
+                ->where('id', '!=', $currentUser->id)
+                ->forHod($currentUser)
+                ->when($this->search, function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->where('name', 'like', '%' . $this->search . '%')
+                            ->orWhere('email', 'like', '%' . $this->search . '%')
+                            ->orWhere('mobile', 'like', '%' . $this->search . '%')
+                            ->orWhere('designation', 'like', '%' . $this->search . '%');
+                    });
+                })
+                ->when($this->roleFilter, fn($q) => $q->where('role', $this->roleFilter))
+                ->when($this->statusFilter === 'active', fn($q) => $q->where('is_suspended', false))
+                ->when($this->statusFilter === 'suspended', fn($q) => $q->where('is_suspended', true))
+                ->orderBy('created_at', 'desc')
+                ->orderBy('name', 'asc');
 
-        // Staff currently on active leave today (Excludes Super Admin & Scoped for HOD)
-        $staffOnLeaveToday = LeaveRequest::with(['user', 'leaveType'])
-            ->whereHas('user', fn($q) => $q->nonSuperAdmin()->forHod($currentUser))
-            ->where('status', 'Approved')
-            ->where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
-            ->get();
+            $staffList = $staffQuery->paginate(15);
 
-        // Role Distribution Summary (Excludes Super Admin, Logged-in User & Scoped for HOD)
-        $roleCounts = User::nonSuperAdmin()
-            ->where('id', '!=', $currentUser->id)
-            ->forHod($currentUser)
-            ->selectRaw('role, count(*) as count')
-            ->groupBy('role')
-            ->pluck('count', 'role')
-            ->toArray();
+            $lwpType = \App\Models\LeaveType::where('leave_code', 'LWP')->first();
+            $lwpBalances = collect();
+            if ($lwpType && $staffList->isNotEmpty()) {
+                $lwpBalances = LeaveBalance::where('leave_type_id', $lwpType->id)
+                    ->whereIn('user_id', $staffList->pluck('id'))
+                    ->get()
+                    ->keyBy('user_id');
+            }
+        } else {
+            $staffList = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+            $lwpBalances = collect();
+        }
 
-        // Details for Selected Staff Member (Modal)
-        $selectedUser = $this->selectedUserId ? User::find($this->selectedUserId) : null;
+        // 3. Pending & Active Leave (Only when on leave tab)
+        $pendingLeaveRequests = collect();
+        $staffOnLeaveToday = collect();
+        if ($this->activeTab === 'leave') {
+            $pendingLeaveRequests = LeaveRequest::with(['user', 'leaveType'])
+                ->whereHas('user', fn($q) => $q->nonSuperAdmin()->forHod($currentUser))
+                ->where('status', 'Pending')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $staffOnLeaveToday = LeaveRequest::with(['user', 'leaveType'])
+                ->whereHas('user', fn($q) => $q->nonSuperAdmin()->forHod($currentUser))
+                ->where('status', 'Approved')
+                ->where('start_date', '<=', $today)
+                ->where('end_date', '>=', $today)
+                ->get();
+        }
+
+        // 4. Role Distribution Summary (Only when on analytics tab)
+        $roleCounts = [];
+        if ($this->activeTab === 'analytics') {
+            $roleCounts = User::nonSuperAdmin()
+                ->where('id', '!=', $currentUser->id)
+                ->forHod($currentUser)
+                ->selectRaw('role, count(*) as count')
+                ->groupBy('role')
+                ->pluck('count', 'role')
+                ->toArray();
+        }
+
+        // 5. Hierarchy Tree (Only when on hierarchy tab)
+        $hierarchyTree = ($this->activeTab === 'hierarchy') ? User::getHierarchyTree() : ['children' => []];
+
+        // 6. Modal Specific Data (Only loaded when modals are active)
+        $selectedUser = ($this->showStaffModal && $this->selectedUserId) ? User::find($this->selectedUserId) : null;
         $selectedUserBalances = $selectedUser ? LeaveBalance::with('leaveType')->where('user_id', $selectedUser->id)->get() : collect();
         
         $selectedUserProjects = collect();
@@ -543,23 +577,12 @@ class CooStaffDashboard extends Component
                     $selectedUserProjects = $selectedUser->assigned_projects;
                 }
             } catch (\Throwable $e) {
-                $selectedUserProjects = $selectedUser->assigned_projects;
+                $selectedUserProjects = $selectedUser->assigned_projects ?? collect();
             }
         }
 
         $selectedUserAttendance = collect();
-
         $hods = User::whereIn('role', ['hod', '4', 'HOD'])->orWhere('is_hr', true)->orderBy('name')->get();
-        $hierarchyTree = User::getHierarchyTree();
-
-        $lwpType = \App\Models\LeaveType::where('leave_code', 'LWP')->first();
-        $lwpBalances = collect();
-        if ($lwpType) {
-            $lwpBalances = LeaveBalance::where('leave_type_id', $lwpType->id)
-                ->whereIn('user_id', $staffList->pluck('id'))
-                ->get()
-                ->keyBy('user_id');
-        }
 
         return view('livewire.coo-staff-dashboard', [
             'hods'                  => $hods,

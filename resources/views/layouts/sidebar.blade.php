@@ -62,6 +62,9 @@
             </a>
         </li>
 
+
+
+
         @if(Auth::user() && !Auth::user()->isOthers())
         <li class="sidebar-header">
             <span>Master Data</span>

@@ -2822,6 +2822,11 @@
             const panel = document.querySelector('.panel');
             
             if (headerPanel && controlsRow && panel) {
+                // If modern filter toolbar is present, do not destructively alter the layout
+                if (headerPanel.classList.contains('no-auto-align') || controlsRow.classList.contains('no-auto-align') || controlsRow.querySelector('select')) {
+                    return;
+                }
+                
                 // Get the title text
                 const titleText = headerPanel.textContent.trim();
                 

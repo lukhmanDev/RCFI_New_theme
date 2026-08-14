@@ -372,9 +372,9 @@
                                 </button>
 
                                 @if(Auth::user()->hasAdminAccess())
-                                @if(Auth::user() && Auth::user()->canAddEditProjects() && empty($project->application_id))
+                                @if(Auth::user() && Auth::user()->canAddEditProjects())
                                 <!-- Edit Button -->
-                                <button onclick="openEditModal({{ json_encode($project) }})" class="btn-action-icon btn-edit" title="Edit">
+                                <button type="button" onclick="openEditModal({{ $project->id }})" class="btn-action-icon btn-edit" title="Edit">
                                     <i class="bx bx-pencil"></i>
                                 </button>
                                 @endif
@@ -473,6 +473,17 @@
                         <input type="number" step="0.01" name="available_budget" id="available_budget" required placeholder="Enter available budget">
                     </div>
 
+                    <!-- Beneficiary Numbers -->
+                    <div class="form-group-custom">
+                        <label for="total_beneficiary_peoples">Total Benefited People</label>
+                        <input type="number" min="0" name="total_beneficiary_peoples" id="total_beneficiary_peoples" placeholder="Enter total benefited people count">
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label for="total_family">Total Benefited Families</label>
+                        <input type="number" min="0" name="total_family" id="total_family" placeholder="Enter total benefited families count">
+                    </div>
+
                     <!-- Type of Project (Auto-locked) -->
                     <div class="form-group-custom">
                         <label for="type_of_project">Type of Project</label>
@@ -568,6 +579,22 @@
                         <input type="number" step="0.01" name="available_budget" id="edit_available_budget" required>
                     </div>
 
+                    <div class="form-group-custom">
+                        <label for="edit_application_info">Connected Application</label>
+                        <input type="text" id="edit_application_info" readonly style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #38bdf8; font-weight: 600;" value="No application connected">
+                    </div>
+
+                    <!-- Beneficiary Numbers -->
+                    <div class="form-group-custom">
+                        <label for="edit_total_beneficiary_peoples">Total Benefited People</label>
+                        <input type="number" min="0" name="total_beneficiary_peoples" id="edit_total_beneficiary_peoples" placeholder="Enter total benefited people count">
+                    </div>
+
+                    <div class="form-group-custom">
+                        <label for="edit_total_family">Total Benefited Families</label>
+                        <input type="number" min="0" name="total_family" id="edit_total_family" placeholder="Enter total benefited families count">
+                    </div>
+
                     <!-- Type of Project (Auto-locked) -->
                     <div class="form-group-custom">
                         <label for="edit_type_of_project">Type of Project</label>
@@ -578,7 +605,7 @@
                     <!-- Remarks -->
                     <div class="form-group-custom">
                         <label for="edit_remarks">Remarks</label>
-                        <textarea name="remarks" id="edit_remarks" rows="3"></textarea>
+                        <textarea name="remarks" id="edit_remarks" rows="3" placeholder="Enter remarks..."></textarea>
                     </div>
 
                     <!-- Submit -->
@@ -592,22 +619,25 @@
 
     <!-- Client-side Scripts -->
     <script>
-        // Modal functions
         function openModal() {
-        const modal = document.getElementById('addProjectModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
-        if (modal) modal.style.display = "flex";
-    }
-
-        function closeModal() {
-            const modal = document.getElementById('addProjectModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
-            if (modal) {
-                modal.style.display = 'none';
-            } else {
-                document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-            }
+            const modal = document.getElementById('addProjectModal');
+            if (modal) modal.style.display = "flex";
         }
 
-        function openEditModal(project) {
+        function closeModal() {
+            const modal = document.getElementById('addProjectModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        window.allProjectsDataList = @json(method_exists($projects, 'items') ? $projects->items() : (is_array($projects) ? $projects : $projects->values()));
+
+        function openEditModal(projectOrId) {
+            let project = projectOrId;
+            if (typeof projectOrId === 'number' || typeof projectOrId === 'string') {
+                project = (window.allProjectsDataList || []).find(p => p.id == projectOrId);
+            }
+            if (!project) return;
+
             const form = document.getElementById('editProjectForm');
             form.setAttribute('action', `/admin/projects/${project.id}`);
 
@@ -619,6 +649,24 @@
             document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';
             document.getElementById('edit_engineer_id').value = project.engineer_id || '';
             document.getElementById('edit_available_budget').value = project.available_budget || '';
+
+            if (document.getElementById('edit_application_info')) {
+                if (project.application) {
+                    const appObj = project.application;
+                    document.getElementById('edit_application_info').value = (appObj.applicant_name ? appObj.applicant_name : 'Application') + ' (ID: ' + appObj.id + ')';
+                } else if (project.application_id) {
+                    document.getElementById('edit_application_info').value = 'Application #' + project.application_id;
+                } else {
+                    document.getElementById('edit_application_info').value = 'No application connected';
+                }
+            }
+
+            if (document.getElementById('edit_total_beneficiary_peoples')) {
+                document.getElementById('edit_total_beneficiary_peoples').value = project.total_beneficiary_peoples || project.num_benefited_people || '';
+            }
+            if (document.getElementById('edit_total_family')) {
+                document.getElementById('edit_total_family').value = project.total_family || '';
+            }
             document.getElementById('edit_remarks').value = project.remarks || '';
 
             document.getElementById('editProjectModal').style.display = 'flex';

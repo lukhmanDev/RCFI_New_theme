@@ -11,60 +11,15 @@
 
 @section('content')
 
-<!-- Back Button Header -->
+<link rel="stylesheet" href="{{ asset('css/projects_common.css') }}">
+<script src="{{ asset('js/projects_common.js') }}"></script>
 <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
     <a href="{{ route('projects.index') }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); padding: 0.5rem 1rem;">
         <i class="bx bx-left-arrow-alt"></i> Back to Dashboard
     </a>
-    </div>
+</div>
 
 <style>
-    .group-header-panel {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: #ffffff;
-        padding: 1.2rem;
-        border-radius: 8px;
-        text-align: center;
-        font-size: 1.4rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
-
-    .controls-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .controls-row .btn-custom {
-        height: 40px !important;
-        box-sizing: border-box;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .search-container {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        height: 40px;
-    }
-
-    .search-container input {
-        height: 40px !important;
-        padding: 0.65rem 1rem !important;
-        box-sizing: border-box;
-    }
-
     .table-custom th, .table-custom td {
         vertical-align: middle !important;
     }
@@ -203,25 +158,6 @@
         border-color: var(--accent-cyan);
     }
 
-    @media (max-width: 1600px) {
-        .col-remarks { display: none !important; }
-    }
-    @media (max-width: 1450px) {
-        .col-type { display: none !important; }
-    }
-    @media (max-width: 1300px) {
-        .col-budget { display: none !important; }
-    }
-    @media (max-width: 1100px) {
-        .col-manager { display: none !important; }
-    }
-    @media (max-width: 900px) {
-        .col-donor { display: none !important; }
-    }
-    @media (max-width: 700px) {
-        .col-agency { display: none !important; }
-    }
-
     /* Styled scrollbar for modal body */
     .modal-body-custom::-webkit-scrollbar {
         width: 6px;
@@ -243,10 +179,64 @@
         resize: vertical;
         min-height: 80px;
     }
+
+    /* Executive Toolbar Styling */
+    .filter-select-modern {
+        height: 38px;
+        padding: 0 0.75rem;
+        font-size: 0.84rem;
+        font-weight: 600;
+        border-radius: 8px;
+        background-color: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #cbd5e1;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+    .filter-select-modern:focus, .filter-select-modern:hover {
+        border-color: #10b981;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .btn-action-animated {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-action-animated:hover {
+        transform: translateY(-1px);
+    }
+    .btn-action-animated:active {
+        transform: translateY(0);
+    }
 </style>
 
-<div class="group-header-panel">
-    Cultural Center PROJECT LIST
+<!-- EXECUTIVE PAGE HEADER -->
+<div class="no-auto-align" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; background: #ffffff; padding: 1.25rem 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+            <h1 style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">Cultural Center Projects</h1>
+            <span id="projectCountBadge" style="font-size: 0.75rem; font-weight: 800; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.2rem 0.65rem; border-radius: 20px;">
+                {{ count($projects) }} {{ count($projects) === 1 ? 'Project' : 'Projects' }}
+            </span>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin: 0.2rem 0 0 0;">Manage, filter, monitor progress, and export cultural center projects.</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        @if(Auth::user() && Auth::user()->canAddEditProjects())
+        <button type="button" onclick="openModal()" class="btn-action-animated" style="background: #ffffff; border: 1px solid #cbd5e1; color: #334155; padding: 0.55rem 1.1rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            Add Project
+        </button>
+        @endif
+
+        @if(Auth::user() && Auth::user()->canDownloadExcel())
+        <a id="excelExportBtn" href="{{ route('projects.export', 'cultural-center') }}" class="btn-action-animated excel-export-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0.55rem 1.25rem; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" title="Download Excel report with all filtered data">
+            Export Excel
+        </a>
+        @endif
+    </div>
 </div>
 
 @if (session('success'))
@@ -271,43 +261,113 @@
     </div>
 @endif
 
-<div class="controls-row">
-    <div style="display: flex; gap: 0.75rem;">
-        @if(Auth::user() && Auth::user()->canDownloadExcel())
-        <a href="{{ route('projects.export', 'cultural-center') }}" id="excelExportBtn" class="excel-export-btn btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
-            <i class="bx bx-download"></i> Download Excel
-        </a>
-        @endif
-        @if(Auth::user() && Auth::user()->canAddEditProjects())
-        <button onclick="openModal()" class="btn-custom">
-            <i class="bx bx-plus-circle"></i> Add Project
-        </button>
-        @endif
-    </div>
+@php
+    $uniqueManagers = collect();
+    $uniqueAgencies = collect();
+    $uniqueDistricts = collect();
+    $uniqueStates = collect();
 
-            <!-- Search & Filter Toolbar -->
-        <div style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: flex-end;">
-            <select id="filterManager" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 150px;">
-                <option value="">All Project Managers</option>
-            </select>
+    foreach($projects as $p) {
+        $m = $p->projectManager ? $p->projectManager->name : ($p->manager ? $p->manager->name : null);
+        if ($m && strtolower($m) !== 'n/a') $uniqueManagers->push(trim($m));
 
-            <select id="filterAgency" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 140px;">
-                <option value="">All Agencies</option>
-            </select>
+        $a = $p->donor ? $p->donor->name : ($p->agency_name ?? ($p->application ? ($p->application->agency_name ?? null) : null));
+        if ((!$a || is_numeric($a)) && $p->donor_id) {
+            $a = \App\Models\Donor::find($p->donor_id)?->name ?? $a;
+        }
+        if ($a && is_numeric($a)) {
+            $a = \App\Models\Donor::find($a)?->name;
+        }
+        if ($a && strtolower($a) !== 'n/a' && !is_numeric($a)) $uniqueAgencies->push(trim($a));
 
-            <select id="filterDistrict" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 130px;">
-                <option value="">All Districts</option>
-            </select>
+        $d = $p->district ?? ($p->application ? ($p->application->district ?? ($p->application->meta['district'] ?? ($p->application->meta['locality_district'] ?? null))) : null);
+        if ($d && strtolower($d) !== 'n/a') $uniqueDistricts->push(trim($d));
 
-            <select id="filterState" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 120px;">
-                <option value="">All States</option>
-            </select>
+        $s = $p->state ?? ($p->application ? ($p->application->state ?? ($p->application->meta['state'] ?? ($p->application->meta['locality_state'] ?? null))) : null);
+        if ($s && strtolower($s) !== 'n/a') $uniqueStates->push(trim($s));
+    }
 
-            <div style="position: relative; width: 100%; max-width: 220px;">
-                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"><i class="bx bx-search"></i></span>
-                <input type="text" id="tableSearch" placeholder="Search projects..." style="width: 100%; padding: 0.45rem 0.75rem 0.45rem 2.25rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;" onkeyup="filterTable()">
+    $uniqueManagers = $uniqueManagers->unique()->sort()->values();
+    $uniqueAgencies = $uniqueAgencies->unique()->sort()->values();
+    $uniqueDistricts = $uniqueDistricts->unique()->sort()->values();
+    $uniqueStates = $uniqueStates->unique()->sort()->values();
+@endphp
+
+<!-- FLOATING FILTER & SEARCH TOOLBAR -->
+<div class="no-auto-align" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);">
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between;">
+        
+        <!-- Filter Dropdowns Grid -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; flex: 1;">
+            
+            <!-- State -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 120px; flex: 1;">
+                <label for="filterState" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    State
+                </label>
+                <select id="filterState" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All States</option>
+                    @foreach($uniqueStates as $us)
+                        <option value="{{ strtolower($us) }}">{{ $us }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- District -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 130px; flex: 1;">
+                <label for="filterDistrict" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    District
+                </label>
+                <select id="filterDistrict" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Districts</option>
+                    @foreach($uniqueDistricts as $ud)
+                        <option value="{{ strtolower($ud) }}">{{ $ud }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Agency -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; flex: 1;">
+                <label for="filterAgency" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Agency
+                </label>
+                <select id="filterAgency" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Agencies</option>
+                    @foreach($uniqueAgencies as $ua)
+                        <option value="{{ strtolower($ua) }}">{{ $ua }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Project Manager -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; flex: 1;">
+                <label for="filterManager" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Project Manager
+                </label>
+                <select id="filterManager" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Project Managers</option>
+                    @foreach($uniqueManagers as $um)
+                        <option value="{{ strtolower($um) }}">{{ $um }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Reset Button -->
+            <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                <button type="button" onclick="resetFilters()" class="btn-action-animated" style="height: 38px; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 0 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;" title="Reset all filters">
+                    Reset
+                </button>
             </div>
         </div>
+
+        <!-- Live Search Bar -->
+        <div style="display: flex; align-items: flex-end; min-width: 250px;">
+            <div style="position: relative; width: 100%;">
+                <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search projects..." style="width: 100%; height: 38px; padding: 0 1rem; font-size: 0.85rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; color: #1e293b; outline: none; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(16, 185, 129, 0.1)';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <div class="panel" style="width: 100%;">
@@ -330,19 +390,35 @@
             </thead>
             <tbody>
                 @forelse($projects as $index => $project)
-                                            @php
-                            $mgrName = $project->projectManager ? $project->projectManager->name : ($project->manager ? $project->manager->name : 'N/A');
-                            $agencyName = $project->sponsor ?? ($project->donor ? $project->donor->name : ($project->agency_name ?? 'N/A'));
-                            $districtName = $project->district ?? ($project->application ? ($project->application->district ?? ($project->application->meta['district'] ?? ($project->application->meta['locality_district'] ?? 'N/A'))) : 'N/A');
-                            $stateName = $project->state ?? ($project->application ? ($project->application->state ?? ($project->application->meta['state'] ?? ($project->application->meta['locality_state'] ?? 'N/A'))) : 'N/A');
-                        @endphp
-                        <tr class="project-row" data-manager="{{ strtolower($mgrName) }}" data-manager-display="{{ $mgrName }}" data-agency="{{ strtolower($agencyName) }}" data-agency-display="{{ $agencyName }}" data-district="{{ strtolower($districtName) }}" data-district-display="{{ $districtName }}" data-state="{{ strtolower($stateName) }}" data-state-display="{{ $stateName }}">
+                    @php
+                        $mgrName = $project->projectManager ? $project->projectManager->name : ($project->manager ? $project->manager->name : 'N/A');
+                        $agencyName = $project->donor ? $project->donor->name : ($project->agency_name ?? ($project->application ? ($project->application->agency_name ?? 'N/A') : 'N/A'));
+                        if (($agencyName === 'N/A' || is_numeric($agencyName)) && $project->donor_id) {
+                            $agencyName = \App\Models\Donor::find($project->donor_id)?->name ?? 'N/A';
+                        }
+                        if (is_numeric($agencyName)) {
+                            $agencyName = \App\Models\Donor::find($agencyName)?->name ?? 'N/A';
+                        }
+                        $districtName = $project->district ?? ($project->application ? ($project->application->district ?? ($project->application->meta['district'] ?? ($project->application->meta['locality_district'] ?? 'N/A'))) : 'N/A');
+                        $stateName = $project->state ?? ($project->application ? ($project->application->state ?? ($project->application->meta['state'] ?? ($project->application->meta['locality_state'] ?? 'N/A'))) : 'N/A');
+                    @endphp
+                    <tr class="project-row" 
+                        data-manager="{{ strtolower($mgrName) }}" 
+                        data-manager-display="{{ $mgrName }}" 
+                        data-agency="{{ strtolower($agencyName) }}" 
+                        data-agency-display="{{ $agencyName }}" 
+                        data-district="{{ strtolower($districtName) }}" 
+                        data-district-display="{{ $districtName }}" 
+                        data-state="{{ strtolower($stateName) }}" 
+                        data-state-display="{{ $stateName }}">
                         <td style="text-align: center;">{{ $index + 1 }}</td>
                         <td style="font-weight: 600; color: var(--accent-cyan);">
-                            {{ $project->project_id }}
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Cultural Center') }}" style="color: var(--accent-cyan); font-weight: 700; text-decoration: underline;" title="View Project Details">
+                                {{ $project->project_id }}
+                            </a>
                         </td>
                         <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
-                        <td class="col-agency-name">{{ $project->sponsor ?? ($project->donor ? $project->donor->name : ($project->agency_name ?? 'N/A')) }}</td>
+                        <td class="col-agency-name">{{ $agencyName }}</td>
                         <td class="col-activity">{{ $project->activity ?? $project->project_name ?? $project->type_of_project ?? 'N/A' }}</td>
                         <td class="col-place">{{ $project->place ?? $project->location ?? ($project->application ? ($project->application->place ?? $project->application->location ?? 'N/A') : 'N/A') }}</td>
                         <td class="col-district">{{ $project->district ?? ($project->application ? ($project->application->district ?? ($project->application->meta['district'] ?? ($project->application->meta['locality_district'] ?? 'N/A'))) : 'N/A') }}</td>
@@ -355,8 +431,8 @@
                                 <i class="bx bx-dots-horizontal-rounded"></i>
                             </button>
 
-                            @if(Auth::user() && Auth::user()->canAddEditProjects() && empty($project->application_id))
-                            <button onclick="openEditModal({{ e(json_encode($project)) }})" class="btn-action-icon btn-edit" title="Edit">
+                            @if(Auth::user() && Auth::user()->canAddEditProjects())
+                            <button type="button" onclick="openEditModal({{ $project->id }})" class="btn-action-icon btn-edit" title="Edit">
                                 <i class="bx bx-pencil"></i>
                             </button>
                             @endif
@@ -374,7 +450,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-muted);">No cultural center projects registered yet.</td>
+                        <td colspan="12" style="text-align: center; padding: 2rem; color: var(--text-muted);">No cultural center projects registered yet.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -444,9 +520,28 @@
                 </div>
 
                 <div class="form-group-custom">
+                    <label for="unit">Unit</label>
+                    <select name="unit" id="unit" required>
+                        <option value="RCFI">RCFI</option>
+                        <option value="MARKAZ">MARKAZ</option>
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
                     <label for="available_budget">Available Budget</label>
                     <input type="number" step="0.01" name="available_budget" id="available_budget" required placeholder="Enter available budget">
                 </div>
+
+                <div class="form-group-custom">
+                    <label for="total_beneficiary_peoples">Total Benefited People</label>
+                    <input type="number" min="0" name="total_beneficiary_peoples" id="total_beneficiary_peoples" placeholder="Enter total benefited people count">
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="total_family">Total Benefited Families</label>
+                    <input type="number" min="0" name="total_family" id="total_family" placeholder="Enter total benefited families count">
+                </div>
+
                 <div class="form-group-custom">
                     <label for="add_theme">Theme</label>
                     <select name="theme" id="add_theme" required onchange="populateSubthemes('add_theme', 'add_subtheme')">
@@ -551,12 +646,36 @@
                 </div>
 
                 <div class="form-group-custom">
+                    <label for="edit_unit">Unit</label>
+                    <select name="unit" id="edit_unit" required>
+                        <option value="RCFI">RCFI</option>
+                        <option value="MARKAZ">MARKAZ</option>
+                    </select>
+                </div>
+
+                <div class="form-group-custom">
                     <label for="edit_available_budget">Available Budget</label>
                     <input type="number" step="0.01" name="available_budget" id="edit_available_budget" required>
                 </div>
+
+                <div class="form-group-custom">
+                    <label for="edit_application_info">Connected Application</label>
+                    <input type="text" id="edit_application_info" readonly style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #38bdf8; font-weight: 600;" value="No application connected">
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="edit_total_beneficiary_peoples">Total Benefited People</label>
+                    <input type="number" min="0" name="total_beneficiary_peoples" id="edit_total_beneficiary_peoples" placeholder="Enter total benefited people count">
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="edit_total_family">Total Benefited Families</label>
+                    <input type="number" min="0" name="total_family" id="edit_total_family" placeholder="Enter total benefited families count">
+                </div>
+
                 <div class="form-group-custom">
                     <label for="edit_theme">Theme</label>
-                    <select name="theme" id="edit_theme" required onchange="populateSubthemes('edit_theme', 'edit_subtheme')">
+                    <select name="theme" id="edit_theme" onchange="populateSubthemes('edit_theme', 'edit_subtheme')">
                         <option value="">Select Theme</option>
                         @foreach($themes as $t)
                             <option value="{{ $t->name }}" data-theme-id="{{ $t->id }}">{{ $t->name }}</option>
@@ -566,14 +685,14 @@
 
                 <div class="form-group-custom">
                     <label for="edit_subtheme">Subtheme</label>
-                    <select name="subtheme" id="edit_subtheme" required>
+                    <select name="subtheme" id="edit_subtheme">
                         <option value="">Select Subtheme</option>
                     </select>
                 </div>
 
                 <div class="form-group-custom">
                     <label for="edit_activity">Activity</label>
-                    <input type="text" name="activity" id="edit_activity" required placeholder="Enter activity">
+                    <input type="text" name="activity" id="edit_activity" placeholder="Enter activity">
                 </div>
 
                 <div class="form-group-custom">
@@ -597,20 +716,24 @@
 
 <script>
     function openModal() {
-        const modal = document.getElementById('addProjectModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
+        const modal = document.getElementById('addProjectModal');
         if (modal) modal.style.display = "flex";
     }
 
     function closeModal() {
-        const modal = document.getElementById('addProjectModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) {
-            modal.style.display = 'none';
-        } else {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-        }
+        const modal = document.getElementById('addProjectModal');
+        if (modal) modal.style.display = 'none';
     }
 
-    function openEditModal(project) {
+    window.allProjectsDataList = @json(method_exists($projects, 'items') ? $projects->items() : (is_array($projects) ? $projects : $projects->values()));
+
+    function openEditModal(projectOrId) {
+        let project = projectOrId;
+        if (typeof projectOrId === 'number' || typeof projectOrId === 'string') {
+            project = (window.allProjectsDataList || []).find(p => p.id == projectOrId);
+        }
+        if (!project) return;
+
         const form = document.getElementById('editProjectForm');
         form.setAttribute('action', `/admin/projects/${project.id}`);
 
@@ -621,109 +744,134 @@
         document.getElementById('edit_donor_id').value = project.donor_id || '';
         document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';
         document.getElementById('edit_engineer_id').value = project.engineer_id || '';
+        document.getElementById('edit_unit').value = project.unit || 'RCFI';
         document.getElementById('edit_available_budget').value = project.available_budget || '';
+
+        if (document.getElementById('edit_application_info')) {
+            if (project.application) {
+                const appObj = project.application;
+                document.getElementById('edit_application_info').value = (appObj.applicant_name ? appObj.applicant_name : 'Application') + ' (ID: ' + appObj.id + ')';
+            } else if (project.application_id) {
+                document.getElementById('edit_application_info').value = 'Application #' + project.application_id;
+            } else {
+                document.getElementById('edit_application_info').value = 'No application connected';
+            }
+        }
+
+        if (document.getElementById('edit_total_beneficiary_peoples')) {
+            document.getElementById('edit_total_beneficiary_peoples').value = project.total_beneficiary_peoples || project.num_benefited_people || '';
+        }
+        if (document.getElementById('edit_total_family')) {
+            document.getElementById('edit_total_family').value = project.total_family || '';
+        }
         document.getElementById('edit_remarks').value = project.remarks || '';
-        const currentProj = (typeof project !== 'undefined' ? project : (typeof projectData !== 'undefined' ? projectData : {}));
-        document.getElementById('edit_theme').value = currentProj.theme || '';
-        populateSubthemes('edit_theme', 'edit_subtheme', currentProj.subtheme || '');
-        document.getElementById('edit_activity').value = currentProj.activity || '';
+        
+        const themeEl = document.getElementById('edit_theme');
+        if (themeEl) {
+            themeEl.value = project.theme || '';
+            if (!themeEl.value && project.theme) {
+                const tTrim = (project.theme || '').trim().toLowerCase();
+                for (let i = 0; i < themeEl.options.length; i++) {
+                    if (themeEl.options[i].value.trim().toLowerCase() === tTrim) {
+                        themeEl.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+        populateSubthemes('edit_theme', 'edit_subtheme', project.subtheme || '');
+        document.getElementById('edit_activity').value = project.activity || '';
 
         document.getElementById('editProjectModal').style.display = 'flex';
     }
 
     function closeEditModal() {
-        const modal = document.getElementById('editProjectModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) {
-            modal.style.display = 'none';
-        } else {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-        }
+        const modal = document.getElementById('editProjectModal');
+        if (modal) modal.style.display = 'none';
     }
 
-    function initProjectFilters() {
-            const filterManager = document.getElementById('filterManager');
-            const filterAgency = document.getElementById('filterAgency');
-            const filterDistrict = document.getElementById('filterDistrict');
-            const filterState = document.getElementById('filterState');
-            
-            if (!filterManager && !filterAgency && !filterDistrict && !filterState) return;
+    function filterTable() {
+        const input = document.getElementById('tableSearch');
+        const filter = input ? input.value.toLowerCase().trim() : '';
+        const selManager = (document.getElementById('filterManager')?.value || 'all').toLowerCase().trim();
+        const selAgency = (document.getElementById('filterAgency')?.value || 'all').toLowerCase().trim();
+        const selDistrict = (document.getElementById('filterDistrict')?.value || 'all').toLowerCase().trim();
+        const selState = (document.getElementById('filterState')?.value || 'all').toLowerCase().trim();
 
-            const managers = new Set();
-            const agencies = new Set();
-            const districts = new Set();
-            const states = new Set();
+        const table = document.getElementById('projectsTable');
+        if (!table) return;
 
-            const rows = document.querySelectorAll('#projectsTable tbody tr.project-row');
-            rows.forEach(row => {
-                const m = row.getAttribute('data-manager-display') || row.getAttribute('data-manager');
-                const a = row.getAttribute('data-agency-display') || row.getAttribute('data-agency');
-                const d = row.getAttribute('data-district-display') || row.getAttribute('data-district');
-                const s = row.getAttribute('data-state-display') || row.getAttribute('data-state');
+        let visibleCount = 0;
+        const rows = table.querySelectorAll('tbody tr.project-row');
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rManager = (row.getAttribute('data-manager') || '').toLowerCase();
+            const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
+            const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
+            const rState = (row.getAttribute('data-state') || '').toLowerCase();
+            const text = row.textContent.toLowerCase();
 
-                if (m && m.toLowerCase() !== 'n/a') managers.add(m.trim());
-                if (a && a.toLowerCase() !== 'n/a') agencies.add(a.trim());
-                if (d && d.toLowerCase() !== 'n/a') districts.add(d.trim());
-                if (s && s.toLowerCase() !== 'n/a') states.add(s.trim());
-            });
+            const matchesSearch = !filter || text.includes(filter);
+            const matchesManager = (selManager === 'all') || (rManager === selManager);
+            const matchesAgency = (selAgency === 'all') || (rAgency === selAgency);
+            const matchesDistrict = (selDistrict === 'all') || (rDistrict === selDistrict);
+            const matchesState = (selState === 'all') || (rState === selState);
 
-            populateSelectOptions(filterManager, managers, 'All Project Managers');
-            populateSelectOptions(filterAgency, agencies, 'All Agencies');
-            populateSelectOptions(filterDistrict, districts, 'All Districts');
-            populateSelectOptions(filterState, states, 'All States');
-        }
-
-        function populateSelectOptions(selectEl, setValues, defaultText) {
-            if (!selectEl) return;
-            const currentVal = selectEl.value;
-            selectEl.innerHTML = `<option value="">${defaultText}</option>`;
-            Array.from(setValues).sort().forEach(val => {
-                const opt = document.createElement('option');
-                opt.value = val.toLowerCase();
-                opt.textContent = val;
-                if (val.toLowerCase() === currentVal.toLowerCase()) {
-                    opt.selected = true;
-                }
-                selectEl.appendChild(opt);
-            });
-        }
-
-        function filterTable() {
-            const input = document.getElementById('tableSearch');
-            const filter = input ? input.value.toLowerCase().trim() : '';
-            const selManager = (document.getElementById('filterManager')?.value || '').toLowerCase().trim();
-            const selAgency = (document.getElementById('filterAgency')?.value || '').toLowerCase().trim();
-            const selDistrict = (document.getElementById('filterDistrict')?.value || '').toLowerCase().trim();
-            const selState = (document.getElementById('filterState')?.value || '').toLowerCase().trim();
-
-            const table = document.getElementById('projectsTable');
-            if (!table) return;
-
-            const rows = table.querySelectorAll('tbody tr.project-row');
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const rManager = (row.getAttribute('data-manager') || '').toLowerCase();
-                const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
-                const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
-                const rState = (row.getAttribute('data-state') || '').toLowerCase();
-                const rText = (row.textContent || row.innerText || '').toLowerCase();
-
-                const matchesSearch = !filter || rText.includes(filter);
-                const matchesManager = !selManager || rManager === selManager;
-                const matchesAgency = !selAgency || rAgency === selAgency;
-                const matchesDistrict = !selDistrict || rDistrict === selDistrict;
-                const matchesState = !selState || rState === selState;
-
-                if (matchesSearch && matchesManager && matchesAgency && matchesDistrict && matchesState) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+            if (matchesSearch && matchesManager && matchesAgency && matchesDistrict && matchesState) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            initProjectFilters();
+        const noDataRow = document.getElementById('noResultsRow');
+        if (noDataRow) {
+            noDataRow.style.display = (visibleCount === 0) ? '' : 'none';
+        }
+
+        updateExportUrl();
+    }
+
+    function updateExportUrl() {
+        const btns = document.querySelectorAll('.excel-export-btn, #excelExportBtn');
+        if (!btns.length) return;
+        const baseUrl = "{{ route('projects.export', 'cultural-center') }}";
+        const params = new URLSearchParams();
+
+        const searchVal = document.getElementById('tableSearch')?.value;
+        const managerVal = document.getElementById('filterManager')?.value;
+        const agencyVal = document.getElementById('filterAgency')?.value;
+        const districtVal = document.getElementById('filterDistrict')?.value;
+        const stateVal = document.getElementById('filterState')?.value;
+
+        if (searchVal) params.append('search', searchVal);
+        if (managerVal && managerVal !== 'all') params.append('pm_id', managerVal);
+        if (agencyVal && agencyVal !== 'all') params.append('agency', agencyVal);
+        if (districtVal && districtVal !== 'all') params.append('district', districtVal);
+        if (stateVal && stateVal !== 'all') params.append('state', stateVal);
+
+        const queryString = params.toString();
+        const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+        btns.forEach(btn => {
+            if (btn.tagName === 'A') btn.href = fullUrl;
         });
+    }
+
+    function resetFilters() {
+        const searchInput = document.getElementById('tableSearch');
+        if (searchInput) searchInput.value = '';
+        const managerSelect = document.getElementById('filterManager');
+        if (managerSelect) managerSelect.value = 'all';
+        const agencySelect = document.getElementById('filterAgency');
+        if (agencySelect) agencySelect.value = 'all';
+        const districtSelect = document.getElementById('filterDistrict');
+        if (districtSelect) districtSelect.value = 'all';
+        const stateSelect = document.getElementById('filterState');
+        if (stateSelect) stateSelect.value = 'all';
+
+        filterTable();
+    }
 
     var themesData = {
         @foreach($themes as $t)
@@ -757,14 +905,12 @@
         }
     }
 
-
-        // Global Window Bindings
-        window.openModal = openModal;
-        window.closeModal = closeModal;
-        window.openEditModal = openEditModal;
-        window.closeEditModal = closeEditModal;
-    </script>
-
+    // Global Window Bindings
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.openEditModal = openEditModal;
+    window.closeEditModal = closeEditModal;
+    window.filterTable = filterTable;
+</script>
 
 @endsection
-

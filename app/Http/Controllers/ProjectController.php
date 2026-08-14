@@ -322,32 +322,35 @@ class ProjectController extends Controller
     {
         $user = auth()->user();
         if (!$user || !$user->canAddEditProjects()) {
-            return redirect()->back()->with('error', 'Only Super Admin, HOD, and COO are authorized to create projects.');
+            return redirect()->back()->with('error', 'You are not authorized to create projects.');
         }
 
         $redirectCategory = $request->input('redirect_category');
-        $isOrphanCare = ($redirectCategory === 'orphan-care' || $request->input('type_of_project') === 'Orphan Care');
+        $isSocialAid = in_array($redirectCategory, ['orphan-care', 'differently-abled', 'family-aid']) 
+            || in_array($request->input('type_of_project'), ['Orphan Care', 'Differently Abled', 'Family Aid']);
+
+        if ($isSocialAid) {
+            return redirect()->back()->with('error', 'Social Aid projects cannot be added manually. They are created automatically from approved applications.');
+        }
 
         $data = $request->validate([
             'project_name' => ['required', 'string', 'max:255'],
             'sponsor' => ['required', 'string', 'max:255'],
             'project_spec' => ['nullable', 'string'],
             'agency_project_no' => ['required', 'string', 'max:255'],
-            'donor_id' => [$isOrphanCare ? 'nullable' : 'required', 'exists:donors,id'],
-            'project_manager_id' => [$isOrphanCare ? 'nullable' : 'required', 'exists:users,id'],
+            'donor_id' => ['required', 'exists:donors,id'],
+            'project_manager_id' => ['required', 'exists:users,id'],
             'engineer_id' => ['nullable', 'exists:users,id'],
             'unit' => ['nullable', 'string', 'max:255'],
-            'available_budget' => [$isOrphanCare ? 'nullable' : 'required', 'numeric', 'min:0', 'max:9999999999999'],
+            'available_budget' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
+            'total_beneficiary_peoples' => ['nullable', 'numeric', 'min:0'],
+            'total_family' => ['nullable', 'numeric', 'min:0'],
             'type_of_project' => ['required', 'string'],
             'theme' => ['nullable', 'string', 'max:255'],
             'subtheme' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string'],
         ]);
-
-        if ($isOrphanCare) {
-            unset($data['donor_id'], $data['project_manager_id'], $data['engineer_id'], $data['available_budget']);
-        }
 
         $redirectCategory = $request->input('redirect_category');
         $config = $this->categories[$redirectCategory] ?? null;
@@ -398,28 +401,31 @@ class ProjectController extends Controller
         $user = auth()->user();
 
         $redirectCategory = $request->input('redirect_category');
-        $isOrphanCare = ($redirectCategory === 'orphan-care' || $request->input('type_of_project') === 'Orphan Care');
+        $isSocialAid = in_array($redirectCategory, ['orphan-care', 'differently-abled', 'family-aid']) 
+            || in_array($request->input('type_of_project'), ['Orphan Care', 'Differently Abled', 'Family Aid']);
+
+        if ($isSocialAid) {
+            return redirect()->back()->with('error', 'Social Aid projects cannot be edited manually.');
+        }
 
         $data = $request->validate([
             'project_name' => ['required', 'string', 'max:255'],
             'sponsor' => ['required', 'string', 'max:255'],
             'project_spec' => ['nullable', 'string'],
             'agency_project_no' => ['required', 'string', 'max:255'],
-            'donor_id' => [$isOrphanCare ? 'nullable' : 'required', 'exists:donors,id'],
-            'project_manager_id' => [$isOrphanCare ? 'nullable' : 'required', 'exists:users,id'],
+            'donor_id' => ['required', 'exists:donors,id'],
+            'project_manager_id' => ['required', 'exists:users,id'],
             'engineer_id' => ['nullable', 'exists:users,id'],
             'unit' => ['nullable', 'string', 'max:255'],
-            'available_budget' => [$isOrphanCare ? 'nullable' : 'required', 'numeric', 'min:0', 'max:9999999999999'],
+            'available_budget' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
+            'total_beneficiary_peoples' => ['nullable', 'numeric', 'min:0'],
+            'total_family' => ['nullable', 'numeric', 'min:0'],
             'type_of_project' => ['required', 'string'],
             'theme' => ['nullable', 'string', 'max:255'],
             'subtheme' => ['nullable', 'string', 'max:255'],
             'activity' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string'],
         ]);
-
-        if ($isOrphanCare) {
-            unset($data['donor_id'], $data['project_manager_id'], $data['engineer_id'], $data['available_budget']);
-        }
 
         $redirectCategory = $request->input('redirect_category');
         $config = $this->categories[$redirectCategory] ?? null;
@@ -438,10 +444,7 @@ class ProjectController extends Controller
             $model = $config['model'];
             $project = $model::findOrFail($id);
             if (!$user || !$user->canAddEditProjects()) {
-                return redirect()->back()->with('error', 'Only Super Admin, HOD, and COO are authorized to edit projects.');
-            }
-            if (!empty($project->application_id)) {
-                return redirect()->back()->with('error', 'Projects connected to an application cannot be edited.');
+                return redirect()->back()->with('error', 'You are not authorized to edit projects.');
             }
             try {
                 $project->update($data);

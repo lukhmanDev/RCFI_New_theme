@@ -800,8 +800,13 @@ class AdminController extends Controller
             'shops-and-others' => ['model' => \App\Models\ShopOtherProject::class, 'name' => 'Shops and Others'],
             'house' => ['model' => \App\Models\HouseProject::class, 'name' => 'House'],
             'drinking-water-individual' => ['model' => \App\Models\DrinkingWaterIndividualProject::class, 'name' => 'Drinking Water Individual'],
+            'drinking-water-individual-level' => ['model' => \App\Models\DrinkingWaterIndividualProject::class, 'name' => 'Drinking Water Individual'],
             'drinking-water-group' => ['model' => \App\Models\DrinkingWaterGroupProject::class, 'name' => 'Drinking Water Group'],
+            'drinking-water-group-level' => ['model' => \App\Models\DrinkingWaterGroupProject::class, 'name' => 'Drinking Water Group'],
             'general' => ['model' => \App\Models\GeneralProject::class, 'name' => 'General'],
+            'orphan-care' => ['model' => \App\Models\OrphanCareProject::class, 'name' => 'Orphan Care'],
+            'family-aid' => ['model' => \App\Models\FamilyAidProject::class, 'name' => 'Family Aid'],
+            'differently-abled' => ['model' => \App\Models\DifferentlyAbledProject::class, 'name' => 'Differently Abled'],
         ];
 
         $allProjectsList = collect();
@@ -841,11 +846,14 @@ class AdminController extends Controller
 
         if ($id) {
             if ($categoryParam) {
-                $targetProjectData = $allProjectsList->firstWhere(function($item) use ($id, $categoryParam) {
+                $targetProjectData = $allProjectsList->first(function($item) use ($id, $categoryParam) {
+                    $slug1 = strtolower(str_replace(['-', '_', ' '], '', $item['category_slug']));
+                    $slug2 = strtolower(str_replace(['-', '_', ' '], '', $categoryParam));
                     return (string)$item['id'] === (string)$id && (
                         $item['category_slug'] === $categoryParam ||
-                        str_starts_with($item['category_slug'], $categoryParam) ||
-                        str_starts_with($categoryParam, $item['category_slug'])
+                        $slug1 === $slug2 ||
+                        str_starts_with($slug1, $slug2) ||
+                        str_starts_with($slug2, $slug1)
                     );
                 });
             }
@@ -891,7 +899,9 @@ class AdminController extends Controller
             $contractor = \App\Models\Contractor::find($projectObj->contractor_id);
         }
 
-        if (isset($projectObj->application_id)) {
+        if (method_exists($projectObj, 'application') && $projectObj->application) {
+            $application = $projectObj->application;
+        } elseif (isset($projectObj->application_id)) {
             $appId = $projectObj->application_id;
             $appModels = [
                 \App\Models\OrphanCareApplication::class,
@@ -955,6 +965,46 @@ class AdminController extends Controller
         if ($completionDetail && $completionDetail->community_contribution) {
             $totalCommunityContrib = (float)$completionDetail->community_contribution;
         }
+
+        $materials = $projectObj->materials ?? [];
+        if (empty($materials) && isset($project->materials)) {
+            $materials = $project->materials;
+        }
+        if (is_string($materials)) {
+            $materials = json_decode($materials, true) ?: [];
+        }
+
+        $expenses = $projectObj->expenses ?? [];
+        if (empty($expenses) && method_exists($projectObj, 'projectExpenses')) {
+            $expenses = $projectObj->projectExpenses()->orderBy('created_at', 'desc')->get();
+        }
+        if (is_string($expenses)) {
+            $expenses = json_decode($expenses, true) ?: [];
+        }
+
+        $totalAllocatedAmount = 0;
+        if (!empty($materials) && is_iterable($materials)) {
+            foreach ($materials as $m) {
+                $totalAllocatedAmount += (float)(is_array($m) ? ($m['amount'] ?? 0) : ($m->amount ?? 0));
+            }
+        }
+        if ($totalAllocatedAmount > 0) {
+            $totalAllocated = $totalAllocatedAmount;
+        } elseif ($totalAllocated == 0 && isset($projectObj->available_budget)) {
+            $totalAllocated = (float)$projectObj->available_budget;
+        }
+
+        $totalSpentAmount = 0;
+        if (!empty($expenses) && is_iterable($expenses)) {
+            foreach ($expenses as $e) {
+                if (is_array($e) && !isset($e['comm_index'])) {
+                    $totalSpentAmount += (float)($e['amount'] ?? 0);
+                } elseif (is_object($e) && !isset($e->comm_index)) {
+                    $totalSpentAmount += (float)($e->amount ?? 0);
+                }
+            }
+        }
+        $totalSpent = $totalSpentAmount;
 
         $totalGrants = $totalAllocated;
         $leverage = $completionDetail->amount_paid_by_donor ?? 0;
@@ -1061,7 +1111,10 @@ class AdminController extends Controller
             $isSocialAid = in_array($categorySlug, ['orphan-care', 'family-aid', 'differently-abled']) 
                 || str_contains($categorySlug, 'orphan') 
                 || str_contains($categorySlug, 'family') 
-                || str_contains($categorySlug, 'abled');
+                || str_contains($categorySlug, 'abled')
+                || $modelClass === \App\Models\OrphanCareProject::class
+                || $modelClass === \App\Models\FamilyAidProject::class
+                || $modelClass === \App\Models\DifferentlyAbledProject::class;
 
             $pdfView = $isSocialAid ? 'pdf.social_aid_project_pdf' : 'pdf.project_pdf';
 
@@ -1081,7 +1134,10 @@ class AdminController extends Controller
                 'communityContributions',
                 'funds',
                 'programmes',
+                'expenses',
+                'materials',
                 'totalAllocated',
+                'totalSpent',
                 'totalCommunityContrib',
                 'totalGrants',
                 'leverage',

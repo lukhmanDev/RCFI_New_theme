@@ -81,7 +81,7 @@
                         @endphp
                         <tr class="app-row" data-search="{{ $searchStr }}" data-place="{{ $appItem->place ?? '' }}">
                             <td style="font-weight: 600;">
-                                <a href="javascript:void(0)" onclick="openDetailsModal({{ json_encode($appItem) }})" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Application Details">
+                                <a href="javascript:void(0)" onclick="openDetailsModal({{ $loop->index }})" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Application Details">
                                     {{ $appId }}
                                 </a>
                             </td>
@@ -180,9 +180,14 @@
 
     <!-- Script Block -->
     <script>
+        window.approvedAppsList = @json($applications->values());
         var currentDetailsAppItem = null;
 
         function openDetailsModal(appItem, isProjectApproved = false) {
+            if (typeof appItem === 'number' && window.approvedAppsList && window.approvedAppsList[appItem]) {
+                appItem = window.approvedAppsList[appItem];
+            }
+            if (!appItem) return;
             currentDetailsAppItem = appItem;
             
             // Populate status actions in the modal footer dynamically

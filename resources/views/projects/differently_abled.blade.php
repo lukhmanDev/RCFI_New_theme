@@ -20,52 +20,6 @@
 </div>
 
 <style>
-    .group-header-panel {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: #ffffff;
-        padding: 1.2rem;
-        border-radius: 8px;
-        text-align: center;
-        font-size: 1.4rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
-
-    .controls-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .controls-row .btn-custom {
-        height: 40px !important;
-        box-sizing: border-box;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .search-container {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        height: 40px;
-    }
-
-    .search-container input {
-        height: 40px !important;
-        padding: 0.65rem 1rem !important;
-        box-sizing: border-box;
-    }
-
     .table-custom th, .table-custom td {
         vertical-align: middle !important;
     }
@@ -204,25 +158,6 @@
         border-color: var(--accent-cyan);
     }
 
-    @media (max-width: 1600px) {
-        .col-remarks { display: none !important; }
-    }
-    @media (max-width: 1450px) {
-        .col-type { display: none !important; }
-    }
-    @media (max-width: 1300px) {
-        .col-budget { display: none !important; }
-    }
-    @media (max-width: 1100px) {
-        .col-manager { display: none !important; }
-    }
-    @media (max-width: 900px) {
-        .col-donor { display: none !important; }
-    }
-    @media (max-width: 700px) {
-        .col-agency { display: none !important; }
-    }
-
     /* Styled scrollbar for modal body */
     .modal-body-custom::-webkit-scrollbar {
         width: 6px;
@@ -244,10 +179,58 @@
         resize: vertical;
         min-height: 80px;
     }
+
+    /* Executive Toolbar Styling */
+    .filter-select-modern {
+        height: 38px;
+        padding: 0 0.75rem;
+        font-size: 0.84rem;
+        font-weight: 600;
+        border-radius: 8px;
+        background-color: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #cbd5e1;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        width: 100%;
+    }
+    .filter-select-modern:focus, .filter-select-modern:hover {
+        border-color: #10b981;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .btn-action-animated {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-action-animated:hover {
+        transform: translateY(-1px);
+    }
+    .btn-action-animated:active {
+        transform: translateY(0);
+    }
 </style>
 
-<div class="group-header-panel">
-    Differently Abled PROJECT LIST
+<!-- EXECUTIVE PAGE HEADER -->
+<div class="no-auto-align" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; background: #ffffff; padding: 1.25rem 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+            <h1 style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">Differently Abled Projects</h1>
+            <span id="projectCountBadge" style="font-size: 0.75rem; font-weight: 800; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 0.2rem 0.65rem; border-radius: 20px;">
+                {{ count($projects) }} {{ count($projects) === 1 ? 'Project' : 'Projects' }}
+            </span>
+        </div>
+        <p style="font-size: 0.82rem; color: #64748b; margin: 0.2rem 0 0 0;">Manage, filter, monitor progress, and export differently abled beneficiary projects.</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        @if(Auth::user() && Auth::user()->canDownloadExcel())
+        <a id="excelExportBtn" href="{{ route('projects.export', 'differently-abled') }}" class="btn-action-animated excel-export-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 0.55rem 1.25rem; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);" title="Download Excel report with all filtered data">
+            Export Excel
+        </a>
+        @endif
+    </div>
 </div>
 
 @if (session('success'))
@@ -272,39 +255,150 @@
     </div>
 @endif
 
-<div class="controls-row">
-    <div style="display: flex; gap: 0.75rem;">
-        @if(Auth::user() && Auth::user()->canDownloadExcel())
-        <a href="{{ route('projects.export', 'differently-abled') }}" id="excelExportBtn" class="excel-export-btn btn-custom" style="background: linear-gradient(135deg, #2ecc71, #27ae60); text-decoration: none;">
-            <i class="bx bx-download"></i> Download Excel
-        </a>
-        @endif
-    </div>
+@php
+    $filterStates = collect();
+    $filterDistricts = collect();
+    $filterAgencies = collect();
+    $filterClusters = collect();
+    $filterGenders = collect();
 
+    foreach($projects as $p) {
+        $pApp = $p->application;
+        $pMeta = $pApp->meta ?? [];
 
-            <!-- Search & Filter Toolbar -->
-        <div style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: flex-end;">
-            <select id="filterManager" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 150px;">
-                <option value="">All Project Managers</option>
-            </select>
+        $st = $pApp?->state ?? ($pMeta['state'] ?? null);
+        if ($st && trim($st) !== '') $filterStates->push(trim($st));
 
-            <select id="filterAgency" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 140px;">
-                <option value="">All Agencies</option>
-            </select>
+        $dt = $pApp?->district ?? ($pMeta['district'] ?? null);
+        if ($dt && trim($dt) !== '') $filterDistricts->push(trim($dt));
 
-            <select id="filterDistrict" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 130px;">
-                <option value="">All Districts</option>
-            </select>
+        $ag = $pApp?->agency_name 
+            ?? ($pMeta['agency_name'] ?? null) 
+            ?? ($p->donor?->name ?? null) 
+            ?? ($p->agency_name ?? null);
+        if ((!$ag || is_numeric($ag)) && $p->donor_id) {
+            $ag = \App\Models\Donor::find($p->donor_id)?->name ?? $ag;
+        }
+        if ($ag && is_numeric($ag)) {
+            $ag = \App\Models\Donor::find($ag)?->name;
+        }
+        if ($ag && trim($ag) !== '' && strtolower($ag) !== 'n/a' && !is_numeric($ag)) $filterAgencies->push(trim($ag));
 
-            <select id="filterState" onchange="filterTable()" style="padding: 0.45rem 0.75rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; min-width: 120px;">
-                <option value="">All States</option>
-            </select>
+        $cl = $pApp?->cluster?->name ?? ($pMeta['cluster'] ?? null);
+        if ($cl && trim($cl) !== '') $filterClusters->push(trim($cl));
 
-            <div style="position: relative; width: 100%; max-width: 220px;">
-                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"><i class="bx bx-search"></i></span>
-                <input type="text" id="tableSearch" placeholder="Search projects..." style="width: 100%; padding: 0.45rem 0.75rem 0.45rem 2.25rem; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;" onkeyup="filterTable()">
+        $gn = $pApp?->gender ?? ($pMeta['gender'] ?? null);
+        if ($gn && trim($gn) !== '') $filterGenders->push(trim($gn));
+    }
+
+    $filterStates = $filterStates->unique()->sort()->values();
+    $filterDistricts = $filterDistricts->unique()->sort()->values();
+    $filterAgencies = $filterAgencies->unique()->sort()->values();
+    $filterClusters = $filterClusters->unique()->sort()->values();
+    $filterGenders = $filterGenders->unique()->sort()->values();
+@endphp
+
+<!-- FLOATING FILTER & SEARCH TOOLBAR -->
+<div class="no-auto-align" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);">
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between;">
+        
+        <!-- Filter Dropdowns Grid -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; flex: 1;">
+            
+            <!-- State -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 130px; flex: 1;">
+                <label for="stateFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    State
+                </label>
+                <select id="stateFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All States</option>
+                    @foreach($filterStates as $st)
+                        <option value="{{ strtolower($st) }}">{{ $st }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- District -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 130px; flex: 1;">
+                <label for="districtFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    District
+                </label>
+                <select id="districtFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Districts</option>
+                    @foreach($filterDistricts as $dt)
+                        <option value="{{ strtolower($dt) }}">{{ $dt }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Agency -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 140px; flex: 1;">
+                <label for="agencyFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Agency
+                </label>
+                <select id="agencyFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Agencies</option>
+                    @foreach($filterAgencies as $ag)
+                        <option value="{{ strtolower($ag) }}">{{ $ag }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Cluster -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 130px; flex: 1;">
+                <label for="clusterFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Cluster
+                </label>
+                <select id="clusterFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Clusters</option>
+                    @foreach($filterClusters as $cl)
+                        <option value="{{ strtolower($cl) }}">{{ $cl }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Gender -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 110px; flex: 1;">
+                <label for="genderFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Gender
+                </label>
+                <select id="genderFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Genders</option>
+                    @foreach($filterGenders as $gn)
+                        <option value="{{ strtolower($gn) }}">{{ ucfirst($gn) }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Status -->
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 120px; flex: 1;">
+                <label for="statusFilter" style="font-size: 0.72rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">
+                    Status
+                </label>
+                <select id="statusFilter" onchange="filterTable()" class="filter-select-modern">
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+
+            <!-- Reset Button -->
+            <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                <button type="button" onclick="resetFilters()" class="btn-action-animated" style="height: 38px; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 0 0.85rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;" title="Reset all filters">
+                    Reset
+                </button>
             </div>
         </div>
+
+        <!-- Live Search Bar -->
+        <div style="display: flex; align-items: flex-end; min-width: 250px;">
+            <div style="position: relative; width: 100%;">
+                <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search projects..." style="width: 100%; height: 38px; padding: 0 1rem; font-size: 0.85rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; color: #1e293b; outline: none; transition: all 0.2s;" onfocus="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 0 0 3px rgba(16, 185, 129, 0.1)';" onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <div class="panel" style="width: 100%;">
@@ -312,17 +406,15 @@
         <table class="table-custom" id="projectsTable">
             <thead>
                 <tr>
-                    <th style="width: 60px; text-align: center;">S.NO</th>
+                    <th style="width: 60px; text-align: center;">S.No</th>
                     <th>RCFI ID</th>
-                    <th class="col-agency">AGENCY NO</th>
-                    <th class="col-agency-name">AGENCY NAME</th>
-                    <th class="col-activity">ACTIVITY</th>
-                    <th class="col-place">PLACE</th>
-                    <th class="col-district">DISTRICT</th>
-                    <th class="col-manager">PROJECT MANAGER</th>
-                    <th class="col-allocated" style="text-align: right;">TOTAL ALLOCATED</th>
-                    <th class="col-balance" style="text-align: right;">TOTAL BALANCE</th>
-                    <th style="text-align: center; width: 180px;">ACTION</th>
+                    <th>Agency ID</th>
+                    <th>Agency</th>
+                    <th>Name of Beneficiary</th>
+                    <th>Mother Name</th>
+                    <th>Mobile</th>
+                    <th style="text-align: center; width: 110px;">Status</th>
+                    <th style="text-align: center; width: 200px;">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -330,13 +422,22 @@
                     @php
                         $app = $project->application;
                         $appMeta = $app->meta ?? [];
+                        
+                        $rowAgencyName = $app?->agency_name 
+                            ?? ($appMeta['agency_name'] ?? null) 
+                            ?? ($project->donor?->name ?? null) 
+                            ?? ($project->agency_name ?? null);
+                        if ((!$rowAgencyName || is_numeric($rowAgencyName)) && $project->donor_id) {
+                            $rowAgencyName = \App\Models\Donor::find($project->donor_id)?->name ?? $rowAgencyName;
+                        }
+                        if ($rowAgencyName && is_numeric($rowAgencyName)) {
+                            $rowAgencyName = \App\Models\Donor::find($rowAgencyName)?->name ?? 'N/A';
+                        }
+                        $rowAgencyName = ($rowAgencyName && trim($rowAgencyName) !== '' && strtolower($rowAgencyName) !== 'n/a') ? $rowAgencyName : 'N/A';
+
                         $searchTerms = [
                             $project->project_id,
-                            $project->project_name,
-                            $project->sponsor,
                             $project->agency_project_no,
-                            $project->donor?->name,
-                            $project->projectManager?->name,
                             $project->remarks,
                             $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : null),
                             $app?->applicant_name,
@@ -351,25 +452,60 @@
                             $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($appMeta['contact_number_2'] ?? null)),
                         ];
                         $searchString = strtolower(implode(' ', array_filter($searchTerms)));
+
+                        $rowState = strtolower(trim($app?->state ?? ($appMeta['state'] ?? '')));
+                        $rowDistrict = strtolower(trim($app?->district ?? ($appMeta['district'] ?? '')));
+                        $rowAgency = strtolower(trim($rowAgencyName !== 'N/A' ? $rowAgencyName : ''));
+                        $rowCluster = strtolower(trim($app?->cluster?->name ?? ($appMeta['cluster'] ?? '')));
+                        $rowGender = strtolower(trim($app?->gender ?? ($appMeta['gender'] ?? '')));
+                        $rowStatus = strtolower(trim($project->status ?? 'active'));
                     @endphp
-                    <tr class="project-row" data-search="{{ $searchString }}">
+                    <tr class="project-row" 
+                        data-search="{{ $searchString }}"
+                        data-state="{{ $rowState }}"
+                        data-district="{{ $rowDistrict }}"
+                        data-agency="{{ $rowAgency }}"
+                        data-cluster="{{ $rowCluster }}"
+                        data-gender="{{ $rowGender }}"
+                        data-status="{{ $rowStatus }}">
                         <td style="text-align: center;">{{ $index + 1 }}</td>
                         <td style="font-weight: 600; color: var(--accent-cyan);">
-                            {{ $project->project_id }}
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Differently Abled') }}" style="color: var(--accent-cyan); font-weight: 700; text-decoration: underline;" title="View Project Details">
+                                {{ $project->project_id }}
+                            </a>
                         </td>
-                        <td class="col-agency">{{ $project->agency_project_no ?? 'N/A' }}</td>
-                        <td class="col-agency-name">{{ $project->sponsor ?? ($project->donor ? $project->donor->name : ($project->agency_name ?? 'N/A')) }}</td>
-                        <td class="col-activity">{{ $project->activity ?? $project->project_name ?? $project->type_of_project ?? 'N/A' }}</td>
-                        <td class="col-place">{{ $project->place ?? $project->location ?? ($project->application ? ($project->application->place ?? $project->application->location ?? 'N/A') : 'N/A') }}</td>
-                        <td class="col-district">{{ $project->district ?? ($project->application ? ($project->application->district ?? ($project->application->meta['district'] ?? ($project->application->meta['locality_district'] ?? 'N/A'))) : 'N/A') }}</td>
-                        <td class="col-manager">{{ $project->projectManager ? $project->projectManager->name : 'N/A' }}</td>
-                        <td class="col-allocated" style="text-align: right;">{!! "&#x20B9;" !!}{{ number_format($project->total_allocated ?? 0, 2) }}</td>
-                        <td class="col-balance" style="text-align: right;">{!! "&#x20B9;" !!}{{ number_format(($project->total_allocated ?? 0) - ($project->total_spent ?? 0), 2) }}</td>
+                        <td>{{ $project->agency_project_no ?? ($app?->agency_number ?? ($appMeta['agency_number'] ?? 'N/A')) }}</td>
+                        <td>{{ $rowAgencyName }}</td>
+                        <td>{{ $app?->applicant_name ?? ($appMeta['applicant_name'] ?? 'N/A') }}</td>
+                        <td>{{ $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A') }}</td>
+                        <td>{{ $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($appMeta['contact_number_1'] ?? ($app?->mobile_2 ?? ($appMeta['mobile_2'] ?? 'N/A')))) }}</td>
+                        <td style="text-align: center;">
+                            @php
+                                $status = $project->status ?? 'Active';
+                                $badgeStyle = match($status) {
+                                    'Suspended' => 'background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.35);',
+                                    'Completed' => 'background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.35);',
+                                    default     => 'background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.35);',
+                                };
+                                $dotColor = match($status) {
+                                    'Suspended' => '#ef4444',
+                                    'Completed' => '#34d399',
+                                    default     => '#10b981',
+                                };
+                            @endphp
+                            <span id="status-badge-{{ $project->id }}"
+                                  data-project-id="{{ $project->id }}"
+                                  data-status="{{ $status }}"
+                                  style="{{ $badgeStyle }} padding:0.25rem 0.65rem; border-radius:999px; font-size:0.75rem; font-weight:600; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">
+                                <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:{{ $dotColor }};"></span>
+                                {{ $status }}
+                            </span>
+                        </td>
                         <td style="text-align: center; white-space: nowrap;">
                             @if(Auth::user()->hasAdminAccess())
-                            <button onclick="alert('Project Details:\nID: {{ $project->project_id }}\nName: {{ $project->project_name ?? 'N/A' }}\nSponsor: {{ $project->sponsor ?? 'N/A' }}\nTheme: {{ $project->theme ?? 'N/A' }}\nSubtheme: {{ $project->subtheme ?? 'N/A' }}\nActivity: {{ $project->activity ?? 'N/A' }}\nSpec: {{ $project->project_spec ?? 'N/A' }}\nAgency No: {{ $project->agency_project_no }}\nAgency: {{ $project->donor ? $project->donor->name : 'N/A' }}\nManager: {{ $project->projectManager ? $project->projectManager->name : 'N/A' }}\nBudget: ₹{{ number_format($project->available_budget, 2) }}\nRemarks: {{ $project->remarks }}')" class="btn-action-icon btn-dots" title="Details">
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Differently Abled') }}" class="btn-action-icon btn-dots" title="Details">
                                 <i class="bx bx-dots-horizontal-rounded"></i>
-                            </button>
+                            </a>
 
                             <!-- PDF Report Button -->
                             <a href="{{ route('projects.pdf', [$project->id, 'category' => 'differently-abled']) }}" onclick="downloadDirectPdf(event, this.href)" class="btn-action-icon btn-pdf" title="Download PDF Report">
@@ -389,11 +525,11 @@
                             </button>
                             @endif
 
-                            <button type="button" data-id="{{ $project->id }}" data-name="{{ $project->project_name ?? '' }}" data-agency="{{ $project->agency_project_no ?? '' }}" onclick="openAddProgrammeModal(this)" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
+                            <button type="button" data-id="{{ $project->id }}" data-name="{{ $app?->applicant_name ?? ($appMeta['applicant_name'] ?? '') }}" data-agency="{{ $project->agency_project_no ?? '' }}" onclick="openAddProgrammeModal(this)" class="btn-action-icon btn-add-prog" title="Add Programme" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer;">
                                 <i class="bx bx-plus-circle"></i>
                             </button>
 
-                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project) }}" class="btn-action-icon btn-view" title="Stage Details">
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Differently Abled') }}" class="btn-action-icon btn-view" title="Stage Details">
                                 <i class="bx bx-show-alt"></i>
                             </a>
                         </td>
@@ -408,386 +544,112 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="addProjectModal">
-    <div class="modal-content-custom">
-        <div class="modal-header-custom">
-            <h3>Add Differently Abled Project</h3>
-            <button type="button" class="modal-close-btn" onclick="closeModal()" title="Close">&times;</button>
-        </div>
-        <form action="{{ route('projects.store') }}" method="POST">
-            @csrf
-            <input type="hidden" name="redirect_category" value="differently-abled">
-
-            <div class="modal-body-custom">
-                <div class="form-group-custom">
-                    <label for="project_name">Project Name</label>
-                    <input type="text" name="project_name" id="project_name" required placeholder="Enter project name">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="sponsor">Sponsor</label>
-                    <input type="text" name="sponsor" id="sponsor" required placeholder="Enter sponsor name">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="project_spec">Project Spec</label>
-                    <textarea name="project_spec" id="project_spec" rows="3" placeholder="Enter project specifications"></textarea>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="agency_project_no">Agency Project No.</label>
-                    <input type="text" name="agency_project_no" id="agency_project_no" required placeholder="Enter agency project number">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="donor_id">Agency Name</label>
-                    <select name="donor_id" id="donor_id" required>
-                        <option value="">Select an agency</option>
-                        @foreach($donors as $donor)
-                            <option value="{{ $donor->id }}">{{ $donor->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="project_manager_id">Project Manager</label>
-                    <select name="project_manager_id" id="project_manager_id" required>
-                        <option value="">Select a manager</option>
-                        @foreach($managers as $manager)
-                            <option value="{{ $manager->id }}">{{ $manager->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="engineer_id">Engineer</label>
-                    <select name="engineer_id" id="engineer_id">
-                        <option value="">Select an engineer</option>
-                        @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="available_budget">Available Budget</label>
-                    <input type="number" step="0.01" name="available_budget" id="available_budget" required placeholder="Enter available budget">
-                </div>
-                <div class="form-group-custom">
-                    <label for="add_theme">Theme</label>
-                    <select name="theme" id="add_theme" required onchange="populateSubthemes('add_theme', 'add_subtheme')">
-                        <option value="">Select Theme</option>
-                        @foreach($themes as $t)
-                            <option value="{{ $t->name }}" data-theme-id="{{ $t->id }}">{{ $t->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="add_subtheme">Subtheme</label>
-                    <select name="subtheme" id="add_subtheme" required>
-                        <option value="">Select Subtheme</option>
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="add_activity">Activity</label>
-                    <input type="text" name="activity" id="add_activity" required placeholder="Enter activity">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="type_of_project">Type of Project</label>
-                    <input type="text" value="Differently Abled" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: var(--text-muted);">
-                    <input type="hidden" name="type_of_project" value="Differently Abled">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="remarks">Remarks</label>
-                    <textarea name="remarks" id="remarks" rows="3" placeholder="Enter remarks..."></textarea>
-                </div>
-
-                <div style="text-align: center; margin-top: 1.5rem;">
-                    <button type="submit" class="btn-custom" style="padding: 0.75rem 2rem;">Submit</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="modal-overlay" id="editProjectModal">
-    <div class="modal-content-custom">
-        <div class="modal-header-custom">
-            <h3>Edit Differently Abled Project</h3>
-            <button type="button" class="modal-close-btn" onclick="closeEditModal()" title="Close">&times;</button>
-        </div>
-        <form id="editProjectForm" method="POST">
-            @csrf
-            @method('PUT')
-            <input type="hidden" name="redirect_category" value="differently-abled">
-
-            <div class="modal-body-custom">
-                <div class="form-group-custom">
-                    <label for="edit_project_name">Project Name</label>
-                    <input type="text" name="project_name" id="edit_project_name" required placeholder="Enter project name">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_sponsor">Sponsor</label>
-                    <input type="text" name="sponsor" id="edit_sponsor" required placeholder="Enter sponsor name">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_project_spec">Project Spec</label>
-                    <textarea name="project_spec" id="edit_project_spec" rows="3" placeholder="Enter project specifications"></textarea>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_agency_project_no">Agency Project No.</label>
-                    <input type="text" name="agency_project_no" id="edit_agency_project_no" required>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_donor_id">Agency Name</label>
-                    <select name="donor_id" id="edit_donor_id" required>
-                        <option value="">Select an agency</option>
-                        @foreach($donors as $donor)
-                            <option value="{{ $donor->id }}">{{ $donor->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_project_manager_id">Project Manager</label>
-                    <select name="project_manager_id" id="edit_project_manager_id" required>
-                        <option value="">Select a manager</option>
-                        @foreach($managers as $manager)
-                            <option value="{{ $manager->id }}">{{ $manager->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_engineer_id">Engineer</label>
-                    <select name="engineer_id" id="edit_engineer_id">
-                        <option value="">Select an engineer</option>
-                        @foreach($engineers as $engineer)
-                            <option value="{{ $engineer->id }}">{{ $engineer->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_available_budget">Available Budget</label>
-                    <input type="number" step="0.01" name="available_budget" id="edit_available_budget" required>
-                </div>
-                <div class="form-group-custom">
-                    <label for="edit_theme">Theme</label>
-                    <select name="theme" id="edit_theme" required onchange="populateSubthemes('edit_theme', 'edit_subtheme')">
-                        <option value="">Select Theme</option>
-                        @foreach($themes as $t)
-                            <option value="{{ $t->name }}" data-theme-id="{{ $t->id }}">{{ $t->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_subtheme">Subtheme</label>
-                    <select name="subtheme" id="edit_subtheme" required>
-                        <option value="">Select Subtheme</option>
-                    </select>
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_activity">Activity</label>
-                    <input type="text" name="activity" id="edit_activity" required placeholder="Enter activity">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_type_of_project">Type of Project</label>
-                    <input type="text" value="Differently Abled" disabled style="background-color: var(--bg-color); border: 1px solid var(--panel-border); color: var(--text-muted);">
-                    <input type="hidden" name="type_of_project" value="Differently Abled">
-                </div>
-
-                <div class="form-group-custom">
-                    <label for="edit_remarks">Remarks</label>
-                    <textarea name="remarks" id="edit_remarks" rows="3"></textarea>
-                </div>
-
-                <div style="text-align: center; margin-top: 1.5rem;">
-                    <button type="submit" class="btn-custom" style="padding: 0.75rem 2rem;">Update Project</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script>
-    function openModal() {
-        const modal = document.getElementById('addProjectModal') || document.getElementById("addAppModal") || document.getElementById("addProjectModal") || document.getElementById("addModal");
-        if (modal) modal.style.display = "flex";
-    }
+    function filterTable() {
+        const input = document.getElementById('tableSearch');
+        const filter = input ? input.value.toLowerCase().trim() : '';
+        const selState = (document.getElementById('stateFilter')?.value || 'all').toLowerCase().trim();
+        const selDistrict = (document.getElementById('districtFilter')?.value || 'all').toLowerCase().trim();
+        const selAgency = (document.getElementById('agencyFilter')?.value || 'all').toLowerCase().trim();
+        const selCluster = (document.getElementById('clusterFilter')?.value || 'all').toLowerCase().trim();
+        const selGender = (document.getElementById('genderFilter')?.value || 'all').toLowerCase().trim();
+        const selStatus = (document.getElementById('statusFilter')?.value || 'all').toLowerCase().trim();
 
-    function closeModal() {
-        const modal = document.getElementById('addProjectModal') || document.getElementById('addAppModal') || document.getElementById('addModal');
-        if (modal) {
-            modal.style.display = 'none';
-        } else {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-        }
-    }
+        const table = document.getElementById('projectsTable');
+        if (!table) return;
 
-    function openEditModal(project) {
-        const form = document.getElementById('editProjectForm');
-        form.setAttribute('action', `/admin/projects/${project.id}`);
+        let visibleCount = 0;
+        const rows = table.querySelectorAll('tbody tr.project-row');
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rSearch = (row.getAttribute('data-search') || row.textContent || '').toLowerCase();
+            const rState = (row.getAttribute('data-state') || '').toLowerCase();
+            const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
+            const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
+            const rCluster = (row.getAttribute('data-cluster') || '').toLowerCase();
+            const rGender = (row.getAttribute('data-gender') || '').toLowerCase();
+            const rStatus = (row.getAttribute('data-status') || '').toLowerCase();
 
-        document.getElementById('edit_project_name').value = project.project_name || '';
-        document.getElementById('edit_sponsor').value = project.sponsor || '';
-        document.getElementById('edit_project_spec').value = project.project_spec || '';
-        document.getElementById('edit_agency_project_no').value = project.agency_project_no || '';
-        document.getElementById('edit_donor_id').value = project.donor_id || '';
-        document.getElementById('edit_project_manager_id').value = project.project_manager_id || '';
-        document.getElementById('edit_engineer_id').value = project.engineer_id || '';
-        document.getElementById('edit_available_budget').value = project.available_budget || '';
-        document.getElementById('edit_remarks').value = project.remarks || '';
-        const currentProj = (typeof project !== 'undefined' ? project : (typeof projectData !== 'undefined' ? projectData : {}));
-        document.getElementById('edit_theme').value = currentProj.theme || '';
-        populateSubthemes('edit_theme', 'edit_subtheme', currentProj.subtheme || '');
-        document.getElementById('edit_activity').value = currentProj.activity || '';
+            const matchesSearch = !filter || rSearch.includes(filter);
+            const matchesState = selState === 'all' || rState === selState;
+            const matchesDistrict = selDistrict === 'all' || rDistrict === selDistrict;
+            const matchesAgency = selAgency === 'all' || rAgency === selAgency;
+            const matchesCluster = selCluster === 'all' || rCluster === selCluster;
+            const matchesGender = selGender === 'all' || rGender === selGender;
+            const matchesStatus = selStatus === 'all' || rStatus === selStatus;
 
-        document.getElementById('editProjectModal').style.display = 'flex';
-    }
-
-    function closeEditModal() {
-        const modal = document.getElementById('editProjectModal') || document.getElementById('editAppModal') || document.getElementById('editModal');
-        if (modal) {
-            modal.style.display = 'none';
-        } else {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-        }
-    }
-
-    function initProjectFilters() {
-            const filterManager = document.getElementById('filterManager');
-            const filterAgency = document.getElementById('filterAgency');
-            const filterDistrict = document.getElementById('filterDistrict');
-            const filterState = document.getElementById('filterState');
-            
-            if (!filterManager && !filterAgency && !filterDistrict && !filterState) return;
-
-            const managers = new Set();
-            const agencies = new Set();
-            const districts = new Set();
-            const states = new Set();
-
-            const rows = document.querySelectorAll('#projectsTable tbody tr.project-row');
-            rows.forEach(row => {
-                const m = row.getAttribute('data-manager-display') || row.getAttribute('data-manager');
-                const a = row.getAttribute('data-agency-display') || row.getAttribute('data-agency');
-                const d = row.getAttribute('data-district-display') || row.getAttribute('data-district');
-                const s = row.getAttribute('data-state-display') || row.getAttribute('data-state');
-
-                if (m && m.toLowerCase() !== 'n/a') managers.add(m.trim());
-                if (a && a.toLowerCase() !== 'n/a') agencies.add(a.trim());
-                if (d && d.toLowerCase() !== 'n/a') districts.add(d.trim());
-                if (s && s.toLowerCase() !== 'n/a') states.add(s.trim());
-            });
-
-            populateSelectOptions(filterManager, managers, 'All Project Managers');
-            populateSelectOptions(filterAgency, agencies, 'All Agencies');
-            populateSelectOptions(filterDistrict, districts, 'All Districts');
-            populateSelectOptions(filterState, states, 'All States');
-        }
-
-        function populateSelectOptions(selectEl, setValues, defaultText) {
-            if (!selectEl) return;
-            const currentVal = selectEl.value;
-            selectEl.innerHTML = `<option value="">${defaultText}</option>`;
-            Array.from(setValues).sort().forEach(val => {
-                const opt = document.createElement('option');
-                opt.value = val.toLowerCase();
-                opt.textContent = val;
-                if (val.toLowerCase() === currentVal.toLowerCase()) {
-                    opt.selected = true;
-                }
-                selectEl.appendChild(opt);
-            });
-        }
-
-        function filterTable() {
-            const input = document.getElementById('tableSearch');
-            const filter = input ? input.value.toLowerCase().trim() : '';
-            const selManager = (document.getElementById('filterManager')?.value || '').toLowerCase().trim();
-            const selAgency = (document.getElementById('filterAgency')?.value || '').toLowerCase().trim();
-            const selDistrict = (document.getElementById('filterDistrict')?.value || '').toLowerCase().trim();
-            const selState = (document.getElementById('filterState')?.value || '').toLowerCase().trim();
-
-            const table = document.getElementById('projectsTable');
-            if (!table) return;
-
-            const rows = table.querySelectorAll('tbody tr.project-row');
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const rManager = (row.getAttribute('data-manager') || '').toLowerCase();
-                const rAgency = (row.getAttribute('data-agency') || '').toLowerCase();
-                const rDistrict = (row.getAttribute('data-district') || '').toLowerCase();
-                const rState = (row.getAttribute('data-state') || '').toLowerCase();
-                const rText = (row.textContent || row.innerText || '').toLowerCase();
-
-                const matchesSearch = !filter || rText.includes(filter);
-                const matchesManager = !selManager || rManager === selManager;
-                const matchesAgency = !selAgency || rAgency === selAgency;
-                const matchesDistrict = !selDistrict || rDistrict === selDistrict;
-                const matchesState = !selState || rState === selState;
-
-                if (matchesSearch && matchesManager && matchesAgency && matchesDistrict && matchesState) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+            if (matchesSearch && matchesState && matchesDistrict && matchesAgency && matchesCluster && matchesGender && matchesStatus) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            initProjectFilters();
-        });
-
-    var themesData = {
-        @foreach($themes as $t)
-            "{{ $t->id }}": [
-                @foreach($subthemes->where('theme_id', $t->id) as $st)
-                    {!! json_encode($st->name) !!},
-                @endforeach
-            ],
-        @endforeach
-    };
-
-    function populateSubthemes(themeId, subthemeId, selectedSubtheme = '') {
-        const themeSelect = document.getElementById(themeId);
-        const subthemeSelect = document.getElementById(subthemeId);
-        if (!themeSelect || !subthemeSelect) return;
-
-        const selectedOption = themeSelect.options[themeSelect.selectedIndex];
-        const themeIdVal = selectedOption ? selectedOption.getAttribute('data-theme-id') : null;
-        subthemeSelect.innerHTML = '<option value="">Select Subtheme</option>';
-
-        if (themeIdVal && themesData[themeIdVal]) {
-            themesData[themeIdVal].forEach(sub => {
-                const option = document.createElement('option');
-                option.value = sub;
-                option.textContent = sub;
-                if (sub === selectedSubtheme) {
-                    option.selected = true;
-                }
-                subthemeSelect.appendChild(option);
-            });
+        const countBadge = document.getElementById('projectCountBadge');
+        if (countBadge) {
+            countBadge.textContent = `${visibleCount} ${visibleCount === 1 ? 'Project' : 'Projects'}`;
         }
+
+        if (typeof updateExportUrl === 'function') {
+            updateExportUrl();
+        }
+    }
+
+    function updateExportUrl() {
+        const btns = document.querySelectorAll('.btn-export-csv, #excelExportBtn');
+        if (!btns.length) return;
+        const baseUrl = "{{ route('projects.export', 'differently-abled') }}";
+        const params = new URLSearchParams();
+        
+        const searchVal = document.getElementById('tableSearch')?.value;
+        const stateVal = document.getElementById('stateFilter')?.value;
+        const districtVal = document.getElementById('districtFilter')?.value;
+        const agencyVal = document.getElementById('agencyFilter')?.value;
+        const clusterVal = document.getElementById('clusterFilter')?.value;
+        const genderVal = document.getElementById('genderFilter')?.value;
+        const statusVal = document.getElementById('statusFilter')?.value;
+
+        if (searchVal) params.append('search', searchVal);
+        if (stateVal && stateVal !== 'all') params.append('state', stateVal);
+        if (districtVal && districtVal !== 'all') params.append('district', districtVal);
+        if (agencyVal && agencyVal !== 'all') params.append('agency', agencyVal);
+        if (clusterVal && clusterVal !== 'all') params.append('cluster', clusterVal);
+        if (genderVal && genderVal !== 'all') params.append('gender', genderVal);
+        if (statusVal && statusVal !== 'all') params.append('status', statusVal);
+
+        const queryString = params.toString();
+        const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+        btns.forEach(btn => {
+            if (btn.tagName === 'A') {
+                btn.href = fullUrl;
+            }
+        });
+    }
+
+    function resetFilters() {
+        const searchInput = document.getElementById('tableSearch');
+        if (searchInput) searchInput.value = '';
+        const stateSelect = document.getElementById('stateFilter');
+        if (stateSelect) stateSelect.value = 'all';
+        const districtSelect = document.getElementById('districtFilter');
+        if (districtSelect) districtSelect.value = 'all';
+        const agencySelect = document.getElementById('agencyFilter');
+        if (agencySelect) agencySelect.value = 'all';
+        const clusterSelect = document.getElementById('clusterFilter');
+        if (clusterSelect) clusterSelect.value = 'all';
+        const genderSelect = document.getElementById('genderFilter');
+        if (genderSelect) genderSelect.value = 'all';
+        const statusSelect = document.getElementById('statusFilter');
+        if (statusSelect) statusSelect.value = 'all';
+
+        filterTable();
     }
 
     async function handleAddProgrammeSubmit(e) {
         e.preventDefault();
         const form = e.target;
         
-        // Close modal IMMEDIATELY
         if (typeof closeAddProgrammeModal === 'function') {
             closeAddProgrammeModal();
         }
@@ -837,123 +699,6 @@
     }
     window.handleAddProgrammeSubmit = handleAddProgrammeSubmit;
 
-    async function handleDeleteProgramme(btnElement, progId, deleteUrl) {
-        if (!confirm('Are you sure you want to delete this programme? This action cannot be undone.')) {
-            return;
-        }
-
-        const row = btnElement ? btnElement.closest('tr') : null;
-        if (row) {
-            row.style.opacity = '0.5';
-            row.style.pointerEvents = 'none';
-        }
-
-        try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '{{ csrf_token() }}';
-            const response = await fetch(deleteUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    _method: 'DELETE'
-                })
-            });
-
-            const data = await response.json();
-            if (response.ok && data.success) {
-                if (row) {
-                    row.style.transition = 'all 0.3s ease';
-                    row.style.opacity = '0';
-                    row.style.transform = 'translateX(20px)';
-                    setTimeout(() => {
-                        row.remove();
-                        if (typeof updateProgrammeTableSerialNumbers === 'function') {
-                            updateProgrammeTableSerialNumbers();
-                        }
-                    }, 300);
-                } else {
-                    window.location.reload();
-                }
-                if (typeof showToast === 'function') {
-                    showToast(data.message || 'Programme deleted successfully!', 'success');
-                }
-            } else {
-                if (row) {
-                    row.style.opacity = '1';
-                    row.style.pointerEvents = 'auto';
-                }
-                alert(data.error || 'Failed to delete programme.');
-            }
-        } catch (err) {
-            console.error(err);
-            if (row) {
-                row.style.opacity = '1';
-                row.style.pointerEvents = 'auto';
-            }
-            alert('An error occurred while deleting programme.');
-        }
-    }
-    window.handleDeleteProgramme = handleDeleteProgramme;
-
-    async function toggleProgrammeChecklistTick(btnElement, progIndex, field) {
-        window.toggleProgrammeChecklistTick = toggleProgrammeChecklistTick;
-        const icon = btnElement ? btnElement.querySelector('i') : null;
-        const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '{{ csrf_token() }}';
-
-        try {
-            if (btnElement) {
-                btnElement.style.transform = 'scale(0.9)';
-                setTimeout(() => btnElement.style.transform = 'scale(1)', 150);
-            }
-
-            const response = await fetch(`/admin/projects/{{ $projectRouteSlug ?? "orphan-care" }}/{{ $project->id ?? 0 }}/toggle-programme-tick`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({
-                    programme_id: progIndex,
-                    field: field
-                })
-            });
-
-            const result = await response.json();
-            if (response.ok && result.success) {
-                if (btnElement) {
-                    if (result.is_ticked) {
-                        if (icon) icon.className = 'bx bxs-check-circle';
-                        btnElement.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
-                        btnElement.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-                        btnElement.style.color = '#059669';
-                    } else {
-                        if (icon) icon.className = 'bx bx-circle';
-                        btnElement.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
-                        btnElement.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                        btnElement.style.color = '#d97706';
-                    }
-                }
-
-                if (typeof showToast === 'function') {
-                    showToast(result.message, 'success');
-                }
-            } else {
-                alert(result.error || 'Failed to toggle tick status.');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('An error occurred while updating status.');
-        }
-    }
-    window.toggleProgrammeChecklistTick = toggleProgrammeChecklistTick;
-
-
-
     window.openAddProgrammeModal = function openAddProgrammeModal(param) {
         let projectId, projectName, agencyNo;
 
@@ -967,10 +712,6 @@
             agencyNo = param.agency_project_no;
         } else {
             projectId = param;
-        }
-
-        if (!projectId) {
-            projectId = "{{ $project->id ?? '' }}";
         }
 
         const modal = document.getElementById('addProgrammeModal');
@@ -1049,18 +790,6 @@
     }
     window.toggleSuspend = toggleSuspend;
 
-
-        // Global Window Bindings
-        window.openModal = openModal;
-        window.closeModal = closeModal;
-        window.openEditModal = openEditModal;
-        window.closeEditModal = closeEditModal;
-    
-    function closeProgrammeModal() {
-        const modal = document.getElementById('addProgrammeModal');
-        if (modal) modal.style.display = 'none';
-    }
-
 </script>
 
 <!-- Add Programme Modal -->
@@ -1068,7 +797,7 @@
     <div class="modal-content-custom" style="max-width: 600px; max-height: 90vh; overflow-y: auto; background-color: var(--panel-bg); border: 1px solid var(--panel-border); padding: 2rem; border-radius: 12px;">
         <div class="modal-header-custom" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3 style="margin: 0; color: var(--text-main); font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">ADD NEW PROGRAMME</h3>
-            
+            <button type="button" class="modal-close-btn" onclick="closeAddProgrammeModal()" title="Close">&times;</button>
         </div>
 
         <form id="addProgrammeForm" method="POST" action="" onsubmit="handleAddProgrammeSubmit(event); return false;">
@@ -1088,16 +817,12 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div style="grid-column: span 2;">
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Programme Name *</label>
-                    <select name="programme_name" id="diff_add_prog_name_select" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" onchange="if(typeof toggleSpecifyProgrammeField === 'function') toggleSpecifyProgrammeField(this, 'diff_add_prog_other_name_wrapper', 'diff_add_prog_other_name_input')">
+                    <select name="programme_name" id="diff_add_prog_name_select" required class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                         <option value="" disabled selected>-- Select Programme --</option>
                         <option value="Cluster Camp">Cluster Camp</option>
                         <option value="Report Collection Programme">Report Collection Programme</option>
                         <option value="Others">Others</option>
                     </select>
-                </div>
-                <div id="diff_add_prog_other_name_wrapper" style="grid-column: span 2; display: none;">
-                    <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Specify Programme Name *</label>
-                    <input type="text" id="diff_add_prog_other_name_input" name="other_programme_name" placeholder="Enter custom programme name..." class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                 </div>
                 <div>
                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 600;">Date *</label>
@@ -1154,6 +879,4 @@
     </div>
 </div>
 
-
 @endsection
-

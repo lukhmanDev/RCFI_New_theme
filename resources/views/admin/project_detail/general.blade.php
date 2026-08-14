@@ -1054,7 +1054,7 @@
                             <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--panel-border); padding: 1.5rem; border-radius: 8px; position: relative;">
                                 @if($isProjectManager && $hasApplication && !$isLockedForEditing)
                                     <div style="position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; z-index: 10;">
-                                        <button onclick="openEditContractorModal({{ $index }}, {{ json_encode($contractor) }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
+                                        <button type="button" onclick="openEditContractorModal({{ $index }})" class="btn-custom" style="background: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.25rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 0;" title="Edit">
                                             <i class="bx bx-pencil"></i>
                                         </button>
                                         <form action="{{ route('projects.delete_contractor', [$project->id, $index]) }}" method="POST" style="display: inline-flex; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this contractor?');">
@@ -2625,7 +2625,12 @@
             const modal = document.getElementById('addContractorModal');
             if (modal) modal.style.display = 'none';
         }
+        window.projectContractorsList = @json(array_values($contractors ?? []));
+
         function openEditContractorModal(index, contractorData) {
+            if (!contractorData && window.projectContractorsList && window.projectContractorsList[index]) {
+                contractorData = window.projectContractorsList[index];
+            }
             switchStage(3);
             const form = document.getElementById('editContractorForm');
             if (form) form.setAttribute('action', `/admin/projects/{{ $project->id }}/contractors/${index}`);
