@@ -264,6 +264,19 @@ class User extends Authenticatable
         return $isSuperAdmin || $isCoo || $isHod || $isPm || $isEngineer;
     }
 
+    public function canManageMasterData(): bool
+    {
+        if ($this->isPm() || $this->isEngineer() || $this->isOthers() || $this->isEmployee()) {
+            return false;
+        }
+        $designationLower = strtolower(trim($this->designation ?? ''));
+        if (str_contains($designationLower, 'project manager') || str_contains($designationLower, 'engineer') || str_contains($designationLower, 'employee')) {
+            return false;
+        }
+
+        return $this->isSuperAdmin() || $this->isCoo() || $this->isHod();
+    }
+
     public function canDownloadExcel(): bool
     {
         return !$this->isOthers();
@@ -313,10 +326,15 @@ class User extends Authenticatable
 
     public function getProfilePhotoUrlAttribute()
     {
-        if ($this->profile && $this->profile->photo) {
-            return asset($this->profile->photo);
+        if ($this->profile && !empty($this->profile->photo)) {
+            $photo = $this->profile->photo;
+            if (str_starts_with($photo, 'http://') || str_starts_with($photo, 'https://')) {
+                return $photo;
+            }
+            return asset($photo);
         }
-        return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6WbkrAqlGF2Xzmb-prbginrkDNrv6zT05ID6KEjTbP2F-gn9w-wg1L3_NiSeXLq3HsqI&usqp=CAU';
+
+        return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSs8dhSiHOEzW9_vEHj6VVV4GvlooCTlYB-4lyypRqsQw&s=10';
     }
 
     public function getAssignedProjectsAttribute()
@@ -535,13 +553,13 @@ class User extends Authenticatable
             return false;
         }
 
-        // Other Leave (OL) can only be granted / assigned by HR HOD, COO, or Super Admin
+        // Other Leave (OL) can only be granted / assigned by HOD, HR HOD, COO, or Super Admin
         if ($type->leave_code === 'OL' || $type->leave_code === 'OTHER') {
             $actor = auth()->user() ?? $this;
-            return $actor->isSuperAdmin() || $actor->isCoo() || (bool)$actor->is_hr;
+            return $actor->isSuperAdmin() || $actor->isCoo() || (bool)$actor->is_hr || $actor->isHod();
         }
 
-        // Leave Without Pay (LWP) is available to all users unconditionally
+        // Leave Without Pay (LWP) is available to all users and HODs
         if ($type->leave_code === 'LWP' || ($type->accrual_type === 'None' && $type->leave_code !== 'OL')) {
             return true;
         }
@@ -588,40 +606,82 @@ class User extends Authenticatable
     {
         $today = now()->format('Y-m-d');
 
-        $activeLeave = $this->leaveRequests()
-            ->where('status', 'Approved')
-            ->where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
-            ->with('leaveType')
-            ->first();
+        if ($this->relationLoaded('leaveRequests')) {
+            $activeLeave = $this->leaveRequests
+                ->where('status', 'Approved')
+                ->filter(function($req) use ($today) {
+                    $start = $req->start_date ? (is_string($req->start_date) ? substr($req->start_date, 0, 10) : $req->start_date->format('Y-m-d')) : null;
+                    $end = $req->end_date ? (is_string($req->end_date) ? substr($req->end_date, 0, 10) : $req->end_date->format('Y-m-d')) : null;
+                    return $start && $end && $start <= $today && $end >= $today;
+                })
+                ->first();
 
-        if ($activeLeave) {
-            $code = strtolower($activeLeave->leaveType->leave_code ?? 'leave');
-            return [
-                'status' => 'On Leave',
-                'badge_style' => 'background: #fffbeb; color: #d97706; border: 1px solid #fef3c7;',
-                'type' => $activeLeave->leaveType->leave_name ?? 'Leave',
-                'code' => $code . '_leave',
-                'dates' => \Carbon\Carbon::parse($activeLeave->start_date)->format('M d') . ' - ' . \Carbon\Carbon::parse($activeLeave->end_date)->format('M d'),
-                'is_on_leave' => true,
-            ];
-        }
+            if ($activeLeave) {
+                $code = strtolower($activeLeave->leaveType->leave_code ?? 'leave');
+                return [
+                    'status' => 'On Leave',
+                    'badge_style' => 'background: #fffbeb; color: #d97706; border: 1px solid #fef3c7;',
+                    'type' => $activeLeave->leaveType->leave_name ?? 'Leave',
+                    'code' => $code . '_leave',
+                    'dates' => \Carbon\Carbon::parse($activeLeave->start_date)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($activeLeave->end_date)->format('d/m/Y'),
+                    'is_on_leave' => true,
+                ];
+            }
 
-        $pendingLeave = $this->leaveRequests()
-            ->where('status', 'Pending')
-            ->where('start_date', '>=', $today)
-            ->with('leaveType')
-            ->first();
+            $pendingLeave = $this->leaveRequests
+                ->where('status', 'Pending')
+                ->filter(function($req) use ($today) {
+                    $start = $req->start_date ? (is_string($req->start_date) ? substr($req->start_date, 0, 10) : $req->start_date->format('Y-m-d')) : null;
+                    return $start && $start >= $today;
+                })
+                ->first();
 
-        if ($pendingLeave) {
-            return [
-                'status' => 'Pending Request',
-                'badge_style' => 'background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;',
-                'type' => $pendingLeave->leaveType->leave_name ?? 'Pending Leave',
-                'code' => 'pending',
-                'dates' => \Carbon\Carbon::parse($pendingLeave->start_date)->format('M d') . ' - ' . \Carbon\Carbon::parse($pendingLeave->end_date)->format('M d'),
-                'is_on_leave' => false,
-            ];
+            if ($pendingLeave) {
+                return [
+                    'status' => 'Pending Request',
+                    'badge_style' => 'background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;',
+                    'type' => $pendingLeave->leaveType->leave_name ?? 'Pending Leave',
+                    'code' => 'pending',
+                    'dates' => \Carbon\Carbon::parse($pendingLeave->start_date)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($pendingLeave->end_date)->format('d/m/Y'),
+                    'is_on_leave' => false,
+                ];
+            }
+        } else {
+            $activeLeave = $this->leaveRequests()
+                ->where('status', 'Approved')
+                ->where('start_date', '<=', $today)
+                ->where('end_date', '>=', $today)
+                ->with('leaveType')
+                ->first();
+
+            if ($activeLeave) {
+                $code = strtolower($activeLeave->leaveType->leave_code ?? 'leave');
+                return [
+                    'status' => 'On Leave',
+                    'badge_style' => 'background: #fffbeb; color: #d97706; border: 1px solid #fef3c7;',
+                    'type' => $activeLeave->leaveType->leave_name ?? 'Leave',
+                    'code' => $code . '_leave',
+                    'dates' => \Carbon\Carbon::parse($activeLeave->start_date)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($activeLeave->end_date)->format('d/m/Y'),
+                    'is_on_leave' => true,
+                ];
+            }
+
+            $pendingLeave = $this->leaveRequests()
+                ->where('status', 'Pending')
+                ->where('start_date', '>=', $today)
+                ->with('leaveType')
+                ->first();
+
+            if ($pendingLeave) {
+                return [
+                    'status' => 'Pending Request',
+                    'badge_style' => 'background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;',
+                    'type' => $pendingLeave->leaveType->leave_name ?? 'Pending Leave',
+                    'code' => 'pending',
+                    'dates' => \Carbon\Carbon::parse($pendingLeave->start_date)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($pendingLeave->end_date)->format('d/m/Y'),
+                    'is_on_leave' => false,
+                ];
+            }
         }
 
         return [

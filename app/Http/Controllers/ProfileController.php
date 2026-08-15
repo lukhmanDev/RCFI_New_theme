@@ -245,15 +245,20 @@ class ProfileController extends Controller
     /**
      * Compress and save uploaded image if size exceeds 2 MB (or has large dimensions).
      */
-    private function compressAndSaveImage($file, $destinationPath, $maxSizeBytes = 2097152)
+    private function compressAndSaveImage($file, $destinationPath, $maxSizeBytes = 1048576)
     {
-        $tempPath = $file->getRealPath();
-        $fileSize = filesize($tempPath);
-
         $dir = dirname($destinationPath);
         if (!file_exists($dir)) {
             mkdir($dir, 0755, true);
         }
+
+        // If GD extension is not installed/enabled, move file directly
+        if (!extension_loaded('gd') || !function_exists('imagecreatetruecolor') || !function_exists('imagecreatefromjpeg')) {
+            return $file->move($dir, basename($destinationPath));
+        }
+
+        $tempPath = $file->getRealPath();
+        $fileSize = @filesize($tempPath);
 
         $imageInfo = @getimagesize($tempPath);
         if (!$imageInfo) {
@@ -271,19 +276,19 @@ class ProfileController extends Controller
         $srcImage = null;
         switch ($mime) {
             case 'image/jpeg':
-                $srcImage = @imagecreatefromjpeg($tempPath);
+                $srcImage = function_exists('imagecreatefromjpeg') ? @imagecreatefromjpeg($tempPath) : null;
                 break;
             case 'image/png':
-                $srcImage = @imagecreatefrompng($tempPath);
+                $srcImage = function_exists('imagecreatefrompng') ? @imagecreatefrompng($tempPath) : null;
                 break;
             case 'image/webp':
-                $srcImage = @imagecreatefromwebp($tempPath);
+                $srcImage = function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($tempPath) : null;
                 break;
             case 'image/avif':
                 $srcImage = function_exists('imagecreatefromavif') ? @imagecreatefromavif($tempPath) : null;
                 break;
             case 'image/gif':
-                $srcImage = @imagecreatefromgif($tempPath);
+                $srcImage = function_exists('imagecreatefromgif') ? @imagecreatefromgif($tempPath) : null;
                 break;
         }
 
@@ -302,35 +307,43 @@ class ProfileController extends Controller
             $newHeight = (int)round($newHeight * $ratio);
         }
 
-        $destImage = imagecreatetruecolor($newWidth, $newHeight);
-
-        if ($mime === 'image/png' || $mime === 'image/webp') {
-            imagealphablending($destImage, false);
-            imagesavealpha($destImage, true);
-            $transparent = imagecolorallocatealpha($destImage, 255, 255, 255, 127);
-            imagefilledrectangle($destImage, 0, 0, $newWidth, $newHeight, $transparent);
+        $destImage = @imagecreatetruecolor($newWidth, $newHeight);
+        if (!$destImage) {
+            @imagedestroy($srcImage);
+            return $file->move($dir, basename($destinationPath));
         }
 
-        imagecopyresampled($destImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+        if ($mime === 'image/png' || $mime === 'image/webp') {
+            @imagealphablending($destImage, false);
+            @imagesavealpha($destImage, true);
+            $transparent = @imagecolorallocatealpha($destImage, 255, 255, 255, 127);
+            @imagefilledrectangle($destImage, 0, 0, $newWidth, $newHeight, $transparent);
+        }
 
-        if ($mime === 'image/png') {
+        @imagecopyresampled($destImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        if ($mime === 'image/png' && function_exists('imagepng')) {
             @imagepng($destImage, $destinationPath, 6);
-        } elseif ($mime === 'image/webp') {
+        } elseif ($mime === 'image/webp' && function_exists('imagewebp')) {
             @imagewebp($destImage, $destinationPath, 80);
         } elseif ($mime === 'image/avif' && function_exists('imageavif')) {
             @imageavif($destImage, $destinationPath, 80);
-        } else {
+        } elseif (function_exists('imagejpeg')) {
             @imagejpeg($destImage, $destinationPath, 80);
+        } else {
+            @imagedestroy($srcImage);
+            @imagedestroy($destImage);
+            return $file->move($dir, basename($destinationPath));
         }
 
-        imagedestroy($srcImage);
-        imagedestroy($destImage);
+        @imagedestroy($srcImage);
+        @imagedestroy($destImage);
 
-        if (file_exists($destinationPath) && filesize($destinationPath) > $maxSizeBytes) {
+        if (file_exists($destinationPath) && filesize($destinationPath) > $maxSizeBytes && function_exists('imagecreatefromjpeg')) {
             $secondSrc = @imagecreatefromjpeg($destinationPath);
             if ($secondSrc) {
                 @imagejpeg($secondSrc, $destinationPath, 60);
-                imagedestroy($secondSrc);
+                @imagedestroy($secondSrc);
             }
         }
 

@@ -93,10 +93,15 @@ class ApplicationController extends Controller
         $totalProjectCounts = [];
         foreach ($this->categories as $slug => $config) {
             $model = $config['model'];
-            $counts[$config['name']] = $model::count();
-            $pendingCounts[$config['name']] = $model::where('status', 'Pending')->count();
-            $approvedProjectCounts[$config['name']] = $model::where('status', 'Approved')->count();
-            $totalProjectCounts[$config['name']] = $model::count();
+            $stats = $model::selectRaw("
+                count(*) as total,
+                sum(case when status = 'Pending' then 1 else 0 end) as pending,
+                sum(case when status = 'Approved' then 1 else 0 end) as approved
+            ")->first();
+            $counts[$config['name']] = (int)($stats->total ?? 0);
+            $pendingCounts[$config['name']] = (int)($stats->pending ?? 0);
+            $approvedProjectCounts[$config['name']] = (int)($stats->approved ?? 0);
+            $totalProjectCounts[$config['name']] = (int)($stats->total ?? 0);
         }
 
         $categories = $this->categories;
@@ -1643,7 +1648,7 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'You are not authorized to update sponsor status.');
         }
 
-        $category = $request->input('category');
+        $category = $request->input('category') ?: $request->route('category') ?: $request->segment(3);
         $app = $this->findSocialAidApplication($id, $category);
         if (!$app) {
             if ($isJson) {
@@ -1653,10 +1658,10 @@ class ApplicationController extends Controller
         }
 
         try {
-            $meta = $app->meta ?? [];
-            unset($meta['sponsor_status']);
+            $currentStatus = $app->sponsor_status ?? 'Not Sponsored';
+            $sponsoredDate = $request->input('sponsored_date', date('Y-m-d'));
 
-            if ($app->sponsor_status === 'Sponsored' && !$request->has('sponsored_date')) {
+            if ($currentStatus === 'Sponsored' && !$request->has('sponsored_date')) {
                 if (!$user->isSuperAdmin()) {
                     if ($isJson) {
                         return response()->json(['success' => false, 'error' => 'Only Super Admin can un-sponsor applications.'], 403);
@@ -1665,13 +1670,22 @@ class ApplicationController extends Controller
                 }
 
                 $app->sponsor_status = 'Not Sponsored';
-                unset($meta['sponsored_date']);
+                if (\Illuminate\Support\Facades\Schema::hasColumn($app->getTable(), 'sponsorship_details')) {
+                    $app->sponsorship_details = null;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn($app->getTable(), 'sponsored_date')) {
+                    $app->sponsored_date = null;
+                }
             } else {
                 $app->sponsor_status = 'Sponsored';
-                $meta['sponsored_date'] = $request->input('sponsored_date', date('Y-m-d'));
+                if (\Illuminate\Support\Facades\Schema::hasColumn($app->getTable(), 'sponsorship_details')) {
+                    $app->sponsorship_details = $sponsoredDate;
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn($app->getTable(), 'sponsored_date')) {
+                    $app->sponsored_date = $sponsoredDate;
+                }
             }
 
-            $app->meta = $meta;
             $app->save();
 
             if ($isJson) {
@@ -1679,7 +1693,7 @@ class ApplicationController extends Controller
                     'success' => true,
                     'message' => 'Sponsor status updated successfully.',
                     'sponsor_status' => $app->sponsor_status,
-                    'sponsored_date' => $meta['sponsored_date'] ?? null
+                    'sponsored_date' => $app->sponsorship_details ?? ($app->sponsored_date ?? $sponsoredDate)
                 ]);
             }
 

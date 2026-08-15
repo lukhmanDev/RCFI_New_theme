@@ -10,15 +10,14 @@
     <!-- Premium Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+    <script src="{{ asset('js/india_states_geo.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <script>
-        if (typeof Chart === 'undefined') {
-            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"><\/script>');
-        }
         window.BROADCAST_DRIVER = "{{ config('broadcasting.default', env('BROADCAST_CONNECTION', 'log')) }}";
         if (typeof window.Echo === 'undefined') {
             const createDummyEcho = function() {
@@ -270,7 +269,7 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            border: 2px solid var(--accent-purple);
+            border: 2px solid #10b981;
             object-fit: cover;
             flex-shrink: 0;
         }
@@ -973,7 +972,7 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            border: 2px solid var(--accent-purple);
+            border: 2px solid #10b981;
             object-fit: cover;
             flex-shrink: 0;
         }
@@ -1569,10 +1568,11 @@
 
         let activeConfirmCallback = null;
         let activeConfirmIsRejection = false;
+        let activeConfirmIsSponsorDate = false;
         const originalNativeConfirm = window.confirm;
         window.originalNativeConfirm = originalNativeConfirm;
 
-        function showCustomConfirm(message, callback, isRejection = false) {
+        function showCustomConfirm(message, callback, isRejection = false, isSponsorDate = false) {
             const modal = document.getElementById('customConfirmModal');
             const msgEl = document.getElementById('customConfirmMessage');
 
@@ -1589,6 +1589,15 @@
             activeConfirmCallback = callback;
             activeConfirmIsRejection = isRejection;
 
+            const isUntick = message.toLowerCase().includes('untick');
+            const isSponsor = message.toLowerCase().includes('sponsor') && !message.toLowerCase().includes('un-sponsor') && !message.toLowerCase().includes('unsponsor');
+            const isUnsponsor = message.toLowerCase().includes('un-sponsor') || message.toLowerCase().includes('unsponsor');
+            const isSuspend = message.toLowerCase().includes('suspend');
+            const isActivate = message.toLowerCase().includes('activate') || message.toLowerCase().includes('reactivate');
+            const isDelete = message.toLowerCase().includes('delete') || message.toLowerCase().includes('remove');
+            
+            activeConfirmIsSponsorDate = isSponsorDate || isSponsor;
+
             const panel = modal.querySelector('.confirm-panel');
             const iconBox = modal.querySelector('.confirm-icon-box');
             const icon = iconBox ? iconBox.querySelector('i') : null;
@@ -1597,17 +1606,25 @@
             const remarksInput = document.getElementById('confirmRemarksInput');
             const remarksError = document.getElementById('confirmRemarksError');
 
+            const sponsorDateContainer = document.getElementById('confirmSponsorDateContainer');
+            const sponsorDateInput = document.getElementById('confirmSponsorDateInput');
+            const sponsorDateError = document.getElementById('confirmSponsorDateError');
+
             if (remarksError) remarksError.style.display = 'none';
             if (remarksInput) remarksInput.style.borderColor = '#374151';
-            
-            const isUntick = message.toLowerCase().includes('untick');
-            const isSponsor = message.toLowerCase().includes('sponsor');
-            const isSuspend = message.toLowerCase().includes('suspend');
-            const isReactivate = message.toLowerCase().includes('reactivate');
+            if (sponsorDateError) sponsorDateError.style.display = 'none';
+            if (sponsorDateInput) sponsorDateInput.style.borderColor = '#374151';
             
             if (remarksContainer) {
                 remarksContainer.style.display = isRejection ? 'block' : 'none';
                 if (remarksInput) remarksInput.value = '';
+            }
+
+            if (sponsorDateContainer) {
+                sponsorDateContainer.style.display = activeConfirmIsSponsorDate ? 'block' : 'none';
+                if (sponsorDateInput) {
+                    sponsorDateInput.value = new Date().toISOString().split('T')[0];
+                }
             }
 
             if (isRejection) {
@@ -1631,28 +1648,7 @@
                 if (icon) {
                     icon.className = 'bx bx-x-circle';
                 }
-            } else if (isSuspend) {
-                if (panel) {
-                    panel.classList.remove('confirm-warning');
-                    panel.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                }
-                if (iconBox) {
-                    iconBox.classList.remove('confirm-warning');
-                    iconBox.style.backgroundColor = 'rgba(245, 158, 11, 0.12)';
-                    iconBox.style.color = '#f59e0b';
-                    iconBox.style.borderColor = 'rgba(245, 158, 11, 0.25)';
-                    iconBox.style.animation = 'none';
-                }
-                if (okBtn) {
-                    okBtn.classList.remove('confirm-warning');
-                    okBtn.innerText = 'Suspend';
-                    okBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
-                    okBtn.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.25)';
-                }
-                if (icon) {
-                    icon.className = 'bx bx-lock-alt';
-                }
-            } else if (isReactivate) {
+            } else if (isSponsor) {
                 if (panel) {
                     panel.classList.remove('confirm-warning');
                     panel.style.borderColor = 'rgba(16, 185, 129, 0.3)';
@@ -1666,12 +1662,75 @@
                 }
                 if (okBtn) {
                     okBtn.classList.remove('confirm-warning');
-                    okBtn.innerText = 'Reactivate';
+                    okBtn.innerText = 'Sponsor';
                     okBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
                     okBtn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.25)';
                 }
                 if (icon) {
-                    icon.className = 'bx bx-lock-open-alt';
+                    icon.className = 'bx bxs-award';
+                }
+            } else if (isUnsponsor) {
+                if (panel) {
+                    panel.classList.remove('confirm-warning');
+                    panel.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                }
+                if (iconBox) {
+                    iconBox.classList.remove('confirm-warning');
+                    iconBox.style.backgroundColor = 'rgba(239, 68, 68, 0.12)';
+                    iconBox.style.color = '#ef4444';
+                    iconBox.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                    iconBox.style.animation = 'none';
+                }
+                if (okBtn) {
+                    okBtn.classList.remove('confirm-warning');
+                    okBtn.innerText = 'Un-sponsor';
+                    okBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    okBtn.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.25)';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-x';
+                }
+            } else if (isActivate) {
+                if (panel) {
+                    panel.classList.remove('confirm-warning');
+                    panel.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                }
+                if (iconBox) {
+                    iconBox.classList.remove('confirm-warning');
+                    iconBox.style.backgroundColor = 'rgba(16, 185, 129, 0.12)';
+                    iconBox.style.color = '#10b981';
+                    iconBox.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+                    iconBox.style.animation = 'none';
+                }
+                if (okBtn) {
+                    okBtn.classList.remove('confirm-warning');
+                    okBtn.innerText = 'Activate';
+                    okBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    okBtn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.25)';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-user-check';
+                }
+            } else if (isSuspend) {
+                if (panel) {
+                    panel.classList.remove('confirm-warning');
+                    panel.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                }
+                if (iconBox) {
+                    iconBox.classList.remove('confirm-warning');
+                    iconBox.style.backgroundColor = 'rgba(239, 68, 68, 0.12)';
+                    iconBox.style.color = '#ef4444';
+                    iconBox.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                    iconBox.style.animation = 'none';
+                }
+                if (okBtn) {
+                    okBtn.classList.remove('confirm-warning');
+                    okBtn.innerText = 'Suspend';
+                    okBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    okBtn.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.25)';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-user-x';
                 }
             } else if (isUntick) {
                 if (panel) {
@@ -1694,28 +1753,7 @@
                 if (icon) {
                     icon.className = 'bx bx-info-circle';
                 }
-            } else if (isSponsor) {
-                if (panel) {
-                    panel.classList.remove('confirm-warning');
-                    panel.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-                }
-                if (iconBox) {
-                    iconBox.classList.remove('confirm-warning');
-                    iconBox.style.backgroundColor = 'rgba(16, 185, 129, 0.12)';
-                    iconBox.style.color = '#10b981';
-                    iconBox.style.borderColor = 'rgba(16, 185, 129, 0.25)';
-                    iconBox.style.animation = 'none';
-                }
-                if (okBtn) {
-                    okBtn.classList.remove('confirm-warning');
-                    okBtn.innerText = 'Confirm';
-                    okBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                    okBtn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.25)';
-                }
-                if (icon) {
-                    icon.className = 'bx bx-info-circle';
-                }
-            } else {
+            } else if (isDelete) {
                 if (panel) {
                     panel.classList.remove('confirm-warning');
                     panel.style.borderColor = '';
@@ -1736,10 +1774,30 @@
                 if (icon) {
                     icon.className = 'bx bxs-trash-alt';
                 }
+            } else {
+                if (panel) {
+                    panel.classList.remove('confirm-warning');
+                    panel.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                }
+                if (iconBox) {
+                    iconBox.classList.remove('confirm-warning');
+                    iconBox.style.backgroundColor = 'rgba(16, 185, 129, 0.12)';
+                    iconBox.style.color = '#10b981';
+                    iconBox.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+                    iconBox.style.animation = 'none';
+                }
+                if (okBtn) {
+                    okBtn.classList.remove('confirm-warning');
+                    okBtn.innerText = 'Confirm';
+                    okBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    okBtn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.25)';
+                }
+                if (icon) {
+                    icon.className = 'bx bx-check-circle';
+                }
             }
             
             modal.style.display = 'flex';
-            // Force reflow
             modal.offsetHeight;
             modal.classList.add('show');
         }
@@ -1750,6 +1808,10 @@
             const remarksError = document.getElementById('confirmRemarksError');
             const remarks = remarksInput ? remarksInput.value.trim() : '';
 
+            const sponsorDateInput = document.getElementById('confirmSponsorDateInput');
+            const sponsorDateError = document.getElementById('confirmSponsorDateError');
+            const sponsoredDate = sponsorDateInput ? sponsorDateInput.value.trim() : '';
+
             if (confirmed && activeConfirmIsRejection && !remarks) {
                 if (remarksError) remarksError.style.display = 'block';
                 if (remarksInput) {
@@ -1759,18 +1821,35 @@
                 return;
             }
 
+            if (confirmed && activeConfirmIsSponsorDate && !sponsoredDate) {
+                if (sponsorDateError) sponsorDateError.style.display = 'block';
+                if (sponsorDateInput) {
+                    sponsorDateInput.style.borderColor = '#ef4444';
+                    sponsorDateInput.focus();
+                }
+                return;
+            }
+
             if (remarksError) remarksError.style.display = 'none';
             if (remarksInput) remarksInput.style.borderColor = '#374151';
+            if (sponsorDateError) sponsorDateError.style.display = 'none';
+            if (sponsorDateInput) sponsorDateInput.style.borderColor = '#374151';
 
             const callback = activeConfirmCallback;
+            const wasSponsor = activeConfirmIsSponsorDate;
             activeConfirmCallback = null;
             activeConfirmIsRejection = false;
+            activeConfirmIsSponsorDate = false;
             
             modal.classList.remove('show');
             modal.style.display = 'none';
 
             if (confirmed && callback) {
-                callback(remarks);
+                if (wasSponsor) {
+                    callback(sponsoredDate);
+                } else {
+                    callback(remarks);
+                }
             }
         }
 
@@ -3716,6 +3795,11 @@
                 <textarea id="confirmRemarksInput" placeholder="Provide Rejection Reason (Required)..." style="width: 100%; height: 70px; background-color: #1f2937; border: 1px solid #374151; color: #ffffff; padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
                 <div id="confirmRemarksError" style="display: none; color: #ef4444; font-size: 0.8rem; margin-top: 0.35rem; font-weight: 500;">Rejection reason is mandatory.</div>
             </div>
+            <div id="confirmSponsorDateContainer" style="display: none; width: 100%; margin-bottom: 1.5rem; text-align: left; box-sizing: border-box;">
+                <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 0.4rem; font-weight: 600;">Sponsored Date <span style="color: #ef4444;">*</span></label>
+                <input type="date" id="confirmSponsorDateInput" style="width: 100%; height: 42px; background-color: #1f2937; border: 1px solid #374151; color: #ffffff; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box;">
+                <div id="confirmSponsorDateError" style="display: none; color: #ef4444; font-size: 0.8rem; margin-top: 0.35rem; font-weight: 500;">Please select a valid date.</div>
+            </div>
             <div style="display: flex; gap: 1rem; justify-content: center;">
                 <button id="customConfirmCancel" class="confirm-btn-cancel">Cancel</button>
                 <button id="customConfirmOk" class="confirm-btn-ok">Delete</button>
@@ -3839,7 +3923,11 @@
                 const result = await response.json();
                 if (response.ok && result.success) {
                     closeSponsorDateModal();
-                    window.location.reload();
+                    if (typeof window.onSponsorStatusUpdated === 'function') {
+                        window.onSponsorStatusUpdated(appId, result.sponsor_status || 'Sponsored', categorySlug, result.sponsored_date || sponsoredDate);
+                    } else {
+                        window.location.reload();
+                    }
                 } else {
                     alert(result.error || 'Failed to update sponsor status.');
                 }
@@ -3848,6 +3936,10 @@
                 alert('An error occurred while saving sponsorship.');
             }
         }
+
+        window.openSponsorDateModal = openSponsorDateModal;
+        window.closeSponsorDateModal = closeSponsorDateModal;
+        window.submitGlobalSponsorForm = submitGlobalSponsorForm;
 
         function downloadDirectPdf(event, url) {
             if (event) {

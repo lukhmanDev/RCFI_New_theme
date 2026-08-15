@@ -485,7 +485,7 @@
                 <img src="{{ asset('images/logo.png') }}" alt="RCFI Logo" style="height: 38px; width: auto; object-fit: contain; margin-bottom: 2px;"><br>
                 <div class="doc-meta-box">
                     <strong>Project ID:</strong> {{ $projectObj->project_id ?? ($project->project_id ?? '—') }} &nbsp;|&nbsp; 
-                    <strong>Generated:</strong> {{ date('d-M-Y H:i') }} &nbsp;|&nbsp;
+                    <strong>Generated:</strong> {{ date('d/m/Y H:i') }} &nbsp;|&nbsp;
                     <strong>Status:</strong> <span class="status-badge {{ $bClass }}">{{ $statusText }}</span>
                 </div>
             </td>
@@ -938,7 +938,7 @@
                         <tr>
                             <td class="lbl">Start Date</td>
                             <td class="cln">:</td>
-                            <td class="val">{{ isset($projectObj->start_date) ? date('d-M-Y', strtotime($projectObj->start_date)) : (isset($project->start_date) ? date('d-M-Y', strtotime($project->start_date)) : '—') }}</td>
+                            <td class="val">{{ isset($projectObj->start_date) ? date('d/m/Y', strtotime($projectObj->start_date)) : (isset($project->start_date) ? date('d/m/Y', strtotime($project->start_date)) : '—') }}</td>
                         </tr>
                     </table>
                 </td>
@@ -1163,10 +1163,10 @@
             @foreach($inspections as $i => $insp)
             @php
                 $inspDate = !empty($insp->date) 
-                    ? date('d-M-Y', strtotime($insp->date)) 
+                    ? date('d/m/Y', strtotime($insp->date)) 
                     : (!empty($insp->inspection_date) 
-                        ? date('d-M-Y', strtotime($insp->inspection_date)) 
-                        : (!empty($insp->created_at) ? $insp->created_at->format('d-M-Y') : '—'));
+                        ? date('d/m/Y', strtotime($insp->inspection_date)) 
+                        : (!empty($insp->created_at) ? $insp->created_at->format('d/m/Y') : '—'));
                 $inspName = $insp->name ?? ($insp->inspector_name ?? ($insp->inspector ?? '—'));
                 $inspDesig = $insp->designation ?? '';
             @endphp

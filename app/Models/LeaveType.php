@@ -58,6 +58,10 @@ class LeaveType extends Model
 
     public function getIneligibilityReason(User $user): string
     {
+        if ($this->leave_code === 'OL' || $this->leave_code === 'OTHER') {
+            return "Only HOD or Admin can add Other Leave";
+        }
+
         if ($this->applicable_gender !== 'All' && strtolower($user->gender ?? '') !== strtolower($this->applicable_gender)) {
             return "Applies to {$this->applicable_gender} staff only";
         }
@@ -88,6 +92,20 @@ class LeaveType extends Model
     public function getAccruedEntitlementToDate($year = null)
     {
         $allocated = $this->max_days_per_year ?? $this->max_days_lifetime ?? 0;
+
+        if ($this->leave_code === 'SL') {
+            $yearVal = $year ?? now()->year;
+            if ($yearVal < now()->year) {
+                $days = 365;
+            } elseif ($yearVal > now()->year) {
+                $days = 0;
+            } else {
+                $days = now()->dayOfYear;
+            }
+            $accruedSL = floor($days / 36);
+            return (float)min($allocated > 0 ? $allocated : 10.0, $accruedSL);
+        }
+
         if ($this->accrual_type === 'Monthly') {
             $yearVal = $year ?? now()->year;
             if ($yearVal < now()->year) {

@@ -1566,7 +1566,7 @@ class ProjectController extends Controller
                     $now = now();
                     $docRecord->$timeColumn = $now;
                     $ticked = true;
-                    $tickedAtStr = $now->timezone('Asia/Kolkata')->format('d-M-Y h:i A');
+                    $tickedAtStr = $now->timezone('Asia/Kolkata')->format('d/m/Y h:i A');
                     $msg = "$docName ticked.";
                 }
                 $docRecord->save();
@@ -1728,6 +1728,14 @@ class ProjectController extends Controller
             'project_phase_custom' => 'nullable|string|max:255',
         ]);
 
+        $currentSavedStatus = $project->projectStatus ? $project->projectStatus->status : $project->status;
+        if ((strtolower($currentSavedStatus ?? '') === 'completed' || strtolower($project->status ?? '') === 'completed') && !$isSuperAdmin) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => 'This project has been completed and the status is locked.'], 403);
+            }
+            return redirect()->back()->with('error', 'This project has been completed and the status is locked.');
+        }
+
         if (empty($project->application_id)) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'error' => 'Please connect an application first.'], 400);
@@ -1757,7 +1765,7 @@ class ProjectController extends Controller
                 'message' => 'Project status updated to "' . ($phase === 'Other' ? $custom : $phase) . '".',
                 'phase'   => $phase,
                 'custom'  => $custom,
-                'updated_at' => $updatedAt->format('d-M-Y h:i A'),
+                'updated_at' => $updatedAt->format('d/m/Y h:i A'),
                 'updated_human' => $updatedAt->diffForHumans(),
             ]);
         }
@@ -2409,8 +2417,22 @@ class ProjectController extends Controller
             'amount_paid_by_donor' => (float)$request->input('amount_paid_by_donor'),
             'community_contribution' => (float)$request->input('community_contribution'),
             'any_other' => (float)$request->input('any_other'),
-            'deductions' => (float)$request->input('deductions')
+            'deductions' => (float)$request->input('deductions'),
+            'total_beneficiary_peoples' => $request->filled('total_beneficiary_peoples') ? (int)$request->input('total_beneficiary_peoples') : ($project->total_beneficiary_peoples ?? ($project->num_benefited_people ?? 0)),
+            'total_family' => $request->filled('total_family') ? (int)$request->input('total_family') : ($project->total_family ?? 0)
         ];
+
+        if ($request->filled('total_beneficiary_peoples')) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn($project->getTable(), 'total_beneficiary_peoples')) {
+                $project->total_beneficiary_peoples = (int)$request->input('total_beneficiary_peoples');
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn($project->getTable(), 'num_benefited_people')) {
+                $project->num_benefited_people = (int)$request->input('total_beneficiary_peoples');
+            }
+        }
+        if ($request->filled('total_family') && \Illuminate\Support\Facades\Schema::hasColumn($project->getTable(), 'total_family')) {
+            $project->total_family = (int)$request->input('total_family');
+        }
         
         $files['community_contributions'] = [
             ['item' => 'Community Contribution', 'amount' => (float)$request->input('community_contribution')],
@@ -2757,31 +2779,99 @@ class ProjectController extends Controller
     public function socialAidDeletePhoto(Request $request, $id)
     {
         $user = auth()->user();
+        if (!$user) {
+            abort(403);
+        }
         $designationLower = strtolower($user->designation ?? '');
-        $isSuperAdmin = ($user && ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin'));
-        $isCoo = ($user && ($user->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo')));
-        $isHod = ($user && ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod')));
+        $isSuperAdmin = ($user->isSuperAdmin() || $user->role == 1 || $user->role === 'super_admin');
+        $isCoo = ($user->isCoo() || $designationLower === 'coo' || str_contains($designationLower, 'chief operating officer') || str_contains($designationLower, 'coo'));
+        $isHod = ($user->isHod() || $designationLower === 'hod' || str_contains($designationLower, 'head of department') || str_contains($designationLower, 'hod'));
+        $isSocialAid = ($user->isSocialAid() || $user->role == 8 || $user->role === 'social_aid' || str_contains($designationLower, 'social aid'));
 
-        if (!$isSuperAdmin && !$isCoo && !$isHod) {
-            return redirect()->back()->with('error', 'Unauthorized Action: Only HOD, COO, and Super Admin can delete photos.');
+        if (!$isSuperAdmin && !$isCoo && !$isHod && !$isSocialAid && !$user->hasAdminAccess()) {
+            return redirect()->back()->with('error', 'Unauthorized Action: Only authorized managers can delete photos.');
         }
 
         [$project, $application] = $this->getSocialAidProjectAndApp($id);
         if (!$project) {
             abort(404);
         }
-        if (!$application) {
-            return redirect()->back()->with('error', 'No application is linked to this project.');
+
+        $photoDeleted = false;
+
+        if ($application) {
+            if (!empty($application->student_photo)) {
+                $path = public_path($application->student_photo);
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+                $application->student_photo = null;
+                $photoDeleted = true;
+            }
+
+            if (isset($application->photo) && !empty($application->photo)) {
+                $path = public_path($application->photo);
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+                $application->photo = null;
+                $photoDeleted = true;
+            }
+
+            if (isset($application->beneficiary_photo) && !empty($application->beneficiary_photo)) {
+                $path = public_path($application->beneficiary_photo);
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+                $application->beneficiary_photo = null;
+                $photoDeleted = true;
+            }
+
+            if (isset($application->meta) && is_array($application->meta) && isset($application->meta['student_photo'])) {
+                $meta = $application->meta;
+                $path = public_path($meta['student_photo']);
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+                unset($meta['student_photo']);
+                $application->meta = $meta;
+                $photoDeleted = true;
+            }
+
+            if ($application->applicantAddress && !empty($application->applicantAddress->student_photo)) {
+                $path = public_path($application->applicantAddress->student_photo);
+                if (file_exists($path)) {
+                    @unlink($path);
+                }
+                $application->applicantAddress->student_photo = null;
+                $application->applicantAddress->save();
+                $photoDeleted = true;
+            }
+
+            $application->save();
         }
 
-        if ($application->student_photo) {
-            $path = public_path($application->student_photo);
+        if (isset($project->student_photo) && !empty($project->student_photo)) {
+            $path = public_path($project->student_photo);
             if (file_exists($path)) {
                 @unlink($path);
             }
-            $application->student_photo = null;
-            $application->save();
+            $project->student_photo = null;
+            $project->save();
+            $photoDeleted = true;
+        }
 
+        if (isset($project->beneficiary_photo) && !empty($project->beneficiary_photo)) {
+            $path = public_path($project->beneficiary_photo);
+            if (file_exists($path)) {
+                @unlink($path);
+            }
+            $project->beneficiary_photo = null;
+            $project->save();
+            $photoDeleted = true;
+        }
+
+        if ($photoDeleted) {
             return redirect()->back()->with('success', 'Photo deleted successfully!');
         }
 
@@ -3257,11 +3347,16 @@ class ProjectController extends Controller
             mkdir($dir, 0755, true);
         }
 
+        // If GD extension is not installed/enabled, move file directly
+        if (!extension_loaded('gd') || !function_exists('imagecreatetruecolor') || !function_exists('imagecreatefromjpeg')) {
+            return $file->move($dir, basename($destinationPath));
+        }
+
         $tempPath = $file->getRealPath();
-        $fileSize = filesize($tempPath);
+        $fileSize = @filesize($tempPath);
 
         // If file is already <= 2 MB, move directly for instantaneous speed (under 10ms)
-        if ($fileSize <= $maxSizeBytes) {
+        if ($fileSize && $fileSize <= $maxSizeBytes) {
             return $file->move($dir, basename($destinationPath));
         }
 
@@ -3277,19 +3372,19 @@ class ProjectController extends Controller
         $srcImage = null;
         switch ($mime) {
             case 'image/jpeg':
-                $srcImage = @imagecreatefromjpeg($tempPath);
+                $srcImage = function_exists('imagecreatefromjpeg') ? @imagecreatefromjpeg($tempPath) : null;
                 break;
             case 'image/png':
-                $srcImage = @imagecreatefrompng($tempPath);
+                $srcImage = function_exists('imagecreatefrompng') ? @imagecreatefrompng($tempPath) : null;
                 break;
             case 'image/webp':
-                $srcImage = @imagecreatefromwebp($tempPath);
+                $srcImage = function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($tempPath) : null;
                 break;
             case 'image/avif':
                 $srcImage = function_exists('imagecreatefromavif') ? @imagecreatefromavif($tempPath) : null;
                 break;
             case 'image/gif':
-                $srcImage = @imagecreatefromgif($tempPath);
+                $srcImage = function_exists('imagecreatefromgif') ? @imagecreatefromgif($tempPath) : null;
                 break;
         }
 
@@ -3308,29 +3403,37 @@ class ProjectController extends Controller
             $newHeight = (int)round($newHeight * $ratio);
         }
 
-        $destImage = imagecreatetruecolor($newWidth, $newHeight);
-
-        if ($mime === 'image/png' || $mime === 'image/webp') {
-            imagealphablending($destImage, false);
-            imagesavealpha($destImage, true);
-            $transparent = imagecolorallocatealpha($destImage, 255, 255, 255, 127);
-            imagefilledrectangle($destImage, 0, 0, $newWidth, $newHeight, $transparent);
+        $destImage = @imagecreatetruecolor($newWidth, $newHeight);
+        if (!$destImage) {
+            @imagedestroy($srcImage);
+            return $file->move($dir, basename($destinationPath));
         }
 
-        imagecopyresampled($destImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+        if ($mime === 'image/png' || $mime === 'image/webp') {
+            @imagealphablending($destImage, false);
+            @imagesavealpha($destImage, true);
+            $transparent = @imagecolorallocatealpha($destImage, 255, 255, 255, 127);
+            @imagefilledrectangle($destImage, 0, 0, $newWidth, $newHeight, $transparent);
+        }
 
-        if ($mime === 'image/png') {
+        @imagecopyresampled($destImage, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        if ($mime === 'image/png' && function_exists('imagepng')) {
             @imagepng($destImage, $destinationPath, 3);
-        } elseif ($mime === 'image/webp') {
+        } elseif ($mime === 'image/webp' && function_exists('imagewebp')) {
             @imagewebp($destImage, $destinationPath, 75);
         } elseif ($mime === 'image/avif' && function_exists('imageavif')) {
             @imageavif($destImage, $destinationPath, 70);
-        } else {
+        } elseif (function_exists('imagejpeg')) {
             @imagejpeg($destImage, $destinationPath, 75);
+        } else {
+            @imagedestroy($srcImage);
+            @imagedestroy($destImage);
+            return $file->move($dir, basename($destinationPath));
         }
 
-        imagedestroy($srcImage);
-        imagedestroy($destImage);
+        @imagedestroy($srcImage);
+        @imagedestroy($destImage);
 
         return true;
     }
@@ -3484,7 +3587,7 @@ class ProjectController extends Controller
                 'file_path' => $siteStudy->file_path ? asset($siteStudy->file_path) : null,
                 'word_count' => $wordCount,
                 'status' => $siteStudy->status,
-                'ticked_at' => $siteStudy->ticked_at ? $siteStudy->ticked_at->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null
+                'ticked_at' => $siteStudy->ticked_at ? $siteStudy->ticked_at->timezone('Asia/Kolkata')->format('d/m/Y h:i A') : null
             ]);
         }
 

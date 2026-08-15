@@ -16,7 +16,7 @@ class DonorController extends Controller
 
     public function store(Request $request)
     {
-        if (!auth()->user()->hasAdminAccess()) {
+        if (!auth()->user()->canManageMasterData()) {
             abort(403, 'Unauthorized action. Only administrators can add partners.');
         }
 
@@ -48,7 +48,7 @@ class DonorController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (!auth()->user()->hasAdminAccess()) {
+        if (!auth()->user()->canManageMasterData()) {
             abort(403, 'Unauthorized action. Only administrators can edit partners.');
         }
 
@@ -87,7 +87,7 @@ class DonorController extends Controller
 
     public function destroy($id)
     {
-        if (!auth()->user()->hasAdminAccess()) {
+        if (!auth()->user()->canManageMasterData()) {
             abort(403, 'Unauthorized action. Only administrators can delete partners.');
         }
 

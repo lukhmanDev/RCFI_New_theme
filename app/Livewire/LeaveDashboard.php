@@ -26,18 +26,23 @@ class LeaveDashboard extends Component
 
     protected function getListeners(): array
     {
+        $baseListeners = [
+            'leave-updated' => 'refreshDashboard',
+            'leaveRequestCreated' => 'refreshDashboard',
+        ];
+
         $driver = config('broadcasting.default');
         if (!$driver || in_array($driver, ['null', 'log'])) {
-            return [];
+            return $baseListeners;
         }
 
         $userId = Auth::id();
-        return [
+        return array_merge($baseListeners, [
             "echo-private:user.{$userId},LeaveRequestApproved" => 'refreshDashboard',
             "echo-private:user.{$userId},LeaveRequestRejected" => 'refreshDashboard',
             "echo-private:user.{$userId},LeaveRequestCancelled" => 'refreshDashboard',
             "echo-private:user.{$userId},LeaveBalanceUpdated" => 'refreshDashboard',
-        ];
+        ]);
     }
 
     public function refreshDashboard(): void
@@ -126,8 +131,17 @@ class LeaveDashboard extends Component
             ->paginate(10) : collect();
 
         return view('livewire.leave-dashboard', [
-            'leaveTypes' => $leaveTypes,
-            'myRequests' => $myRequests,
+            'leaveTypes'       => $leaveTypes,
+            'myRequests'       => $myRequests,
+            'showModal'        => $this->showModal,
+            'leave_type_id'    => $this->leave_type_id,
+            'start_date'       => $this->start_date,
+            'end_date'         => $this->end_date,
+            'is_half_day'      => $this->is_half_day,
+            'half_day_session' => $this->half_day_session,
+            'reason'           => $this->reason,
+            'successMessage'   => $this->successMessage,
+            'errorMessage'     => $this->errorMessage,
         ]);
     }
 }

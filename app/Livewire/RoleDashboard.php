@@ -21,6 +21,12 @@ class RoleDashboard extends Component
 
     public string $timeRange = 'this_month';
     public int $newApplicationsCount = 0;
+    public string $selectedState = 'Kerala';
+
+    public function selectState(string $stateName): void
+    {
+        $this->selectedState = trim($stateName);
+    }
 
     public function getThemeSummaryData(): array
     {
@@ -120,24 +126,199 @@ class RoleDashboard extends Component
                 $rowTheme = isset($row->theme) && !empty($row->theme) ? trim($row->theme) : $defaultTheme;
                 if ($rowTheme && isset($themeStats[$rowTheme])) {
                     $themeStats[$rowTheme]['total_projects']++;
+                    $isCompleted = isset($row->status) && $row->status === 'Completed';
                     if (isset($row->status)) {
                         if ($row->status === 'Running') $themeStats[$rowTheme]['running_projects']++;
-                        if ($row->status === 'Completed') $themeStats[$rowTheme]['completed_projects']++;
+                        if ($isCompleted) $themeStats[$rowTheme]['completed_projects']++;
                     }
                     if (isset($row->available_budget)) {
                         $themeStats[$rowTheme]['total_budget'] += (float)$row->available_budget;
                     }
-                    if (isset($row->total_beneficiary_peoples)) {
-                        $themeStats[$rowTheme]['benefited_peoples'] += (int)$row->total_beneficiary_peoples;
-                    }
-                    if (isset($row->total_family)) {
-                        $themeStats[$rowTheme]['benefited_families'] += (int)$row->total_family;
+                    if ($isCompleted) {
+                        if (isset($row->total_beneficiary_peoples)) {
+                            $themeStats[$rowTheme]['benefited_peoples'] += (int)$row->total_beneficiary_peoples;
+                        }
+                        if (isset($row->total_family)) {
+                            $themeStats[$rowTheme]['benefited_families'] += (int)$row->total_family;
+                        }
                     }
                 }
             }
         }
 
         return array_values($themeStats);
+    }
+
+    public function getStateWiseData(): array
+    {
+        $canonicalStates = [
+            'Andaman & Nicobar Island' => 'Andaman & Nicobar Island',
+            'Andhra Pradesh' => 'Andhra Pradesh',
+            'Arunachal Pradesh' => 'Arunachal Pradesh',
+            'Assam' => 'Assam',
+            'Bihar' => 'Bihar',
+            'Chandigarh' => 'Chandigarh',
+            'Chhattisgarh' => 'Chhattisgarh',
+            'Dadra and Nagar Haveli and Daman and Diu' => 'Dadra and Nagar Haveli and Daman and Diu',
+            'Delhi' => 'Delhi',
+            'Goa' => 'Goa',
+            'Gujarat' => 'Gujarat',
+            'Haryana' => 'Haryana',
+            'Himachal Pradesh' => 'Himachal Pradesh',
+            'Jammu & Kashmir' => 'Jammu & Kashmir',
+            'Jharkhand' => 'Jharkhand',
+            'Karnataka' => 'Karnataka',
+            'Kerala' => 'Kerala',
+            'Ladakh' => 'Ladakh',
+            'Lakshadweep' => 'Lakshadweep',
+            'Madhya Pradesh' => 'Madhya Pradesh',
+            'Maharashtra' => 'Maharashtra',
+            'Manipur' => 'Manipur',
+            'Meghalaya' => 'Meghalaya',
+            'Mizoram' => 'Mizoram',
+            'Nagaland' => 'Nagaland',
+            'Odisha' => 'Odisha',
+            'Puducherry' => 'Puducherry',
+            'Punjab' => 'Punjab',
+            'Rajasthan' => 'Rajasthan',
+            'Sikkim' => 'Sikkim',
+            'Tamil Nadu' => 'Tamil Nadu',
+            'Telangana' => 'Telangana',
+            'Tripura' => 'Tripura',
+            'Uttar Pradesh' => 'Uttar Pradesh',
+            'Uttarakhand' => 'Uttarakhand',
+            'West Bengal' => 'West Bengal',
+        ];
+
+        // Synonyms map
+        $synonyms = [
+            'orissa' => 'Odisha',
+            'pondicherry' => 'Puducherry',
+            'andaman and nicobar' => 'Andaman & Nicobar Island',
+            'andaman and nicobar islands' => 'Andaman & Nicobar Island',
+            'jammu and kashmir' => 'Jammu & Kashmir',
+            'j&k' => 'Jammu & Kashmir',
+            'up' => 'Uttar Pradesh',
+            'mp' => 'Madhya Pradesh',
+            'tn' => 'Tamil Nadu',
+            'wb' => 'West Bengal',
+            'daman and diu' => 'Dadra and Nagar Haveli and Daman and Diu',
+            'dadra & nagar haveli' => 'Dadra and Nagar Haveli and Daman and Diu',
+            'dadra and nagar haveli' => 'Dadra and Nagar Haveli and Daman and Diu',
+            'nct of delhi' => 'Delhi',
+            'new delhi' => 'Delhi',
+        ];
+
+        $stateStats = [];
+        foreach ($canonicalStates as $stName) {
+            $stateStats[$stName] = [
+                'name' => $stName,
+                'total_projects' => 0,
+                'running_projects' => 0,
+                'completed_projects' => 0,
+                'benefited_peoples' => 0,
+                'benefited_families' => 0,
+            ];
+        }
+
+        $projectTables = [
+            ['project' => 'education_center_projects', 'app' => 'education_center_applications'],
+            ['project' => 'cultural_center_projects', 'app' => 'cultural_center_applications'],
+            ['project' => 'hospital_clinic_projects', 'app' => 'hospital_clinic_applications'],
+            ['project' => 'shop_other_projects', 'app' => 'shop_other_applications'],
+            ['project' => 'house_projects', 'app' => 'house_applications'],
+            ['project' => 'drinking_water_individual_projects', 'app' => 'drinking_water_individual_applications'],
+            ['project' => 'drinking_water_group_projects', 'app' => 'drinking_water_group_applications'],
+            ['project' => 'general_projects', 'app' => 'general_applications'],
+            ['project' => 'orphan_care_projects', 'app' => 'orphan_care_applications'],
+            ['project' => 'differently_abled_projects', 'app' => 'differently_abled_applications'],
+            ['project' => 'family_aid_projects', 'app' => 'family_aid_applications'],
+            ['project' => 'projects', 'app' => 'applications'],
+        ];
+
+        foreach ($projectTables as $pair) {
+            $pTbl = $pair['project'];
+            $aTbl = $pair['app'];
+            if (!Schema::hasTable($pTbl)) continue;
+
+            $hasAppId = Schema::hasColumn($pTbl, 'application_id') && Schema::hasTable($aTbl);
+            $hasStateInProject = Schema::hasColumn($pTbl, 'state');
+
+            $query = DB::table($pTbl);
+            if ($hasAppId) {
+                $query->leftJoin($aTbl, "$pTbl.application_id", '=', "$aTbl.id")
+                      ->select(
+                          "$pTbl.*",
+                          "$aTbl.state as app_state",
+                          "$aTbl.locality_state as app_locality_state"
+                      );
+            }
+            $projects = $query->get();
+
+            foreach ($projects as $p) {
+                $rawState = null;
+                if ($hasStateInProject && !empty($p->state)) {
+                    $rawState = $p->state;
+                } elseif ($hasAppId) {
+                    if (!empty($p->app_state)) {
+                        $rawState = $p->app_state;
+                    } elseif (!empty($p->app_locality_state)) {
+                        $rawState = $p->app_locality_state;
+                    }
+                }
+
+                if (!$rawState) {
+                    $rawState = 'Kerala';
+                }
+
+                $normKey = strtolower(trim($rawState));
+                $targetState = $synonyms[$normKey] ?? null;
+
+                if (!$targetState) {
+                    foreach ($canonicalStates as $canon) {
+                        if (strcasecmp($canon, $normKey) === 0 || strcasecmp($canon, $rawState) === 0) {
+                            $targetState = $canon;
+                            break;
+                        }
+                    }
+                }
+
+                if (!$targetState) {
+                    $targetState = 'Kerala';
+                }
+
+                if (!isset($stateStats[$targetState])) {
+                    $stateStats[$targetState] = [
+                        'name' => $targetState,
+                        'total_projects' => 0,
+                        'running_projects' => 0,
+                        'completed_projects' => 0,
+                        'benefited_peoples' => 0,
+                        'benefited_families' => 0,
+                    ];
+                }
+
+                $stateStats[$targetState]['total_projects']++;
+                $st = $p->status ?? 'Active';
+                $isCompleted = ($st === 'Completed');
+
+                if (in_array($st, ['Running', 'Active', 'Approved', 'Ongoing', 'In Progress'])) {
+                    $stateStats[$targetState]['running_projects']++;
+                } elseif ($isCompleted) {
+                    $stateStats[$targetState]['completed_projects']++;
+                }
+
+                if ($isCompleted) {
+                    $peoples = (int) ($p->total_beneficiary_peoples ?? ($p->benefited_peoples ?? 0));
+                    $families = (int) ($p->total_family ?? ($p->benefited_families ?? 0));
+
+                    $stateStats[$targetState]['benefited_peoples'] += $peoples;
+                    $stateStats[$targetState]['benefited_families'] += $families;
+                }
+            }
+        }
+
+        return $stateStats;
     }
 
     public function onNewApplication(array $payload = []): void
@@ -254,10 +435,16 @@ class RoleDashboard extends Component
             }
 
             if (Schema::hasColumn($tbl, 'total_beneficiary_peoples')) {
-                $totalBeneficiaryPeoples += (int) DB::table($tbl)->whereNotNull('total_beneficiary_peoples')->sum('total_beneficiary_peoples');
+                $totalBeneficiaryPeoples += (int) DB::table($tbl)
+                    ->where('status', 'Completed')
+                    ->whereNotNull('total_beneficiary_peoples')
+                    ->sum('total_beneficiary_peoples');
             }
             if (Schema::hasColumn($tbl, 'total_family')) {
-                $totalBeneficiaryFamily += (int) DB::table($tbl)->whereNotNull('total_family')->sum('total_family');
+                $totalBeneficiaryFamily += (int) DB::table($tbl)
+                    ->where('status', 'Completed')
+                    ->whereNotNull('total_family')
+                    ->sum('total_family');
             }
 
             // User assigned
@@ -276,17 +463,19 @@ class RoleDashboard extends Component
                 }
             }
 
-            // Year-wise sums
+            // Year-wise sums (only completed projects)
             if (Schema::hasColumn($tbl, 'created_at')) {
                 for ($y = $currentYear - 4; $y <= $currentYear; $y++) {
                     if (Schema::hasColumn($tbl, 'total_beneficiary_peoples')) {
                         $yearPeoplesMap[$y] += (int) DB::table($tbl)
+                            ->where('status', 'Completed')
                             ->whereYear('created_at', $y)
                             ->whereNotNull('total_beneficiary_peoples')
                             ->sum('total_beneficiary_peoples');
                     }
                     if (Schema::hasColumn($tbl, 'total_family')) {
                         $yearFamiliesMap[$y] += (int) DB::table($tbl)
+                            ->where('status', 'Completed')
                             ->whereYear('created_at', $y)
                             ->whereNotNull('total_family')
                             ->sum('total_family');
@@ -350,8 +539,19 @@ class RoleDashboard extends Component
             ->take(5)
             ->get();
 
+        $stateSummary = $this->getStateWiseData();
+        $selectedStateInfo = $stateSummary[$this->selectedState] ?? [
+            'name'               => $this->selectedState,
+            'total_projects'     => 0,
+            'running_projects'   => 0,
+            'completed_projects' => 0,
+            'benefited_peoples'  => 0,
+            'benefited_families' => 0,
+        ];
+
         return view('livewire.role-dashboard', [
             'user'                     => $user,
+            'newApplicationsCount'     => $this->newApplicationsCount ?? 0,
             'totalApplications'        => $totalApplications,
             'pendingCount'             => $pendingCount,
             'approvedCount'            => $approvedCount,
@@ -371,6 +571,9 @@ class RoleDashboard extends Component
             'totalBeneficiaryFamily'   => $totalBeneficiaryFamily,
             'beneficiaryChartData'     => $beneficiaryChartData,
             'themeSummaryData'         => $this->getThemeSummaryData(),
+            'stateSummaryData'         => $stateSummary,
+            'selectedState'            => $this->selectedState,
+            'selectedStateInfo'        => $selectedStateInfo,
         ]);
     }
 }

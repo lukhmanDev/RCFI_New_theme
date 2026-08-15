@@ -63,17 +63,22 @@ class LeaveAdminDashboard extends Component
 
     protected function getListeners(): array
     {
+        $baseListeners = [
+            'leave-updated' => 'refreshData',
+            'leaveRequestSubmitted' => 'refreshData',
+        ];
+
         $driver = config('broadcasting.default');
         if (!$driver || in_array($driver, ['null', 'log'])) {
-            return [];
+            return $baseListeners;
         }
 
-        return [
+        return array_merge($baseListeners, [
             'echo-private:leave-approvals,LeaveRequestSubmitted' => 'refreshData',
             'echo-private:leave-approvals,LeaveRequestApproved'  => 'refreshData',
             'echo-private:leave-approvals,LeaveRequestRejected'  => 'refreshData',
             'echo-private:leave-approvals,LeaveRequestCancelled' => 'refreshData',
-        ];
+        ]);
     }
 
     public function refreshData(): void
@@ -96,6 +101,7 @@ class LeaveAdminDashboard extends Component
         try {
             $leaveService->approve($req, Auth::user());
             $this->successMessage = "Leave request #{$req->id} approved successfully.";
+            $this->dispatch('leave-updated');
         } catch (\Exception $e) {
             $this->errorMessage = $e->getMessage();
         }
@@ -273,11 +279,11 @@ class LeaveAdminDashboard extends Component
                     $row->user->email ?? 'N/A',
                     $row->user->role ?? 'N/A',
                     $row->leaveType->leave_name ?? 'N/A',
-                    $row->start_date->format('Y-m-d'),
-                    $row->end_date->format('Y-m-d'),
+                    $row->start_date->format('d/m/Y'),
+                    $row->end_date->format('d/m/Y'),
                     $row->total_days,
                     $row->status,
-                    $row->applied_on->format('Y-m-d H:i'),
+                    $row->applied_on ? $row->applied_on->format('d/m/Y H:i') : '',
                 ]);
             }
             fclose($file);
@@ -319,6 +325,17 @@ class LeaveAdminDashboard extends Component
             'endOfMonth'       => $endOfMonth,
             'leaveTypes'       => $leaveTypes,
             'reportsQuery'     => $reportsQuery,
+            'activeTab'        => $this->activeTab,
+            'calendarMonth'    => $this->calendarMonth,
+            'calendarYear'     => $this->calendarYear,
+            'reportStatus'     => $this->reportStatus,
+            'reportLeaveType'  => $this->reportLeaveType,
+            'reportStartDate'  => $this->reportStartDate,
+            'reportEndDate'    => $this->reportEndDate,
+            'showRejectModal'  => $this->showRejectModal,
+            'showCreateModal'  => $this->showCreateModal,
+            'successMessage'   => $this->successMessage,
+            'errorMessage'     => $this->errorMessage,
         ]);
     }
 }

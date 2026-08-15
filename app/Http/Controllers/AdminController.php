@@ -209,6 +209,7 @@ class AdminController extends Controller
             $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
 
             $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
+            $photoPath = $app?->student_photo ?? (is_array($app?->meta) ? ($app->meta['student_photo'] ?? $app->meta['photo'] ?? null) : null);
 
             return [
                 'id' => $f->id,
@@ -217,9 +218,9 @@ class AdminController extends Controller
                 'project_id' => $f->project->project_id ?? 'N/A',
                 'agency_project_no' => $f->agency_project_no ?? $f->project->agency_project_no ?? 'N/A',
                 'project_db_id' => $f->project->id ?? null,
-                'applicant_name' => $app->applicant_name ?? $f->project->name ?? 'N/A',
-                'applicant_id' => $app->applicant_id ?? 'N/A',
-                'photo' => $app->student_photo ? asset($app->student_photo) : null,
+                'applicant_name' => $app?->applicant_name ?? $f->project->name ?? 'N/A',
+                'applicant_id' => $app?->applicant_id ?? 'N/A',
+                'photo' => $photoPath ? asset($photoPath) : null,
                 'donor' => $donorName,
                 'agency' => $displayDonor,
                 'sponsor' => $f->project->sponsor ?? $displayDonor,
@@ -230,11 +231,11 @@ class AdminController extends Controller
                 'project_spec' => $f->project->project_spec ?? 'N/A',
                 'available_budget' => (float)($f->project->available_budget ?? 0),
                 'remarks' => $f->project->remarks ?? 'N/A',
-                'location' => trim(($app->place ?? '') . ' ' . ($app->district ?? '') . ' ' . ($app->state ?? '')) ?: 'N/A',
+                'location' => trim(($app?->place ?? '') . ' ' . ($app?->district ?? '') . ' ' . ($app?->state ?? '')) ?: 'N/A',
                 'date' => $f->date ? date('Y-m-d', strtotime($f->date)) : null,
-                'formatted_date' => $f->date ? date('d M Y', strtotime($f->date)) : 'N/A',
+                'formatted_date' => $f->date ? date('d/m/Y', strtotime($f->date)) : 'N/A',
                 'created_date' => $f->created_at ? $f->created_at->format('Y-m-d') : ($f->date ? date('Y-m-d', strtotime($f->date)) : null),
-                'formatted_created_date' => $f->created_at ? $f->created_at->format('d M Y') : 'N/A',
+                'formatted_created_date' => $f->created_at ? $f->created_at->format('d/m/Y') : ($f->date ? date('d/m/Y', strtotime($f->date)) : 'N/A'),
                 'amount' => (float)$f->amount,
             ];
         });
@@ -249,6 +250,7 @@ class AdminController extends Controller
             $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
 
             $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
+            $photoPath = $app?->student_photo ?? (is_array($app?->meta) ? ($app->meta['student_photo'] ?? $app->meta['photo'] ?? null) : null);
 
             return [
                 'id' => $f->id,
@@ -257,9 +259,9 @@ class AdminController extends Controller
                 'project_id' => $f->project->project_id ?? 'N/A',
                 'agency_project_no' => $f->agency_project_no ?? $f->project->agency_project_no ?? 'N/A',
                 'project_db_id' => $f->project->id ?? null,
-                'applicant_name' => $app->applicant_name ?? $f->project->name ?? 'N/A',
-                'applicant_id' => $app->applicant_id ?? 'N/A',
-                'photo' => $app->student_photo ? asset($app->student_photo) : null,
+                'applicant_name' => $app?->applicant_name ?? $f->project->name ?? 'N/A',
+                'applicant_id' => $app?->applicant_id ?? 'N/A',
+                'photo' => $photoPath ? asset($photoPath) : null,
                 'donor' => $donorName,
                 'agency' => $displayDonor,
                 'sponsor' => $f->project->sponsor ?? $displayDonor,
@@ -270,11 +272,11 @@ class AdminController extends Controller
                 'project_spec' => $f->project->project_spec ?? 'N/A',
                 'available_budget' => (float)($f->project->available_budget ?? 0),
                 'remarks' => $f->project->remarks ?? 'N/A',
-                'location' => trim(($app->place ?? '') . ' ' . ($app->district ?? '') . ' ' . ($app->state ?? '')) ?: 'N/A',
+                'location' => trim(($app?->place ?? '') . ' ' . ($app?->district ?? '') . ' ' . ($app?->state ?? '')) ?: 'N/A',
                 'date' => $f->date ? date('Y-m-d', strtotime($f->date)) : null,
-                'formatted_date' => $f->date ? date('d M Y', strtotime($f->date)) : 'N/A',
+                'formatted_date' => $f->date ? date('d/m/Y', strtotime($f->date)) : 'N/A',
                 'created_date' => $f->created_at ? $f->created_at->format('Y-m-d') : ($f->date ? date('Y-m-d', strtotime($f->date)) : null),
-                'formatted_created_date' => $f->created_at ? $f->created_at->format('d M Y') : 'N/A',
+                'formatted_created_date' => $f->created_at ? $f->created_at->format('d/m/Y') : ($f->date ? date('d/m/Y', strtotime($f->date)) : 'N/A'),
                 'amount' => (float)$f->amount,
             ];
         });
@@ -289,6 +291,7 @@ class AdminController extends Controller
             $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
 
             $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
+            $photoPath = $app?->student_photo ?? (is_array($app?->meta) ? ($app->meta['student_photo'] ?? $app->meta['photo'] ?? null) : null);
 
             return [
                 'id' => $f->id,
@@ -297,9 +300,9 @@ class AdminController extends Controller
                 'project_id' => $f->project->project_id ?? 'N/A',
                 'agency_project_no' => $f->agency_project_no ?? $f->project->agency_project_no ?? 'N/A',
                 'project_db_id' => $f->project->id ?? null,
-                'applicant_name' => $app->applicant_name ?? $f->project->name ?? 'N/A',
-                'applicant_id' => $app->applicant_id ?? 'N/A',
-                'photo' => $app->student_photo ? asset($app->student_photo) : null,
+                'applicant_name' => $app?->applicant_name ?? $f->project->name ?? 'N/A',
+                'applicant_id' => $app?->applicant_id ?? 'N/A',
+                'photo' => $photoPath ? asset($photoPath) : null,
                 'donor' => $donorName,
                 'agency' => $displayDonor,
                 'sponsor' => $f->project->sponsor ?? $displayDonor,
@@ -310,11 +313,11 @@ class AdminController extends Controller
                 'project_spec' => $f->project->project_spec ?? 'N/A',
                 'available_budget' => (float)($f->project->available_budget ?? 0),
                 'remarks' => $f->project->remarks ?? 'N/A',
-                'location' => trim(($app->place ?? '') . ' ' . ($app->district ?? '') . ' ' . ($app->state ?? '')) ?: 'N/A',
+                'location' => trim(($app?->place ?? '') . ' ' . ($app?->district ?? '') . ' ' . ($app?->state ?? '')) ?: 'N/A',
                 'date' => $f->date ? date('Y-m-d', strtotime($f->date)) : null,
-                'formatted_date' => $f->date ? date('d M Y', strtotime($f->date)) : 'N/A',
+                'formatted_date' => $f->date ? date('d/m/Y', strtotime($f->date)) : 'N/A',
                 'created_date' => $f->created_at ? $f->created_at->format('Y-m-d') : ($f->date ? date('Y-m-d', strtotime($f->date)) : null),
-                'formatted_created_date' => $f->created_at ? $f->created_at->format('d M Y') : 'N/A',
+                'formatted_created_date' => $f->created_at ? $f->created_at->format('d/m/Y') : ($f->date ? date('d/m/Y', strtotime($f->date)) : 'N/A'),
                 'amount' => (float)$f->amount,
             ];
         });
@@ -663,7 +666,7 @@ class AdminController extends Controller
                 }
 
                 $createdAt = $proj->created_at ? $proj->created_at->format('Y-m-d') : null;
-                $formattedCreatedAt = $proj->created_at ? $proj->created_at->format('d M, Y') : 'N/A';
+                $formattedCreatedAt = $proj->created_at ? $proj->created_at->format('d/m/Y') : 'N/A';
 
                 $url = route('projects.show', $proj->id) . '?type=' . urlencode($cat['name']);
 
@@ -1107,6 +1110,8 @@ class AdminController extends Controller
         }
         $allProjectPhotos = $uniquePhotos;
 
+        $siteStudyData = $projectObj->projectSiteStudy ?? \App\Models\ProjectSiteStudy::where('project_id', $projectObj->id)->first();
+
         if ($request->has('pdf') || $request->has('print') || $request->has('download')) {
             $isSocialAid = in_array($categorySlug, ['orphan-care', 'family-aid', 'differently-abled']) 
                 || str_contains($categorySlug, 'orphan') 
@@ -1129,6 +1134,7 @@ class AdminController extends Controller
                 'contractor',
                 'application',
                 'projectDocument',
+                'siteStudyData',
                 'completionDetail',
                 'inspections',
                 'communityContributions',
@@ -1160,6 +1166,7 @@ class AdminController extends Controller
             'contractor',
             'application',
             'projectDocument',
+            'siteStudyData',
             'completionDetail',
             'inspections',
             'communityContributions',

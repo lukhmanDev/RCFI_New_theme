@@ -40,8 +40,8 @@
                         <th>District</th>
                         <th>State</th>
                         <th>Agency No</th>
-                        <th>Sponsor Status</th>
-                        <th style="text-align: center;">Action</th>
+                        <th style="white-space: nowrap; min-width: 140px;">Sponsor Status</th>
+                        <th style="text-align: center; white-space: nowrap; min-width: 130px;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,7 +83,7 @@
                             }
                             $searchStr = strtolower(implode(' ', array_filter($searchTerms)));
                         @endphp
-                        <tr class="app-row" data-search="{{ $searchStr }}" data-cluster="{{ $appItem->cluster_id ?? '' }}" data-sponsor="{{ strtolower($appItem->sponsor_status ?? 'not sponsored') }}" data-place="{{ $appItem->place ?? '' }}" onclick="openDetailsModal({{ $appItem->id }})">
+                        <tr class="app-row" id="app-row-{{ $appItem->id }}" data-search="{{ $searchStr }}" data-cluster="{{ $appItem->cluster_id ?? '' }}" data-sponsor="{{ strtolower($appItem->sponsor_status ?? 'not sponsored') }}" data-place="{{ $appItem->place ?? '' }}" onclick="openDetailsModal({{ $appItem->id }})">
                             <td style="font-weight: 600;">
                                 <a href="javascript:void(0)" onclick="event.stopPropagation(); openDetailsModal({{ $appItem->id }})" style="color: var(--accent-cyan); font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" title="View Application Details">
                                     {{ $appId }}
@@ -98,32 +98,34 @@
                             <td title="{{ $appItem->district ?? $meta['district'] ?? 'N/A' }}">{{ \Illuminate\Support\Str::limit($appItem->district ?? $meta['district'] ?? 'N/A', 15, '...') }}</td>
                             <td title="{{ $appItem->state ?? $meta['state'] ?? 'N/A' }}">{{ \Illuminate\Support\Str::limit($appItem->state ?? $meta['state'] ?? 'N/A', 15, '...') }}</td>
                             <td title="{{ $appItem->agency_number ?? 'N/A' }}">{{ \Illuminate\Support\Str::limit($appItem->agency_number ?? 'N/A', 15, '...') }}</td>
-                            <td>
+                            <td id="sponsor-status-cell-{{ $appItem->id }}" style="white-space: nowrap;">
                                 @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
-                                    <span style="background-color: #d1fae5; color: #065f46; border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;">
-                                        <i class="bx bx-check-circle" style="font-size: 0.85rem;"></i> Sponsored
+                                    <span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; line-height: 1;">
+                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); display: inline-block;"></span>
+                                        Sponsored
                                     </span>
                                 @else
-                                    <span style="background-color: #fef3c7; color: #92400e; border: 1px solid rgba(245, 158, 11, 0.3); padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap;">
-                                        <i class="bx bx-time-five" style="font-size: 0.85rem;"></i> Not Sponsored
+                                    <span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; line-height: 1;">
+                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2); display: inline-block;"></span>
+                                        Not Sponsored
                                     </span>
                                 @endif
                             </td>
-                            <td style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+                            <td id="sponsor-action-cell-{{ $appItem->id }}" style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
                                 @if(($appItem->sponsor_status ?? 'Not Sponsored') === 'Sponsored')
                                     @if(Auth::user()->isSuperAdmin())
-                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }}, 'Sponsored', 'orphan-care')" style="background: #ffffff; color: #dc2626 !important; border: 1px solid #fca5a5; padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 600; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; text-decoration: none; min-width: 110px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;" title="Mark as Not Sponsored (Super Admin Only)">
-                                            <i class="bx bx-x" style="font-size: 0.95rem;"></i> Un-sponsor
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }}, 'Sponsored', 'orphan-care')" class="btn-action-animated" style="background: #ffffff; color: #dc2626 !important; border: 1px solid #fecaca; padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; text-decoration: none; min-width: 115px; box-shadow: 0 1px 3px rgba(239, 68, 68, 0.08); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);" onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.15)';" onmouseout="this.style.background='#ffffff'; this.style.borderColor='#fecaca'; this.style.transform='none'; this.style.boxShadow='0 1px 3px rgba(239, 68, 68, 0.08)';" title="Mark as Not Sponsored (Super Admin Only)">
+                                            <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Un-sponsor
                                         </a>
                                     @else
-                                        <span style="color: #10b981; font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.75rem; background: rgba(16, 185, 129, 0.1); border-radius: 6px; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                        <span style="color: #10b981; font-size: 0.78rem; font-weight: 700; padding: 0.4rem 0.85rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid rgba(16, 185, 129, 0.2);">
                                             <i class="bx bx-check-double"></i> Sponsored
                                         </span>
                                     @endif
                                 @else
                                     @if(Auth::user()->canManageSponsorship())
-                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }}, 'Not Sponsored', 'orphan-care')" style="background: #10b981; color: #ffffff !important; border: 1px solid #059669; padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 600; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; text-decoration: none; min-width: 110px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;" title="Mark as Sponsored">
-                                            <i class="bx bx-check" style="font-size: 0.95rem;"></i> Sponsor
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, {{ $appItem->id }}, 'Not Sponsored', 'orphan-care')" class="btn-action-animated" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff !important; border: 1px solid #059669; padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; text-decoration: none; min-width: 115px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.28); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 8px rgba(16, 185, 129, 0.28)';" title="Mark as Sponsored">
+                                            <i class="bx bx-plus-circle" style="font-size: 1rem;"></i> Sponsor
                                         </a>
                                     @else
                                         <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No Action</span>
@@ -448,6 +450,96 @@
             }
         }
 
+        function onSponsorStatusUpdated(appId, newStatus, categorySlug = 'orphan-care', sponsoredDate = null) {
+            if (!appId) return;
+            const isSponsored = (String(newStatus).toLowerCase() === 'sponsored');
+            const normalizedStatus = isSponsored ? 'Sponsored' : 'Not Sponsored';
+
+            // 1. Update row attribute & highlight briefly
+            const rowEl = document.getElementById(`app-row-${appId}`);
+            if (rowEl) {
+                rowEl.setAttribute('data-sponsor', normalizedStatus.toLowerCase());
+                rowEl.style.transition = 'background-color 0.4s ease';
+                rowEl.style.backgroundColor = isSponsored ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)';
+                setTimeout(() => {
+                    rowEl.style.backgroundColor = '';
+                }, 1200);
+            }
+
+            // 2. Update Status cell
+            const statusCell = document.getElementById(`sponsor-status-cell-${appId}`);
+            if (statusCell) {
+                if (isSponsored) {
+                    statusCell.innerHTML = `
+                        <span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; line-height: 1;">
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); display: inline-block;"></span>
+                            Sponsored
+                        </span>
+                    `;
+                } else {
+                    statusCell.innerHTML = `
+                        <span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; line-height: 1;">
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2); display: inline-block;"></span>
+                            Not Sponsored
+                        </span>
+                    `;
+                }
+            }
+
+            // 3. Update Action cell
+            const actionCell = document.getElementById(`sponsor-action-cell-${appId}`);
+            if (actionCell) {
+                if (isSponsored) {
+                    @if(Auth::user()->isSuperAdmin())
+                        actionCell.innerHTML = `
+                            <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, ${appId}, 'Sponsored', '${categorySlug}')" class="btn-action-animated" style="background: #ffffff; color: #dc2626 !important; border: 1px solid #fecaca; padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; text-decoration: none; min-width: 115px; box-shadow: 0 1px 3px rgba(239, 68, 68, 0.08); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);" onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.15)';" onmouseout="this.style.background='#ffffff'; this.style.borderColor='#fecaca'; this.style.transform='none'; this.style.boxShadow='0 1px 3px rgba(239, 68, 68, 0.08)';" title="Mark as Not Sponsored (Super Admin Only)">
+                                <i class="bx bx-x-circle" style="font-size: 1rem;"></i> Un-sponsor
+                            </a>
+                        `;
+                    @else
+                        actionCell.innerHTML = `
+                            <span style="color: #10b981; font-size: 0.78rem; font-weight: 700; padding: 0.4rem 0.85rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid rgba(16, 185, 129, 0.2);">
+                                <i class="bx bx-check-double"></i> Sponsored
+                            </span>
+                        `;
+                    @endif
+                } else {
+                    @if(Auth::user()->canManageSponsorship())
+                        actionCell.innerHTML = `
+                            <a href="#" onclick="event.preventDefault(); event.stopPropagation(); handleToggleSponsor(event, ${appId}, 'Not Sponsored', '${categorySlug}')" class="btn-action-animated" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff !important; border: 1px solid #059669; padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; text-decoration: none; min-width: 115px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.28); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 8px rgba(16, 185, 129, 0.28)';" title="Mark as Sponsored">
+                                <i class="bx bx-plus-circle" style="font-size: 1rem;"></i> Sponsor
+                            </a>
+                        `;
+                    @else
+                        actionCell.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No Action</span>`;
+                    @endif
+                }
+            }
+
+            // 4. Update cached applicationsMap
+            if (typeof applicationsMap !== 'undefined' && applicationsMap && applicationsMap[appId]) {
+                applicationsMap[appId].sponsor_status = normalizedStatus;
+                if (!applicationsMap[appId].meta) applicationsMap[appId].meta = {};
+                if (isSponsored) {
+                    applicationsMap[appId].meta.sponsored_date = sponsoredDate || new Date().toISOString().split('T')[0];
+                } else {
+                    delete applicationsMap[appId].meta.sponsored_date;
+                }
+            }
+
+            // 5. Update open details modal if applicable
+            if (currentDetailsAppItem && currentDetailsAppItem.id == appId) {
+                currentDetailsAppItem.sponsor_status = normalizedStatus;
+                if (!currentDetailsAppItem.meta) currentDetailsAppItem.meta = {};
+                if (isSponsored) {
+                    currentDetailsAppItem.meta.sponsored_date = sponsoredDate || new Date().toISOString().split('T')[0];
+                } else {
+                    delete currentDetailsAppItem.meta.sponsored_date;
+                }
+                openDetailsModal(currentDetailsAppItem);
+            }
+        }
+
         async function handleToggleSponsor(event, appId, currentStatus = '', categorySlug = 'orphan-care') {
             if (event) {
                 event.preventDefault();
@@ -455,13 +547,13 @@
             }
 
             const isSponsored = (currentStatus && String(currentStatus).toLowerCase() === 'sponsored');
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
 
             if (isSponsored) {
                 const doUnsponsor = async () => {
-                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-                    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
                     try {
-                        const response = await fetch("{{ url('admin/applications/orphan-care') }}/" + appId + "/toggle-sponsor", {
+                        const response = await fetch(`/admin/applications/${categorySlug}/${appId}/toggle-sponsor`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -473,7 +565,7 @@
 
                         const result = await response.json();
                         if (response.ok && result.success) {
-                            window.location.reload();
+                            onSponsorStatusUpdated(appId, result.sponsor_status || 'Not Sponsored', categorySlug);
                         } else {
                             alert(result.error || 'Failed to update sponsor status.');
                         }
@@ -489,15 +581,9 @@
                     doUnsponsor();
                 }
             } else {
-                if (typeof openSponsorDateModal === 'function') {
-                    openSponsorDateModal(appId, categorySlug);
-                } else {
-                    const sponsoredDate = prompt("Enter Sponsored Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-                    if (!sponsoredDate) return;
-                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-                    const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '{{ csrf_token() }}';
+                const doSponsor = async (sponsoredDate) => {
                     try {
-                        const response = await fetch("{{ url('admin/applications/orphan-care') }}/" + appId + "/toggle-sponsor", {
+                        const response = await fetch(`/admin/applications/${categorySlug}/${appId}/toggle-sponsor`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -506,9 +592,10 @@
                             },
                             body: JSON.stringify({ category: categorySlug, sponsored_date: sponsoredDate })
                         });
+
                         const result = await response.json();
                         if (response.ok && result.success) {
-                            window.location.reload();
+                            onSponsorStatusUpdated(appId, result.sponsor_status || 'Sponsored', categorySlug, sponsoredDate);
                         } else {
                             alert(result.error || 'Failed to update sponsor status.');
                         }
@@ -516,6 +603,14 @@
                         console.error(err);
                         alert('An error occurred while updating sponsor status.');
                     }
+                };
+
+                if (typeof showCustomConfirm === 'function') {
+                    showCustomConfirm('Please select the official sponsored date to sponsor this application:', doSponsor, false, true);
+                } else {
+                    const sponsoredDate = prompt("Enter Sponsored Date (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+                    if (!sponsoredDate) return;
+                    doSponsor(sponsoredDate);
                 }
             }
         }
@@ -523,6 +618,8 @@
         // Global Window Bindings
         window.openDetailsModal = openDetailsModal;
         window.closeDetailsModal = closeDetailsModal;
+        window.onSponsorStatusUpdated = onSponsorStatusUpdated;
+        window.handleToggleSponsor = handleToggleSponsor;
     </script>
 
 @endsection

@@ -30,17 +30,33 @@ class LeaveBalance extends Model
         $allocated = $this->allocated_days ?? 0;
         $type = $this->leaveType;
 
-        if ($type && $type->accrual_type === 'Monthly') {
-            $year = $this->year ?? now()->year;
-            if ($year < now()->year) {
-                $months = 12;
-            } elseif ($year > now()->year) {
-                $months = 0;
-            } else {
-                $months = now()->month;
+        if ($type) {
+            // Sick Leave accrues 1 day for every 36 days in the year
+            if ($type->leave_code === 'SL') {
+                $year = $this->year ?? now()->year;
+                if ($year < now()->year) {
+                    $days = 365;
+                } elseif ($year > now()->year) {
+                    $days = 0;
+                } else {
+                    $days = now()->dayOfYear;
+                }
+                $accruedSL = floor($days / 36);
+                return (float)min($allocated > 0 ? $allocated : 10.0, $accruedSL);
             }
-            $monthlyRate = $allocated > 0 ? ($allocated / 12) : 1;
-            return round(min($allocated, $monthlyRate * $months), 1);
+
+            if ($type->accrual_type === 'Monthly') {
+                $year = $this->year ?? now()->year;
+                if ($year < now()->year) {
+                    $months = 12;
+                } elseif ($year > now()->year) {
+                    $months = 0;
+                } else {
+                    $months = now()->month;
+                }
+                $monthlyRate = $allocated > 0 ? ($allocated / 12) : 1;
+                return round(min($allocated, $monthlyRate * $months), 1);
+            }
         }
 
         return $allocated;

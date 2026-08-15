@@ -23,6 +23,7 @@ class AttendanceWidget extends Component
 
             $this->successMessage = 'Successfully clocked in at ' . now()->format('h:i A');
             $this->reset('notes');
+            $this->dispatch('attendance-updated');
         } catch (\Exception $e) {
             $this->errorMessage = $e->getMessage();
         }
@@ -36,6 +37,7 @@ class AttendanceWidget extends Component
 
             $this->successMessage = 'Successfully clocked out at ' . now()->format('h:i A');
             $this->reset('notes');
+            $this->dispatch('attendance-updated');
         } catch (\Exception $e) {
             $this->errorMessage = $e->getMessage();
         }
@@ -73,6 +75,9 @@ class AttendanceWidget extends Component
             'halfDays'         => $halfDays,
             'absentDays'       => $absentDays,
             'leaveDays'        => $leaveDays,
+            'notes'            => $this->notes,
+            'successMessage'   => $this->successMessage,
+            'errorMessage'     => $this->errorMessage,
         ]);
     }
 }

@@ -22,6 +22,11 @@ class CooStaffDashboard extends Component
     public string $statusFilter = '';
     public string $viewMode = 'grid'; // 'grid' or 'table'
 
+    protected $listeners = [
+        'staff-updated' => '$refresh',
+        'leave-updated' => '$refresh',
+    ];
+
     public function setViewMode(string $mode): void
     {
         $this->viewMode = in_array($mode, ['grid', 'table']) ? $mode : 'grid';
@@ -308,7 +313,8 @@ class CooStaffDashboard extends Component
     {
         $currentUser = Auth::user();
         if (!$currentUser || (!$currentUser->isSuperAdmin() && !$currentUser->isCoo())) {
-            abort(403, 'Unauthorized action.');
+            $this->errorMessage = 'Unauthorized action.';
+            return;
         }
 
         $user = User::findOrFail($userId);
@@ -321,7 +327,8 @@ class CooStaffDashboard extends Component
         $user->save();
 
         $statusText = $user->is_suspended ? 'suspended' : 'activated';
-        $this->successMessage = "User {$user->name} has been {$statusText}.";
+        $this->successMessage = "Staff member {$user->name} has been {$statusText} successfully.";
+        $this->dispatch('staff-updated');
     }
 
 
@@ -477,7 +484,7 @@ class CooStaffDashboard extends Component
         $today = now()->format('Y-m-d');
         $currentUser = Auth::user();
 
-        // 1. Single aggregate query for overall operational stats (Super fast)
+        // 1. Single fast aggregate query for overall operational stats
         $staffStats = User::nonSuperAdmin()
             ->where('id', '!=', $currentUser->id)
             ->forHod($currentUser)
@@ -488,10 +495,25 @@ class CooStaffDashboard extends Component
         $activeStaffCount = (int)($staffStats->active ?? 0);
         $suspendedStaffCount = (int)($staffStats->suspended ?? 0);
 
+        // Fast count queries for header stat cards
+        $userIdsQuery = User::nonSuperAdmin()
+            ->where('id', '!=', $currentUser->id)
+            ->forHod($currentUser)
+            ->select('id');
+
+        $onLeaveTodayCount = LeaveRequest::whereIn('user_id', $userIdsQuery)
+            ->where('status', 'Approved')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->count();
+
+        $pendingLeaveCount = LeaveRequest::whereIn('user_id', $userIdsQuery)
+            ->where('status', 'Pending')
+            ->count();
+
         $presentTodayCount = 0;
         $lateTodayCount = 0;
         $absentTodayCount = 0;
-        $onLeaveTodayCount = 0;
         $attendanceRate = 0;
         $todayAttendances = collect();
 
@@ -501,16 +523,18 @@ class CooStaffDashboard extends Component
                 ->where('id', '!=', $currentUser->id)
                 ->forHod($currentUser)
                 ->when($this->search, function ($q) {
-                    $q->where(function ($sub) {
-                        $sub->where('name', 'like', '%' . $this->search . '%')
-                            ->orWhere('email', 'like', '%' . $this->search . '%')
-                            ->orWhere('mobile', 'like', '%' . $this->search . '%')
-                            ->orWhere('designation', 'like', '%' . $this->search . '%');
+                    $term = '%' . trim($this->search) . '%';
+                    $q->where(function ($sub) use ($term) {
+                        $sub->where('name', 'like', $term)
+                            ->orWhere('email', 'like', $term)
+                            ->orWhere('mobile', 'like', $term)
+                            ->orWhere('designation', 'like', $term);
                     });
                 })
                 ->when($this->roleFilter, fn($q) => $q->where('role', $this->roleFilter))
                 ->when($this->statusFilter === 'active', fn($q) => $q->where('is_suspended', false))
                 ->when($this->statusFilter === 'suspended', fn($q) => $q->where('is_suspended', true))
+                ->select(['id', 'name', 'email', 'mobile', 'role', 'designation', 'is_suspended', 'is_hr', 'hod_id', 'created_at'])
                 ->orderBy('created_at', 'desc')
                 ->orderBy('name', 'asc');
 
@@ -559,8 +583,8 @@ class CooStaffDashboard extends Component
                 ->toArray();
         }
 
-        // 5. Hierarchy Tree (Only when on hierarchy tab)
-        $hierarchyTree = ($this->activeTab === 'hierarchy') ? User::getHierarchyTree() : ['children' => []];
+        // 5. Hierarchy Tree (Only when on hierarchy/tree tab)
+        $hierarchyTree = (in_array($this->activeTab, ['tree', 'hierarchy'])) ? User::getHierarchyTree() : ['children' => []];
 
         // 6. Modal Specific Data (Only loaded when modals are active)
         $selectedUser = ($this->showStaffModal && $this->selectedUserId) ? User::find($this->selectedUserId) : null;
@@ -582,29 +606,37 @@ class CooStaffDashboard extends Component
         }
 
         $selectedUserAttendance = collect();
-        $hods = User::whereIn('role', ['hod', '4', 'HOD'])->orWhere('is_hr', true)->orderBy('name')->get();
+        $hods = User::whereIn('role', ['hod', '4', 'HOD'])->orWhere('is_hr', true)->select(['id', 'name', 'role', 'designation'])->orderBy('name')->get();
 
         return view('livewire.coo-staff-dashboard', [
-            'hods'                  => $hods,
-            'hierarchyTree'         => $hierarchyTree,
-            'lwpBalances'           => $lwpBalances,
-            'staffList'             => $staffList,
-            'todayAttendances'      => $todayAttendances,
-            'totalStaffCount'       => $totalStaffCount,
-            'activeStaffCount'      => $activeStaffCount,
-            'suspendedStaffCount'   => $suspendedStaffCount,
-            'presentTodayCount'     => $presentTodayCount,
-            'lateTodayCount'        => $lateTodayCount,
-            'absentTodayCount'      => $absentTodayCount,
-            'onLeaveTodayCount'     => $onLeaveTodayCount,
-            'attendanceRate'        => $attendanceRate,
-            'pendingLeaveRequests'  => $pendingLeaveRequests,
-            'staffOnLeaveToday'     => $staffOnLeaveToday,
-            'roleCounts'            => $roleCounts,
-            'selectedUser'          => $selectedUser,
-            'selectedUserBalances'  => $selectedUserBalances,
-            'selectedUserProjects'  => $selectedUserProjects,
+            'hods'                   => $hods,
+            'hierarchyTree'          => $hierarchyTree,
+            'lwpBalances'            => $lwpBalances,
+            'staffList'              => $staffList,
+            'todayAttendances'       => $todayAttendances,
+            'totalStaffCount'        => $totalStaffCount,
+            'activeStaffCount'       => $activeStaffCount,
+            'suspendedStaffCount'    => $suspendedStaffCount,
+            'presentTodayCount'      => $presentTodayCount,
+            'lateTodayCount'         => $lateTodayCount,
+            'absentTodayCount'       => $absentTodayCount,
+            'onLeaveTodayCount'      => $onLeaveTodayCount,
+            'pendingLeaveCount'      => $pendingLeaveCount,
+            'attendanceRate'         => $attendanceRate,
+            'pendingLeaveRequests'   => $pendingLeaveRequests,
+            'staffOnLeaveToday'      => $staffOnLeaveToday,
+            'roleCounts'             => $roleCounts,
+            'selectedUser'           => $selectedUser,
+            'selectedUserBalances'   => $selectedUserBalances,
+            'selectedUserProjects'   => $selectedUserProjects,
             'selectedUserAttendance' => $selectedUserAttendance,
+            'activeTab'              => $this->activeTab,
+            'search'                 => $this->search,
+            'roleFilter'             => $this->roleFilter,
+            'statusFilter'           => $this->statusFilter,
+            'viewMode'               => $this->viewMode,
+            'successMessage'         => $this->successMessage,
+            'errorMessage'           => $this->errorMessage,
         ]);
     }
 }

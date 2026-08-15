@@ -12,7 +12,7 @@ class ContractorController extends Controller
         if (!$user) {
             return false;
         }
-        return ($user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || strtolower($user->designation ?? '') === 'project manager' || strtolower($user->designation ?? '') === 'engineer');
+        return $user->canManageMasterData();
     }
 
     private function canEditOrDeleteContractor($user)

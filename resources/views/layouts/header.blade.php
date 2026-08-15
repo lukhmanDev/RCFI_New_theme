@@ -30,7 +30,7 @@
         <!-- Live Date & Clock Widget -->
         <div id="liveClockWidget" style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px; padding: 0.35rem 0.85rem; font-size: 0.82rem; font-weight: 600; color: #334155;">
             <i class="bx bx-time" style="color: #10b981; font-size: 1.05rem;"></i>
-            <span id="liveClockDate" style="color: #475569;">{{ now()->format('D, M d, Y') }}</span>
+            <span id="liveClockDate" style="color: #475569;">{{ now()->format('D, d/m/Y') }}</span>
             <span style="color: #cbd5e1;">|</span>
             <span id="liveClockTime" style="color: #0f172a; font-weight: 700;">{{ now()->format('h:i:s A') }}</span>
         </div>
@@ -77,7 +77,7 @@
 
 
         <div class="topbar-profile" onclick="toggleTopbarProfileMenu(event)">
-            <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6WbkrAqlGF2Xzmb-prbginrkDNrv6zT05ID6KEjTbP2F-gn9w-wg1L3_NiSeXLq3HsqI&usqp=CAU' }}" alt="Profile">
+            <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSs8dhSiHOEzW9_vEHj6VVV4GvlooCTlYB-4lyypRqsQw&s=10' }}" alt="Profile">
             <div class="topbar-profile-info">
                 <span class="topbar-profile-name">{{ Auth::user() ? Auth::user()->name : 'Admin' }}</span>
                 <span class="topbar-profile-role">{{ Auth::user() ? Auth::user()->designation : 'Super Admin' }}</span>
@@ -300,7 +300,7 @@
         transition: background 0.15s ease;
     }
     .topbar-profile:hover { background: #f1f5f9; }
-    .topbar-profile img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .topbar-profile img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #10b981; }
 
     .topbar-profile-info { display: flex; flex-direction: column; line-height: 1.2; }
     .topbar-profile-name { font-size: 0.84rem; font-weight: 700; color: #1e293b; white-space: nowrap; }
@@ -562,8 +562,11 @@
         if (!dateEl || !timeEl) return;
 
         const now = new Date();
-        const optionsDate = { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' };
-        dateEl.innerText = now.toLocaleDateString('en-US', optionsDate);
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        dateEl.innerText = `${dayNames[now.getDay()]}, ${dd}/${mm}/${yyyy}`;
 
         const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
         timeEl.innerText = now.toLocaleTimeString('en-US', optionsTime);

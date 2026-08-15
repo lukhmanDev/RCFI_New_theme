@@ -262,7 +262,7 @@
                             <!-- Duration & Dates -->
                             <td style="padding: 1rem 1.25rem; vertical-align: middle;">
                                 <div style="font-weight: 700; color: #0f172a; font-size: 0.88rem;">
-                                    {{ \Carbon\Carbon::parse($req->start_date ?? $req->from_date)->format('M d, Y') }} — {{ \Carbon\Carbon::parse($req->end_date ?? $req->to_date)->format('M d, Y') }}
+                                    {{ \Carbon\Carbon::parse($req->start_date ?? $req->from_date)->format('d/m/Y') }} — {{ \Carbon\Carbon::parse($req->end_date ?? $req->to_date)->format('d/m/Y') }}
                                 </div>
                                 @if($req->is_half_day)
                                     <span style="background: #f3e8ff; color: #9333ea; border: 1px solid #d8b4fe; padding: 0.15rem 0.55rem; border-radius: 12px; font-size: 0.74rem; font-weight: 800; display: inline-block; margin-top: 0.25rem;">

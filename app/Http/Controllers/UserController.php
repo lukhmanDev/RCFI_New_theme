@@ -19,7 +19,12 @@ class UserController extends Controller
     {
         $this->checkAdmin();
         $authUser = auth()->user();
-        $users = User::nonSuperAdmin()->where('id', '!=', $authUser->id)->forHod($authUser)->orderBy('created_at', 'desc')->get();
+        $users = User::nonSuperAdmin()
+            ->where('id', '!=', $authUser->id)
+            ->forHod($authUser)
+            ->with(['profile', 'leaveRequests.leaveType'])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         $today = now()->format('Y-m-d');
         $onLeaveCount = User::forHod($authUser)->whereHas('leaveRequests', function($q) use ($today) {

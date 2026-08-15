@@ -394,6 +394,21 @@
                     <span class="info-label" style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">Total Project Cost :</span>
                     <span class="info-val" style="font-size: 1.1rem; font-weight: 800; color: #10b981;">₹{{ number_format($totalProjectCost, 2) }}</span>
                 </div>
+
+                @php
+                    $benefitedPeopleCount = $completionDetails['total_beneficiary_peoples'] ?? ($projectObj->total_beneficiary_peoples ?? ($projectObj->num_benefited_people ?? 0));
+                    $benefitedFamilyCount = $completionDetails['total_family'] ?? ($projectObj->total_family ?? 0);
+                @endphp
+                @if($benefitedPeopleCount > 0 || $benefitedFamilyCount > 0)
+                <div class="info-line" style="border-top: 1px dashed #e2e8f0; padding-top: 0.5rem; margin-top: 0.5rem;">
+                    <span class="info-label">Benefited People :</span>
+                    <span class="info-val" style="font-weight: 700; color: #0284c7;">{{ number_format($benefitedPeopleCount) }} people</span>
+                </div>
+                <div class="info-line">
+                    <span class="info-label">Benefited Families :</span>
+                    <span class="info-val" style="font-weight: 700; color: #8b5cf6;">{{ number_format($benefitedFamilyCount) }} families</span>
+                </div>
+                @endif
             </div>
 
         </div>
@@ -403,28 +418,75 @@
             
             <!-- Card 4: Documents Checklist -->
             <div class="report-card">
-                <h3 class="report-card-title">Documents</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem;">
+                    <h3 class="report-card-title" style="margin-bottom: 0;">Documents</h3>
+                    @php
+                        $totalDocs = count($docFields);
+                        $doneDocs = 0;
+                        foreach($docFields as $dk => $dl) {
+                            $fp = $projectDocument ? $projectDocument->{$dk} : null;
+                            $ta = $projectDocument ? $projectDocument->{$dk . '_ticked_at'} : null;
+                            if (!$ta && $project && isset($project->files['checklist'][$dk]['ticked_at'])) {
+                                $ta = $project->files['checklist'][$dk]['ticked_at'];
+                            }
+                            if ($dk === 'site_study' && $siteStudyData && ($siteStudyData->report || $siteStudyData->report_text || $siteStudyData->file_path || $siteStudyData->ticked_at)) {
+                                $doneDocs++;
+                            } elseif (!empty($ta) || (!empty($fp) && $fp !== '0')) {
+                                $doneDocs++;
+                            }
+                        }
+                    @endphp
+                    <span style="font-size: 0.78rem; font-weight: 700; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 0.2rem 0.6rem; border-radius: 12px;">
+                        {{ $doneDocs }} / {{ $totalDocs }} Done
+                    </span>
+                </div>
                 <div style="max-height: 480px; overflow-y: auto; padding-right: 0.35rem;">
                     @foreach($docFields as $docKey => $docLabel)
                         @php
                             $filePath = $projectDocument ? $projectDocument->{$docKey} : null;
                             $tickedAt = $projectDocument ? $projectDocument->{$docKey . '_ticked_at'} : null;
-                            $isDone = !empty($filePath) || !empty($tickedAt);
+                            if (!$tickedAt && $project && isset($project->files['checklist'][$docKey]['ticked_at'])) {
+                                $tickedAt = $project->files['checklist'][$docKey]['ticked_at'];
+                            }
+                            
+                            $isSiteStudy = ($docKey === 'site_study');
+                            $hasSiteStudyData = $isSiteStudy && $siteStudyData && ($siteStudyData->report || $siteStudyData->report_text || $siteStudyData->file_path || $siteStudyData->ticked_at);
+                            if ($hasSiteStudyData && !$tickedAt) {
+                                $tickedAt = $siteStudyData->ticked_at ?? $siteStudyData->updated_at;
+                            }
+
+                            $isDone = $hasSiteStudyData || !empty($tickedAt) || (!empty($filePath) && $filePath !== '0');
                         @endphp
-                        <div class="doc-item">
-                            <span class="info-label" style="display: flex; align-items: center; gap: 0.4rem; color: #334155;">
-                                <i class="bx {{ $isDone ? 'bxs-check-circle' : 'bx-circle' }}" style="color: {{ $isDone ? '#10b981' : '#cbd5e1' }}; font-size: 1.1rem;"></i>
-                                {{ $docLabel }}-
-                            </span>
-                            <div>
-                                @if(!empty($filePath))
-                                    <a href="{{ asset($filePath) }}" target="_blank" style="color: #059669; text-decoration: none; font-size: 0.78rem; font-weight: 700; background: #ecfdf5; padding: 0.2rem 0.6rem; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                        <i class="bx bx-download"></i> View
-                                    </a>
+                        <div class="doc-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0; border-bottom: 1px solid #f1f5f9; gap: 0.75rem;">
+                            <div style="display: flex; flex-direction: column; gap: 0.2rem; min-width: 0;">
+                                <span class="info-label" style="display: flex; align-items: center; gap: 0.45rem; color: #1e293b; font-weight: 600; font-size: 0.85rem;">
+                                    <i class="bx {{ $isDone ? 'bxs-check-circle' : 'bx-circle' }}" style="color: {{ $isDone ? '#10b981' : '#cbd5e1' }}; font-size: 1.15rem; flex-shrink: 0;"></i>
+                                    <span>{{ $docLabel }}</span>
+                                </span>
+                                @if($tickedAt)
+                                    <span style="font-size: 0.72rem; color: #64748b; margin-left: 1.6rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                        <i class="bx bx-time-five" style="font-size: 0.8rem; color: #059669;"></i>
+                                        Ticked: <strong style="color: #047857; font-weight: 600;">{{ \Carbon\Carbon::parse($tickedAt)->timezone('Asia/Kolkata')->format('d/m/Y h:i A') }}</strong>
+                                    </span>
                                 @elseif($isDone)
-                                    <span style="color: #10b981; font-size: 0.78rem; font-weight: 700;">Verified</span>
+                                    <span style="font-size: 0.72rem; color: #10b981; margin-left: 1.6rem; font-weight: 600;">
+                                        Ticked
+                                    </span>
+                                @endif
+                            </div>
+                            <div style="flex-shrink: 0; display: flex; align-items: center; gap: 0.35rem;">
+                                @if($isSiteStudy && $hasSiteStudyData)
+                                    <button type="button" onclick="openSiteStudyReportModal()" style="color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.25rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer; transition: all 0.15s;" onmouseover="this.style.background='#d1fae5'" onmouseout="this.style.background='#ecfdf5'">
+                                        <i class="bx bx-file-find"></i> View
+                                    </button>
+                                @elseif($isDone)
+                                    <span style="color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.22rem 0.6rem; border-radius: 6px; font-size: 0.74rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                        <i class="bx bx-check"></i> Ticked
+                                    </span>
                                 @else
-                                    <span style="color: #94a3b8; font-size: 0.78rem; font-weight: 600;">Pending</span>
+                                    <span style="color: #94a3b8; font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.55rem; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                        Pending
+                                    </span>
                                 @endif
                             </div>
                         </div>
@@ -452,7 +514,7 @@
                                 <tr>
                                     <td style="font-weight: 700; color: #0f172a;">{{ $insp->name }}</td>
                                     <td style="color: #475569;">{{ $insp->designation ?? 'Inspector' }}</td>
-                                    <td style="color: #475569;">{{ $insp->date ? date('d M, Y', strtotime($insp->date)) : 'N/A' }}</td>
+                                    <td style="color: #475569;">{{ $insp->date ? date('d/m/Y', strtotime($insp->date)) : 'N/A' }}</td>
                                     <td style="color: #475569;">{{ $insp->remarks ?? '-' }}</td>
                                 </tr>
                             @empty
@@ -585,6 +647,59 @@
     }
 </script>
 @endif
+
+<!-- Site Study Report Modal -->
+<div id="siteStudyReportModal" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 99999; padding: 1.5rem;" onclick="closeSiteStudyReportModal()">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 680px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid #e2e8f0;" onclick="event.stopPropagation()">
+        <div style="padding: 1.25rem 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #ecfdf5; color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; border: 1px solid #a7f3d0;">
+                    <i class="bx bx-file-find"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #0f172a;">Site Study Report</h3>
+                    <p style="margin: 0; font-size: 0.8rem; color: #64748b;">Comprehensive field study and evaluation</p>
+                </div>
+            </div>
+            <button onclick="closeSiteStudyReportModal()" style="background: none; border: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer; padding: 0.2rem; display: flex; align-items: center;" onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#94a3b8'">
+                <i class="bx bx-x"></i>
+            </button>
+        </div>
+        <div style="padding: 1.5rem; overflow-y: auto; flex: 1; color: #334155; font-size: 0.92rem; line-height: 1.6;">
+            @php
+                $studyText = $siteStudyData->report ?? $siteStudyData->report_text ?? $siteStudyData->remarks ?? null;
+            @endphp
+            @if(!empty($studyText))
+                <div style="white-space: pre-wrap; background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #e2e8f0; font-family: inherit;">{{ $studyText }}</div>
+            @else
+                <p style="color: #94a3b8; font-style: italic; text-align: center; margin: 2rem 0;">No text report content available.</p>
+            @endif
+
+            @if($siteStudyData && $siteStudyData->file_path)
+                <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Attached Document File:</span>
+                    <a href="{{ asset($siteStudyData->file_path) }}" target="_blank" style="color: #059669; text-decoration: none; font-size: 0.82rem; font-weight: 700; background: #ecfdf5; padding: 0.35rem 0.8rem; border-radius: 6px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 0.35rem;">
+                        <i class="bx bx-download"></i> Download / View Attached File
+                    </a>
+                </div>
+            @endif
+        </div>
+        <div style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end;">
+            <button onclick="closeSiteStudyReportModal()" style="background: #e2e8f0; color: #475569; border: none; padding: 0.45rem 1.2rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openSiteStudyReportModal() {
+        const m = document.getElementById('siteStudyReportModal');
+        if (m) m.style.display = 'flex';
+    }
+    function closeSiteStudyReportModal() {
+        const m = document.getElementById('siteStudyReportModal');
+        if (m) m.style.display = 'none';
+    }
+</script>
 
 @if(request()->has('print') || request()->has('pdf'))
 <script>

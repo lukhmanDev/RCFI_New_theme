@@ -26,6 +26,16 @@ class AttendanceAdminDashboard extends Component
     public string $successMessage = '';
     public string $errorMessage = '';
 
+    protected $listeners = [
+        'attendance-updated' => 'refreshAttendance',
+        'attendanceMarked' => 'refreshAttendance',
+    ];
+
+    public function refreshAttendance(): void
+    {
+        $this->loadDailyAttendance();
+    }
+
     public function mount(): void
     {
         $this->selectedDate = now()->format('Y-m-d');
@@ -183,7 +193,7 @@ class AttendanceAdminDashboard extends Component
                     $row->user->name ?? 'N/A',
                     $row->user->email ?? 'N/A',
                     $row->user->role ?? 'N/A',
-                    $row->date ? $row->date->format('Y-m-d') : '',
+                    $row->date ? $row->date->format('d/m/Y') : '',
                     $row->formatted_clock_in,
                     $row->formatted_clock_out,
                     $row->working_hours,
@@ -241,6 +251,15 @@ class AttendanceAdminDashboard extends Component
             'daysInMonth'      => $daysInMonth,
             'monthAttendances' => $monthAttendances,
             'startOfMonth'     => $startOfMonth,
+            'activeTab'        => $this->activeTab,
+            'selectedDate'     => $this->selectedDate,
+            'searchStaff'      => $this->searchStaff,
+            'roleFilter'       => $this->roleFilter,
+            'attendanceData'   => $this->attendanceData,
+            'matrixMonth'      => $this->matrixMonth,
+            'matrixYear'       => $this->matrixYear,
+            'successMessage'   => $this->successMessage,
+            'errorMessage'     => $this->errorMessage,
         ]);
     }
 }

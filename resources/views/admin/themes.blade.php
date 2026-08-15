@@ -105,11 +105,11 @@
             </div>
         </div>
 
-        <div style="overflow-x: auto;">
+        <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px;">
             <table class="table-custom" id="themesTable">
                 <thead>
                     <tr>
-                        <th style="width: 70px;">ID</th>
+                        <th style="width: 70px; text-align: center;">ID</th>
                         <th>Theme Name</th>
                         <th style="text-align: center; width: 200px;">Subthemes Count</th>
                         <th style="text-align: center; width: 120px;">Status</th>
@@ -121,23 +121,23 @@
                 <tbody>
                     @forelse($themes as $theme)
                         <tr>
-                            <td style="color: #64748b; font-size: 0.85rem; font-weight: 600;">#{{ $theme->id }}</td>
+                            <td style="color: #64748b; font-size: 0.85rem; font-weight: 700; text-align: center;">#{{ $theme->id }}</td>
                             <td>
-                                <div style="font-weight: 600; color: #0f172a; font-size: 0.95rem;">{{ $theme->name }}</div>
+                                <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">{{ $theme->name }}</div>
                             </td>
                             <td style="text-align: center;">
-                                <button onclick="switchToSubthemesByTheme({{ $theme->id }})" style="background-color: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); color: #4338ca; padding: 0.35rem 0.85rem; border-radius: 16px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.35rem;" title="View subthemes for {{ $theme->name }}">
+                                <button onclick="switchToSubthemesByTheme({{ $theme->id }})" style="background-color: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); color: #4338ca; padding: 0.35rem 0.85rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.35rem;" title="View subthemes for {{ $theme->name }}">
                                     <i class="bx bxs-layer"></i>
                                     <span>{{ $theme->subthemes_count }} Subthemes</span>
                                 </button>
                             </td>
                             <td style="text-align: center;">
                                 @if($theme->status == 1)
-                                    <span style="background-color: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669; padding: 0.25rem 0.65rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                    <span style="background-color: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669; padding: 0.25rem 0.65rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #059669;"></span> Active
                                     </span>
                                 @else
-                                    <span style="background-color: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #dc2626; padding: 0.25rem 0.65rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                    <span style="background-color: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #dc2626; padding: 0.25rem 0.65rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #dc2626;"></span> Inactive
                                     </span>
                                 @endif

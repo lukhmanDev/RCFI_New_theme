@@ -72,12 +72,12 @@
                                 </td>
                                 <td style="padding: 1rem 1.25rem;"><x-leave-type-badge :type="$req->leaveType" /></td>
                                 <td style="padding: 1rem 1.25rem; font-weight: 600; color: #0f172a;">
-                                    {{ $req->start_date->format('M d') }} &mdash; {{ $req->end_date->format('M d, Y') }}
+                                    {{ $req->start_date->format('d/m/Y') }} &mdash; {{ $req->end_date->format('d/m/Y') }}
                                     <div style="font-size: 0.75rem; color: #2563eb; font-weight: 700;">({{ $req->total_days }} day(s))</div>
                                 </td>
                                 <td style="padding: 1rem 1.25rem; max-width: 260px; color: #475569;">{{ $req->reason }}</td>
                                 <td style="padding: 1rem 1.25rem; text-align: center; color: #64748b; font-size: 0.82rem;">
-                                    {{ $req->applied_on ? $req->applied_on->format('M d, H:i') : $req->created_at->format('M d, H:i') }}
+                                    {{ $req->applied_on ? $req->applied_on->format('d/m/Y h:i A') : $req->created_at->format('d/m/Y h:i A') }}
                                 </td>
                                 <td style="padding: 1rem 1.25rem; text-align: center;">
                                     <div style="display: flex; gap: 0.4rem; justify-content: center;">
@@ -140,7 +140,7 @@
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <x-leave-type-badge :type="$app->leaveType" />
                             <div style="font-size: 0.88rem; font-weight: 700; color: #0f172a;">
-                                {{ $app->start_date->format('M d') }} &mdash; {{ $app->end_date->format('M d, Y') }}
+                                {{ $app->start_date->format('d/m/Y') }} &mdash; {{ $app->end_date->format('d/m/Y') }}
                                 <span style="font-size: 0.75rem; color: #2563eb; font-weight: 700; display: block; text-align: right;">{{ $app->total_days }} day(s)</span>
                             </div>
                         </div>
@@ -157,6 +157,7 @@
 
     <!-- TAB 3: LEAVE TYPE MANAGEMENT (Super Admin Only) -->
     @if($activeTab === 'types' && Auth::user() && Auth::user()->isSuperAdmin())
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
                 <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">Policy Configuration (Leave Types)</h2>
                 <button type="button" wire:click="openCreateModal" style="background: #10b981; color: #ffffff; border: none; padding: 0.55rem 1.15rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
@@ -285,7 +286,7 @@
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 0.85rem; font-weight: 600; color: #0f172a;">{{ $r->user->name ?? 'N/A' }}</td>
                             <td style="padding: 0.85rem;"><x-leave-type-badge :type="$r->leaveType" /></td>
-                            <td style="padding: 0.85rem;">{{ $r->start_date->format('Y-m-d') }} &mdash; {{ $r->end_date->format('Y-m-d') }}</td>
+                            <td style="padding: 0.85rem;">{{ $r->start_date->format('d/m/Y') }} &mdash; {{ $r->end_date->format('d/m/Y') }}</td>
                             <td style="padding: 0.85rem; text-align: center; font-weight: 700; color: #2563eb;">{{ $r->total_days }}</td>
                             <td style="padding: 0.85rem; text-align: center;"><x-leave-status-badge :status="$r->status" /></td>
                         </tr>

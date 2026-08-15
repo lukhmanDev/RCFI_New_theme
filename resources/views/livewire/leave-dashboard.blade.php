@@ -106,7 +106,7 @@
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 1rem 1.25rem;"><x-leave-type-badge :type="$req->leaveType" /></td>
                             <td style="padding: 1rem 1.25rem; font-weight: 600; color: #0f172a;">
-                                {{ $req->start_date->format('M d, Y') }} &mdash; {{ $req->end_date->format('M d, Y') }}
+                                {{ $req->start_date->format('d/m/Y') }} &mdash; {{ $req->end_date->format('d/m/Y') }}
                             </td>
                             <td style="padding: 1rem 1.25rem; text-align: center; font-weight: 700;">
                                 @if($req->is_half_day)

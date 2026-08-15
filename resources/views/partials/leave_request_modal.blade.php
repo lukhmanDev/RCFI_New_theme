@@ -17,15 +17,18 @@
             @csrf
 
             <div style="display: flex; flex-direction: column; gap: 1.15rem; margin-bottom: 1.5rem;">
-                @if(Auth::user() && (Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->is_hr))
+                @if(Auth::user() && (Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || (bool)Auth::user()->is_hr || Auth::user()->isHod()))
                     <div>
                         <label class="form-label" for="leave_target_user_id" style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem;">Apply For Staff Member Profile</label>
                         <select class="form-select-dark" id="leave_target_user_id" name="user_id" style="width: 100%; padding: 0.65rem 1rem; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; outline: none; background: #ffffff; color: #0f172a;">
                             <option value="{{ Auth::id() }}">Myself ({{ Auth::user()->name }})</option>
-                            @foreach(\App\Models\User::nonSuperAdmin()->orderBy('name')->get() as $u)
-                                @if($u->id !== Auth::id())
-                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->role_name }} &bull; {{ $u->email }})</option>
-                                @endif
+                            @php
+                                $staffOptions = (Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || (bool)Auth::user()->is_hr)
+                                    ? \App\Models\User::nonSuperAdmin()->where('id', '!=', Auth::id())->orderBy('name')->get()
+                                    : \App\Models\User::nonSuperAdmin()->where('assigned_hod_id', Auth::id())->where('id', '!=', Auth::id())->orderBy('name')->get();
+                            @endphp
+                            @foreach($staffOptions as $u)
+                                <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->role_name }} &bull; {{ $u->email }})</option>
                             @endforeach
                         </select>
                     </div>

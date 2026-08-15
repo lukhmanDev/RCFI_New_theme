@@ -32,13 +32,6 @@
             </a>
         </li>
 
-        <li>
-            <a href="{{ route('leave.index') }}" class="{{ $isLeaveRequests ? 'active' : '' }}">
-                <i class="bx bxs-calendar-event"></i>
-                <span>Leave Requests</span>
-            </a>
-        </li>
-
         @if(!Auth::user() || !Auth::user()->isEmployee())
         <li>
             <a href="{{ route('applications.index') }}" class="{{ $isApplications ? 'active' : '' }}">
@@ -61,15 +54,14 @@
                 <span>Projects</span>
             </a>
         </li>
+        @endif
+        @endif
 
-
-
-
-        @if(Auth::user() && !Auth::user()->isOthers())
+        <!-- HR Management Section -->
         <li class="sidebar-header">
-            <span>Master Data</span>
+            <span>HR Management</span>
         </li>
-        @if(Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod())
+        @if(Auth::user() && (Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod()))
         <li>
             <a href="{{ route('coo.staff_dashboard') }}" class="{{ (request()->routeIs('coo.staff_dashboard') || $isStaffs) ? 'active' : '' }}">
                 <i class="bx bxs-group"></i>
@@ -77,14 +69,23 @@
             </a>
         </li>
         @endif
-        @if(Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod() || Auth::user()->isSocialAid())
+        <li>
+            <a href="{{ route('leave.index') }}" class="{{ $isLeaveRequests ? 'active' : '' }}">
+                <i class="bx bxs-calendar-event"></i>
+                <span>Leave Requests</span>
+            </a>
+        </li>
+
+        @if(Auth::user() && (Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod() || Auth::user()->isSocialAid()))
+        <li class="sidebar-header">
+            <span>Reports</span>
+        </li>
         <li>
             <a href="{{ route('admin.reports.social_aid_funds') }}" class="{{ $isSocialAidFundReport ? 'active' : '' }}">
                 <i class="bx bxs-report"></i>
                 <span>Social Aid Fund Report</span>
             </a>
         </li>
-        @endif
         @if(Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod())
         <li>
             <a href="{{ route('admin.reports.projects') }}" class="{{ $isProjectReport ? 'active' : '' }}">
@@ -93,6 +94,12 @@
             </a>
         </li>
         @endif
+        @endif
+
+        @if(Auth::user() && Auth::user()->canManageMasterData())
+        <li class="sidebar-header">
+            <span>Master Data</span>
+        </li>
         <li>
             <a href="{{ route('donors.index') }}" class="{{ $isAgencies ? 'active' : '' }}">
                 <i class="bx bxs-heart"></i>
@@ -118,14 +125,12 @@
             </a>
         </li>
         @endif
-        @endif
-        @endif
     </ul>
 
     <!-- Relocated Sidebar Profile Section -->
     <div class="sidebar-footer">
         <div class="sidebar-profile" onclick="toggleProfileMenu(event)">
-            <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6WbkrAqlGF2Xzmb-prbginrkDNrv6zT05ID6KEjTbP2F-gn9w-wg1L3_NiSeXLq3HsqI&usqp=CAU' }}" alt="Profile">
+            <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSs8dhSiHOEzW9_vEHj6VVV4GvlooCTlYB-4lyypRqsQw&s=10' }}" alt="Profile">
             <div class="profile-info">
                 <span class="profile-name">{{ Auth::user() ? Auth::user()->name : 'Admin' }}</span>
                 <span class="profile-role">{{ Auth::user() ? Auth::user()->designation : 'Super Admin' }}</span>
@@ -289,7 +294,7 @@
 
     .sidebar-profile img {
         width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
-        border: 2px solid #6366f1;
+        border: 2px solid #10b981;
     }
 
     .profile-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; }

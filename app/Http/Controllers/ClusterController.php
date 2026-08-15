@@ -12,10 +12,7 @@ class ClusterController extends Controller
         if (!$user) {
             return false;
         }
-        $designationLower = strtolower($user->designation ?? '');
-        $isAdminDesignation = in_array($designationLower, ['admin', 'super admin', 'coo', 'hod']) || str_contains($designationLower, 'admin');
-
-        return $user->isSuperAdmin() || $user->isCoo() || $user->isHod() || $user->hasAdminAccess() || $isAdminDesignation;
+        return $user->canManageMasterData();
     }
 
     public function index()

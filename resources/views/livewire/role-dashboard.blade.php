@@ -1,20 +1,20 @@
-<div class="role-dashboard-container">
+<div class="role-dashboard-container" wire:poll.10s>
 
     <style>
         .role-dashboard-container {
             display: flex;
             flex-direction: column;
-            gap: 1.75rem;
+            gap: 1.5rem;
             font-family: inherit;
         }
 
-        /* Hero Welcome Header */
-        .hero-welcome-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        /* 1. Executive Header */
+        .dash-header-card {
+            background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            padding: 1.75rem 2rem;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+            border-radius: 16px;
+            padding: 1.5rem 1.75rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 16px rgba(15, 23, 42, 0.02);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -23,266 +23,257 @@
             position: relative;
             overflow: hidden;
         }
-        .hero-welcome-card::before {
+        .dash-header-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            width: 6px;
+            width: 4px;
             height: 100%;
-            background: linear-gradient(180deg, #10b981 0%, #0ea5e9 100%);
-            border-top-left-radius: 20px;
-            border-bottom-left-radius: 20px;
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
         }
-        .hero-welcome-title {
+        .dash-title-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        .dash-title {
             color: #0f172a;
-            font-size: 1.75rem;
+            font-size: 1.6rem;
             font-weight: 800;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.025em;
             margin: 0;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-        .hero-welcome-subtitle {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-top: 0.35rem;
-            margin-bottom: 0;
+        .dash-meta-row {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.65rem;
             flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: #64748b;
         }
-        .role-badge {
+        .role-badge-pill {
             background: #ecfdf5;
             color: #059669;
             border: 1px solid #a7f3d0;
             padding: 0.2rem 0.65rem;
             border-radius: 9999px;
             font-weight: 700;
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             display: inline-flex;
             align-items: center;
             gap: 0.3rem;
         }
-
-        /* Top Grid - Hero Impact Cards (Gradient) */
-        .hero-impact-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.35rem;
+        .live-status-dot {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #059669;
         }
-        .impact-card {
-            border-radius: 20px;
-            padding: 1.75rem;
-            position: relative;
-            overflow: hidden;
+        .live-pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .dash-actions-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .btn-dash-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 0.55rem 1.05rem;
+            border-radius: 10px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+        }
+        .btn-dash-outline:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #0f172a;
+            transform: translateY(-1px);
+        }
+        .btn-dash-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            border: 1px solid #059669;
+            padding: 0.55rem 1.2rem;
+            border-radius: 10px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+            transition: all 0.2s ease;
+        }
+        .btn-dash-primary:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.32);
+        }
+
+        /* 2. Standard KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+        }
+        .kpi-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.35rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 160px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            color: #ffffff;
+            gap: 0.85rem;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
-        .impact-card:hover {
-            transform: translateY(-4px);
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px -4px rgba(15, 23, 42, 0.08);
+            border-color: #cbd5e1;
         }
-        .impact-card-peoples {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #075985 100%);
-            box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.35), 0 8px 10px -6px rgba(2, 132, 199, 0.2);
-        }
-        .impact-card-families {
-            background: linear-gradient(135deg, #059669 0%, #047857 60%, #065f46 100%);
-            box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.35), 0 8px 10px -6px rgba(5, 150, 105, 0.2);
-        }
-        .impact-card-projects {
-            background: linear-gradient(135deg, #d97706 0%, #b45309 60%, #92400e 100%);
-            box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.35), 0 8px 10px -6px rgba(217, 119, 6, 0.2);
-        }
-        .impact-card .deco-circle-1 {
-            position: absolute;
-            right: -20px;
-            top: -20px;
-            width: 120px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-        .impact-card .deco-circle-2 {
-            position: absolute;
-            right: 40px;
-            bottom: -30px;
-            width: 90px;
-            height: 90px;
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-        .impact-header {
+        .kpi-card-top {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            position: relative;
-            z-index: 1;
         }
-        .impact-icon-wrapper {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(8px);
+        .kpi-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            font-size: 1.35rem;
+            flex-shrink: 0;
         }
-        .impact-pill {
-            background: rgba(255, 255, 255, 0.18);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(8px);
-            padding: 0.25rem 0.65rem;
-            border-radius: 9999px;
+        .icon-emerald { background: #ecfdf5; color: #059669; border: 1px solid #d1fae5; }
+        .icon-teal    { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+        .icon-amber   { background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
+        .icon-blue    { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+
+        .kpi-badge {
             font-size: 0.72rem;
             font-weight: 700;
+            padding: 0.2rem 0.55rem;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            text-transform: uppercase;
             letter-spacing: 0.03em;
-            text-transform: uppercase;
         }
-        .impact-body {
-            position: relative;
-            z-index: 1;
-            margin-top: 1rem;
-        }
-        .impact-label {
-            font-size: 0.82rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: rgba(255, 255, 255, 0.9);
-            display: block;
-        }
-        .impact-value {
-            font-size: 2.35rem;
-            font-weight: 900;
-            line-height: 1.1;
-            margin: 0.25rem 0;
-            color: #ffffff;
-            letter-spacing: -0.02em;
-        }
-        .impact-footer {
-            font-size: 0.78rem;
-            color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            font-weight: 500;
-        }
+        .badge-emerald-soft { background: #ecfdf5; color: #059669; }
+        .badge-teal-soft    { background: #f0fdf4; color: #16a34a; }
+        .badge-amber-soft   { background: #fffbeb; color: #d97706; }
+        .badge-blue-soft    { background: #eff6ff; color: #2563eb; }
 
-        /* Pipeline Stats Grid */
-        .pipeline-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.25rem;
-        }
-        .stat-card-modern {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 18px;
-            padding: 1.35rem;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
-            display: flex;
-            align-items: center;
-            gap: 1.15rem;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-        .stat-card-modern:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.06);
-            border-color: #cbd5e1;
-        }
-        .stat-icon-modern {
-            width: 52px;
-            height: 52px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.45rem;
-            flex-shrink: 0;
-            transition: transform 0.25s ease;
-        }
-        .stat-card-modern:hover .stat-icon-modern {
-            transform: scale(1.08);
-        }
-        .stat-icon-blue { background: #eff6ff; color: #2563eb; }
-        .stat-icon-orange { background: #fff7ed; color: #ea580c; }
-        .stat-icon-emerald { background: #ecfdf5; color: #059669; }
-        .stat-icon-purple { background: #f5f3ff; color: #7c3aed; }
-
-        .stat-info {
+        .kpi-main-info {
             display: flex;
             flex-direction: column;
-            flex-grow: 1;
-            min-width: 0;
+            gap: 0.15rem;
         }
-        .stat-label-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-        }
-        .stat-label {
+        .kpi-label {
             color: #64748b;
             font-size: 0.78rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
         }
-        .stat-badge-new {
-            background: #ef4444;
-            color: #ffffff;
-            font-size: 0.7rem;
-            font-weight: 800;
-            padding: 0.12rem 0.5rem;
-            border-radius: 9999px;
-            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
-            animation: pulse-soft 2s infinite;
-        }
-        @keyframes pulse-soft {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        .stat-number {
+        .kpi-value {
             color: #0f172a;
-            font-size: 1.75rem;
+            font-size: 1.85rem;
             font-weight: 900;
-            line-height: 1.2;
-            margin: 0.15rem 0;
-            letter-spacing: -0.02em;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
         }
-        .stat-subtext {
-            font-size: 0.75rem;
-            font-weight: 600;
+        .kpi-footer {
             display: flex;
             align-items: center;
-            gap: 0.3rem;
+            gap: 0.4rem;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: #64748b;
+            padding-top: 0.65rem;
+            border-top: 1px dashed #f1f5f9;
         }
-        .text-blue { color: #2563eb; }
-        .text-orange { color: #ea580c; }
-        .text-emerald { color: #059669; }
-        .text-purple { color: #7c3aed; }
 
-        /* Main Analytics Section (Chart & Quick Breakdown) */
-        .analytics-card {
+        /* 3. Operational Quick Summary Bar */
+        .status-strip-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .status-strip-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            padding: 1.75rem 2rem;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
+            border-radius: 12px;
+            padding: 0.95rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            transition: all 0.2s ease;
+        }
+        .status-strip-card:hover {
+            border-color: #cbd5e1;
+            background: #fbfcfe;
+        }
+        .status-strip-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .status-strip-num {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        /* 4. Full-Width Analytics Chart Card */
+        .chart-main-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.5rem 1.75rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
         }
         .card-header-flex {
             display: flex;
@@ -290,384 +281,852 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 1rem;
-            margin-bottom: 1.5rem;
         }
-        .card-title {
-            color: #0f172a;
-            font-size: 1.15rem;
-            font-weight: 800;
+        .card-heading {
             margin: 0;
+            color: #0f172a;
+            font-size: 1.1rem;
+            font-weight: 800;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            letter-spacing: -0.01em;
         }
-        .card-subtitle {
+        .card-subtext {
             color: #64748b;
-            font-size: 0.84rem;
-            margin: 0.25rem 0 0;
+            font-size: 0.82rem;
+            margin: 0.2rem 0 0;
+            font-weight: 500;
         }
-        .chart-legend-custom {
+        .chart-legend-box {
             display: flex;
             align-items: center;
             gap: 1.25rem;
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            padding: 0.45rem 0.9rem;
-            border-radius: 12px;
+            padding: 0.4rem 0.85rem;
+            border-radius: 10px;
         }
-        .legend-item {
+        .legend-tag {
             display: flex;
             align-items: center;
-            gap: 0.45rem;
-            font-size: 0.8rem;
+            gap: 0.4rem;
+            font-size: 0.78rem;
             font-weight: 700;
         }
-        .legend-dot {
+        .legend-color-dot {
             width: 10px;
             height: 10px;
             border-radius: 3px;
         }
-        .chart-container-wrap {
+        .chart-canvas-wrap {
             position: relative;
-            height: 310px;
+            height: 320px;
             width: 100%;
         }
 
-        /* Modern Table Styling */
-        .modern-table-card {
+        /* 4.5. National Geographic Reach & State-wise Impact Map */
+        .map-main-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            padding: 1.75rem 2rem;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+            border-radius: 16px;
+            padding: 1.5rem 1.75rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 16px rgba(15, 23, 42, 0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
         }
-        .table-custom-modern {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 0.88rem;
+        .map-grid-layout {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr;
+            gap: 1.5rem;
+            align-items: stretch;
         }
-        .table-custom-modern th {
-            background: #f8fafc;
-            color: #475569;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 0.74rem;
-            letter-spacing: 0.05em;
-            padding: 0.95rem 1.1rem;
-            border-top: 1px solid #e2e8f0;
-            border-bottom: 2px solid #e2e8f0;
+        @media (max-width: 1024px) {
+            .map-grid-layout {
+                grid-template-columns: 1fr;
+            }
         }
-        .table-custom-modern th:first-child { border-top-left-radius: 12px; }
-        .table-custom-modern th:last-child { border-top-right-radius: 12px; }
-        .table-custom-modern td {
-            padding: 1rem 1.1rem;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-            transition: background 0.15s ease;
-        }
-        .table-custom-modern tr:hover td {
-            background: #f8fafc;
-        }
-        .table-custom-modern tr:last-child td {
-            border-bottom: none;
-        }
-        .rank-badge {
-            width: 26px;
-            height: 26px;
-            border-radius: 8px;
-            background: #f1f5f9;
-            color: #475569;
-            display: inline-flex;
+        .map-visualization-area {
+            position: relative;
+            background: radial-gradient(circle at center, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            overflow: hidden;
+            min-height: 520px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.78rem;
-            font-weight: 800;
         }
-        .badge-pill-soft {
+        #indiaMapContainer {
+            width: 100%;
+            height: 100%;
+            min-height: 520px;
+        }
+        .map-controls-floating {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 10;
+        }
+        .btn-map-ctrl {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+            transition: all 0.2s ease;
+            font-size: 1.1rem;
+        }
+        .btn-map-ctrl:hover {
+            background: #ecfdf5;
+            color: #059669;
+            border-color: #10b981;
+            transform: scale(1.05);
+        }
+        .map-legend-bar {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            border: 1px solid #e2e8f0;
+            padding: 0.45rem 0.75rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #475569;
+            z-index: 10;
+        }
+        .map-legend-gradient {
+            width: 90px;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #e2e8f0 0%, #6ee7b7 40%, #10b981 70%, #047857 100%);
+        }
+        .india-map-tooltip {
+            position: absolute;
+            display: none;
+            pointer-events: none;
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(10px);
+            color: #ffffff;
+            padding: 0.75rem 0.95rem;
+            border-radius: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+            font-size: 0.8rem;
+            z-index: 50;
+            min-width: 190px;
+            transition: transform 0.08s ease-out;
+        }
+
+        /* State Insights Side Panel */
+        .state-insights-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .state-detail-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 1.25rem 1.4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .state-detail-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+        }
+        .state-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .state-detail-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.01em;
+            margin: 0;
+        }
+        .state-project-pill {
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
             padding: 0.25rem 0.65rem;
             border-radius: 9999px;
+            font-size: 0.76rem;
             font-weight: 700;
+        }
+        .state-stats-mini-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 0.85rem;
+        }
+        .state-mini-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .state-mini-box-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+        }
+        .state-mini-box-val {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        /* Ranked State Leaderboard */
+        .state-leaderboard-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 1.15rem 1.35rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            flex: 1;
+        }
+        .leaderboard-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #334155;
+        }
+        .leaderboard-scroll-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            max-height: 260px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .leaderboard-scroll-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .leaderboard-scroll-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .leaderboard-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.55rem 0.75rem;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .leaderboard-item-row:hover, .leaderboard-item-row.active {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+            transform: translateX(2px);
+        }
+        .leaderboard-rank-badge {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            background: #e2e8f0;
+            color: #475569;
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.6rem;
+        }
+        .leaderboard-item-row.active .leaderboard-rank-badge,
+        .leaderboard-item-row:hover .leaderboard-rank-badge {
+            background: #059669;
+            color: #ffffff;
+        }
+        .leaderboard-st-name {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #1e293b;
+            flex: 1;
+        }
+        .leaderboard-st-count {
             font-size: 0.78rem;
+            font-weight: 800;
+            color: #059669;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+        }
+
+        /* 5. Theme Breakdown Modern Table (Clean Standard Enterprise Theme) */
+        .table-card-container {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.5rem 1.75rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+        .table-custom-wrapper {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        .table-custom thead tr {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+        }
+        .table-custom thead th {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            font-size: 0.74rem !important;
+            letter-spacing: 0.05em !important;
+            padding: 0.9rem 1.15rem !important;
+            border: none !important;
+            white-space: nowrap;
+        }
+        .table-custom tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.15s ease;
+        }
+        .table-custom tbody tr:hover {
+            background: #f8fafc;
+        }
+        .table-custom tbody tr:last-child {
+            border-bottom: none;
+        }
+        .table-custom td {
+            padding: 0.95rem 1.15rem;
+            vertical-align: middle;
+            background: transparent;
+        }
+        .col-rank-num {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #64748b;
+        }
+        .theme-name-text {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 0.92rem;
+            line-height: 1.35;
+        }
+        .subtheme-pill-link {
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #4338ca;
+            padding: 0.35rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+            text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
+            transition: all 0.2s ease;
+        }
+        .subtheme-pill-link:hover {
+            background-color: #e0e7ff;
+            border-color: #c7d2fe;
+            color: #3730a3;
+            transform: translateY(-1px);
+        }
+        .projects-total-count {
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 0.95rem;
+        }
+        .status-pill-running {
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #b45309;
+            padding: 0.25rem 0.65rem;
+            border-radius: 14px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            white-space: nowrap;
+        }
+        .status-pill-completed {
+            background-color: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #047857;
+            padding: 0.25rem 0.65rem;
+            border-radius: 14px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            white-space: nowrap;
+        }
+        .status-pill-zero {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 24px;
+            border-radius: 6px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            color: #94a3b8;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .impact-none-badge {
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-weight: 500;
         }
 
-        /* Responsiveness */
+        /* Responsive Breakpoints */
         @media (max-width: 768px) {
-            .hero-welcome-card { padding: 1.25rem; }
-            .hero-welcome-title { font-size: 1.4rem; }
-            .analytics-card { padding: 1.25rem; }
-            .modern-table-card { padding: 1.25rem; }
-            .chart-container-wrap { height: 260px; }
+            .dash-header-card { padding: 1.25rem; }
+            .dash-title { font-size: 1.35rem; }
+            .chart-main-card { padding: 1.25rem; }
+            .table-card-container { padding: 1.25rem; }
+            .chart-canvas-wrap { height: 260px; }
         }
     </style>
 
-    <!-- 1. Hero Welcome Card -->
-    <div class="hero-welcome-card">
-        <div>
-            <h1 class="hero-welcome-title">
+    <!-- 1. Executive Welcome Header -->
+    <div class="dash-header-card">
+        <div class="dash-title-wrap">
+            <h1 class="dash-title">
                 Welcome back, {{ $user->name }}
             </h1>
-            <div class="hero-welcome-subtitle">
-                <span>Role assigned:</span>
-                <span class="role-badge">
+            <div class="dash-meta-row">
+                <span class="role-badge-pill">
                     <i class="bx bxs-shield-alt-2"></i> {{ $user->role_name }}
                 </span>
-                <span style="color: #cbd5e1;">•</span>
-                <span>Real-time impact & operational metrics overview</span>
+                <span>•</span>
+                <span class="live-status-dot">
+                    <span class="live-pulse-dot"></span> System Live & Operational
+                </span>
+                <span>•</span>
+                <span>{{ now()->format('l, d/m/Y') }}</span>
             </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 0.65rem;">
+        <div class="dash-actions-wrap">
             @if(Auth::user()->canAddApplications())
-                <a href="{{ route('applications.index') }}" style="display: inline-flex; align-items: center; gap: 0.4rem; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; padding: 0.55rem 1rem; border-radius: 10px; font-size: 0.84rem; font-weight: 700; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.03); transition: all 0.2s ease;">
-                    <i class="bx bx-file" style="color: #2563eb;"></i> Applications
+                <a href="{{ route('applications.index') }}" class="btn-dash-outline">
+                    <i class="bx bx-file" style="color: #059669; font-size: 1.05rem;"></i> Applications
                 </a>
             @endif
             @if(Auth::user()->canAddEditProjects())
-                <a href="{{ route('projects.index') }}" style="display: inline-flex; align-items: center; gap: 0.4rem; background: #10b981; color: #ffffff; border: 1px solid #10b981; padding: 0.55rem 1.15rem; border-radius: 10px; font-size: 0.84rem; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); transition: all 0.2s ease;">
-                    <i class="bx bx-briefcase-alt-2"></i> All Projects
+                <a href="{{ route('projects.index') }}" class="btn-dash-primary">
+                    <i class="bx bx-briefcase-alt-2" style="font-size: 1.05rem;"></i> All Projects
                 </a>
             @endif
         </div>
     </div>
 
-    <!-- 2. Primary Impact Highlight Cards (Gradient Hero Stats) -->
-    <div class="hero-impact-grid">
+    <!-- 2. Standardized Executive KPI Grid -->
+    <div class="kpi-grid">
 
-        <!-- Total Benefited Peoples -->
-        <div class="impact-card impact-card-peoples">
-            <div class="deco-circle-1"></div>
-            <div class="deco-circle-2"></div>
-            <div class="impact-header">
-                <div class="impact-icon-wrapper">
+        <!-- KPI 1: Benefited Peoples -->
+        <div class="kpi-card">
+            <div class="kpi-card-top">
+                <div class="kpi-icon-box icon-emerald">
                     <i class="bx bxs-group"></i>
                 </div>
-                <div class="impact-pill">Impact Metric</div>
+                <span class="kpi-badge badge-emerald-soft">
+                    <i class="bx bx-check-double"></i> Direct Impact
+                </span>
             </div>
-            <div class="impact-body">
-                <span class="impact-label">Total Benefited Peoples</span>
-                <div class="impact-value">{{ number_format($totalBeneficiaryPeoples) }}</div>
-                <div class="impact-footer">
-                    <i class="bx bx-check-double"></i> Verified beneficiaries across all project categories
-                </div>
+            <div class="kpi-main-info">
+                <span class="kpi-label">Total Benefited Peoples</span>
+                <div class="kpi-value">{{ number_format($totalBeneficiaryPeoples) }}</div>
+            </div>
+            <div class="kpi-footer">
+                <i class="bx bx-badge-check" style="color: #059669;"></i>
+                Verified individuals across completed projects
             </div>
         </div>
 
-        <!-- Total Benefited Families -->
-        <div class="impact-card impact-card-families">
-            <div class="deco-circle-1"></div>
-            <div class="deco-circle-2"></div>
-            <div class="impact-header">
-                <div class="impact-icon-wrapper">
+        <!-- KPI 2: Benefited Families -->
+        <div class="kpi-card">
+            <div class="kpi-card-top">
+                <div class="kpi-icon-box icon-teal">
                     <i class="bx bxs-home-heart"></i>
                 </div>
-                <div class="impact-pill">Impact Metric</div>
+                <span class="kpi-badge badge-teal-soft">
+                    <i class="bx bx-heart"></i> Household
+                </span>
             </div>
-            <div class="impact-body">
-                <span class="impact-label">Total Benefited Families</span>
-                <div class="impact-value">{{ number_format($totalBeneficiaryFamily) }}</div>
-                <div class="impact-footer">
-                    <i class="bx bx-check-double"></i> Supported families across active and completed schemes
-                </div>
+            <div class="kpi-main-info">
+                <span class="kpi-label">Total Benefited Families</span>
+                <div class="kpi-value">{{ number_format($totalBeneficiaryFamily) }}</div>
+            </div>
+            <div class="kpi-footer">
+                <i class="bx bx-check-circle" style="color: #16a34a;"></i>
+                Supported families in completed projects
             </div>
         </div>
 
-        <!-- Completed Projects -->
-        <div class="impact-card impact-card-projects">
-            <div class="deco-circle-1"></div>
-            <div class="deco-circle-2"></div>
-            <div class="impact-header">
-                <div class="impact-icon-wrapper">
-                    <i class="bx bxs-badge-check"></i>
+        <!-- KPI 3: Projects Execution -->
+        <div class="kpi-card">
+            <div class="kpi-card-top">
+                <div class="kpi-icon-box icon-amber">
+                    <i class="bx bxs-briefcase-alt-2"></i>
                 </div>
-                <div class="impact-pill">Delivered</div>
+                <span class="kpi-badge badge-amber-soft">
+                    <i class="bx bx-loader-circle"></i> {{ number_format($runningProjects) }} Active
+                </span>
             </div>
-            <div class="impact-body">
-                <span class="impact-label">Completed Projects</span>
-                <div class="impact-value">{{ number_format($completedProjects) }}</div>
-                <div class="impact-footer">
-                    <i class="bx bx-trophy"></i> Successfully finished and delivered initiatives
+            <div class="kpi-main-info">
+                <span class="kpi-label">Projects Portfolio</span>
+                <div class="kpi-value">{{ number_format($totalProjects) }}</div>
+            </div>
+            <div class="kpi-footer">
+                <i class="bx bx-trophy" style="color: #d97706;"></i>
+                {{ number_format($completedProjects) }} Completed · {{ number_format($runningProjects) }} In Delivery
+            </div>
+        </div>
+
+        <!-- KPI 4: Applications Intake -->
+        <div class="kpi-card">
+            <div class="kpi-card-top">
+                <div class="kpi-icon-box icon-blue">
+                    <i class="bx bxs-file-blank"></i>
                 </div>
+                <span class="kpi-badge badge-blue-soft">
+                    @if(($newApplicationsCount ?? 0) > 0)
+                        +{{ $newApplicationsCount }} New
+                    @else
+                        Intake
+                    @endif
+                </span>
+            </div>
+            <div class="kpi-main-info">
+                <span class="kpi-label">Total Applications</span>
+                <div class="kpi-value">{{ number_format($totalApplications) }}</div>
+            </div>
+            <div class="kpi-footer">
+                <i class="bx bx-time-five" style="color: #2563eb;"></i>
+                {{ number_format($approvedCount) }} Approved · {{ number_format($pendingCount) }} Under Review
             </div>
         </div>
 
     </div>
 
-    <!-- 3. Operational Pipeline Cards (Refined Modern Cards) -->
-    <div class="pipeline-stats-grid">
-
-        <!-- Applications Submissions -->
-        <div class="stat-card-modern">
-            <div class="stat-icon-modern stat-icon-blue">
-                <i class="bx bx-file"></i>
+    <!-- 3. Operational Quick Status Strip -->
+    <div class="status-strip-grid">
+        <div class="status-strip-card">
+            <div class="status-strip-title">
+                <i class="bx bx-file text-blue" style="font-size: 1.15rem; color: #2563eb;"></i>
+                <span>Applications Total</span>
             </div>
-            <div class="stat-info">
-                <div class="stat-label-wrap">
-                    <span class="stat-label">Applications</span>
-                    @if($newApplicationsCount > 0)
-                        <span class="stat-badge-new">+{{ $newApplicationsCount }} New</span>
-                    @endif
-                </div>
-                <div class="stat-number">{{ number_format($totalApplications) }}</div>
-                <div class="stat-subtext text-blue">
-                    <i class="bx bx-layer"></i> Total Submissions
-                </div>
-            </div>
+            <span class="status-strip-num">{{ number_format($totalApplications) }}</span>
         </div>
-
-        <!-- Pending Review -->
-        <div class="stat-card-modern">
-            <div class="stat-icon-modern stat-icon-orange">
-                <i class="bx bx-time-five"></i>
+        <div class="status-strip-card">
+            <div class="status-strip-title">
+                <i class="bx bx-time-five text-orange" style="font-size: 1.15rem; color: #ea580c;"></i>
+                <span>Pending Review</span>
             </div>
-            <div class="stat-info">
-                <div class="stat-label-wrap">
-                    <span class="stat-label">Pending Review</span>
-                </div>
-                <div class="stat-number">{{ number_format($pendingCount) }}</div>
-                <div class="stat-subtext text-orange">
-                    <i class="bx bx-loader-alt"></i> Awaiting Action
-                </div>
-            </div>
+            <span class="status-strip-num" style="color: #ea580c;">{{ number_format($pendingCount) }}</span>
         </div>
-
-        <!-- Approved Applications -->
-        <div class="stat-card-modern">
-            <div class="stat-icon-modern stat-icon-emerald">
-                <i class="bx bx-check-circle"></i>
+        <div class="status-strip-card">
+            <div class="status-strip-title">
+                <i class="bx bx-check-circle text-emerald" style="font-size: 1.15rem; color: #059669;"></i>
+                <span>Approved</span>
             </div>
-            <div class="stat-info">
-                <div class="stat-label-wrap">
-                    <span class="stat-label">Approved</span>
-                </div>
-                <div class="stat-number">{{ number_format($approvedCount) }}</div>
-                <div class="stat-subtext text-emerald">
-                    <i class="bx bx-badge-check"></i> Verified Success
-                </div>
-            </div>
+            <span class="status-strip-num" style="color: #059669;">{{ number_format($approvedCount) }}</span>
         </div>
-
-        <!-- Running Projects -->
-        <div class="stat-card-modern">
-            <div class="stat-icon-modern stat-icon-purple">
-                <i class="bx bx-folder-open"></i>
+        <div class="status-strip-card">
+            <div class="status-strip-title">
+                <i class="bx bx-loader-circle" style="font-size: 1.15rem; color: #7c3aed;"></i>
+                <span>Active Pipeline</span>
             </div>
-            <div class="stat-info">
-                <div class="stat-label-wrap">
-                    <span class="stat-label">Running Projects</span>
-                </div>
-                <div class="stat-number">{{ number_format($runningProjects) }}</div>
-                <div class="stat-subtext text-purple">
-                    <i class="bx bx-pulse"></i> Active Pipeline
-                </div>
-            </div>
+            <span class="status-strip-num" style="color: #7c3aed;">{{ number_format($runningProjects) }}</span>
         </div>
-
     </div>
 
     <!-- 4. Year-wise Impact Overview (Visual Chart Card) -->
-    <div class="analytics-card">
+    <div class="chart-main-card">
         <div class="card-header-flex">
             <div>
-                <h3 class="card-title">
-                    <i class="bx bx-bar-chart-alt-2" style="color: #0284c7; font-size: 1.35rem;"></i>
+                <h3 class="card-heading">
+                    <i class="bx bx-bar-chart-alt-2" style="color: #059669; font-size: 1.25rem;"></i>
                     Year-wise Impact Overview
                 </h3>
-                <p class="card-subtitle">Comprehensive distribution of benefited individuals and families by year</p>
+                <p class="card-subtext">Annual verified reach of benefited individuals and families</p>
             </div>
-            <div class="chart-legend-custom">
-                <div class="legend-item" style="color: #0284c7;">
-                    <span class="legend-dot" style="background: #0ea5e9;"></span>
+            <div class="chart-legend-box">
+                <div class="legend-tag" style="color: #047857;">
+                    <span class="legend-color-dot" style="background: #10b981;"></span>
                     Benefited Peoples
                 </div>
-                <div class="legend-item" style="color: #059669;">
-                    <span class="legend-dot" style="background: #10b981;"></span>
+                <div class="legend-tag" style="color: #065f46;">
+                    <span class="legend-color-dot" style="background: #34d399;"></span>
                     Benefited Families
                 </div>
             </div>
         </div>
 
-        <div class="chart-container-wrap">
+        <div class="chart-canvas-wrap" wire:ignore>
             <canvas id="beneficiaryYearChart"></canvas>
         </div>
     </div>
 
-    <!-- 5. Theme-Wise Performance & Impact Breakdown -->
-    <div class="modern-table-card">
+    <!-- 4.5. National Geographic Reach & State-wise Impact Map -->
+    @php
+        $activeStatesList = collect($stateSummaryData ?? [])->filter(fn($st) => ($st['total_projects'] ?? 0) > 0)->sortByDesc('total_projects')->values();
+        $coveredStatesCount = $activeStatesList->count();
+        $topState = $activeStatesList->first() ?? [
+            'name' => 'Kerala',
+            'total_projects' => 0,
+            'running_projects' => 0,
+            'completed_projects' => 0,
+            'benefited_peoples' => 0,
+            'benefited_families' => 0,
+        ];
+    @endphp
+    <div class="map-main-card">
         <div class="card-header-flex">
             <div>
-                <h3 class="card-title">
-                    <i class="bx bx-category-alt" style="color: #7c3aed; font-size: 1.35rem;"></i>
+                <h3 class="card-heading">
+                    <i class="bx bx-map-pin" style="color: #059669; font-size: 1.25rem;"></i>
+                    National Reach & State-wise Impact Map
+                </h3>
+                <p class="card-subtext">
+                    Interactive state-wise project density and verified community reach across India
+                </p>
+            </div>
+            <div class="chart-legend-box">
+                <div class="legend-tag" style="color: #047857;">
+                    <span class="legend-color-dot" style="background: #10b981;"></span>
+                    <span>States Covered: <strong>{{ $coveredStatesCount }}</strong> / 36</span>
+                </div>
+                <div class="legend-tag" style="color: #065f46;">
+                    <span class="legend-color-dot" style="background: #047857;"></span>
+                    <span>Live Tracking</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-grid-layout">
+            <!-- Left: Interactive D3.js SVG Map -->
+            <div class="map-visualization-area">
+                <div id="indiaMapContainer" wire:ignore></div>
+
+                <!-- Floating Controls -->
+                <div class="map-controls-floating">
+                    <button type="button" class="btn-map-ctrl" id="mapZoomIn" title="Zoom In">
+                        <i class="bx bx-plus"></i>
+                    </button>
+                    <button type="button" class="btn-map-ctrl" id="mapZoomOut" title="Zoom Out">
+                        <i class="bx bx-minus"></i>
+                    </button>
+                    <button type="button" class="btn-map-ctrl" id="mapZoomReset" title="Reset View">
+                        <i class="bx bx-reset"></i>
+                    </button>
+                </div>
+
+                <!-- Legend Bar -->
+                <div class="map-legend-bar">
+                    <span>Density:</span>
+                    <div class="map-legend-gradient"></div>
+                    <span>High Reach</span>
+                </div>
+
+                <!-- Floating D3 Tooltip -->
+                <div id="indiaMapTooltip" class="india-map-tooltip"></div>
+            </div>
+
+            <!-- Right: State Insights & Ranked Impact Leaderboard -->
+            <div class="state-insights-panel">
+                <!-- Selected State Details Card -->
+                <div class="state-detail-card" id="stateDetailCard">
+                    <div class="state-detail-header">
+                        <div>
+                            <span style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Selected State</span>
+                            <h4 class="state-detail-name" id="selectedStateTitle">{{ $selectedStateInfo['name'] }}</h4>
+                        </div>
+                        <span class="state-project-pill" id="selectedStateBadge">
+                            <i class="bx bx-briefcase-alt-2"></i> <span id="selectedStateProjects">{{ $selectedStateInfo['total_projects'] }}</span> Projects
+                        </span>
+                    </div>
+
+                    <div class="state-stats-mini-grid">
+                        <div class="state-mini-box">
+                            <span class="state-mini-box-label">Running</span>
+                            <span class="state-mini-box-val" id="selectedStateRunning" style="color: #059669;">{{ number_format($selectedStateInfo['running_projects']) }}</span>
+                        </div>
+                        <div class="state-mini-box">
+                            <span class="state-mini-box-label">Completed</span>
+                            <span class="state-mini-box-val" id="selectedStateCompleted" style="color: #10b981;">{{ number_format($selectedStateInfo['completed_projects']) }}</span>
+                        </div>
+                        <div class="state-mini-box">
+                            <span class="state-mini-box-label">Benefited Peoples</span>
+                            <span class="state-mini-box-val" id="selectedStatePeoples" style="color: #047857;">{{ number_format($selectedStateInfo['benefited_peoples']) }}</span>
+                        </div>
+                        <div class="state-mini-box">
+                            <span class="state-mini-box-label">Benefited Families</span>
+                            <span class="state-mini-box-val" id="selectedStateFamilies" style="color: #059669;">{{ number_format($selectedStateInfo['benefited_families']) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ranked State Leaderboard -->
+                <div class="state-leaderboard-card">
+                    <div class="leaderboard-title-row">
+                        <span><i class="bx bx-trophy" style="color: #d97706; margin-right: 4px;"></i> Active States & Reach</span>
+                        <span style="font-size: 0.75rem; color: #64748b;">Click to view</span>
+                    </div>
+                    <div class="leaderboard-scroll-list">
+                        @forelse($activeStatesList as $sIdx => $sItem)
+                            <div class="leaderboard-item-row {{ ($selectedState ?? '') === $sItem['name'] ? 'active' : '' }}" 
+                                 wire:click="selectState('{{ $sItem['name'] }}')"
+                                 onclick="if(window.selectStateDetails) window.selectStateDetails('{{ $sItem['name'] }}');"
+                                 data-state-row="{{ $sItem['name'] }}">
+                                <div style="display: flex; align-items: center; flex: 1;">
+                                    <span class="leaderboard-rank-badge">{{ $sIdx + 1 }}</span>
+                                    <span class="leaderboard-st-name">{{ $sItem['name'] }}</span>
+                                </div>
+                                <span class="leaderboard-st-count">
+                                    {{ $sItem['total_projects'] }} {{ Str::plural('Project', $sItem['total_projects']) }}
+                                </span>
+                            </div>
+                        @empty
+                            <div style="padding: 1.5rem; text-align: center; color: #94a3b8; font-size: 0.82rem;">
+                                No active states recorded yet.
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Theme-Wise Performance & Impact Breakdown -->
+    <div class="table-card-container">
+        <div class="card-header-flex">
+            <div>
+                <h3 class="card-heading">
+                    <i class="bx bx-category-alt" style="color: #059669; font-size: 1.25rem;"></i>
                     Theme-Wise Overview & Impact Breakdown
                 </h3>
-                <p class="card-subtitle">
+                <p class="card-subtext">
                     Real-time project distribution, execution stages, and beneficiary reach categorized by development themes
                 </p>
             </div>
-            <a href="{{ route('themes.index') }}" style="display: inline-flex; align-items: center; gap: 0.4rem; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; padding: 0.5rem 0.95rem; border-radius: 10px; font-size: 0.82rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease;">
-                <i class="bx bx-slider-alt" style="color: #64748b;"></i> Manage Themes & Subthemes
-            </a>
         </div>
 
-        <div style="overflow-x: auto;">
-            <table class="table-custom-modern">
+        <div class="table-custom-wrapper">
+            <table class="table-custom no-paginate">
                 <thead>
                     <tr>
-                        <th style="width: 50px; text-align: center;">#</th>
+                        <th style="width: 55px; text-align: center;">#</th>
                         <th style="text-align: left;">Theme Name</th>
-                        <th style="text-align: center;">Subthemes</th>
-                        <th style="text-align: center;">Total Projects</th>
-                        <th style="text-align: center;">Running</th>
-                        <th style="text-align: center;">Completed</th>
-                        <th style="text-align: right;">Beneficiary Impact</th>
+                        <th style="text-align: center; width: 130px;">Total Projects</th>
+                        <th style="text-align: center; width: 120px;">Running</th>
+                        <th style="text-align: center; width: 120px;">Completed</th>
+                        <th style="text-align: right; width: 160px;">Benefited Peoples</th>
+                        <th style="text-align: right; width: 160px;">Benefited Families</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($themeSummaryData as $index => $item)
                         <tr>
                             <td style="text-align: center;">
-                                <span class="rank-badge">{{ $index + 1 }}</span>
+                                <span class="col-rank-num">{{ $index + 1 }}</span>
                             </td>
                             <td>
-                                <div style="font-weight: 700; color: #0f172a; font-size: 0.92rem;">
+                                <div class="theme-name-text">
                                     {{ $item['name'] }}
                                 </div>
                             </td>
                             <td style="text-align: center;">
-                                <span class="badge-pill-soft" style="background: #f1f5f9; color: #475569;" title="{{ implode(', ', $item['subthemes_list']) }}">
-                                    <i class="bx bx-list-ul"></i> {{ $item['subthemes_count'] }} Subthemes
-                                </span>
-                            </td>
-                            <td style="text-align: center;">
-                                <span style="font-weight: 800; color: #0f172a; font-size: 0.95rem;">
+                                <span class="projects-total-count">
                                     {{ number_format($item['total_projects']) }}
                                 </span>
                             </td>
                             <td style="text-align: center;">
-                                <span class="badge-pill-soft" style="background: #f5f3ff; color: #7c3aed;">
-                                    <i class="bx bx-loader-circle"></i> {{ number_format($item['running_projects']) }}
-                                </span>
+                                @if($item['running_projects'] > 0)
+                                    <span class="status-pill-running">
+                                        <i class="bx bx-loader-circle bx-spin"></i> {{ number_format($item['running_projects']) }}
+                                    </span>
+                                @else
+                                    <span class="status-pill-zero">0</span>
+                                @endif
                             </td>
                             <td style="text-align: center;">
-                                <span class="badge-pill-soft" style="background: #ecfdf5; color: #059669;">
-                                    <i class="bx bx-check"></i> {{ number_format($item['completed_projects']) }}
-                                </span>
+                                @if($item['completed_projects'] > 0)
+                                    <span class="status-pill-completed">
+                                        <i class="bx bx-check-circle"></i> {{ number_format($item['completed_projects']) }}
+                                    </span>
+                                @else
+                                    <span class="status-pill-zero">0</span>
+                                @endif
                             </td>
                             <td style="text-align: right;">
-                                <div style="font-weight: 800; color: #0284c7; font-size: 0.92rem;">
-                                    {{ number_format($item['benefited_peoples']) }} <span style="font-weight: 600; font-size: 0.74rem; color: #64748b;">peoples</span>
-                                </div>
-                                <div style="font-size: 0.76rem; color: #059669; font-weight: 700; margin-top: 0.1rem;">
-                                    {{ number_format($item['benefited_families']) }} <span style="font-weight: 600; color: #64748b;">families</span>
-                                </div>
+                                @if($item['benefited_peoples'] > 0)
+                                    <span style="font-weight: 800; color: #059669; font-size: 0.92rem;">
+                                        {{ number_format($item['benefited_peoples']) }}
+                                    </span>
+                                @else
+                                    <span style="color: #94a3b8; font-size: 0.85rem; font-weight: 500;">0</span>
+                                @endif
+                            </td>
+                            <td style="text-align: right;">
+                                @if($item['benefited_families'] > 0)
+                                    <span style="font-weight: 800; color: #10b981; font-size: 0.92rem;">
+                                        {{ number_format($item['benefited_families']) }}
+                                    </span>
+                                @else
+                                    <span style="color: #94a3b8; font-size: 0.85rem; font-weight: 500;">0</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" style="padding: 2.5rem; text-align: center; color: #94a3b8;">
-                                <i class="bx bx-folder-open" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                            <td colspan="7" style="padding: 3rem; text-align: center; color: #94a3b8;">
+                                <i class="bx bx-folder-open" style="font-size: 2.25rem; display: block; margin-bottom: 0.5rem; color: #cbd5e1;"></i>
                                 No theme data available at this time.
                             </td>
                         </tr>
@@ -680,140 +1139,411 @@
     <!-- Request Leave Modal Dialog Component -->
     @include('partials.leave_request_modal')
 
-    <!-- Chart.js Beneficiary Year Chart (Enhanced Rendering) -->
+    <!-- Chart.js & D3 India Map Scripts (Rock-Solid Persistent Rendering) -->
     <script>
-    (function() {
-        var labels   = @json($beneficiaryChartData['labels']);
-        var peoples  = @json($beneficiaryChartData['peoples']);
-        var families = @json($beneficiaryChartData['families']);
+    window.__dashChartData = @json($beneficiaryChartData);
+    window.__dashStateData = @json($stateSummaryData ?? []);
 
-        function initBeneficiaryChart() {
-            var canvas = document.getElementById('beneficiaryYearChart');
-            if (!canvas) return;
-            var ctx = canvas.getContext('2d');
-            if (!ctx) return;
+    // 1. Chart Initializer
+    window.initBeneficiaryChart = function() {
+        var canvas = document.getElementById('beneficiaryYearChart');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-            if (window.beneficiaryYearChartInstance) {
-                window.beneficiaryYearChartInstance.destroy();
-            }
+        if (typeof Chart === 'undefined') {
+            setTimeout(window.initBeneficiaryChart, 100);
+            return;
+        }
 
-            // Create gradient fills
-            var gradPeoples = ctx.createLinearGradient(0, 0, 0, 300);
-            gradPeoples.addColorStop(0, 'rgba(14, 165, 233, 0.95)');
-            gradPeoples.addColorStop(1, 'rgba(2, 132, 199, 0.65)');
+        var chartData = window.__dashChartData || { labels: [], peoples: [], families: [] };
+        var labels = chartData.labels || [];
+        var peoples = chartData.peoples || [];
+        var families = chartData.families || [];
 
-            var gradFamilies = ctx.createLinearGradient(0, 0, 0, 300);
-            gradFamilies.addColorStop(0, 'rgba(16, 185, 129, 0.95)');
-            gradFamilies.addColorStop(1, 'rgba(5, 150, 105, 0.65)');
+        // If chart already exists on this canvas, update datasets smoothly
+        if (window.beneficiaryYearChartInstance && window.beneficiaryYearChartInstance.canvas === canvas) {
+            window.beneficiaryYearChartInstance.data.labels = labels;
+            window.beneficiaryYearChartInstance.data.datasets[0].data = peoples;
+            window.beneficiaryYearChartInstance.data.datasets[1].data = families;
+            window.beneficiaryYearChartInstance.update();
+            return;
+        }
 
-            window.beneficiaryYearChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Benefited Peoples',
-                            data: peoples,
-                            backgroundColor: gradPeoples,
-                            borderColor: '#0284c7',
-                            borderWidth: 1.5,
-                            borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 0, bottomRight: 0 },
-                            borderSkipped: false,
-                            maxBarThickness: 48,
-                        },
-                        {
-                            label: 'Benefited Families',
-                            data: families,
-                            backgroundColor: gradFamilies,
-                            borderColor: '#059669',
-                            borderWidth: 1.5,
-                            borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 0, bottomRight: 0 },
-                            borderSkipped: false,
-                            maxBarThickness: 48,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        duration: 800,
-                        easing: 'easeOutQuart'
+        if (window.beneficiaryYearChartInstance) {
+            window.beneficiaryYearChartInstance.destroy();
+        }
+
+        var gradPeoples = ctx.createLinearGradient(0, 0, 0, 300);
+        gradPeoples.addColorStop(0, 'rgba(16, 185, 129, 0.95)');
+        gradPeoples.addColorStop(1, 'rgba(5, 150, 105, 0.70)');
+
+        var gradFamilies = ctx.createLinearGradient(0, 0, 0, 300);
+        gradFamilies.addColorStop(0, 'rgba(52, 211, 153, 0.95)');
+        gradFamilies.addColorStop(1, 'rgba(16, 185, 129, 0.55)');
+
+        window.beneficiaryYearChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Benefited Peoples',
+                        data: peoples,
+                        yAxisID: 'y',
+                        backgroundColor: gradPeoples,
+                        borderColor: '#059669',
+                        borderWidth: 1.5,
+                        borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
+                        borderSkipped: false,
+                        hoverBackgroundColor: 'rgba(16, 185, 129, 1)',
+                        hoverBorderColor: '#047857',
+                        maxBarThickness: 38,
+                        minBarLength: 12,
+                        categoryPercentage: 0.65,
+                        barPercentage: 0.85
                     },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.92)',
-                            titleColor: '#cbd5e1',
-                            titleFont: { size: 12, weight: '700' },
-                            bodyColor: '#ffffff',
-                            bodyFont: { size: 13, weight: '600' },
-                            padding: { top: 10, bottom: 10, left: 14, right: 14 },
-                            cornerRadius: 10,
-                            boxPadding: 6,
-                            usePointStyle: true,
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            borderWidth: 1,
-                            callbacks: {
-                                label: function(ctx) {
-                                    return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString();
-                                }
+                    {
+                        label: 'Benefited Families',
+                        data: families,
+                        yAxisID: 'y1',
+                        backgroundColor: gradFamilies,
+                        borderColor: '#10b981',
+                        borderWidth: 1.5,
+                        borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
+                        borderSkipped: false,
+                        hoverBackgroundColor: 'rgba(52, 211, 153, 1)',
+                        hoverBorderColor: '#059669',
+                        maxBarThickness: 38,
+                        minBarLength: 12,
+                        categoryPercentage: 0.65,
+                        barPercentage: 0.85
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 700,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                        titleColor: '#cbd5e1',
+                        titleFont: { size: 12, weight: '700' },
+                        bodyColor: '#ffffff',
+                        bodyFont: { size: 13, weight: '600' },
+                        padding: { top: 10, bottom: 10, left: 14, right: 14 },
+                        cornerRadius: 10,
+                        boxPadding: 6,
+                        usePointStyle: true,
+                        borderColor: 'rgba(16, 185, 129, 0.3)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(ctx) {
+                                return ' ' + ctx.dataset.label + ': ' + Number(ctx.parsed.y).toLocaleString();
                             }
                         }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                color: '#64748b',
-                                font: { size: 12, weight: '700' }
-                            },
-                            border: { color: '#e2e8f0' }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#475569',
+                            font: { size: 12, weight: '700' }
                         },
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(226, 232, 240, 0.6)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { size: 11, weight: '600' },
-                                padding: 8,
-                                callback: function(val) {
-                                    if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
-                                    return val;
-                                }
-                            },
-                            border: { dash: [4, 4], color: 'transparent' }
-                        }
+                        border: { color: '#e2e8f0' }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.6)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#059669',
+                            font: { size: 11, weight: '700' },
+                            padding: 8,
+                            callback: function(val) {
+                                if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+                                if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
+                                return val;
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Benefited Peoples',
+                            color: '#059669',
+                            font: { size: 11, weight: '700' }
+                        },
+                        border: { dash: [4, 4], color: 'transparent' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            color: '#10b981',
+                            font: { size: 11, weight: '700' },
+                            padding: 8,
+                            callback: function(val) {
+                                if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+                                if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
+                                return val;
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Benefited Families',
+                            color: '#10b981',
+                            font: { size: 11, weight: '700' }
+                        },
+                        border: { dash: [4, 4], color: 'transparent' }
                     }
                 }
-            });
-        }
-
-        // Initialize Chart
-        if (typeof Chart !== 'undefined') {
-            initBeneficiaryChart();
-        } else {
-            document.addEventListener('DOMContentLoaded', function() {
-                var attempts = 0;
-                var interval = setInterval(function() {
-                    if (typeof Chart !== 'undefined') {
-                        clearInterval(interval);
-                        initBeneficiaryChart();
-                    } else if (++attempts > 25) {
-                        clearInterval(interval);
-                    }
-                }, 150);
-            });
-        }
-
-        // Livewire re-render hooks
-        document.addEventListener('livewire:navigated', initBeneficiaryChart);
-        document.addEventListener('livewire:update', function() {
-            setTimeout(initBeneficiaryChart, 100);
+            }
         });
-    })();
+    };
+
+    // 2. D3 India Map Initializer
+    window.initIndiaD3Map = function() {
+        var container = document.getElementById('indiaMapContainer');
+        if (!container) return;
+
+        if (typeof d3 === 'undefined' || !window.INDIA_GEO_JSON || !window.INDIA_GEO_JSON.features) {
+            setTimeout(window.initIndiaD3Map, 100);
+            return;
+        }
+
+        var geoData = window.INDIA_GEO_JSON;
+        var stateData = window.__dashStateData || {};
+
+        // If SVG already exists, just update colors/data without tearing down DOM
+        if (container.querySelector('svg')) {
+            var svgExisting = d3.select(container).select('svg');
+            var maxProjectsEx = d3.max(Object.values(stateData), function(d) { return d.total_projects; }) || 1;
+            var colorScaleEx = d3.scaleSequential()
+                .domain([0, Math.max(maxProjectsEx, 3)])
+                .interpolator(d3.interpolateRgbBasis(['#f1f5f9', '#a7f3d0', '#34d399', '#10b981', '#059669', '#047857']));
+
+            svgExisting.selectAll('path.state-feature')
+                .attr('fill', function(d) {
+                    var name = d.properties.ST_NM;
+                    var info = stateData[name];
+                    if (info && info.total_projects > 0) {
+                        return colorScaleEx(info.total_projects);
+                    }
+                    return '#f8fafc';
+                });
+            return;
+        }
+
+        container.innerHTML = '';
+        var width = container.clientWidth || 580;
+        var height = container.clientHeight || 520;
+        if (height < 450) height = 520;
+
+        var svg = d3.select(container)
+            .append('svg')
+            .attr('width', '100%')
+            .attr('height', height)
+            .attr('viewBox', '0 0 ' + width + ' ' + height)
+            .style('display', 'block')
+            .style('user-select', 'none');
+
+        var g = svg.append('g');
+        window.__indiaMapG = g;
+
+        var projection = d3.geoMercator().fitSize([width - 30, height - 30], geoData);
+        var pathGenerator = d3.geoPath().projection(projection);
+
+        var zoom = d3.zoom()
+            .scaleExtent([0.7, 7])
+            .on('zoom', function(event) {
+                g.attr('transform', event.transform);
+            });
+        svg.call(zoom);
+
+        var btnIn = document.getElementById('mapZoomIn');
+        var btnOut = document.getElementById('mapZoomOut');
+        var btnReset = document.getElementById('mapZoomReset');
+
+        if (btnIn) btnIn.onclick = function() { svg.transition().duration(250).call(zoom.scaleBy, 1.35); };
+        if (btnOut) btnOut.onclick = function() { svg.transition().duration(250).call(zoom.scaleBy, 0.75); };
+        if (btnReset) btnReset.onclick = function() {
+            window.selectedMapState = null;
+            svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+            g.selectAll('path.state-feature')
+                .attr('stroke', '#cbd5e1')
+                .attr('stroke-width', 1);
+        };
+
+        var maxProjects = d3.max(Object.values(stateData), function(d) { return d.total_projects; }) || 1;
+        var colorScale = d3.scaleSequential()
+            .domain([0, Math.max(maxProjects, 3)])
+            .interpolator(d3.interpolateRgbBasis(['#f1f5f9', '#a7f3d0', '#34d399', '#10b981', '#059669', '#047857']));
+
+        var tooltip = d3.select('#indiaMapTooltip');
+
+        g.selectAll('path.state-feature')
+            .data(geoData.features)
+            .enter()
+            .append('path')
+            .attr('class', 'state-feature')
+            .attr('d', pathGenerator)
+            .attr('data-state', function(d) { return d.properties.ST_NM; })
+            .attr('fill', function(d) {
+                var name = d.properties.ST_NM;
+                var info = stateData[name];
+                if (info && info.total_projects > 0) {
+                    return colorScale(info.total_projects);
+                }
+                return '#f8fafc';
+            })
+            .attr('stroke', '#cbd5e1')
+            .attr('stroke-width', 1)
+            .style('cursor', 'pointer')
+            .style('transition', 'fill 0.15s ease, stroke 0.15s ease')
+            .on('mouseenter', function(event, d) {
+                var name = d.properties.ST_NM;
+                var info = (window.__dashStateData && window.__dashStateData[name]) || {
+                    name: name,
+                    total_projects: 0,
+                    running_projects: 0,
+                    completed_projects: 0,
+                    benefited_peoples: 0,
+                    benefited_families: 0
+                };
+
+                d3.select(this)
+                    .attr('stroke', '#065f46')
+                    .attr('stroke-width', 2.5)
+                    .raise();
+
+                var projBadge = info.total_projects > 0 
+                    ? '<span style="background: rgba(16, 185, 129, 0.35); color: #6ee7b7; padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; border: 1px solid rgba(110, 231, 183, 0.4); font-weight: 700;">' + info.total_projects + ' Projects</span>'
+                    : '<span style="background: rgba(148, 163, 184, 0.25); color: #cbd5e1; padding: 2px 7px; border-radius: 9999px; font-size: 0.7rem;">0 Projects</span>';
+
+                tooltip.style('display', 'block')
+                    .html(
+                        '<div style="font-weight: 800; font-size: 0.95rem; color: #ffffff; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">' +
+                            '<span>' + info.name + '</span>' + projBadge +
+                        '</div>' +
+                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.76rem; margin-top: 6px; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 6px;">' +
+                            '<div>Running: <strong style="color:#6ee7b7;">' + info.running_projects.toLocaleString() + '</strong></div>' +
+                            '<div>Completed: <strong style="color:#a7f3d0;">' + info.completed_projects.toLocaleString() + '</strong></div>' +
+                            '<div>Peoples: <strong style="color:#ffffff;">' + info.benefited_peoples.toLocaleString() + '</strong></div>' +
+                            '<div>Families: <strong style="color:#ffffff;">' + info.benefited_families.toLocaleString() + '</strong></div>' +
+                        '</div>'
+                    );
+            })
+            .on('mousemove', function(event) {
+                var rect = container.getBoundingClientRect();
+                var x = event.clientX - rect.left + 14;
+                var y = event.clientY - rect.top - 18;
+                tooltip.style('left', x + 'px').style('top', y + 'px');
+            })
+            .on('mouseleave', function(event, d) {
+                var name = d.properties.ST_NM;
+                if (window.selectedMapState !== name) {
+                    d3.select(this)
+                        .attr('stroke', '#cbd5e1')
+                        .attr('stroke-width', 1);
+                }
+                tooltip.style('display', 'none');
+            })
+            .on('click', function(event, d) {
+                window.selectStateDetails(d.properties.ST_NM);
+            });
+    };
+
+    window.selectStateDetails = function(stName) {
+        window.selectedMapState = stName;
+
+        if (window.__indiaMapG) {
+            window.__indiaMapG.selectAll('path.state-feature')
+                .attr('stroke', function(d) {
+                    return d.properties.ST_NM === stName ? '#047857' : '#cbd5e1';
+                })
+                .attr('stroke-width', function(d) {
+                    return d.properties.ST_NM === stName ? 3 : 1;
+                });
+        }
+
+        document.querySelectorAll('.leaderboard-item-row').forEach(function(row) {
+            if (row.getAttribute('data-state-row') === stName) {
+                row.classList.add('active');
+            } else {
+                row.classList.remove('active');
+            }
+        });
+
+        var info = (window.__dashStateData && window.__dashStateData[stName]) || {
+            name: stName,
+            total_projects: 0,
+            running_projects: 0,
+            completed_projects: 0,
+            benefited_peoples: 0,
+            benefited_families: 0
+        };
+
+        var elTitle = document.getElementById('selectedStateTitle');
+        var elBadge = document.getElementById('selectedStateProjects');
+        var elRunning = document.getElementById('selectedStateRunning');
+        var elCompleted = document.getElementById('selectedStateCompleted');
+        var elPeoples = document.getElementById('selectedStatePeoples');
+        var elFamilies = document.getElementById('selectedStateFamilies');
+
+        if (elTitle) elTitle.textContent = info.name;
+        if (elBadge) elBadge.textContent = info.total_projects;
+        if (elRunning) elRunning.textContent = Number(info.running_projects).toLocaleString();
+        if (elCompleted) elCompleted.textContent = Number(info.completed_projects).toLocaleString();
+        if (elPeoples) elPeoples.textContent = Number(info.benefited_peoples).toLocaleString();
+        if (elFamilies) elFamilies.textContent = Number(info.benefited_families).toLocaleString();
+
+        try {
+            let rootEl = document.querySelector('.role-dashboard-container');
+            if (rootEl && window.Livewire) {
+                let comp = window.Livewire.find(rootEl.getAttribute('wire:id'));
+                if (comp) {
+                    comp.set('selectedState', stName);
+                }
+            }
+        } catch(e) {}
+    };
+
+    // Multi-event robust trigger system
+    function triggerDashboardVisuals() {
+        window.__dashChartData = @json($beneficiaryChartData);
+        window.__dashStateData = @json($stateSummaryData ?? []);
+        window.initBeneficiaryChart();
+        window.initIndiaD3Map();
+    }
+
+    // Immediate & event-driven executions
+    triggerDashboardVisuals();
+    document.addEventListener('DOMContentLoaded', triggerDashboardVisuals);
+    document.addEventListener('livewire:navigated', triggerDashboardVisuals);
+    document.addEventListener('livewire:init', triggerDashboardVisuals);
+    document.addEventListener('livewire:initialized', triggerDashboardVisuals);
+    document.addEventListener('livewire:update', triggerDashboardVisuals);
+    document.addEventListener('pageshow', triggerDashboardVisuals);
+    document.addEventListener('turbo:load', triggerDashboardVisuals);
+    document.addEventListener('pjax:end', triggerDashboardVisuals);
+    window.addEventListener('resize', function() {
+        if (window.initIndiaD3Map) window.initIndiaD3Map();
+    });
     </script>
 </div>

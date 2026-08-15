@@ -13,7 +13,7 @@ class ThemeController extends Controller
         if (!$user) {
             return false;
         }
-        return $user->isSuperAdmin() || $user->hasAdminAccess() || $user->isPm() || $user->isEngineer() || in_array(strtolower($user->designation ?? ''), ['project manager', 'engineer', 'coo', 'hod']);
+        return $user->canManageMasterData();
     }
 
     private function canEditOrDelete($user)

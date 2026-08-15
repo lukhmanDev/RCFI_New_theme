@@ -108,13 +108,13 @@
     @endif
 
     <!-- Sleek Top Loading Bar for Background Requests -->
-    <div wire:loading.delay.shortest class="global-loading-bar"></div>
+    <div wire:loading.delay.long wire:target="setTab,search,roleFilter,statusFilter,setViewMode" class="global-loading-bar"></div>
 
     <!-- Header & Navigation Tabs -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
         <div style="max-width: 600px;">
-            <h1 style="color: #0f172a; font-size: 1.75rem; font-weight: 800; margin: 0;">COO Staff Operations Dashboard</h1>
-            <p style="color: #64748b; font-size: 0.88rem; margin-top: 0.35rem; margin-bottom: 0;">Executive oversight of organizational staff members, daily attendance, leave approvals, and workload distribution.</p>
+            <h1 style="color: #0f172a; font-size: 1.75rem; font-weight: 800; margin: 0;">Staffs</h1>
+            <p style="color: #64748b; font-size: 0.88rem; margin-top: 0.35rem; margin-bottom: 0;">Manage organizational staff members, department team structure, and leave approvals.</p>
         </div>
 
         <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
@@ -132,7 +132,7 @@
                     <i class="bx bx-git-repo-forked" style="vertical-align: middle; font-size: 1rem;"></i> Team Hierarchy Tree
                 </button>
                 <button type="button" wire:click="setTab('leave')" style="padding: 0.5rem 0.95rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s ease; {{ $activeTab === 'leave' ? 'background: #ffffff; color: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,0.06);' : 'background: transparent; color: #64748b;' }}">
-                    <i class="bx bx-calendar-event" style="vertical-align: middle; font-size: 1rem;"></i> Leave Queue ({{ count($pendingLeaveRequests) }})
+                    <i class="bx bx-calendar-event" style="vertical-align: middle; font-size: 1rem;"></i> Leave Queue ({{ $pendingLeaveCount ?? count($pendingLeaveRequests) }})
                 </button>
                 <button type="button" wire:click="setTab('analytics')" style="padding: 0.5rem 0.95rem; border-radius: 8px; font-size: 0.82rem; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s ease; {{ $activeTab === 'analytics' ? 'background: #ffffff; color: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,0.06);' : 'background: transparent; color: #64748b;' }}">
                     <i class="bx bx-pie-chart-alt-2" style="vertical-align: middle; font-size: 1rem;"></i> Roles & Analytics
@@ -162,7 +162,7 @@
             </div>
             <div>
                 <span style="color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Staff On Leave</span>
-                <h2 style="color: #d97706; font-size: 1.6rem; font-weight: 800; margin: 0.1rem 0;">{{ count($staffOnLeaveToday) }}</h2>
+                <h2 style="color: #d97706; font-size: 1.6rem; font-weight: 800; margin: 0.1rem 0;">{{ $onLeaveTodayCount ?? count($staffOnLeaveToday) }}</h2>
                 <span style="color: #b45309; font-size: 0.75rem; font-weight: 600;">Approved Absences</span>
             </div>
         </div>
@@ -174,7 +174,7 @@
             </div>
             <div>
                 <span style="color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Leave Requests</span>
-                <h2 style="color: #ef4444; font-size: 1.6rem; font-weight: 800; margin: 0.1rem 0;">{{ count($pendingLeaveRequests) }}</h2>
+                <h2 style="color: #ef4444; font-size: 1.6rem; font-weight: 800; margin: 0.1rem 0;">{{ $pendingLeaveCount ?? count($pendingLeaveRequests) }}</h2>
                 <span style="color: #dc2626; font-size: 0.75rem; font-weight: 600;">Awaiting Approval</span>
             </div>
         </div>
@@ -406,8 +406,18 @@
                                         <i class="bx bx-edit"></i> Edit
                                     </button>
                                     @if(Auth::user()->id !== $s->id)
-                                        <button type="button" id="card-suspend-btn-{{ $s->id }}" onclick="toggleUserSuspendJs({{ $s->id }}, this)" class="btn-action-animated" style="flex: 1; background: {{ $s->is_suspended ? '#ecfdf5' : '#fef2f2' }}; border: 1px solid {{ $s->is_suspended ? '#a7f3d0' : '#fee2e2' }}; color: {{ $s->is_suspended ? '#059669' : '#ef4444' }}; padding: 0.45rem 0.5rem; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                            {{ $s->is_suspended ? 'Activate' : 'Suspend' }}
+                                        <button type="button" 
+                                                wire:click="toggleUserSuspend({{ $s->id }})" 
+                                                wire:confirm="Are you sure you want to {{ $s->is_suspended ? 'activate' : 'suspend' }} this staff member account?"
+                                                wire:loading.attr="disabled"
+                                                class="btn-action-animated" 
+                                                style="flex: 1; background: {{ $s->is_suspended ? '#ecfdf5' : '#fef2f2' }}; border: 1px solid {{ $s->is_suspended ? '#a7f3d0' : '#fee2e2' }}; color: {{ $s->is_suspended ? '#059669' : '#ef4444' }}; padding: 0.45rem 0.5rem; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                                            <span wire:loading.remove wire:target="toggleUserSuspend({{ $s->id }})">
+                                                {{ $s->is_suspended ? 'Activate' : 'Suspend' }}
+                                            </span>
+                                            <span wire:loading wire:target="toggleUserSuspend({{ $s->id }})">
+                                                <i class="bx bx-loader-alt bx-spin"></i>
+                                            </span>
                                         </button>
                                     @endif
                                 </div>
@@ -493,8 +503,18 @@
                                                 <i class="bx bx-edit"></i> Edit
                                             </button>
                                             @if(Auth::user()->id !== $s->id)
-                                                <button type="button" id="table-suspend-btn-{{ $s->id }}" onclick="toggleUserSuspendJs({{ $s->id }}, this)" class="btn-action-animated" style="background: {{ $s->is_suspended ? '#ecfdf5' : '#fef2f2' }}; border: 1px solid {{ $s->is_suspended ? '#a7f3d0' : '#fee2e2' }}; color: {{ $s->is_suspended ? '#059669' : '#ef4444' }}; padding: 0.35rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                                    {{ $s->is_suspended ? 'Activate' : 'Suspend' }}
+                                                <button type="button" 
+                                                        wire:click="toggleUserSuspend({{ $s->id }})" 
+                                                        wire:confirm="Are you sure you want to {{ $s->is_suspended ? 'activate' : 'suspend' }} this staff member account?"
+                                                        wire:loading.attr="disabled"
+                                                        class="btn-action-animated" 
+                                                        style="background: {{ $s->is_suspended ? '#ecfdf5' : '#fef2f2' }}; border: 1px solid {{ $s->is_suspended ? '#a7f3d0' : '#fee2e2' }}; color: {{ $s->is_suspended ? '#059669' : '#ef4444' }}; padding: 0.35rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                    <span wire:loading.remove wire:target="toggleUserSuspend({{ $s->id }})">
+                                                        {{ $s->is_suspended ? 'Activate' : 'Suspend' }}
+                                                    </span>
+                                                    <span wire:loading wire:target="toggleUserSuspend({{ $s->id }})">
+                                                        <i class="bx bx-loader-alt bx-spin"></i>
+                                                    </span>
                                                 </button>
                                             @endif
                                         </div>
@@ -542,7 +562,7 @@
                             </td>
                             <td style="padding: 0.85rem;"><x-leave-type-badge :type="$req->leaveType" /></td>
                             <td style="padding: 0.85rem; font-weight: 600; color: #0f172a;">
-                                {{ $req->start_date->format('M d') }} &mdash; {{ $req->end_date->format('M d, Y') }}
+                                {{ $req->start_date->format('d/m/Y') }} &mdash; {{ $req->end_date->format('d/m/Y') }}
                                 <div style="font-size: 0.75rem; color: #2563eb; font-weight: 700;">({{ $req->total_days }} day(s))</div>
                             </td>
                             <td style="padding: 0.85rem; max-width: 250px; color: #475569;">{{ $req->reason }}</td>

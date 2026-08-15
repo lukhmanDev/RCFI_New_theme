@@ -23,7 +23,7 @@
                     <i class="bx bx-time" style="color: #10b981;"></i> Mark Daily Attendance
                 </h2>
                 <p style="color: #64748b; font-size: 0.82rem; margin-top: 0.25rem; margin-bottom: 0;">
-                    Today is <strong>{{ now()->format('l, F d, Y') }}</strong>
+                    Today is <strong>{{ now()->format('l, d/m/Y') }}</strong>
                 </p>
             </div>
 
@@ -139,7 +139,7 @@
                     @forelse($recentAttendance as $log)
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 0.65rem 0.75rem; font-weight: 700; color: #0f172a;">
-                                {{ $log->date->format('M d, Y') }}
+                                {{ $log->date->format('d/m/Y') }}
                             </td>
                             <td style="padding: 0.65rem 0.75rem; text-align: center; color: #334155; font-weight: 600;">
                                 {{ $log->formatted_clock_in }}

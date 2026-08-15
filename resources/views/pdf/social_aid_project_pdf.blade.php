@@ -462,7 +462,7 @@
                 <img src="{{ asset('images/logo.png') }}" alt="RCFI Logo" style="height: 38px; width: auto; object-fit: contain; margin-bottom: 2px;"><br>
                 <div class="doc-meta-box">
                     <strong>Project ID:</strong> {{ $project->project_id ?? '—' }} &nbsp;|&nbsp; 
-                    <strong>Generated:</strong> {{ date('d-M-Y H:i') }}
+                    <strong>Generated:</strong> {{ date('d/m/Y H:i') }}
                 </div>
             </td>
         </tr>
@@ -480,7 +480,7 @@
 
         $dob = $project->dob ?? ($app?->dob ?? ($meta['dob'] ?? ($meta['date_of_birth'] ?? 'N/A')));
         if ($dob !== 'N/A') {
-            try { $dob = \Carbon\Carbon::parse($dob)->format('d-M-Y'); } catch(\Exception $e) {}
+            try { $dob = \Carbon\Carbon::parse($dob)->format('d/m/Y'); } catch(\Exception $e) {}
         }
 
         $age = $project->age ?? ($app?->age ?? ($meta['age'] ?? 'N/A'));
@@ -522,11 +522,11 @@
         
         $sponsoredDate = 'N/A';
         if (!empty($project->sponsored_date)) {
-            $sponsoredDate = \Carbon\Carbon::parse($project->sponsored_date)->format('d-M-Y');
+            $sponsoredDate = \Carbon\Carbon::parse($project->sponsored_date)->format('d/m/Y');
         } elseif (!empty($project->created_at)) {
-            $sponsoredDate = $project->created_at->format('d-M-Y');
+            $sponsoredDate = $project->created_at->format('d/m/Y');
         } elseif ($app && !empty($app->created_at)) {
-            $sponsoredDate = $app->created_at->format('d-M-Y');
+            $sponsoredDate = $app->created_at->format('d/m/Y');
         }
 
         // Family Details
@@ -731,9 +731,9 @@
                     $totalFundAmount += $fAmt;
                     $fDate = '—';
                     if (!empty($fund->date)) {
-                        $fDate = \Carbon\Carbon::parse($fund->date)->format('d-M-Y');
+                        $fDate = \Carbon\Carbon::parse($fund->date)->format('d/m/Y');
                     } elseif (!empty($fund->created_at)) {
-                        $fDate = $fund->created_at->format('d-M-Y');
+                        $fDate = $fund->created_at->format('d/m/Y');
                     }
                 @endphp
                 <tr>
@@ -786,9 +786,9 @@
                 @php
                     $pDate = '—';
                     if (!empty($prog->date)) {
-                        $pDate = \Carbon\Carbon::parse($prog->date)->format('d-M-Y');
+                        $pDate = \Carbon\Carbon::parse($prog->date)->format('d/m/Y');
                     } elseif (!empty($prog->created_at)) {
-                        $pDate = $prog->created_at->format('d-M-Y');
+                        $pDate = $prog->created_at->format('d/m/Y');
                     }
                 @endphp
                 <tr>

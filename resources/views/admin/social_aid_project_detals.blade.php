@@ -249,9 +249,6 @@
                                 <i class="bx bx-user-pin" style="font-size: 1.1rem; vertical-align: middle; margin-right: 0.35rem;"></i> {{ $project->type_of_project === 'Orphan Care' ? 'Student & Application Details' : 'Beneficiary & Application Details' }}
                             </h4>
                             <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                <button type="button" onclick="openAppDetailsModal(event)" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; border-radius: 6px; background: transparent; border: 1px solid var(--accent-cyan); color: var(--accent-cyan);" title="View Full Application Details">
-                                    <i class="bx bx-show"></i> View Full Application
-                                </button>
                                 <button type="button" id="edit-address-btn" onclick="toggleAddressEdit()" class="btn-custom" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; border-radius: 6px;">
                                     <i class="bx bx-edit"></i> Edit Details
                                 </button>
@@ -265,7 +262,7 @@
                                 <div class="details-grid">
                                     <div class="details-label">Applicant Name</div><div class="details-colon">:</div><div class="details-value" style="font-weight: 700; color: #ffffff;">{{ $application->applicant_name ?? 'N/A' }}</div>
                                     <div class="details-label">Gender</div><div class="details-colon">:</div><div class="details-value">{{ $application->gender ?? 'N/A' }}</div>
-                                    <div class="details-label">Date of Birth</div><div class="details-colon">:</div><div class="details-value">{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} @if(!empty($application->age))(Age: {{ $application->age }})@endif</div>
+                                    <div class="details-label">Date of Birth</div><div class="details-colon">:</div><div class="details-value">{{ !empty($application->dob) ? date('d/m/Y', strtotime($application->dob)) : 'N/A' }} @if(!empty($application->age))(Age: {{ $application->age }})@endif</div>
                                     <div class="details-label">Aadhar Number</div><div class="details-colon">:</div><div class="details-value">{{ $application->aadhar_number ?? 'N/A' }}</div>
                                     
                                     <div class="details-label">Father's Name</div><div class="details-colon">:</div><div class="details-value">{{ $application->father_name ?? 'N/A' }}</div>
@@ -280,11 +277,11 @@
 
                                     @if(!empty($application->father_death_date) || !empty($application->father_death_cause))
                                         <div class="details-label">Father Death Info</div><div class="details-colon">:</div>
-                                        <div class="details-value">Date: {{ !empty($application->father_death_date) ? date('d-M-Y', strtotime($application->father_death_date)) : 'N/A' }} | Cause: {{ $application->father_death_cause ?? 'N/A' }}</div>
+                                        <div class="details-value">Date: {{ !empty($application->father_death_date) ? date('d/m/Y', strtotime($application->father_death_date)) : 'N/A' }} | Cause: {{ $application->father_death_cause ?? 'N/A' }}</div>
                                     @endif
                                     @if(!empty($application->mother_alive_status))
                                         <div class="details-label">Mother Status</div><div class="details-colon">:</div>
-                                        <div class="details-value">Alive: {{ $application->mother_alive_status }} @if(!empty($application->mother_remarried_status))| Remarried: {{ $application->mother_remarried_status }}@endif @if(!empty($application->mother_death_date))| Death Date: {{ date('d-M-Y', strtotime($application->mother_death_date)) }}@endif</div>
+                                        <div class="details-value">Alive: {{ $application->mother_alive_status }} @if(!empty($application->mother_remarried_status))| Remarried: {{ $application->mother_remarried_status }}@endif @if(!empty($application->mother_death_date))| Death Date: {{ date('d/m/Y', strtotime($application->mother_death_date)) }}@endif</div>
                                     @endif
 
                                     @if(!empty($application->siblings_total) || !empty($application->siblings_male) || !empty($application->siblings_female))
@@ -362,7 +359,7 @@
                                         </button>
                                         <input type="file" name="student_photo" id="student_photo_input" accept="image/*" style="display: none;" onchange="this.form.submit()">
                                     </form>
-                                    @if($studentPhotoUrl && ($isSuperAdmin || $isCoo || $isHod))
+                                    @if($studentPhotoUrl && Auth::check() && (Auth::user()->isSuperAdmin() || Auth::user()->isCoo() || Auth::user()->isHod() || Auth::user()->isSocialAid() || Auth::user()->hasAdminAccess()))
                                         <form action="{{ route('projects.' . $projectRouteKey . '.delete_photo', $project->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this photo?')" style="margin-top: 0.35rem;">
                                             @csrf
                                             @method('DELETE')
@@ -718,7 +715,7 @@
                         $clusterName = $application->cluster ? ($application->cluster->name . (!empty($application->cluster->code) ? ' (' . $application->cluster->code . ')' : '')) : ($project->cluster ? ($project->cluster->name . (!empty($project->cluster->code) ? ' (' . $project->cluster->code . ')' : '')) : ($application->cluster_name ?? $application->cluster ?? 'N/A'));
 
                         $spDateRaw = $project->sponsored_date ?? $project->sponsor_date ?? $application->sponsored_date ?? $project->created_at;
-                        $sponsoredDate = !empty($spDateRaw) ? date('d-M-Y', strtotime($spDateRaw)) : 'N/A';
+                        $sponsoredDate = !empty($spDateRaw) ? date('d/m/Y', strtotime($spDateRaw)) : 'N/A';
 
                         $projectLocation = $project->location ?? ($project->place ?? ($application->location ?? ($application->place ?? ($application->locality_place ?? ($application->meta['location'] ?? 'N/A')))));
                         $remarks = $project->remarks ?? $project->additional_note ?? 'N/A';
@@ -982,15 +979,15 @@
                                 <div style="color: var(--text-muted); font-weight: 500;">Applicant ID</div><div>:</div><div style="color: var(--accent-cyan); font-weight: 700;">{{ $formattedAppId }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Applicant Name</div><div>:</div><div style="color: var(--text-main); font-weight: 600;">{{ $application->applicant_name ?? 'N/A' }}</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Gender</div><div>:</div><div>{{ $application->gender ?? 'N/A' }}</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">Date of Birth</div><div>:</div><div>{{ !empty($application->dob) ? date('d-M-Y', strtotime($application->dob)) : 'N/A' }} @if(!empty($application->age))(Age: {{ $application->age }})@endif</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Date of Birth</div><div>:</div><div>{{ !empty($application->dob) ? date('d/m/Y', strtotime($application->dob)) : 'N/A' }} @if(!empty($application->age))(Age: {{ $application->age }})@endif</div>
                                 @if(!empty($application->aadhar_number))
                                     <div style="color: var(--text-muted); font-weight: 500;">Aadhar Number</div><div>:</div><div>{{ $application->aadhar_number }}</div>
                                 @endif
                                 @if(!empty($application->health_status))
                                     <div style="color: var(--text-muted); font-weight: 500;">Health Status</div><div>:</div><div>{{ $application->health_status }}</div>
                                 @endif
-                                <div style="color: var(--text-muted); font-weight: 500;">Father's Name</div><div>:</div><div>{{ $application->father_name ?? 'N/A' }} @if(!empty($application->father_death_date) || !empty($application->father_death_cause))(Deceased: {{ !empty($application->father_death_date) ? date('d-M-Y', strtotime($application->father_death_date)) : '' }} {{ !empty($application->father_death_cause) ? '- ' . $application->father_death_cause : '' }})@endif</div>
-                                <div style="color: var(--text-muted); font-weight: 500;">Mother's Name</div><div>:</div><div>{{ $application->mother_name ?? 'N/A' }} @if(!empty($application->mother_alive_status))({{ $application->mother_alive_status }})@endif @if(!empty($application->mother_death_date) || !empty($application->mother_death_cause))(Deceased: {{ !empty($application->mother_death_date) ? date('d-M-Y', strtotime($application->mother_death_date)) : '' }} {{ !empty($application->mother_death_cause) ? '- ' . $application->mother_death_cause : '' }})@endif</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Father's Name</div><div>:</div><div>{{ $application->father_name ?? 'N/A' }} @if(!empty($application->father_death_date) || !empty($application->father_death_cause))(Deceased: {{ !empty($application->father_death_date) ? date('d/m/Y', strtotime($application->father_death_date)) : '' }} {{ !empty($application->father_death_cause) ? '- ' . $application->father_death_cause : '' }})@endif</div>
+                                <div style="color: var(--text-muted); font-weight: 500;">Mother's Name</div><div>:</div><div>{{ $application->mother_name ?? 'N/A' }} @if(!empty($application->mother_alive_status))({{ $application->mother_alive_status }})@endif @if(!empty($application->mother_death_date) || !empty($application->mother_death_cause))(Deceased: {{ !empty($application->mother_death_date) ? date('d/m/Y', strtotime($application->mother_death_date)) : '' }} {{ !empty($application->mother_death_cause) ? '- ' . $application->mother_death_cause : '' }})@endif</div>
                                 <div style="color: var(--text-muted); font-weight: 500;">Guardian</div><div>:</div><div>{{ $application->guardian_name ?? 'N/A' }} @if(!empty($application->guardian_relation))(Relation: {{ $application->guardian_relation }})@endif</div>
                                 @if(!empty($application->grandfather_name))
                                     <div style="color: var(--text-muted); font-weight: 500;">Grandfather's Name</div><div>:</div><div>{{ $application->grandfather_name }}</div>
@@ -1122,11 +1119,17 @@
 
                         <div id="status-updated-time-container" style="font-size: 0.85rem; color: var(--text-muted); display: {{ $statusUpdatedAt ? 'inline-flex' : 'none' }}; align-items: center; gap: 0.35rem;">
                             <i class="bx bx-calendar-event" style="font-size: 1rem; color: #10b981;"></i>
-                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: #10b981;">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
+                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d/m/Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: #10b981;">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
                         </div>
                     </div>
 
-                    @if($canEditStatus && $hasApplication)
+                    @if(strtolower($currentPhase ?? '') === 'completed' || strtolower($project->status ?? '') === 'completed')
+                    <div style="display: inline-flex; align-items: center; gap: 0.6rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.6rem 1.1rem; border-radius: 8px;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);"></span>
+                        <span style="color: #10b981; font-weight: 800; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.03em;">Completed &amp; Handed Over</span>
+                        <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500; margin-left: 0.25rem;">(Status Locked)</span>
+                    </div>
+                    @elseif($canEditStatus && $hasApplication)
                     <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; max-width: 560px;">
                         <div style="flex: 1; min-width: 220px;">
                             <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Select Phase</label>
@@ -1288,7 +1291,7 @@
                                     @forelse($financials as $index => $row)
                                         <tr id="fund-row-{{ $row->id }}" class="fund-table-row" style="border-bottom: 1px solid var(--panel-border); font-size: 0.9rem; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.02)'" onmouseout="this.style.backgroundColor='transparent'">
                                             <td class="fund-serial-no" style="padding: 0.75rem 1rem; color: var(--text-muted);">{{ $index + 1 }}</td>
-                                            <td style="padding: 0.75rem 1rem;">{{ !empty($row->date) ? date('d-M-Y', strtotime($row->date)) : 'N/A' }}</td>
+                                            <td style="padding: 0.75rem 1rem;">{{ !empty($row->date) ? date('d/m/Y', strtotime($row->date)) : 'N/A' }}</td>
                                             <td class="fund-amount-cell" data-amount="{{ $row->amount }}" style="padding: 0.75rem 1rem; text-align: right; font-weight: 600; color: #10b981;">{!! "&#x20B9;" !!}{{ number_format($row->amount, 2) }}</td>
                                             <td style="padding: 0.75rem 1rem;">
                                                 @if($row->donorModel)
@@ -1937,7 +1940,7 @@
                                         <tr id="programme-row-{{ $prog->id }}" class="programme-table-row" style="border-bottom: 1px solid var(--panel-border, #e2e8f0); font-size: 0.875rem; transition: background-color 0.2s ease;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.03)'" onmouseout="this.style.backgroundColor='transparent'">
                                             <td class="serial-no-cell" style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text-muted, #64748b); vertical-align: middle;">{{ $idx + 1 }}</td>
                                             <td style="padding: 12px 16px; font-weight: 700; color: var(--text-main, #0f172a); vertical-align: middle;">{{ $prog->programme_name ?? 'Untitled Programme' }}</td>
-                                            <td style="padding: 12px 16px; color: var(--text-main, #334155); white-space: nowrap; vertical-align: middle;">{{ !empty($prog->date) ? date('d-M-Y', strtotime($prog->date)) : '-' }}</td>
+                                            <td style="padding: 12px 16px; color: var(--text-main, #334155); white-space: nowrap; vertical-align: middle;">{{ !empty($prog->date) ? date('d/m/Y', strtotime($prog->date)) : '-' }}</td>
                                             <td style="padding: 12px 16px; color: var(--text-main, #334155); vertical-align: middle;">{{ $prog->place ?? '-' }}</td>
                                             <td style="padding: 12px 16px; color: var(--text-main, #334155); vertical-align: middle;">{{ $prog->remarks ?? '-' }}</td>
                                             <td style="padding: 12px 16px; text-align: center; vertical-align: middle;">

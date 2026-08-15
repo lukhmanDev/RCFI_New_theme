@@ -66,27 +66,23 @@ class OrphanCareApplication extends Model
 
     public static function ensureProjectExists($application)
     {
-        $projectExists = \App\Models\OrphanCareProject::where('application_id', $application->id)->exists();
-        if (!$projectExists) {
+        $project = \App\Models\OrphanCareProject::where('application_id', $application->id)->first();
+        if (!$project) {
             $year = date('y');
             $idString = str_pad($application->id, 3, '0', STR_PAD_LEFT);
             $tempId = 'RCFI/' . $year . '-OC' . $idString;
 
             \App\Models\OrphanCareProject::create([
-                'application_id' => $application->id,
-                'project_name' => $application->applicant_name ?? 'Orphan Care Project',
+                'application_id'    => $application->id,
                 'agency_project_no' => $application->agency_number,
-                'project_id' => $tempId,
-                'type_of_project' => 'Orphan Care',
-                'sponsor' => 'Sponsored',
-                'stage' => 1,
-                'status' => 'Active',
+                'project_id'        => $tempId,
+                'type_of_project'   => 'Orphan Care',
+                'stage'             => 1,
+                'status'            => 'Active',
             ]);
         } else {
-            $project = \App\Models\OrphanCareProject::where('application_id', $application->id)->first();
-            if ($project) {
-                if (!empty($application->applicant_name)) $project->project_name = $application->applicant_name;
-                if (!empty($application->agency_number)) $project->agency_project_no = $application->agency_number;
+            if (!empty($application->agency_number)) {
+                $project->agency_project_no = $application->agency_number;
                 $project->save();
             }
         }

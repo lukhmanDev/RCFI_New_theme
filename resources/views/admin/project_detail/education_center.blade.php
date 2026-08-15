@@ -396,11 +396,17 @@
 
                         <div id="status-updated-time-container" style="font-size: 0.85rem; color: var(--text-muted); display: {{ $statusUpdatedAt ? 'inline-flex' : 'none' }}; align-items: center; gap: 0.35rem;">
                             <i class="bx bx-calendar-event" style="font-size: 1rem; color: #10b981;"></i>
-                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d-M-Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: #10b981;">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
+                            <span>Last Updated: <strong id="status-updated-at" style="color: var(--text-main);">{{ $statusUpdatedAt ? $statusUpdatedAt->format('d/m/Y h:i A') : '' }}</strong> (<span id="status-updated-human" style="color: #10b981;">{{ $statusUpdatedAt ? $statusUpdatedAt->diffForHumans() : '' }}</span>)</span>
                         </div>
                     </div>
 
-                    @if($canEditStatus && $hasApplication)
+                    @if(strtolower($currentPhase ?? '') === 'completed' || strtolower($project->status ?? '') === 'completed')
+                    <div style="display: inline-flex; align-items: center; gap: 0.6rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.6rem 1.1rem; border-radius: 8px;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);"></span>
+                        <span style="color: #10b981; font-weight: 800; font-size: 0.92rem; text-transform: uppercase; letter-spacing: 0.03em;">Completed &amp; Handed Over</span>
+                        <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500; margin-left: 0.25rem;">(Status Locked)</span>
+                    </div>
+                    @elseif($canEditStatus && $hasApplication)
                     <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; max-width: 560px;">
                         <div style="flex: 1; min-width: 220px;">
                             <label style="display: block; color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Select Phase</label>
@@ -853,7 +859,7 @@
                                 $filePath = ($docRecord && $column) ? $docRecord->$column : null;
                                 $timeColumn = $column ? $column . '_ticked_at' : null;
                                 $tickedAtDate = ($docRecord && $timeColumn) ? $docRecord->$timeColumn : null;
-                                $tickedAt = $tickedAtDate ? \Carbon\Carbon::parse($tickedAtDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                                $tickedAt = $tickedAtDate ? \Carbon\Carbon::parse($tickedAtDate)->timezone('Asia/Kolkata')->format('d/m/Y h:i A') : null;
                                 
                                 if ($filePath === '0') {
                                     $filePath = null;
@@ -926,7 +932,7 @@
                                 @if($siteStudyData && ($siteStudyData->report_text || $siteStudyData->file_path))
                                     <span style="color: var(--accent-green, #10b981); font-weight: 600;"><i class="bx bx-check-circle"></i> Submitted</span>
                                     @if($siteStudyData->updated_at)
-                                        â€¢ Updated {{ \Carbon\Carbon::parse($siteStudyData->updated_at)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') }}
+                                        â€¢ Updated {{ \Carbon\Carbon::parse($siteStudyData->updated_at)->timezone('Asia/Kolkata')->format('d/m/Y h:i A') }}
                                     @endif
                                 @else
                                     <span style="color: #f59e0b; font-weight: 500;"><i class="bx bx-time"></i> Pending Report</span>
@@ -1650,7 +1656,7 @@
                                         <td style="text-align: center; font-weight: 600; color: var(--text-muted); vertical-align: middle;">{{ $loop->iteration }}</td>
                                         <td style="font-weight: 600; color: var(--text-main); vertical-align: middle;">{{ $inspection->name }}</td>
                                         <td style="color: var(--text-main); vertical-align: middle;">{{ $inspection->designation }}</td>
-                                        <td style="color: var(--text-main); vertical-align: middle;">{{ \Carbon\Carbon::parse($inspection->date)->format('d-M-Y') }}</td>
+                                        <td style="color: var(--text-main); vertical-align: middle;">{{ \Carbon\Carbon::parse($inspection->date)->format('d/m/Y') }}</td>
                                         <td style="color: var(--text-muted); vertical-align: middle; white-space: pre-line;">{{ $inspection->remarks ?? '-' }}</td>
                                         @if($isProjectManager && !$isLockedForEditing)
                                             <td style="text-align: center; vertical-align: middle;">
@@ -1692,12 +1698,12 @@
                     $compCert = $docRecord ? $docRecord->completion_certificate : null;
                     if ($compCert === '0') { $compCert = null; }
                     $compCertTimeDate = $docRecord ? $docRecord->completion_certificate_ticked_at : null;
-                    $compCertTime = $compCertTimeDate ? \Carbon\Carbon::parse($compCertTimeDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                    $compCertTime = $compCertTimeDate ? \Carbon\Carbon::parse($compCertTimeDate)->timezone('Asia/Kolkata')->format('d/m/Y h:i A') : null;
 
                     $measBook = $docRecord ? $docRecord->measurement_book : null;
                     if ($measBook === '0') { $measBook = null; }
                     $measBookTimeDate = $docRecord ? $docRecord->measurement_book_ticked_at : null;
-                    $measBookTime = $measBookTimeDate ? \Carbon\Carbon::parse($measBookTimeDate)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : null;
+                    $measBookTime = $measBookTimeDate ? \Carbon\Carbon::parse($measBookTimeDate)->timezone('Asia/Kolkata')->format('d/m/Y h:i A') : null;
 
                     $locationMapLink = $docRecord ? $docRecord->location_map_link : null;
                     
@@ -1986,30 +1992,58 @@
                                 $s5CommSpent += floatval($exp['amount'] ?? 0);
                             }
                         }
+
+                        $mList = $pFilesData['materials'] ?? ($project->materials ?? []);
+                        $s4MaterialsTotal = 0;
+                        if (is_array($mList)) {
+                            foreach ($mList as $mItem) {
+                                $s4MaterialsTotal += floatval($mItem['amount'] ?? 0);
+                            }
+                        }
+
+                        $cList = $pFilesData['community_contributions'] ?? ($project->community_contributions ?? []);
+                        $s4CommTotal = 0;
+                        if (is_array($cList)) {
+                            foreach ($cList as $cItem) {
+                                $s4CommTotal += floatval($cItem['amount'] ?? 0);
+                            }
+                        }
                         
-                        $finTotalGrands = ($s5AllocatedSpent > 0) ? $s5AllocatedSpent : ($totalAmount ?? $project->available_budget ?? 0);
-                        $finCommContrib = ($s5CommSpent > 0) ? $s5CommSpent : ($commTotal ?? 0);
+                        $finTotalGrands = ($s5AllocatedSpent > 0) ? $s5AllocatedSpent : (($s4MaterialsTotal > 0) ? $s4MaterialsTotal : (floatval($project->available_budget ?? 0) > 0 ? floatval($project->available_budget) : floatval($project->total_amount ?? 0)));
+                        $finCommContrib = ($s5CommSpent > 0) ? $s5CommSpent : (($s4CommTotal > 0) ? $s4CommTotal : floatval($commTotal ?? 0));
+                        
+                        $compDetails = $project->files['completion_details'] ?? [];
+                        $savedGrants = floatval($compDetails['total_amount'] ?? 0);
+                        $displayGrants = ($savedGrants > 0) ? $savedGrants : $finTotalGrands;
+
+                        $savedComm = floatval($compDetails['community_contribution'] ?? 0);
+                        $displayComm = ($savedComm > 0) ? $savedComm : $finCommContrib;
+
+                        $leverage = floatval($compDetails['amount_paid_by_donor'] ?? 0);
+                        $anyOther = floatval($compDetails['any_other'] ?? 0);
+                        $deductions = floatval($compDetails['deductions'] ?? 0);
+                        $totalProjectCost = $displayGrants + $displayComm + $leverage + $anyOther - $deductions;
                     @endphp
 
                     @if($isProjectManager && $project->status !== 'Completed')
                         <form action="{{ route('projects.save_completion_details', $project->id) }}" method="POST" style="margin: 0;">
                             @csrf
-                            <input type="hidden" name="total_amount" id="fin_total_amount" value="{{ $finTotalGrands }}">
-                            <input type="hidden" name="community_contribution" id="fin_community_contribution" value="{{ $finCommContrib }}">
+                            <input type="hidden" name="total_amount" id="fin_total_amount" value="{{ $displayGrants }}">
+                            <input type="hidden" name="community_contribution" id="fin_community_contribution" value="{{ $displayComm }}">
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
-                                        Total Grands (&#x20B9;)
+                                        Total Grants (&#x20B9;)
                                         <span style="font-size: 0.75rem; color: var(--accent-cyan); margin-left: 0.3rem;">(auto)</span>
                                     </label>
-                                    <input type="text" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;" value="{{ number_format($finTotalGrands, 2) }}">
+                                    <input type="text" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;" value="{{ number_format($displayGrants, 2) }}">
                                 </div>
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">
                                         Community Contribution (&#x20B9;)
                                         <span style="font-size: 0.75rem; color: var(--accent-cyan); margin-left: 0.3rem;">(auto)</span>
                                     </label>
-                                    <input type="text" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;" value="{{ number_format($finCommContrib, 2) }}">
+                                    <input type="text" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: rgba(6,182,212,0.05); color: var(--accent-cyan); cursor: not-allowed; font-weight: 600;" value="{{ number_format($displayComm, 2) }}">
                                 </div>
                                 <div>
                                     <label style="display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Leverage (&#x20B9;)</label>
@@ -2028,7 +2062,7 @@
                                         Total Project Cost (&#x20B9;)
                                         <span style="font-size: 0.75rem; color: #10b981; margin-left: 0.3rem;">(auto)</span>
                                     </label>
-                                    <input type="number" name="total_project_cost" id="fin_total_project_cost" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid rgba(16,185,129,0.4); background-color: rgba(16,185,129,0.05); color: #10b981; cursor: not-allowed; font-weight: 700; font-size: 1rem;" value="{{ old('total_project_cost', $compDetails['total_project_cost'] ?? $project->available_budget) }}">
+                                    <input type="number" name="total_project_cost" id="fin_total_project_cost" readonly class="form-control-dark" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid rgba(16,185,129,0.4); background-color: rgba(16,185,129,0.05); color: #10b981; cursor: not-allowed; font-weight: 700; font-size: 1rem;" value="{{ old('total_project_cost', !empty($compDetails['total_project_cost']) && $compDetails['total_project_cost'] > 0 ? $compDetails['total_project_cost'] : $totalProjectCost) }}">
                                 </div>
                             </div>
                             <button type="submit" class="btn-custom" style="padding: 0.5rem 1.5rem; cursor: pointer;">Save Details</button>
@@ -2065,23 +2099,29 @@
                         </script>
                     @else
                         <div class="details-grid">
-                            <div class="details-label">Total Grands</div><div class="details-colon">:</div>
-                            <div class="details-value">{!! "&#x20B9;" !!}{{ number_format($compDetails['total_amount'] ?? $project->available_budget, 2) }}</div>
+                            <div class="details-label">Total Grants</div><div class="details-colon">:</div>
+                            <div class="details-value">{!! "&#x20B9;" !!}{{ number_format($displayGrants, 2) }}</div>
 
                             <div class="details-label">Community Contribution</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($compDetails['community_contribution'] ?? 0, 2) }}</div>
+                            <div class="details-value" style="color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($displayComm, 2) }}</div>
 
                             <div class="details-label">Leverage</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($compDetails['amount_paid_by_donor'] ?? 0, 2) }}</div>
+                            <div class="details-value" style="color: var(--accent-cyan);">{!! "&#x20B9;" !!}{{ number_format($leverage, 2) }}</div>
 
                             <div class="details-label">Any Other</div><div class="details-colon">:</div>
-                            <div class="details-value">{!! "&#x20B9;" !!}{{ number_format($compDetails['any_other'] ?? 0, 2) }}</div>
+                            <div class="details-value">{!! "&#x20B9;" !!}{{ number_format($anyOther, 2) }}</div>
 
                             <div class="details-label">Deductions</div><div class="details-colon">:</div>
-                            <div class="details-value" style="color: var(--accent-red);">{!! "&#x20B9;" !!}{{ number_format($compDetails['deductions'] ?? 0, 2) }}</div>
+                            <div class="details-value" style="color: var(--accent-red);">{!! "&#x20B9;" !!}{{ number_format($deductions, 2) }}</div>
 
                             <div class="details-label" style="font-weight: 700;">Total Project Cost</div><div class="details-colon">:</div>
-                            <div class="details-value" style="font-weight: 700; color: #10b981;">{!! "&#x20B9;" !!}{{ number_format(($compDetails['total_amount'] ?? $project->available_budget) + ($compDetails['community_contribution'] ?? 0) + ($compDetails['amount_paid_by_donor'] ?? 0) + ($compDetails['any_other'] ?? 0) - ($compDetails['deductions'] ?? 0), 2) }}</div>
+                            <div class="details-value" style="font-weight: 700; color: #10b981;">{!! "&#x20B9;" !!}{{ number_format($totalProjectCost, 2) }}</div>
+
+                            <div class="details-label">Benefited People</div><div class="details-colon">:</div>
+                            <div class="details-value" style="font-weight: 700; color: #0284c7;">{{ number_format($compDetails['total_beneficiary_peoples'] ?? ($project->total_beneficiary_peoples ?? ($project->num_benefited_people ?? 0))) }} <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">people</span></div>
+
+                            <div class="details-label">Benefited Families</div><div class="details-colon">:</div>
+                            <div class="details-value" style="font-weight: 700; color: #8b5cf6;">{{ number_format($compDetails['total_family'] ?? ($project->total_family ?? 0)) }} <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">families</span></div>
 
                             <div class="details-label">Completion Status</div><div class="details-colon">:</div>
                             <div class="details-value">
@@ -2110,7 +2150,7 @@
                                 $cooApprovedAt = $cooStatus ? $cooStatus->coo_approved_at : null;
                                 $cooApprover = $cooStatus && $cooStatus->approver ? $cooStatus->approver->name : 'COO';
                                 $cooRemarks = $cooStatus ? $cooStatus->coo_remarks : null;
-                                $cooApprovedAtStr = $cooApprovedAt ? \Carbon\Carbon::parse($cooApprovedAt)->timezone('Asia/Kolkata')->format('d-M-Y h:i A') : 'N/A';
+                                $cooApprovedAtStr = $cooApprovedAt ? \Carbon\Carbon::parse($cooApprovedAt)->timezone('Asia/Kolkata')->format('d/m/Y h:i A') : 'N/A';
                             @endphp
                             <div style="font-size: 0.9rem; color: var(--text-main);">
                                 <p style="margin: 0.25rem 0;"><strong>Approved By:</strong> {{ $cooApprover }}</p>

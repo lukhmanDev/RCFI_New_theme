@@ -212,12 +212,12 @@ class LeaveRequestController extends Controller
                 'id' => $lr->id,
                 'leave_type' => $lr->leaveType->name ?? $lr->leave_type ?? 'Leave',
                 'leave_code' => $lr->leaveType->code ?? 'LV',
-                'start_date' => $lr->start_date ? \Carbon\Carbon::parse($lr->start_date)->format('M d, Y') : '',
-                'end_date' => $lr->end_date ? \Carbon\Carbon::parse($lr->end_date)->format('M d, Y') : '',
+                'start_date' => $lr->start_date ? \Carbon\Carbon::parse($lr->start_date)->format('d/m/Y') : '',
+                'end_date' => $lr->end_date ? \Carbon\Carbon::parse($lr->end_date)->format('d/m/Y') : '',
                 'total_days' => $lr->total_days,
                 'reason' => $lr->reason ?? 'N/A',
                 'status' => $lr->status ?? 'Pending',
-                'applied_on' => $lr->created_at ? $lr->created_at->format('M d, Y h:i A') : '',
+                'applied_on' => $lr->created_at ? $lr->created_at->format('d/m/Y h:i A') : '',
                 'remarks' => $lr->remarks ?? $lr->rejection_reason ?? '',
             ];
         });
