@@ -25,8 +25,16 @@ class DifferentlyAbledApplication extends Model
         $project = \App\Models\DifferentlyAbledProject::where('application_id', $application->id)->first();
         if (!$project) {
             $year = date('y');
-            $idString = str_pad($application->id, 3, '0', STR_PAD_LEFT);
+            $maxId = \App\Models\DifferentlyAbledProject::max('id') ?? 0;
+            $nextSeq = $maxId + 1;
+            $idString = str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
             $tempId = 'RCFI/' . $year . '-DA' . $idString;
+
+            while (\App\Models\DifferentlyAbledProject::where('project_id', $tempId)->exists()) {
+                $nextSeq++;
+                $idString = str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
+                $tempId = 'RCFI/' . $year . '-DA' . $idString;
+            }
 
             \App\Models\DifferentlyAbledProject::create([
                 'application_id'    => $application->id,
@@ -108,10 +116,13 @@ class DifferentlyAbledApplication extends Model
         'details',
         'cluster_id',
         'agency_number',
+        'agency_name',
+        'application_date',
         'recommendation_name',
         'recommendation_organization',
         'recommendation_organization_other',
         'recommendation_phone',
-        'recommendation_position'
+        'recommendation_position',
+        'whatsapp_number'
     ];
 }

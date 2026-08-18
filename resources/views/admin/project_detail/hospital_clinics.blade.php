@@ -294,12 +294,12 @@
 
     <!-- Success Panel -->
     @if (session('success'))
-        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
     @if (session('error'))
-        <div class=\"alert alert-danger\" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff8a8a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-danger" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff8a8a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('error') }}
         </div>
     @endif
@@ -915,7 +915,8 @@
                 </table>
 
                 @php
-                    $siteStudyData = $project->projectSiteStudy ?? null;
+                    $siteStudyData = $project->projectSiteStudy ?? \App\Models\ProjectSiteStudy::where('project_id', $project->id)->where('project_type', get_class($project))->first();
+                    $hasSiteStudy = $siteStudyData && (!empty($siteStudyData->report) || !empty($siteStudyData->file_path) || !empty($siteStudyData->remarks));
                 @endphp
                 <!-- Dedicated Site Study Report Section (Bottom of Stage 3) -->
                 <div style="margin-top: 1.5rem; background: var(--panel-bg, rgba(255, 255, 255, 0.03)); border: 1px solid var(--panel-border, rgba(255, 255, 255, 0.1)); border-radius: 8px; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
@@ -925,11 +926,11 @@
                         </div>
                         <div>
                             <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">Site Study Report</div>
-                            <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.15rem;">
-                                @if($siteStudyData && ($siteStudyData->report_text || $siteStudyData->file_path))
+                            <div id="site-study-status-container" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.15rem;">
+                                @if($hasSiteStudy)
                                     <span style="color: var(--accent-green, #10b981); font-weight: 600;"><i class="bx bx-check-circle"></i> Submitted</span>
                                     @if($siteStudyData->updated_at)
-                                        â€¢ Updated {{ \Carbon\Carbon::parse($siteStudyData->updated_at)->timezone('Asia/Kolkata')->format('d/m/Y h:i A') }}
+                                        • Updated {{ \Carbon\Carbon::parse($siteStudyData->updated_at)->timezone('Asia/Kolkata')->format('d/m/Y h:i A') }}
                                     @endif
                                 @else
                                     <span style="color: #f59e0b; font-weight: 500;"><i class="bx bx-time"></i> Pending Report</span>
@@ -939,12 +940,12 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         @if($siteStudyData && $siteStudyData->file_path)
-                            <a href="{{ asset($siteStudyData->file_path) }}" target="_blank" style="background: rgba(16, 185, 129, 0.12); color: var(--accent-green, #10b981); border: 1px solid var(--accent-green, #10b981); padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <a id="site-study-download-link" href="{{ asset($siteStudyData->file_path) }}" target="_blank" style="background: rgba(16, 185, 129, 0.12); color: var(--accent-green, #10b981); border: 1px solid var(--accent-green, #10b981); padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;">
                                 <i class="bx bx-download"></i> Download Attached File
                             </a>
                         @endif
                         <button type="button" onclick="openSiteStudyModal()" style="background: var(--accent-green, #10b981); color: white; border: none; padding: 0.45rem 0.95rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                            <i class="bx bx-edit-alt"></i> {{ ($siteStudyData && ($siteStudyData->report_text || $siteStudyData->file_path)) ? 'View / Edit Site Study Report' : 'Open Site Study Report (1000+ words)' }}
+                            <i class="bx bx-edit-alt"></i> <span id="site-study-btn-label">{{ $hasSiteStudy ? 'View / Edit Site Study Report' : 'Open Site Study Report (1000+ words)' }}</span>
                         </button>
                     </div>
                 </div>
@@ -1982,11 +1983,10 @@
                         $s5AllocatedSpent = 0;
                         $s5CommSpent = 0;
                         foreach ($allExpenses as $exp) {
-                            if (isset($exp['material_index'])) {
-                                $s5AllocatedSpent += floatval($exp['amount'] ?? 0);
-                            }
-                            if (isset($exp['comm_index'])) {
+                            if (isset($exp['comm_index']) && $exp['comm_index'] !== null && $exp['comm_index'] !== '') {
                                 $s5CommSpent += floatval($exp['amount'] ?? 0);
+                            } else {
+                                $s5AllocatedSpent += floatval($exp['amount'] ?? 0);
                             }
                         }
 
@@ -2007,14 +2007,14 @@
                         }
                         
                         $finTotalGrands = ($s5AllocatedSpent > 0) ? $s5AllocatedSpent : (($s4MaterialsTotal > 0) ? $s4MaterialsTotal : (floatval($project->available_budget ?? 0) > 0 ? floatval($project->available_budget) : floatval($project->total_amount ?? 0)));
-                        $finCommContrib = ($s5CommSpent > 0) ? $s5CommSpent : (($s4CommTotal > 0) ? $s4CommTotal : floatval($commTotal ?? 0));
+                        $finCommContrib = $s5CommSpent;
                         
                         $compDetails = $project->files['completion_details'] ?? [];
                         $savedGrants = floatval($compDetails['total_amount'] ?? 0);
-                        $displayGrants = ($savedGrants > 0) ? $savedGrants : $finTotalGrands;
+                        $displayGrants = ($project->status === 'Completed' && $savedGrants > 0) ? $savedGrants : $finTotalGrands;
 
                         $savedComm = floatval($compDetails['community_contribution'] ?? 0);
-                        $displayComm = ($savedComm > 0) ? $savedComm : $finCommContrib;
+                        $displayComm = ($project->status === 'Completed' && $savedComm > 0 && $s5CommSpent == 0) ? $savedComm : $s5CommSpent;
 
                         $leverage = floatval($compDetails['amount_paid_by_donor'] ?? 0);
                         $anyOther = floatval($compDetails['any_other'] ?? 0);
@@ -3411,31 +3411,58 @@
     </div>
 @endif
 
-<!-- Site Study Modal -->
-<div id="siteStudyModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
-    <div style="background: var(--bg-card, #ffffff); border-radius: 8px; width: 90%; max-width: 850px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden;">
-        <div style="padding: 1rem 1.5rem; background: var(--accent-green, #10b981); color: white; display: flex; justify-content: space-between; align-items: center;">
-            <h4 style="margin: 0; font-size: 1.1rem; color: white; display: flex; align-items: center; gap: 0.5rem;"><i class="bx bx-file-find"></i> Site Study Report (1000+ Words Supported)</h4>
-            <button type="button" onclick="closeSiteStudyModal()" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
-        </div>
-        <form id="siteStudyForm" onsubmit="saveSiteStudyReport(event)" data-no-ajax style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; flex: 1;">
-            <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <label style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">Comprehensive Site Study Report</label>
-                    <span id="siteStudyWordCount" style="font-size: 0.8rem; color: var(--accent-green, #10b981); font-weight: 600;">Words: 0</span>
+<!-- Modern Site Study Modal -->
+<div id="siteStudyModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 9999; justify-content: center; align-items: center; padding: 1.25rem;">
+    <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: siteStudyModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+        
+        <!-- Header with Site Study Title -->
+        <div style="padding: 1.25rem 1.75rem; background: linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%); color: #ffffff !important; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.15);">
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.35); color: #ffffff !important; display: flex; align-items: center; justify-content: center; font-size: 1.35rem;">
+                    <i class="bx bx-file-find" style="color: #ffffff !important;"></i>
                 </div>
+                <h4 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #ffffff !important; letter-spacing: -0.01em;">Site Study</h4>
+            </div>
+            <button type="button" onclick="closeSiteStudyModal()" style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); color: #ffffff !important; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; cursor: pointer; transition: all 0.15s ease;" onmouseover="this.style.background='rgba(239, 68, 68, 0.8)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.15)';">&times;</button>
+        </div>
+
+        <!-- Form Body -->
+        <form id="siteStudyForm" onsubmit="saveSiteStudyReport(event)" data-no-ajax style="padding: 1.5rem 1.75rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; flex: 1; background: #f8fafc;">
+            
+            <!-- Label & Word Counter Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="font-weight: 700; color: #1e293b; font-size: 0.92rem; margin: 0;">
+                    Comprehensive Site Assessment Findings <span style="color: #ef4444;">*</span>
+                </label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span id="siteStudyWordCount" style="background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 12px;">Words: 0</span>
+                    <span id="siteStudyCharCount" style="background: #e2e8f0; color: #475469; font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 12px;">Chars: 0</span>
+                </div>
+            </div>
+
+            <!-- Report Textarea -->
+            <div style="flex: 1; display: flex; flex-direction: column;">
                 <textarea id="siteStudyReportText" 
                           name="report" 
                           rows="14" 
                           oninput="updateSiteStudyWordCount()"
-                          placeholder="Type or paste comprehensive site study report here (supports 1000+ words)..." 
-                          style="width: 100%; border: 1px solid #cccccc; border-radius: 6px; padding: 0.75rem; font-size: 0.9rem; font-family: inherit; color: #000000 !important; background-color: #ffffff !important; outline: none; line-height: 1.5; resize: vertical;">{{ $siteStudyData->report ?? '' }}</textarea>
+                          placeholder="Type or paste comprehensive site study observations here (e.g. site access, boundary demarcation, soil condition, groundwater availability, nearby infrastructure, and engineer recommendations)..." 
+                          style="width: 100%; min-height: 320px; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 1.1rem; font-size: 0.95rem; font-family: inherit; color: #0f172a !important; background: #ffffff !important; outline: none; line-height: 1.6; resize: vertical; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03); transition: border-color 0.15s, box-shadow 0.15s;"
+                          onfocus="this.style.borderColor='#10b981'; this.style.boxShadow='0 0 0 3.5px rgba(16, 185, 129, 0.15)';"
+                          onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='inset 0 1px 2px rgba(0,0,0,0.03)';">{{ $siteStudyData->report ?? '' }}</textarea>
             </div>
-            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; border-top: 1px solid #eeeeee; padding-top: 1rem;">
-                <button type="button" onclick="closeSiteStudyModal()" style="background: #e5e7eb; color: #374151; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; font-weight: 500; cursor: pointer;">Cancel</button>
-                <button type="submit" id="siteStudySubmitBtn" style="background: var(--accent-green, #10b981); color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;">
-                    <i class="bx bx-save"></i> Save Site Study Report
-                </button>
+
+            <!-- Footer -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 1.15rem; margin-top: 0.5rem;">
+                <div style="font-size: 0.8rem; color: #64748b; display: flex; align-items: center; gap: 0.35rem;">
+                    <i class="bx bx-info-circle" style="color: #10b981;"></i> Supports up to 10,000+ words with instant save to Stage 3.
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" onclick="closeSiteStudyModal()" style="background: #ffffff; color: #475569; border: 1px solid #cbd5e1; padding: 0.6rem 1.35rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.15s;" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='#ffffff';">Cancel</button>
+                    <button type="submit" id="siteStudySubmitBtn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 0.6rem 1.6rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.28); transition: transform 0.15s, box-shadow 0.15s;" onmouseover="this.style.transform='translateY(-1px)';" onmouseout="this.style.transform='translateY(0)';">
+                        <i class="bx bx-save" style="font-size: 1.15rem;"></i> Save Site Study Report
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -3459,16 +3486,25 @@
     };
     window.updateSiteStudyWordCount = function() {
         const text = document.getElementById('siteStudyReportText')?.value || '';
-        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const trimmed = text.trim();
+        const words = trimmed ? trimmed.split(/\s+/).length : 0;
+        const chars = text.length;
         const countEl = document.getElementById('siteStudyWordCount');
         if (countEl) {
             countEl.innerText = `Words: ${words}`;
+        }
+        const charEl = document.getElementById('siteStudyCharCount');
+        if (charEl) {
+            charEl.innerText = `Chars: ${chars}`;
         }
     };
     window.saveSiteStudyReport = async function(e) {
         e.preventDefault();
         const btn = document.getElementById('siteStudySubmitBtn');
-        if (btn) btn.disabled = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Saving Report...';
+        }
         const formData = new FormData(document.getElementById('siteStudyForm'));
         const csrfToken = "{{ csrf_token() }}";
         
@@ -3489,7 +3525,28 @@
                     alert(data.message);
                 }
                 window.closeSiteStudyModal();
-                const cell = document.getElementById('ticked-at-Site_study') || document.getElementById('ticked-at-Site_study_report');
+
+                // 1. Update status badge & text
+                const statusContainer = document.getElementById('site-study-status-container');
+                if (statusContainer) {
+                    const timeStr = data.ticked_at ? ` • Updated ${data.ticked_at}` : ' • Updated Just now';
+                    statusContainer.innerHTML = `<span style="color: var(--accent-green, #10b981); font-weight: 600;"><i class="bx bx-check-circle"></i> Submitted</span>${timeStr}`;
+                }
+
+                // 2. Update button label
+                const btnLabel = document.getElementById('site-study-btn-label');
+                if (btnLabel) {
+                    btnLabel.innerText = 'View / Edit Site Study Report';
+                }
+
+                // 3. Keep report textarea updated
+                if (data.report !== undefined) {
+                    const txtArea = document.getElementById('siteStudyReportText');
+                    if (txtArea) txtArea.value = data.report;
+                }
+
+                // 4. Update checklist timestamp
+                const cell = document.getElementById('ticked-at-Site_study') || document.getElementById('ticked-at-site_study') || document.getElementById('ticked-at-site_study_report');
                 if (cell && data.ticked_at) {
                     cell.innerText = data.ticked_at;
                 }
@@ -3500,7 +3557,10 @@
             console.error(err);
             alert('Error occurred while saving site study report.');
         } finally {
-            if (btn) btn.disabled = false;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bx bx-save" style="font-size: 1.15rem;"></i> Save Site Study Report';
+            }
         }
     };
 </script>

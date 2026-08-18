@@ -337,9 +337,9 @@ class ProjectController extends Controller
             'project_name' => ['required', 'string', 'max:255'],
             'sponsor' => ['required', 'string', 'max:255'],
             'project_spec' => ['nullable', 'string'],
-            'agency_project_no' => ['required', 'string', 'max:255'],
+            'agency_project_no' => ['required', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber()],
             'donor_id' => ['required', 'exists:donors,id'],
-            'project_manager_id' => ['required', 'exists:users,id'],
+            'project_manager_id' => ['nullable', 'exists:users,id'],
             'engineer_id' => ['nullable', 'exists:users,id'],
             'unit' => ['nullable', 'string', 'max:255'],
             'available_budget' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
@@ -408,13 +408,37 @@ class ProjectController extends Controller
             return redirect()->back()->with('error', 'Social Aid projects cannot be edited manually.');
         }
 
+        $redirectCategory = $request->input('redirect_category');
+        $config = $this->categories[$redirectCategory] ?? null;
+
+        if (!$config) {
+            foreach ($this->categories as $slug => $c) {
+                if ($c['name'] === $request->input('type_of_project')) {
+                    $config = $c;
+                    $redirectCategory = $slug;
+                    break;
+                }
+            }
+        }
+
+        $projTable = null;
+        $appId = null;
+        if ($config) {
+            $model = $config['model'];
+            $existingProj = $model::find($id);
+            if ($existingProj) {
+                $projTable = $existingProj->getTable();
+                $appId = $existingProj->application_id ?? null;
+            }
+        }
+
         $data = $request->validate([
             'project_name' => ['required', 'string', 'max:255'],
             'sponsor' => ['required', 'string', 'max:255'],
             'project_spec' => ['nullable', 'string'],
-            'agency_project_no' => ['required', 'string', 'max:255'],
+            'agency_project_no' => ['required', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber($projTable, $id, $appId)],
             'donor_id' => ['required', 'exists:donors,id'],
-            'project_manager_id' => ['required', 'exists:users,id'],
+            'project_manager_id' => ['nullable', 'exists:users,id'],
             'engineer_id' => ['nullable', 'exists:users,id'],
             'unit' => ['nullable', 'string', 'max:255'],
             'available_budget' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
@@ -426,19 +450,6 @@ class ProjectController extends Controller
             'activity' => ['nullable', 'string', 'max:255'],
             'remarks' => ['nullable', 'string'],
         ]);
-
-        $redirectCategory = $request->input('redirect_category');
-        $config = $this->categories[$redirectCategory] ?? null;
-
-        if (!$config) {
-            foreach ($this->categories as $slug => $c) {
-                if ($c['name'] === $data['type_of_project']) {
-                    $config = $c;
-                    $redirectCategory = $slug;
-                    break;
-                }
-            }
-        }
 
         if ($config) {
             $model = $config['model'];
@@ -1211,17 +1222,19 @@ class ProjectController extends Controller
                 'Sponsorship Details',
                 'Sponsor Status',
                 'Current Beneficiaries',
+                'Total Fund Received',
+                'Fund Breakdown (Amounts)',
+                'Fund Donor',
+                'Fund Date',
+                'Fund Account Name',
+                'Fund Account Number',
+                'Fund IFSC Code',
+                'Fund All Transactions',
                 'Recommender Name',
                 'Recommender Org',
                 'Recommender Phone',
                 'Recommender Position',
                 'Additional Note',
-                'Theme',
-                'Subtheme',
-                'Activity',
-                'Project Spec',
-                'Unit',
-                'Stage',
                 'Status',
                 'Remarks',
                 'Created At'
@@ -1261,12 +1274,14 @@ class ProjectController extends Controller
                 'Monthly Income',
                 'Monthly Expense',
                 'Sponsor Status',
-                'Theme',
-                'Subtheme',
-                'Activity',
-                'Project Spec',
-                'Unit',
-                'Stage',
+                'Total Fund Received',
+                'Fund Breakdown (Amounts)',
+                'Fund Donor',
+                'Fund Date',
+                'Fund Account Name',
+                'Fund Account Number',
+                'Fund IFSC Code',
+                'Fund All Transactions',
                 'Status',
                 'Remarks',
                 'Created At'
@@ -1308,6 +1323,58 @@ class ProjectController extends Controller
                 ?? ($project->funds?->first()?->donor ?? null) 
                 ?? ($project->funds?->first()?->agency ?? null) 
                 ?? ($project->sponsor && $project->sponsor !== 'Sponsored' ? $project->sponsor : 'N/A');
+
+            // Resolve fund details for Social Aid projects
+            $funds = $project->funds ?? collect();
+            if ($funds->isEmpty() && !empty($project->agency_project_no)) {
+                if ($isOrphanCare) {
+                    $funds = \App\Models\OrphanCareFund::where('agency_project_no', $project->agency_project_no)->get();
+                } elseif ($category === 'differently-abled') {
+                    $funds = \App\Models\DifferentlyAbledFund::where('agency_project_no', $project->agency_project_no)->get();
+                } elseif ($category === 'family-aid') {
+                    $funds = \App\Models\FamilyAidFund::where('agency_project_no', $project->agency_project_no)->get();
+                }
+            }
+
+            $totalFundAmount = ($funds && $funds->isNotEmpty()) ? (float)$funds->sum('amount') : 0;
+            
+            $fundAmounts = ($funds && $funds->isNotEmpty()) 
+                ? $funds->map(fn($f) => number_format((float)$f->amount, 2, '.', ''))->implode("\n") 
+                : '0.00';
+
+            $fundDonors = ($funds && $funds->isNotEmpty()) 
+                ? $funds->map(fn($f) => $f->donor ?: 'N/A')->implode("\n") 
+                : 'N/A';
+
+            $fundDates = ($funds && $funds->isNotEmpty()) 
+                ? $funds->map(function($f) {
+                    $d = $f->date;
+                    return $d instanceof \DateTimeInterface ? $d->format('d/m/Y') : ($d ? date('d/m/Y', strtotime($d)) : 'N/A');
+                })->implode("\n") 
+                : 'N/A';
+
+            $fundAccountNames = ($funds && $funds->isNotEmpty()) 
+                ? $funds->map(fn($f) => $f->account_name ?: 'N/A')->implode("\n") 
+                : 'N/A';
+
+            $fundAccountNumbers = ($funds && $funds->isNotEmpty()) 
+                ? $funds->map(fn($f) => $f->account_number ?: 'N/A')->implode("\n") 
+                : 'N/A';
+
+            $fundIfscCodes = ($funds && $funds->isNotEmpty()) 
+                ? $funds->map(fn($f) => $f->ifsc_number ?: 'N/A')->implode("\n") 
+                : 'N/A';
+
+            $fundAllTransactions = ($funds && $funds->isNotEmpty()) 
+                ? $funds->values()->map(function($f, $i) {
+                    $dStr = $f->date instanceof \DateTimeInterface ? $f->date->format('d/m/Y') : ($f->date ? date('d/m/Y', strtotime($f->date)) : 'N/A');
+                    $amtStr = number_format((float)$f->amount, 2);
+                    $dnrStr = $f->donor ?: 'N/A';
+                    $accStr = $f->account_number ?: 'N/A';
+                    $bankStr = $f->account_name ?: 'N/A';
+                    return '#' . ($i + 1) . ' | Date: ' . $dStr . ' | Amount: ₹' . $amtStr . ' | Donor: ' . $dnrStr . ' | Bank: ' . $bankStr . ' | A/C: ' . $accStr;
+                })->implode("\n") 
+                : 'N/A';
 
             if ($isOrphanCare) {
                 $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
@@ -1363,17 +1430,19 @@ class ProjectController extends Controller
                     $app?->sponsorship_details ?? ($appMeta['sponsorship_details'] ?? 'N/A'),
                     $app?->sponsor_status ?? ($project->sponsor ?? 'N/A'),
                     $app?->current_beneficiaries ?? ($appMeta['current_beneficiaries'] ?? 'N/A'),
+                    $totalFundAmount > 0 ? number_format($totalFundAmount, 2, '.', '') : '0.00',
+                    $fundAmounts,
+                    $fundDonors,
+                    $fundDates,
+                    $fundAccountNames,
+                    $fundAccountNumbers,
+                    $fundIfscCodes,
+                    $fundAllTransactions,
                     $app?->recommender_name ?? ($appMeta['recommender_name'] ?? 'N/A'),
                     $app?->recommender_org ?? ($appMeta['recommender_org'] ?? 'N/A'),
                     $app?->recommender_phone ?? ($appMeta['recommender_phone'] ?? 'N/A'),
                     $app?->recommender_position ?? ($appMeta['recommender_position'] ?? 'N/A'),
                     $app?->additional_note ?? ($appMeta['additional_note'] ?? 'N/A'),
-                    $project->theme ?? 'N/A',
-                    $project->subtheme ?? 'N/A',
-                    $project->activity ?? 'N/A',
-                    $project->project_spec ?? 'N/A',
-                    $project->unit ?? 'N/A',
-                    'Stage ' . $project->stage,
                     $project->status ?? 'Active',
                     $project->remarks ?? 'N/A',
                     $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
@@ -1414,12 +1483,14 @@ class ProjectController extends Controller
                     $appMeta['monthly_income'] ?? 'N/A',
                     $appMeta['monthly_expense'] ?? 'N/A',
                     $app?->sponsor_status ?? ($project->sponsor ?? 'N/A'),
-                    $project->theme ?? 'N/A',
-                    $project->subtheme ?? 'N/A',
-                    $project->activity ?? 'N/A',
-                    $project->project_spec ?? 'N/A',
-                    $project->unit ?? 'N/A',
-                    'Stage ' . $project->stage,
+                    $totalFundAmount > 0 ? number_format($totalFundAmount, 2, '.', '') : '0.00',
+                    $fundAmounts,
+                    $fundDonors,
+                    $fundDates,
+                    $fundAccountNames,
+                    $fundAccountNumbers,
+                    $fundIfscCodes,
+                    $fundAllTransactions,
                     $project->status ?? 'Active',
                     $project->remarks ?? 'N/A',
                     $project->created_at ? $project->created_at->format('Y-m-d H:i:s') : 'N/A'
@@ -2938,7 +3009,7 @@ class ProjectController extends Controller
             'recommender_org' => 'nullable|string|max:255',
             'recommender_position' => 'nullable|string|max:255',
             'recommender_phone' => 'nullable|string|max:255',
-            'agency_number' => 'nullable|string|max:255',
+            'agency_number' => ['nullable', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber($project->getTable(), $project->id, $project->application_id ?? null)],
             'agency_name' => 'nullable|string|max:255',
             'application_date' => 'nullable|string|max:255',
         ]);
@@ -3605,13 +3676,7 @@ class ProjectController extends Controller
         }
 
         $strVal = is_array($value) ? json_encode($value) : (string) $value;
-        $trimmed = trim($strVal);
-
-        if ((preg_match('/^\+?\d{8,20}$/', $trimmed) === 1) || (preg_match('/^0\d+$/', $trimmed) === 1)) {
-            return '="' . $trimmed . '"';
-        }
-
-        return $strVal;
+        return trim($strVal);
     }
 }
 

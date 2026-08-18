@@ -25,8 +25,16 @@ class FamilyAidApplication extends Model
         $project = \App\Models\FamilyAidProject::where('application_id', $application->id)->first();
         if (!$project) {
             $year = date('y');
-            $idString = str_pad($application->id, 3, '0', STR_PAD_LEFT);
+            $maxId = \App\Models\FamilyAidProject::max('id') ?? 0;
+            $nextSeq = $maxId + 1;
+            $idString = str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
             $tempId = 'RCFI/' . $year . '-FA' . $idString;
+
+            while (\App\Models\FamilyAidProject::where('project_id', $tempId)->exists()) {
+                $nextSeq++;
+                $idString = str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
+                $tempId = 'RCFI/' . $year . '-FA' . $idString;
+            }
 
             \App\Models\FamilyAidProject::create([
                 'application_id'    => $application->id,
@@ -94,6 +102,7 @@ class FamilyAidApplication extends Model
         'state',
         'mobile_1',
         'mobile_2',
+        'whatsapp_number',
         'children_total',
         'children_male',
         'children_female',
@@ -114,6 +123,8 @@ class FamilyAidApplication extends Model
         'details',
         'cluster_id',
         'agency_number',
+        'agency_name',
+        'application_date',
         'recommendation_name',
         'recommendation_organization',
         'recommendation_organization_other',

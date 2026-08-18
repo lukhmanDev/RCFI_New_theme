@@ -94,11 +94,11 @@ class RoleDashboard extends Component
             $defaultTheme = $tableThemeMap[$tbl] ?? null;
             $hasThemeCol = Schema::hasColumn($tbl, 'theme');
             if ($hasThemeCol) {
-                $rows = DB::table($tbl)->get(['theme']);
-                foreach ($rows as $row) {
-                    $rowTheme = !empty($row->theme) ? trim($row->theme) : $defaultTheme;
+                $grouped = DB::table($tbl)->select('theme', DB::raw('count(*) as aggregate'))->groupBy('theme')->get();
+                foreach ($grouped as $g) {
+                    $rowTheme = !empty($g->theme) ? trim($g->theme) : $defaultTheme;
                     if ($rowTheme && isset($themeStats[$rowTheme])) {
-                        $themeStats[$rowTheme]['total_applications']++;
+                        $themeStats[$rowTheme]['total_applications'] += (int)$g->aggregate;
                     }
                 }
             } else {
@@ -113,34 +113,61 @@ class RoleDashboard extends Component
             if (!Schema::hasTable($tbl)) continue;
             $defaultTheme = $tableThemeMap[$tbl] ?? null;
             
-            $colsToSelect = [];
-            if (Schema::hasColumn($tbl, 'theme')) $colsToSelect[] = 'theme';
-            if (Schema::hasColumn($tbl, 'status')) $colsToSelect[] = 'status';
-            if (Schema::hasColumn($tbl, 'available_budget')) $colsToSelect[] = 'available_budget';
-            if (Schema::hasColumn($tbl, 'total_beneficiary_peoples')) $colsToSelect[] = 'total_beneficiary_peoples';
-            if (Schema::hasColumn($tbl, 'total_family')) $colsToSelect[] = 'total_family';
+            $hasTheme = Schema::hasColumn($tbl, 'theme');
+            $hasStatus = Schema::hasColumn($tbl, 'status');
+            $hasBudget = Schema::hasColumn($tbl, 'available_budget');
+            $hasBeneficiaries = Schema::hasColumn($tbl, 'total_beneficiary_peoples');
+            $hasFamilies = Schema::hasColumn($tbl, 'total_family');
 
-            $rows = empty($colsToSelect) ? DB::table($tbl)->get() : DB::table($tbl)->get($colsToSelect);
+            $selects = [
+                DB::raw('count(*) as total_count'),
+            ];
+            $groupBy = [];
+
+            if ($hasTheme) {
+                $selects[] = 'theme';
+                $groupBy[] = 'theme';
+            }
+            if ($hasStatus) {
+                $selects[] = 'status';
+                $groupBy[] = 'status';
+            }
+            if ($hasBudget) {
+                $selects[] = DB::raw('sum(available_budget) as total_budget');
+            }
+            if ($hasBeneficiaries) {
+                $selects[] = DB::raw('sum(case when status = "Completed" then total_beneficiary_peoples else 0 end) as sum_peoples');
+            }
+            if ($hasFamilies) {
+                $selects[] = DB::raw('sum(case when status = "Completed" then total_family else 0 end) as sum_families');
+            }
+
+            $query = DB::table($tbl)->select($selects);
+            if (!empty($groupBy)) {
+                $query->groupBy($groupBy);
+            }
+            $rows = $query->get();
 
             foreach ($rows as $row) {
                 $rowTheme = isset($row->theme) && !empty($row->theme) ? trim($row->theme) : $defaultTheme;
                 if ($rowTheme && isset($themeStats[$rowTheme])) {
-                    $themeStats[$rowTheme]['total_projects']++;
-                    $isCompleted = isset($row->status) && $row->status === 'Completed';
-                    if (isset($row->status)) {
-                        if ($row->status === 'Running') $themeStats[$rowTheme]['running_projects']++;
-                        if ($isCompleted) $themeStats[$rowTheme]['completed_projects']++;
+                    $cnt = (int)($row->total_count ?? 1);
+                    $themeStats[$rowTheme]['total_projects'] += $cnt;
+                    
+                    $status = $row->status ?? null;
+                    if ($status === 'Running') {
+                        $themeStats[$rowTheme]['running_projects'] += $cnt;
+                    } elseif ($status === 'Completed') {
+                        $themeStats[$rowTheme]['completed_projects'] += $cnt;
                     }
-                    if (isset($row->available_budget)) {
-                        $themeStats[$rowTheme]['total_budget'] += (float)$row->available_budget;
+                    if (isset($row->total_budget)) {
+                        $themeStats[$rowTheme]['total_budget'] += (float)$row->total_budget;
                     }
-                    if ($isCompleted) {
-                        if (isset($row->total_beneficiary_peoples)) {
-                            $themeStats[$rowTheme]['benefited_peoples'] += (int)$row->total_beneficiary_peoples;
-                        }
-                        if (isset($row->total_family)) {
-                            $themeStats[$rowTheme]['benefited_families'] += (int)$row->total_family;
-                        }
+                    if (isset($row->sum_peoples)) {
+                        $themeStats[$rowTheme]['benefited_peoples'] += (int)$row->sum_peoples;
+                    }
+                    if (isset($row->sum_families)) {
+                        $themeStats[$rowTheme]['benefited_families'] += (int)$row->sum_families;
                     }
                 }
             }
@@ -245,13 +272,28 @@ class RoleDashboard extends Component
             $hasStateInProject = Schema::hasColumn($pTbl, 'state');
 
             $query = DB::table($pTbl);
+            $hasAppState = false;
+            $hasAppLocState = false;
+            $hasAppMeta = false;
+
             if ($hasAppId) {
+                $selects = ["$pTbl.*"];
+                $hasAppState = Schema::hasColumn($aTbl, 'state');
+                $hasAppLocState = Schema::hasColumn($aTbl, 'locality_state');
+                $hasAppMeta = Schema::hasColumn($aTbl, 'meta');
+
+                if ($hasAppState) {
+                    $selects[] = "$aTbl.state as app_state";
+                }
+                if ($hasAppLocState) {
+                    $selects[] = "$aTbl.locality_state as app_locality_state";
+                }
+                if ($hasAppMeta) {
+                    $selects[] = "$aTbl.meta as app_meta";
+                }
+
                 $query->leftJoin($aTbl, "$pTbl.application_id", '=', "$aTbl.id")
-                      ->select(
-                          "$pTbl.*",
-                          "$aTbl.state as app_state",
-                          "$aTbl.locality_state as app_locality_state"
-                      );
+                      ->select($selects);
             }
             $projects = $query->get();
 
@@ -264,6 +306,9 @@ class RoleDashboard extends Component
                         $rawState = $p->app_state;
                     } elseif (!empty($p->app_locality_state)) {
                         $rawState = $p->app_locality_state;
+                    } elseif (!empty($p->app_meta)) {
+                        $metaArr = is_string($p->app_meta) ? json_decode($p->app_meta, true) : (array)$p->app_meta;
+                        $rawState = $metaArr['state'] ?? ($metaArr['locality_state'] ?? null);
                     }
                 }
 

@@ -12,6 +12,20 @@
             }
         }
 
+        /* FIX #1: added missing keyframes — this was referenced by .modal-dialog-box
+           but never defined, so the modal's slide-up entrance animation silently
+           never ran. */
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @keyframes pulseLoading {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
@@ -180,7 +194,7 @@
         </div>
     </div>
 
-    <!-- TAB 0: TEAM HIERARCHY TREE -->
+    <!-- TAB: TEAM HIERARCHY TREE -->
     @if($activeTab === 'tree')
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
@@ -266,7 +280,11 @@
                                                                 </div>
                                                             </div>
 
-                                                            <button type="button" wire:click="viewStaff({{ $staff['id'] }})" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #2563eb; padding: 0.25rem 0.45rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; flex-shrink: 0;" title="View Details">
+                                                            <!-- FIX #3: was wire:click="viewStaff(...)" which used a different
+                                                                 (server round-trip) modal mechanism than every other "Details"
+                                                                 button on this page. Switched to the same AJAX modal used
+                                                                 everywhere else for consistent behavior. -->
+                                                            <button type="button" onclick="openStaffDetailsModal({{ $staff['id'] }})" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #2563eb; padding: 0.25rem 0.45rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; flex-shrink: 0;" title="View Details">
                                                                 <i class="bx bx-user-detail"></i>
                                                             </button>
                                                         </div>
@@ -293,7 +311,7 @@
         </div>
     @endif
 
-    <!-- TAB 1: STAFF DIRECTORY & WORKLOAD MATRIX -->
+    <!-- TAB: STAFF DIRECTORY & WORKLOAD MATRIX -->
     @if($activeTab === 'directory')
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02); overflow: hidden;">
             <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; background: #f8fafc;">
@@ -407,17 +425,11 @@
                                     </button>
                                     @if(Auth::user()->id !== $s->id)
                                         <button type="button" 
-                                                wire:click="toggleUserSuspend({{ $s->id }})" 
-                                                wire:confirm="Are you sure you want to {{ $s->is_suspended ? 'activate' : 'suspend' }} this staff member account?"
-                                                wire:loading.attr="disabled"
+                                                id="card-suspend-btn-{{ $s->id }}"
+                                                onclick="toggleUserSuspendJs({{ $s->id }}, this)" 
                                                 class="btn-action-animated" 
                                                 style="flex: 1; background: {{ $s->is_suspended ? '#ecfdf5' : '#fef2f2' }}; border: 1px solid {{ $s->is_suspended ? '#a7f3d0' : '#fee2e2' }}; color: {{ $s->is_suspended ? '#059669' : '#ef4444' }}; padding: 0.45rem 0.5rem; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
-                                            <span wire:loading.remove wire:target="toggleUserSuspend({{ $s->id }})">
-                                                {{ $s->is_suspended ? 'Activate' : 'Suspend' }}
-                                            </span>
-                                            <span wire:loading wire:target="toggleUserSuspend({{ $s->id }})">
-                                                <i class="bx bx-loader-alt bx-spin"></i>
-                                            </span>
+                                            {{ $s->is_suspended ? 'Activate' : 'Suspend' }}
                                         </button>
                                     @endif
                                 </div>
@@ -504,17 +516,11 @@
                                             </button>
                                             @if(Auth::user()->id !== $s->id)
                                                 <button type="button" 
-                                                        wire:click="toggleUserSuspend({{ $s->id }})" 
-                                                        wire:confirm="Are you sure you want to {{ $s->is_suspended ? 'activate' : 'suspend' }} this staff member account?"
-                                                        wire:loading.attr="disabled"
+                                                        id="table-suspend-btn-{{ $s->id }}"
+                                                        onclick="toggleUserSuspendJs({{ $s->id }}, this)" 
                                                         class="btn-action-animated" 
                                                         style="background: {{ $s->is_suspended ? '#ecfdf5' : '#fef2f2' }}; border: 1px solid {{ $s->is_suspended ? '#a7f3d0' : '#fee2e2' }}; color: {{ $s->is_suspended ? '#059669' : '#ef4444' }}; padding: 0.35rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                                    <span wire:loading.remove wire:target="toggleUserSuspend({{ $s->id }})">
-                                                        {{ $s->is_suspended ? 'Activate' : 'Suspend' }}
-                                                    </span>
-                                                    <span wire:loading wire:target="toggleUserSuspend({{ $s->id }})">
-                                                        <i class="bx bx-loader-alt bx-spin"></i>
-                                                    </span>
+                                                    {{ $s->is_suspended ? 'Activate' : 'Suspend' }}
                                                 </button>
                                             @endif
                                         </div>
@@ -538,7 +544,7 @@
         </div>
     @endif
 
-    <!-- TAB 3: LEAVE QUEUE APPROVALS -->
+    <!-- TAB: LEAVE QUEUE APPROVALS -->
     @if($activeTab === 'leave')
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
             <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 1.25rem;">Pending Staff Leave Requests ({{ count($pendingLeaveRequests) }})</h2>
@@ -587,7 +593,7 @@
         </div>
     @endif
 
-    <!-- TAB 4: ROLES & ANALYTICS -->
+    <!-- TAB: ROLES & ANALYTICS -->
     @if($activeTab === 'analytics')
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);">
             <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 1.25rem;">Staff Distribution by Role</h2>
@@ -809,7 +815,7 @@
                             </div>
                             <div>
                                 <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">PAN Card Number <span style="color:#ef4444;">*</span></label>
-                                <input type="text" name="pan_card_number" id="add_pan_card_number" required placeholder="10-character PAN" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; text-transform: uppercase;">
+                                <input type="text" name="pan_card_number" id="add_pan_card_number" required placeholder="10-character PAN" maxlength="10" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; text-transform: uppercase;">
                             </div>
                             <div>
                                 <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Bank Account Number <span style="color:#ef4444;">*</span></label>
@@ -871,7 +877,7 @@
                             </div>
                             <div>
                                 <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Password <span style="color:#ef4444;">*</span></label>
-                                <input type="password" name="password" id="add_password" required placeholder="Minimum 8 characters" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+                                <input type="password" name="password" id="add_password" required placeholder="Minimum 8 characters" minlength="8" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
                             </div>
                         </div>
                     </div>
@@ -1030,7 +1036,7 @@
                             </div>
                             <div>
                                 <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">PAN Card Number</label>
-                                <input type="text" name="pan_card_number" id="edit_pan_card_number" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; text-transform: uppercase;">
+                                <input type="text" name="pan_card_number" id="edit_pan_card_number" maxlength="10" style="width: 100%; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; text-transform: uppercase;">
                             </div>
                             <div>
                                 <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem;">Bank Account No</label>
@@ -1082,7 +1088,8 @@
          PURE JAVASCRIPT & AJAX LOGIC
          ========================================== -->
     <script>
-        const CSRF_TOKEN = '{{ csrf_token() }}';
+        var CSRF_TOKEN = '{{ csrf_token() }}';
+        window.CSRF_TOKEN = CSRF_TOKEN;
 
         function closeAllModals() {
             const modalIds = ['staffDetailsModal', 'addStaffModal', 'editStaffModal', 'rejectLeaveModal'];
@@ -1095,12 +1102,17 @@
             });
         }
 
-        // Close all modals on ESC key
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeAllModals();
-            }
-        });
+        // FIX #4: guard against duplicate keydown listeners if this Livewire
+        // component re-renders/re-mounts this script block more than once
+        // over the page's lifetime.
+        if (!window.__staffModalsEscBound) {
+            window.__staffModalsEscBound = true;
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeAllModals();
+                }
+            });
+        }
 
         // 1. Staff Details Modal
         function openStaffDetailsModal(userId) {
@@ -1120,7 +1132,9 @@
             .then(res => res.json())
             .then(data => {
                 if (!data.success || !data.user) {
-                    alert('Unable to load staff details.');
+                    if (typeof showToast === 'function') {
+                        showToast('Unable to load staff details.', 'error');
+                    }
                     closeStaffDetailsModal();
                     return;
                 }
@@ -1194,7 +1208,9 @@
                 content.style.display = 'flex';
             })
             .catch(err => {
-                alert('Error loading staff details: ' + err.message);
+                if (typeof showToast === 'function') {
+                    showToast('Error loading staff details: ' + err.message, 'error');
+                }
                 closeStaffDetailsModal();
             });
         }
@@ -1210,9 +1226,12 @@
         // 2. Add Staff Modal
         function openAddStaffModal() {
             closeAllModals();
-            document.getElementById('addStaffForm').reset();
-            handleAddRoleChange('engineer');
             const modal = document.getElementById('addStaffModal');
+            document.getElementById('addStaffForm').reset();
+            // FIX #2: was hardcoded handleAddRoleChange('others'), which desynced
+            // the HOD/HR wrapper visibility from whatever the <select> actually
+            // reset to (its first option, "engineer"). Now reads the real value.
+            handleAddRoleChange(document.getElementById('add_role').value);
             modal.classList.add('is-active');
             modal.style.display = 'flex';
         }
@@ -1233,17 +1252,14 @@
             if (role === 'hod') {
                 hrWrapper.style.display = 'block';
                 hodWrapper.style.display = 'none';
-                hodSelect.removeAttribute('required');
                 hodSelect.value = '';
             } else if (role === 'super_admin' || role === 'coo') {
                 hrWrapper.style.display = 'none';
                 hodWrapper.style.display = 'none';
-                hodSelect.removeAttribute('required');
                 hodSelect.value = '';
             } else {
                 hrWrapper.style.display = 'none';
                 hodWrapper.style.display = 'block';
-                hodSelect.setAttribute('required', 'required');
             }
         }
 
@@ -1274,11 +1290,19 @@
             })
             .then(data => {
                 closeAddStaffModal();
-                alert('Staff member created successfully!');
-                window.location.reload();
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Staff member created successfully!', 'success');
+                }
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
             })
             .catch(err => {
-                alert('Validation Error:\n' + err.message);
+                if (typeof showToast === 'function') {
+                    showToast(err.message || 'Validation error occurred.', 'error');
+                } else {
+                    alert('Validation Error:\n' + err.message);
+                }
             })
             .finally(() => {
                 btn.disabled = false;
@@ -1299,7 +1323,9 @@
             .then(res => res.json())
             .then(data => {
                 if (!data.success || !data.user) {
-                    alert('Unable to load staff details for editing.');
+                    if (typeof showToast === 'function') {
+                        showToast('Unable to load staff details for editing.', 'error');
+                    }
                     closeEditStaffModal();
                     return;
                 }
@@ -1337,7 +1363,9 @@
                 document.getElementById('edit_ifsc_code').value = u.ifsc_code || '';
             })
             .catch(err => {
-                alert('Error loading staff details: ' + err.message);
+                if (typeof showToast === 'function') {
+                    showToast('Error loading staff details: ' + err.message, 'error');
+                }
                 closeEditStaffModal();
             });
         }
@@ -1397,11 +1425,19 @@
             })
             .then(data => {
                 closeEditStaffModal();
-                alert('Staff details updated successfully!');
-                window.location.reload();
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Staff details updated successfully!', 'success');
+                }
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
             })
             .catch(err => {
-                alert('Update Error:\n' + err.message);
+                if (typeof showToast === 'function') {
+                    showToast(err.message || 'Update error occurred.', 'error');
+                } else {
+                    alert('Update Error:\n' + err.message);
+                }
             })
             .finally(() => {
                 btn.disabled = false;
@@ -1451,14 +1487,20 @@
                         altBtn.style.borderColor = newBorder;
                     }
 
-                    alert(data.message || 'Status updated successfully!');
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Status updated successfully!', 'success');
+                    }
                 } else {
-                    alert(data.message || 'Failed to update status.');
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Failed to update status.', 'error');
+                    }
                     btnEl.innerHTML = originalHtml;
                 }
             })
             .catch(err => {
-                alert('Error: ' + err.message);
+                if (typeof showToast === 'function') {
+                    showToast('Error: ' + err.message, 'error');
+                }
                 btnEl.innerHTML = originalHtml;
             })
             .finally(() => {
@@ -1489,7 +1531,9 @@
             const remarks = document.getElementById('reject_leave_remarks').value.trim();
 
             if (!remarks || remarks.length < 3) {
-                alert('Please provide a reason for rejecting this leave request.');
+                if (typeof showToast === 'function') {
+                    showToast('Please provide a reason for rejecting this leave request.', 'warning');
+                }
                 return;
             }
 
@@ -1510,11 +1554,17 @@
             .then(res => res.json().catch(() => ({})))
             .then(data => {
                 closeRejectLeaveModal();
-                alert('Leave request rejected successfully.');
-                window.location.reload();
+                if (typeof showToast === 'function') {
+                    showToast('Leave request rejected successfully.', 'success');
+                }
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
             })
             .catch(err => {
-                alert('Error rejecting leave request.');
+                if (typeof showToast === 'function') {
+                    showToast('Error rejecting leave request.', 'error');
+                }
             })
             .finally(() => {
                 btn.disabled = false;

@@ -13,7 +13,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -206,7 +206,7 @@
 
     <!-- View Full Details Modal Dialog -->
     <div id="detailsAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1100; overflow-y: auto;" onclick="closeDetailsModal()">
-        <div class="panel" style="width: 100%; max-width: 800px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+        <div class="panel" style="width: 95%; max-width: 750px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
             
             <button onclick="closeDetailsModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
@@ -418,6 +418,7 @@
                             <label class="form-label" for="accommodation_details">Accommodation Details *</label>
                             <select class="form-select-dark" id="accommodation_details" name="meta[accommodation_details]" required>
                                 <option value="Own House">Own House</option>
+                                <option value="Family House">Family House</option>
                                 <option value="Ancestral Home">Ancestral Home</option>
                                 <option value="Rental Home">Rental Home</option>
                                 <option value="Other">Other</option>
@@ -734,6 +735,7 @@
                             <label class="form-label" for="edit_accommodation_details">Accommodation Details *</label>
                             <select class="form-select-dark" id="edit_accommodation_details" name="meta[accommodation_details]" required>
                                 <option value="Own House">Own House</option>
+                                <option value="Family House">Family House</option>
                                 <option value="Ancestral Home">Ancestral Home</option>
                                 <option value="Rental Home">Rental Home</option>
                                 <option value="Other">Other</option>
@@ -923,36 +925,8 @@
             setField('edit_panchayat', getVal('panchayat', ['panchayath']));
             setField('edit_district', getVal('district'));
             setField('edit_state', getVal('state'));
-            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code']));
-            setField('edit_pin', getVal('pin', ['pin_code']));
-
-            setField('edit_committee_name', getVal('committee_name'));
-            setField('edit_reg_number', getVal('reg_number'));
-            setField('edit_year', getVal('year'));
-            setField('edit_permitted_type', getVal('permitted_type'));
-            setField('edit_area', getVal('area'));
-            setField('edit_details', appItem.details || appItem.additional_note || meta.details || meta.additional_note || '');
-
-            const recName = getVal('recommendation_name', ['recommender_name']);
-            setField('edit_recommendation_name', recName);
-            setField('edit_recommender_name', recName);
-
-            const recOrg = getVal('recommendation_organization', ['recommender_org']);
-            setField('edit_recommendation_organization', recOrg);
-            setField('edit_recommender_org', recOrg);
-
-            const recOrgOther = getVal('recommendation_organization_other', ['recommender_org_other']);
-            setField('edit_recommendation_organization_other', recOrgOther);
-
-            const recPhone = getVal('recommendation_phone', ['recommender_phone']);
-            setField('edit_recommendation_phone', recPhone);
-            setField('edit_recommender_phone', recPhone);
-
-            const recPos = getVal('recommendation_position', ['recommender_position']);
-            setField('edit_recommendation_position', recPos);
-            setField('edit_recommender_position', recPos);
-
-            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = appItem.pin_code || ''; }
+            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code', 'pincode']));
+            setField('edit_pin', getVal('pin', ['pin_code', 'pincode']));
             if (document.getElementById('edit_age')) { document.getElementById('edit_age').value = meta.age || ''; }
             document.getElementById('edit_gender').value = meta.gender || 'Male';
             document.getElementById('edit_contact_number_1').value = meta.contact_number_1 || '';
@@ -1082,62 +1056,76 @@
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
             
             let html = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                    <!-- Col 1 -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- 1. Personal Details -->
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Name:</td><td>${formatVal(getV('applicant_name'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Age:</td><td>${formatVal(getV('age'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Gender:</td><td>${formatVal(getV('gender'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(getV('father_name'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(getV('mother_name'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">House Name:</td><td>${formatVal(getV('house_name'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(getV('place') || getV('location'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(getV('panchayath') || getV('panchayat'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post Office:</td><td>${formatVal(getV('post') || getV('post_office'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District:</td><td>${formatVal(getV('district'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State:</td><td>${formatVal(getV('state'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(getV('pin_code') || getV('pin'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Number 1:</td><td>${formatVal(getV('contact_number_1') || getV('contact1') || getV('mobile'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Contact Number 2:</td><td>${formatVal(getV('contact_number_2') || getV('contact2'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Education:</td><td>${formatVal(getV('education'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Married?</td><td>${formatVal(getV('married'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Children Count:</td><td>Total: ${formatVal(getV('num_children') || getV('children_total'))} (M: ${formatVal(getV('num_male_children') || getV('children_male'))} / F: ${formatVal(getV('num_female_children') || getV('children_female'))})</td></tr>
-                        </table>
-
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Income & Health Details</h4>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Occupation?</td><td>${formatVal(getV('has_occupation') || getV('occupation'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${getV('monthly_income') ? '₹' + Number(getV('monthly_income')).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Other Income:</td><td>${formatVal(getV('other_income') || getV('other_income_sources'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Health Status:</td><td>${formatVal(getV('health_status'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Treatment Note:</td><td>${formatVal(getV('daily_treatment_explanation') || getV('routine_treatment_explanation'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Applicant Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(getV('applicant_name'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Age:</td><td>${formatVal(getV('age') ? (getV('age') + ' yrs') : null)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Gender:</td><td>${formatVal(getV('gender'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(getV('father_name'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(getV('mother_name'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">House Name:</td><td>${formatVal(getV('house_name'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Place:</td><td>${formatVal(getV('place') || getV('location'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Village:</td><td>${formatVal(getV('village'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Post Office:</td><td>${formatVal(getV('post') || getV('post_office'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(getV('panchayath') || getV('panchayat'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">District:</td><td>${formatVal(getV('district'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">State:</td><td>${formatVal(getV('state'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(getV('pin_code') || getV('pin'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mobile 1:</td><td>${formatVal(getV('contact_number_1') || getV('contact1') || getV('mobile'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mobile 2:</td><td>${formatVal(getV('contact_number_2') || getV('contact2'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Married?</td><td>${formatVal(getV('married'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Children:</td><td>Total: ${formatVal(getV('num_children') || getV('children_total'))} (M: ${formatVal(getV('num_male_children') || getV('children_male'))} / F: ${formatVal(getV('num_female_children') || getV('children_female'))})</td></tr>
                         </table>
                     </div>
 
-                    <!-- Col 2 -->
+                    <!-- 2. Income & Health Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Income & Health Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Occupation:</td><td>${formatVal(getV('has_occupation') || getV('occupation'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Monthly Income:</td><td>${getV('monthly_income') ? '₹' + Number(getV('monthly_income')).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Other Income:</td><td>${formatVal(getV('other_income') || getV('other_income_sources'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Health Status:</td><td>${formatVal(getV('health_status'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Treatment Note:</td><td>${formatVal(getV('daily_treatment_explanation') || getV('routine_treatment_explanation'))}</td></tr>
+                        </table>
+                    </div>
+
+                    <!-- 3. Accommodation & Land -->
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Accommodation & Land</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Accommodation:</td><td>${formatVal(getV('accommodation_details') || getV('residence_info'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Own Place?</td><td>${formatVal(getV('own_place') || getV('own_place_status'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">If So How Many:</td><td>${formatVal(getV('own_place_details') || getV('own_place_size'))}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Type of Land:</td><td>${formatVal(getV('land_type'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Accommodation:</td><td>${formatVal(getV('accommodation_details') || getV('residence_info'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Own Place?</td><td>${formatVal(getV('own_place') || getV('own_place_status'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Place Size:</td><td>${formatVal(getV('own_place_details') || getV('own_place_size'))}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Type of Land:</td><td>${formatVal(getV('land_type'))}</td></tr>
                         </table>
+                    </div>
 
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Description</h4>
+                    <!-- 4. Proposed Project Description -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Proposed Project Description</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Desired Model:</td><td>${formatVal(meta.desired_model)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Total Sqr ft:</td><td>${formatVal(meta.building_area_sq)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Expected Amount:</td><td style="color: var(--accent-green); font-weight: 600;">${appItem.amount_requested ? '₹' + Number(appItem.amount_requested).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Permission?</td><td>${formatVal(meta.legal_approvals_status)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Form of House:</td><td>${formatVal(meta.intended_house_form)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Desired Model:</td><td>${formatVal(meta.desired_model)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Building Area:</td><td>${formatVal(meta.building_area_sq)} sq.ft</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Expected Amount:</td><td style="color: var(--accent-green); font-weight: 600;">${appItem.amount_requested ? '₹' + Number(appItem.amount_requested).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Legal Approvals:</td><td>${formatVal(meta.legal_approvals_status || meta.permission)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Form of House:</td><td>${formatVal(meta.intended_house_form)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">For Office Use:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.office_build_house)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
                         </table>
+                    </div>
 
-                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 1.5rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">For Officec Use:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.office_build_house)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
+                    <!-- 5. Recommendation Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">5. Recommendation Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Recommender Name:</td><td>${formatVal(meta.recommendation_name || meta.recommender_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Organization:</td><td>${formatVal((meta.recommendation_organization === 'Others' ? meta.recommendation_organization_other : meta.recommendation_organization) || meta.recommender_org)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Phone Number:</td><td>${formatVal(meta.recommendation_phone || meta.recommender_phone)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Position:</td><td>${formatVal(meta.recommendation_position || meta.recommender_position)}</td></tr>
                         </table>
                     </div>
                 </div>
@@ -1157,16 +1145,6 @@
                         ${appItem.details ? appItem.details : 'No additional notes provided.'}
                     </p>
                 </div>
-                ${(meta.recommendation_name || meta.recommendation_organization || meta.recommendation_phone || meta.recommendation_position) ? `
-                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
-                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details:</h5>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                        ${meta.recommendation_name ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px;">Name:</td><td>${meta.recommendation_name}</td></tr>` : ''}
-                        ${meta.recommendation_organization ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Organization:</td><td>${meta.recommendation_organization === 'Others' ? (meta.recommendation_organization_other || 'Others') : meta.recommendation_organization}</td></tr>` : ''}
-                        ${meta.recommendation_phone ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Phone:</td><td>${meta.recommendation_phone}</td></tr>` : ''}
-                        ${meta.recommendation_position ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Position:</td><td>${meta.recommendation_position}</td></tr>` : ''}
-                    </table>
-                </div>` : ''}
             `;
             
             document.getElementById('details_content').innerHTML = html;

@@ -25,7 +25,18 @@ class FamilyAidProject extends Model
             $year = date('y');
             $idString = str_pad($project->id, 3, '0', STR_PAD_LEFT);
             $unitPrefix = (!empty($project->unit) && strtoupper($project->unit) === 'MARKAZ') ? 'MRKZ/' : 'RCFI/';
-            $project->project_id = $unitPrefix . $year . '-FA' . $idString;
+            $newId = $unitPrefix . $year . '-FA' . $idString;
+
+            if (\App\Models\FamilyAidProject::where('project_id', $newId)->where('id', '!=', $project->id)->exists()) {
+                $maxNum = \App\Models\FamilyAidProject::where('id', '!=', $project->id)->max('id') ?? $project->id;
+                $seq = max($project->id, $maxNum + 1);
+                do {
+                    $newId = $unitPrefix . $year . '-FA' . str_pad($seq, 3, '0', STR_PAD_LEFT);
+                    $seq++;
+                } while (\App\Models\FamilyAidProject::where('project_id', $newId)->where('id', '!=', $project->id)->exists());
+            }
+
+            $project->project_id = $newId;
             $project->saveQuietly();
         });
     }

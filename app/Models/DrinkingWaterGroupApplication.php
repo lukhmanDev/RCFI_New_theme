@@ -34,6 +34,7 @@ class DrinkingWaterGroupApplication extends Model
         'male_children',
         'female_adults',
         'female_children',
+        'beneficiaries',
         'num_benefited_people',
         'land_owner_name',
         'land_owner_address',

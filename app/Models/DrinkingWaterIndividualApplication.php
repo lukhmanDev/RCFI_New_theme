@@ -25,6 +25,7 @@ class DrinkingWaterIndividualApplication extends Model
         'contact_number_2',
         'job',
         'monthly_income',
+        'beneficiaries',
         'num_male_benefited',
         'num_female_benefited',
         'num_benefited_people',

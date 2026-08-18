@@ -13,7 +13,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -219,7 +219,7 @@
 
     <!-- View Full Details Modal Dialog -->
     <div id="detailsAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1100; overflow-y: auto;" onclick="closeDetailsModal()">
-        <div class="panel" style="width: 100%; max-width: 920px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+        <div class="panel" style="width: 95%; max-width: 750px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
             
             <button onclick="closeDetailsModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
@@ -400,7 +400,10 @@
                         </div>
                         <div id="add_mother_remarried_wrapper" style="display: {{ old('meta.mother_alive_status', 'Yes') == 'Yes' ? 'block' : 'none' }};">
                             <label class="form-label" for="mother_remarried_status">Mother Re-Married/not *</label>
-                            <input type="text" class="form-control-dark" id="mother_remarried_status" name="meta[mother_remarried_status]" placeholder="e.g. Yes / No" value="{{ old('meta.mother_remarried_status') }}" {{ old('meta.mother_alive_status', 'Yes') == 'Yes' ? 'required' : '' }}>
+                            <select class="form-select-dark" id="mother_remarried_status" name="meta[mother_remarried_status]" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                                <option value="No" {{ old('meta.mother_remarried_status', 'No') == 'No' ? 'selected' : '' }}>No</option>
+                                <option value="Yes" {{ old('meta.mother_remarried_status') == 'Yes' ? 'selected' : '' }}>Yes</option>
+                            </select>
                         </div>
                     </div>
 
@@ -760,7 +763,10 @@
                         </div>
                         <div id="edit_mother_remarried_wrapper" style="display: block;">
                             <label class="form-label" for="edit_mother_remarried_status">Mother Re-Married/not *</label>
-                            <input type="text" class="form-control-dark" id="edit_mother_remarried_status" name="meta[mother_remarried_status]" required>
+                            <select class="form-select-dark" id="edit_mother_remarried_status" name="meta[mother_remarried_status]" style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: #111c2d; color: #ffffff;">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                            </select>
                         </div>
                     </div>
 
@@ -1045,12 +1051,12 @@
             const form = document.getElementById('editAppForm');
             form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
-            document.getElementById('edit_applicant_name').value = appItem.applicant_name;
-            document.getElementById('edit_status').value = appItem.status;
-            document.getElementById('edit_details').value = appItem.details || '';
+            document.getElementById('edit_applicant_name').value = appItem.applicant_name || '';
+            document.getElementById('edit_status').value = appItem.status || 'Pending';
+            document.getElementById('edit_details').value = appItem.details || appItem.additional_note || '';
 
             // Meta fields mapping
-                        const meta = appItem.meta || {};
+            const meta = appItem.meta || {};
             
             const getVal = (primary, alts = []) => {
                 if (meta[primary] !== undefined && meta[primary] !== null && meta[primary] !== '') return meta[primary];
@@ -1064,9 +1070,102 @@
 
             const setField = (id, val) => {
                 const el = document.getElementById(id);
-                if (el) el.value = val;
+                if (el) el.value = (val !== undefined && val !== null) ? val : '';
             };
 
+            // Section 1: Orphan Details
+            setField('edit_father_name', getVal('father_name'));
+            setField('edit_grandfather_name', getVal('grandfather_name'));
+            setField('edit_mother_name', getVal('mother_name'));
+            setField('edit_mothers_father_name', getVal('mothers_father_name'));
+            setField('edit_dob', getVal('dob'));
+            setField('edit_age', getVal('age'));
+            setField('edit_aadhar_number', getVal('aadhar_number'));
+            setField('edit_guardian_name', getVal('guardian_name'));
+            setField('edit_guardian_relation', getVal('guardian_relation'));
+
+            const gender = getVal('gender') || 'Male';
+            if (gender === 'Female') {
+                if (document.getElementById('edit_gender_female')) document.getElementById('edit_gender_female').checked = true;
+            } else {
+                if (document.getElementById('edit_gender_male')) document.getElementById('edit_gender_male').checked = true;
+            }
+
+            // Student Photo Preview
+            if (meta.student_photo) {
+                const previewImg = document.getElementById('edit_photo_img');
+                const icon = document.getElementById('edit_photo_icon');
+                const text = document.getElementById('edit_photo_text');
+                const hidden = document.getElementById('edit_photo_hidden');
+                const removeBtn = document.getElementById('edit_photo_remove_btn');
+                const trashOverlay = document.getElementById('edit_photo_trash_overlay');
+
+                let photoSrc = meta.student_photo;
+                if (!photoSrc.startsWith('data:') && !photoSrc.startsWith('http') && !photoSrc.startsWith('/')) {
+                    photoSrc = "{{ asset('storage') }}/" + photoSrc;
+                }
+                if (previewImg) {
+                    previewImg.src = photoSrc;
+                    previewImg.style.display = 'block';
+                }
+                if (icon) icon.style.display = 'none';
+                if (text) text.style.display = 'none';
+                if (hidden) hidden.value = meta.student_photo;
+                if (removeBtn) removeBtn.style.display = 'inline-flex';
+                if (trashOverlay) trashOverlay.style.display = 'flex';
+            } else if (typeof removeStudentPhoto === 'function') {
+                removeStudentPhoto('edit');
+            }
+
+            // Section 2: Parental Death & Sibling Details
+            setField('edit_father_death_date', getVal('father_death_date'));
+            setField('edit_father_death_cause', getVal('father_death_cause'));
+
+            const motherAlive = getVal('mother_alive_status');
+            if (motherAlive === 'No' || motherAlive === 'no' || motherAlive === 'Not' || motherAlive === 'not') {
+                const noRadio = document.getElementById('edit_mother_alive_no');
+                if (noRadio) noRadio.checked = true;
+            } else {
+                const yesRadio = document.getElementById('edit_mother_alive_yes');
+                if (yesRadio) yesRadio.checked = true;
+            }
+            if (typeof toggleMotherDeathFieldsEdit === 'function') {
+                toggleMotherDeathFieldsEdit();
+            }
+
+            setField('edit_mother_death_date', getVal('mother_death_date'));
+            setField('edit_mother_death_cause', getVal('mother_death_cause'));
+            setField('edit_mother_remarried_status', getVal('mother_remarried_status'));
+
+            setField('edit_siblings_male', getVal('siblings_male'));
+            setField('edit_siblings_female', getVal('siblings_female'));
+            setField('edit_siblings_total', getVal('siblings_total') || ((parseInt(getVal('siblings_male')) || 0) + (parseInt(getVal('siblings_female')) || 0)));
+            setField('edit_current_beneficiaries', getVal('current_beneficiaries'));
+            setField('edit_monthly_income', getVal('monthly_income'));
+            setField('edit_monthly_expense', getVal('monthly_expense'));
+            setField('edit_sponsorship_details', getVal('sponsorship_details'));
+
+            // Section 3: Education & Health Details
+            const houseType = getVal('house_type') || 'Own House';
+            const houseRadios = {
+                'Own House': 'edit_house_own',
+                'Family House': 'edit_house_family',
+                'Rental': 'edit_house_rental',
+                'Flat': 'edit_house_flat',
+                'Others': 'edit_house_others'
+            };
+            if (houseRadios[houseType] && document.getElementById(houseRadios[houseType])) {
+                document.getElementById(houseRadios[houseType]).checked = true;
+            }
+
+            setField('edit_school_name', getVal('school_name'));
+            setField('edit_school_class', getVal('school_class'));
+            setField('edit_madrassa_name', getVal('madrassa_name'));
+            setField('edit_madrassa_class', getVal('madrassa_class'));
+            setField('edit_not_studying_reason', getVal('not_studying_reason'));
+            setField('edit_health_status', getVal('health_status'));
+
+            // Section 4: Address & Contact Details
             setField('edit_house_name', getVal('house_name'));
             setField('edit_location', getVal('location', ['place']));
             setField('edit_place', getVal('place', ['location']));
@@ -1077,41 +1176,20 @@
             setField('edit_panchayat', getVal('panchayat', ['panchayath']));
             setField('edit_district', getVal('district'));
             setField('edit_state', getVal('state'));
-            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code']));
-            setField('edit_pin', getVal('pin', ['pin_code']));
+            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code', 'pincode']));
+            setField('edit_pin', getVal('pin', ['pin_code', 'pincode']));
+            setField('edit_mobile_1', getVal('mobile_1', ['contact_number_1', 'mobile']));
+            setField('edit_mobile_2', getVal('mobile_2', ['contact_number_2']));
+            setField('edit_whatsapp_number', getVal('whatsapp_number', ['whatsapp']));
 
-            setField('edit_committee_name', getVal('committee_name'));
-            setField('edit_reg_number', getVal('reg_number'));
-            setField('edit_year', getVal('year'));
-            setField('edit_permitted_type', getVal('permitted_type'));
-            setField('edit_area', getVal('area'));
             setField('edit_details', appItem.details || appItem.additional_note || meta.details || meta.additional_note || '');
 
-            const recName = getVal('recommendation_name', ['recommender_name']);
-            setField('edit_recommendation_name', recName);
+            // Section 5: Recommendation Details
+            const recName = getVal('recommender_name', ['recommendation_name']);
             setField('edit_recommender_name', recName);
+            setField('edit_recommendation_name', recName);
 
-            const recOrg = getVal('recommendation_organization', ['recommender_org']);
-            setField('edit_recommendation_organization', recOrg);
-            setField('edit_recommender_org', recOrg);
-
-            const recOrgOther = getVal('recommendation_organization_other', ['recommender_org_other']);
-            setField('edit_recommendation_organization_other', recOrgOther);
-
-            const recPhone = getVal('recommendation_phone', ['recommender_phone']);
-            setField('edit_recommendation_phone', recPhone);
-            setField('edit_recommender_phone', recPhone);
-
-            const recPos = getVal('recommendation_position', ['recommender_position']);
-            setField('edit_recommendation_position', recPos);
-            setField('edit_recommender_position', recPos);
-
-            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = pinCode; }
-            if (document.getElementById('edit_mobile_1')) { document.getElementById('edit_mobile_1').value = mob1; }
-            if (document.getElementById('edit_mobile_2')) { document.getElementById('edit_mobile_2').value = mob2; }
-            if (document.getElementById('edit_whatsapp_number')) { document.getElementById('edit_whatsapp_number').value = whatsappNum; }
-            document.getElementById('edit_recommender_name').value = meta.recommender_name || '';
-            const recommenderOrgVal = meta.recommender_org || '';
+            const recommenderOrgVal = getVal('recommender_org', ['recommendation_organization']);
             const editOrgSelect = document.getElementById('edit_recommender_org_select');
             const editOrgText = document.getElementById('edit_recommender_org_text');
             if (editOrgSelect && editOrgText) {
@@ -1123,11 +1201,21 @@
                     editOrgText.value = recommenderOrgVal;
                 }
             }
-            toggleRecommenderOrgEdit();
-            document.getElementById('edit_recommender_phone').value = meta.recommender_phone || '';
-            document.getElementById('edit_recommender_position').value = meta.recommender_position || '';
+            if (typeof toggleRecommenderOrgEdit === 'function') {
+                toggleRecommenderOrgEdit();
+            }
+
+            const recPhone = getVal('recommender_phone', ['recommendation_phone']);
+            setField('edit_recommender_phone', recPhone);
+            setField('edit_recommendation_phone', recPhone);
+
+            const recPos = getVal('recommender_position', ['recommendation_position']);
+            setField('edit_recommender_position', recPos);
+            setField('edit_recommendation_position', recPos);
+
+            // Section 6: Cluster & Agency Details
             const clusterId = appItem.cluster_id || '';
-            document.getElementById('edit_cluster_id').value = clusterId;
+            setField('edit_cluster_id', clusterId);
             const editClusterDatalist = document.getElementById('edit_cluster_options_list');
             if (editClusterDatalist) {
                 let foundText = '';
@@ -1138,24 +1226,11 @@
                         break;
                     }
                 }
-                document.getElementById('edit_cluster_search_input').value = foundText;
+                setField('edit_cluster_search_input', foundText);
             }
-            document.getElementById('edit_agency_number').value = appItem.agency_number || '';
-            if (document.getElementById('edit_agency_name')) { document.getElementById('edit_agency_name').value = meta.agency_name || ''; }
-            if (document.getElementById('edit_application_date')) { document.getElementById('edit_application_date').value = meta.application_date || ''; }
-
-            if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || '';
-            if (document.getElementById('edit_recommendation_organization')) {
-                const orgSel = document.getElementById('edit_recommendation_organization');
-                orgSel.value = meta.recommendation_organization || '';
-                const orgOtherInput = document.getElementById('edit_recommendation_organization_other');
-                if (orgOtherInput) {
-                    orgOtherInput.value = meta.recommendation_organization_other || '';
-                    orgOtherInput.style.display = meta.recommendation_organization === 'Others' ? 'block' : 'none';
-                }
-            }
-            if (document.getElementById('edit_recommendation_phone')) document.getElementById('edit_recommendation_phone').value = meta.recommendation_phone || '';
-            if (document.getElementById('edit_recommendation_position')) document.getElementById('edit_recommendation_position').value = meta.recommendation_position || '';
+            setField('edit_agency_number', appItem.agency_number || '');
+            setField('edit_agency_name', meta.agency_name || '');
+            setField('edit_application_date', meta.application_date || '');
 
             document.getElementById('editAppModal').style.display = 'flex';
         }
@@ -1262,18 +1337,27 @@
             }
 
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
+            const formatDate = (val) => {
+                if (!val) return '<span style="color: var(--text-muted); font-style: italic;">Not set</span>';
+                const str = String(val).trim();
+                const parts = str.split('T')[0].split('-');
+                if (parts.length === 3 && parts[0].length === 4) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return val;
+            };
             
             let html = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                    <!-- Col 1 -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- 1. Orphan & Family Details -->
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Orphan & Family Details</h4>
-                        <div style="display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 0.5rem;">
+                        <div style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 0.5rem;">
                             <div style="flex: 1; min-width: 0;">
                                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 135px;">Orphan Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(appItem.applicant_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Orphan Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(appItem.applicant_name)}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Gender:</td><td>${formatVal(meta.gender)}</td></tr>
-                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Date of Birth:</td><td>${formatVal(meta.dob)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Date of Birth:</td><td>${formatDate(meta.dob)}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Age:</td><td>${formatVal(meta.age ? (meta.age + ' yrs') : null)}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Aadhar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
                                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
@@ -1296,13 +1380,16 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Parental Death & Sibling Details</h4>
+                    <!-- 2. Parental Death & Sibling Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Parental Death & Sibling Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 140px;">Father's Death Date:</td><td>${formatVal(meta.father_death_date)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Father's Death Date:</td><td>${formatDate(meta.father_death_date)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Father's Death Cause:</td><td>${formatVal(meta.father_death_cause)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother Alive Status:</td><td>${formatVal(meta.mother_alive_status)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Death Date:</td><td>${formatVal(meta.mother_death_date)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Death Date:</td><td>${formatDate(meta.mother_death_date)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Death Cause:</td><td>${formatVal(meta.mother_death_cause)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother Re-Married?</td><td>${formatVal(meta.mother_remarried_status)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Brothers:</td><td>${formatVal(meta.siblings_male)}</td></tr>
@@ -1314,11 +1401,11 @@
                         </table>
                     </div>
 
-                    <!-- Col 2 -->
+                    <!-- 3. Education & House Details -->
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Education & House Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 140px;">Type Of House:</td><td>${formatVal(meta.house_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Type Of House:</td><td>${formatVal(meta.house_type)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">School Name:</td><td>${formatVal(meta.school_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">School Class:</td><td>${formatVal(meta.school_class)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Madrassa Name:</td><td>${formatVal(meta.madrassa_name)}</td></tr>
@@ -1327,10 +1414,13 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Health Status:</td><td>${formatVal(meta.health_status)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Sponsorship Details:</td><td>${formatVal(meta.sponsorship_details)}</td></tr>
                         </table>
+                    </div>
 
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
+                    <!-- 4. Address & Contact Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 140px;">House Name:</td><td>${formatVal(houseName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">House Name:</td><td>${formatVal(houseName)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Place:</td><td>${formatVal(placeName)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Village:</td><td>${formatVal(villageName)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Post Office:</td><td>${formatVal(postOffice)}</td></tr>
@@ -1343,19 +1433,20 @@
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">WhatsApp Number:</td><td>${formatVal(whatsappNum)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
                         </table>
+                    </div>
 
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">5. Recommendation Details</h4>
+                    <!-- 5. Recommendation Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">5. Recommendation Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 140px;">Recommender Name:</td><td>${formatVal(meta.recommender_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Recommender Name:</td><td>${formatVal(meta.recommender_name)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Organization:</td><td>${formatVal(meta.recommender_org)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Phone Number:</td><td>${formatVal(meta.recommender_phone)}</td></tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Position:</td><td>${formatVal(meta.recommender_position)}</td></tr>
                         </table>
                     </div>
                 </div>
-      </div>
 
-                <!-- Cluster & Agency Details (Only visible if Approved) -->
                 ${appItem.status === 'Approved' ? `
                 <div style="margin-top: 1.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); padding: 1.25rem; border-radius: 8px;">
                     <h4 style="color: var(--accent-green); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">
@@ -1380,13 +1471,13 @@
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                                     <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Name (Donor):</td>
                                     <td id="modal-agency-display-name" style="font-weight: 600; color: #ffffff;">
-                                        ${meta.agency_name ? meta.agency_name : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                        ${(meta.agency_name || appItem.agency_name) ? (meta.agency_name || appItem.agency_name) : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
                                     </td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                                     <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Application Date:</td>
                                     <td id="modal-agency-display-date" style="font-weight: 600; color: #ffffff;">
-                                        ${meta.application_date ? meta.application_date : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                        ${formatDate(meta.application_date || appItem.application_date)}
                                     </td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
@@ -1416,7 +1507,7 @@
                                     <select id="assign_cluster_id" name="cluster_id" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" required>
                                         <option value="">-- Choose Cluster --</option>
                                         @foreach($clusters as $cl)
-                                            <option value="{{ $cl->id }}" ${appItem.cluster_id == {{ $cl->id }} ? 'selected' : ''}>{{ $cl->name }} ({{ $cl->code }})</option>
+                                             <option value="{{ $cl->id }}" ${appItem.cluster_id == {{ $cl->id }} ? 'selected' : ''}>{{ $cl->name }} ({{ $cl->code }})</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -1431,13 +1522,13 @@
                                     <select id="assign_agency_name" name="meta[agency_name]" class="form-select-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                                         <option value="">-- Select Agency --</option>
                                         @foreach(($donors ?? []) as $d)
-                                            <option value="{{ $d->name }}" ${meta.agency_name == '{{ addslashes($d->name) }}' ? 'selected' : ''}>{{ $d->name }}</option>
+                                            <option value="{{ $d->name }}" ${(meta.agency_name || appItem.agency_name) == '{{ addslashes($d->name) }}' ? 'selected' : ''}>{{ $d->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div>
                                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Application Date</label>
-                                    <input type="date" id="assign_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="${meta.application_date || ''}">
+                                    <input type="date" id="assign_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="${meta.application_date || appItem.application_date || ''}">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">

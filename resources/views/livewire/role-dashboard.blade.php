@@ -1374,7 +1374,11 @@
             .on('zoom', function(event) {
                 g.attr('transform', event.transform);
             });
-        svg.call(zoom);
+            
+        svg.call(zoom)
+           .on('touchstart.zoom', null)
+           .on('touchmove.zoom', null)
+           .on('touchend.zoom', null);
 
         var btnIn = document.getElementById('mapZoomIn');
         var btnOut = document.getElementById('mapZoomOut');

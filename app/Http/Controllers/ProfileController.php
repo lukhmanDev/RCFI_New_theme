@@ -163,11 +163,25 @@ class ProfileController extends Controller
         $user = Auth::user();
         $code = mt_rand(100000, 999999);
         session(['email_verification_code' => $code]);
+        \Illuminate\Support\Facades\Cache::put('email_otp_' . $user->id, $code, now()->addMinutes(30));
 
-        // Send actual email using the VerificationCodeMail mailable
-        Mail::to($user->email)->send(new VerificationCodeMail($code));
+        $mailSent = false;
+        try {
+            // Send actual email using the VerificationCodeMail mailable
+            Mail::to($user->email)->send(new VerificationCodeMail($code));
+            $mailSent = true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Verification email sending failed: ' . $e->getMessage());
+        }
 
-        return redirect()->back()->with('success', 'Verification code generated! An email with the verification code has been sent to ' . $user->email . '.');
+        $msg = 'Verification code generated! ';
+        if ($mailSent) {
+            $msg .= 'An email with the verification code has been sent to ' . $user->email . '.';
+        } else {
+            $msg .= 'Could not connect to the mail server.';
+        }
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function verifyEmail(Request $request)
@@ -176,14 +190,15 @@ class ProfileController extends Controller
             'code' => ['required', 'digits:6'],
         ]);
 
-        $sessionCode = session('email_verification_code');
+        $user = Auth::user();
+        $sessionCode = session('email_verification_code') ?? \Illuminate\Support\Facades\Cache::get('email_otp_' . $user->id);
 
         if ($sessionCode && $request->input('code') == $sessionCode) {
-            $user = Auth::user();
             $user->email_verified_at = now();
             $user->save();
 
             session()->forget('email_verification_code');
+            \Illuminate\Support\Facades\Cache::forget('email_otp_' . $user->id);
 
             return redirect()->back()->with('success', 'Email verified successfully! You can now update your email and password.');
         }
@@ -230,7 +245,14 @@ class ProfileController extends Controller
         // Generate and send code to the target email
         $code = mt_rand(100000, 999999);
         session(['email_verification_code' => $code]);
-        Mail::to($newEmail)->send(new VerificationCodeMail($code));
+
+        $mailSent = false;
+        try {
+            Mail::to($newEmail)->send(new VerificationCodeMail($code));
+            $mailSent = true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Verification email sending on credentials update failed: ' . $e->getMessage());
+        }
 
         $msg = 'Credentials updated successfully!';
         if ($emailChanged) {

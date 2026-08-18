@@ -61,7 +61,8 @@ class OrphanCareApplication extends Model
         'recommendation_organization',
         'recommendation_organization_other',
         'recommendation_phone',
-        'recommendation_position'
+        'recommendation_position',
+        'whatsapp_number'
     ];
 
     public static function ensureProjectExists($application)
@@ -69,8 +70,16 @@ class OrphanCareApplication extends Model
         $project = \App\Models\OrphanCareProject::where('application_id', $application->id)->first();
         if (!$project) {
             $year = date('y');
-            $idString = str_pad($application->id, 3, '0', STR_PAD_LEFT);
+            $maxId = \App\Models\OrphanCareProject::max('id') ?? 0;
+            $nextSeq = $maxId + 1;
+            $idString = str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
             $tempId = 'RCFI/' . $year . '-OC' . $idString;
+
+            while (\App\Models\OrphanCareProject::where('project_id', $tempId)->exists()) {
+                $nextSeq++;
+                $idString = str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
+                $tempId = 'RCFI/' . $year . '-OC' . $idString;
+            }
 
             \App\Models\OrphanCareProject::create([
                 'application_id'    => $application->id,

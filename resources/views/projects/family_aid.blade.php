@@ -529,7 +529,7 @@
                                 <i class="bx bx-plus-circle"></i>
                             </button>
 
-                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Family Aid') }}" class="btn-action-icon btn-view" title="Stage Details">
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Family Aid') }}" class="btn-action-icon btn-view" title="Project Details">
                                 <i class="bx bx-show-alt"></i>
                             </a>
                         </td>

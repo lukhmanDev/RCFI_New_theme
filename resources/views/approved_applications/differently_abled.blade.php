@@ -136,7 +136,7 @@
 
     <!-- Details Modal Dialog -->
     <div id="detailsAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto;" onclick="closeDetailsModal()">
-        <div class="panel" style="width: 100%; max-width: 800px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+        <div class="panel" style="width: 95%; max-width: 750px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
             
             <button onclick="closeDetailsModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
@@ -199,22 +199,112 @@
 
             const meta = appItem.meta || {};
             const formatVal = (val) => val ? val : '<span style="color: var(--text-muted); font-style: italic;">N/A</span>';
+            const formatDate = (val) => {
+                if (!val) return '<span style="color: var(--text-muted); font-style: italic;">Not set</span>';
+                const str = String(val).trim();
+                const parts = str.split('T')[0].split('-');
+                if (parts.length === 3 && parts[0].length === 4) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return val;
+            };
+            
+            const addr = appItem.address || {};
+            const photoSrc = meta.student_photo || appItem.student_photo || '';
             
             let html = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- 1. Personal Details of Applicant -->
                     <div>
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Applicant Profile</h4>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
+                        <div style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <div style="flex: 1; min-width: 0;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Applicant Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(appItem.applicant_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Gender:</td><td>${formatVal(meta.gender)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Date of Birth:</td><td>${formatDate(meta.dob)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Age:</td><td>${formatVal(meta.age ? (meta.age + ' yrs') : null)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Aadhaar Number:</td><td>${formatVal(meta.aadhar_number)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Marital Status:</td><td>${formatVal(meta.marital_status)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Father's Name:</td><td>${formatVal(meta.father_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Father's Father:</td><td>${formatVal(meta.fathers_father)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mother's Name:</td><td>${formatVal(meta.mother_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Guardian Name:</td><td>${formatVal(meta.guardian_name)}</td></tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Guardian Relation:</td><td>${formatVal(meta.guardian_relation)}</td></tr>
+                                </table>
+                            </div>
+                            <div style="width: 112px; flex-shrink: 0; align-self: flex-start; margin-top: 0px; border: 1px solid var(--panel-border); border-radius: 10px; padding: 0.4rem 0.25rem; background: rgba(255,255,255,0.03); text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center;">
+                                <h5 style="color: #00a65a; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.04em; margin: 0 0 0.3rem 0; text-transform: uppercase;">PHOTO</h5>
+                                <div style="width: 80px; height: 104px; border: 2px dashed #00a65a; border-radius: 8px; padding: 0.15rem; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; overflow: hidden; position: relative;">
+                                    ${photoSrc ? `
+                                        <img src="${photoSrc}" onerror="this.onerror=null; this.parentNode.innerHTML='<i class=\\'bx bx-image\\' style=\\'font-size: 1.5rem; color: #00a65a; margin-bottom: 0.1rem;\\'></i><span style=\\'color: var(--text-muted); font-size: 0.6rem; font-weight: 500; text-align: center; line-height: 1.1;\\'>No Photo<br>Uploaded</span>';" style="width: 100%; height: 100%; border-radius: 6px; object-fit: cover;">
+                                    ` : `
+                                        <i class="bx bx-image" style="font-size: 1.5rem; color: #00a65a; margin-bottom: 0.1rem;"></i>
+                                        <span style="color: var(--text-muted); font-size: 0.6rem; font-weight: 500; text-align: center; line-height: 1.1;">No Photo<br>Uploaded</span>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Family & Economic Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Family & Economic Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 140px;">Applicant Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Father Name:</td><td>${formatVal(meta.father_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Gender:</td><td>${formatVal(meta.gender)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Age:</td><td>${formatVal(meta.age)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Disability Type:</td><td>${formatVal(meta.disability_type)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Sponsor Status:</td><td>
-                                ${appItem.sponsor_status === 'Sponsored'
-                                    ? '<span style="background-color: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Sponsored</span>'
-                                    : '<span style="background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">Not Sponsored</span>'}
-                            </td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Male Members:</td><td>${formatVal(meta.male_members)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Female Members:</td><td>${formatVal(meta.female_members)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Total Family Members:</td><td>${formatVal(meta.total_members)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">People with Disabilities:</td><td>${formatVal(meta.people_with_disabilities)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income ? '₹' + Number(meta.monthly_income).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Monthly Cost:</td><td>${meta.monthly_cost ? '₹' + Number(meta.monthly_cost).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Income Source:</td><td>${formatVal(meta.income_source)}</td></tr>
+                        </table>
+                    </div>
+
+                    <!-- 3. Education & Disability Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Education & Disability Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Studying Institution:</td><td>${formatVal(meta.studying_institution)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">If not study, reason:</td><td>${formatVal(meta.not_studying_reason)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Health Status:</td><td>${formatVal(meta.health_status)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Disability Type:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.disability_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Disability Percentage:</td><td>${formatVal(meta.disability_percentage)}%</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Date/Year of Disability:</td><td>${formatDate(meta.disability_date)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Level of Disability:</td><td>${formatVal(meta.disability_level)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Anyone else help?</td><td>${formatVal(meta.other_help)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Accommodation Details:</td><td>${formatVal(meta.accommodation)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Description:</td><td>${formatVal(meta.description)}</td></tr>
+                        </table>
+                    </div>
+
+                    <!-- 4. Address & Contact Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Address & Contact Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">House Name:</td><td>${formatVal(meta.house_name || addr.house_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Place:</td><td>${formatVal(meta.place || addr.place)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Village:</td><td>${formatVal(meta.village || addr.village)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Post Office:</td><td>${formatVal(meta.post_office || meta.post || addr.post_office)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(meta.panchayat || addr.panchayat)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">District:</td><td>${formatVal(meta.district || addr.district)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">State:</td><td>${formatVal(meta.state || addr.state)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(meta.pin_code || meta.pincode || addr.pin_code)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mobile 1:</td><td>${formatVal(meta.mobile_1 || meta.mobile || addr.contact_number_1)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mobile 2:</td><td>${formatVal(meta.mobile_2 || addr.contact_number_2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">WhatsApp Number:</td><td>${formatVal(meta.whatsapp_number || meta.whatsapp || addr.whatsapp_number)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
+                        </table>
+                    </div>
+
+                    <!-- 5. Recommendation Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">5. Recommendation Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Recommender Name:</td><td>${formatVal(meta.recommendation_name || meta.recommender_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Organization:</td><td>${formatVal((meta.recommendation_organization === 'Others' ? meta.recommendation_organization_other : meta.recommendation_organization) || meta.recommender_org)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Phone Number:</td><td>${formatVal(meta.recommendation_phone || meta.recommender_phone)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Position:</td><td>${formatVal(meta.recommendation_position || meta.recommender_position)}</td></tr>
                         </table>
                     </div>
                 </div>
@@ -243,13 +333,13 @@
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                                     <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Agency Name (Donor):</td>
                                     <td id="modal-agency-display-name" style="font-weight: 600; color: #ffffff;">
-                                        ${meta.agency_name ? meta.agency_name : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                        ${(meta.agency_name || appItem.agency_name) ? (meta.agency_name || appItem.agency_name) : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
                                     </td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                                     <td style="padding: 0.5rem 0; font-weight: 600; color: var(--text-muted);">Application Date:</td>
                                     <td id="modal-agency-display-date" style="font-weight: 600; color: #ffffff;">
-                                        ${meta.application_date ? meta.application_date : '<span style="color: var(--text-muted); font-style: italic;">Not set</span>'}
+                                        ${formatDate(meta.application_date || appItem.application_date)}
                                     </td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
@@ -294,13 +384,13 @@
                                     <select id="assign_agency_name" name="meta[agency_name]" class="form-select-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;">
                                         <option value="">-- Select Agency --</option>
                                         @foreach(($donors ?? []) as $d)
-                                            <option value="{{ $d->name }}" ${meta.agency_name == '{{ addslashes($d->name) }}' ? 'selected' : ''}>{{ $d->name }}</option>
+                                            <option value="{{ $d->name }}" ${(meta.agency_name || appItem.agency_name) == '{{ addslashes($d->name) }}' ? 'selected' : ''}>{{ $d->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div>
                                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Application Date</label>
-                                    <input type="date" id="assign_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="${meta.application_date || ''}">
+                                    <input type="date" id="assign_application_date" name="meta[application_date]" class="form-control-dark" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--panel-border); background-color: var(--bg-color); color: #ffffff;" value="${meta.application_date || appItem.application_date || ''}">
                                 </div>
                             </div>
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">

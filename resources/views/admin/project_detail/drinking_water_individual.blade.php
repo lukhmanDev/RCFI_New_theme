@@ -294,12 +294,12 @@
 
     <!-- Success Panel -->
     @if (session('success'))
-        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
     @if (session('error'))
-        <div class=\"alert alert-danger\" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff8a8a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-danger" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff8a8a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('error') }}
         </div>
     @endif
@@ -1838,11 +1838,10 @@
                         $s5AllocatedSpent = 0;
                         $s5CommSpent = 0;
                         foreach ($allExpenses as $exp) {
-                            if (isset($exp['material_index'])) {
-                                $s5AllocatedSpent += floatval($exp['amount'] ?? 0);
-                            }
-                            if (isset($exp['comm_index'])) {
+                            if (isset($exp['comm_index']) && $exp['comm_index'] !== null && $exp['comm_index'] !== '') {
                                 $s5CommSpent += floatval($exp['amount'] ?? 0);
+                            } else {
+                                $s5AllocatedSpent += floatval($exp['amount'] ?? 0);
                             }
                         }
 
@@ -1863,14 +1862,14 @@
                         }
                         
                         $finTotalGrands = ($s5AllocatedSpent > 0) ? $s5AllocatedSpent : (($s4MaterialsTotal > 0) ? $s4MaterialsTotal : (floatval($project->available_budget ?? 0) > 0 ? floatval($project->available_budget) : floatval($project->total_amount ?? 0)));
-                        $finCommContrib = ($s5CommSpent > 0) ? $s5CommSpent : (($s4CommTotal > 0) ? $s4CommTotal : floatval($commTotal ?? 0));
+                        $finCommContrib = $s5CommSpent;
                         
                         $compDetails = $project->files['completion_details'] ?? [];
                         $savedGrants = floatval($compDetails['total_amount'] ?? 0);
-                        $displayGrants = ($savedGrants > 0) ? $savedGrants : $finTotalGrands;
+                        $displayGrants = ($project->status === 'Completed' && $savedGrants > 0) ? $savedGrants : $finTotalGrands;
 
                         $savedComm = floatval($compDetails['community_contribution'] ?? 0);
-                        $displayComm = ($savedComm > 0) ? $savedComm : $finCommContrib;
+                        $displayComm = ($project->status === 'Completed' && $savedComm > 0 && $s5CommSpent == 0) ? $savedComm : $s5CommSpent;
 
                         $leverage = floatval($compDetails['amount_paid_by_donor'] ?? 0);
                         $anyOther = floatval($compDetails['any_other'] ?? 0);

@@ -122,8 +122,8 @@
             <p style="color: #64748b; font-size: 0.88rem; margin: 0.25rem 0 0 0;">Super Admin Consolidated Fund Transfer Analytics & Financial Registry</p>
         </div>
         <div>
-            <a href="{{ route('admin.reports.social_aid_funds', ['export' => 'csv']) }}" class="btn-custom" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; padding: 0.65rem 1.25rem; font-size: 0.88rem; border-radius: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
-                <i class="bx bx-download" style="font-size: 1.1rem;"></i> Export CSV Report
+            <a href="{{ route('admin.reports.social_aid_funds', ['export' => 'excel']) }}" class="btn-custom" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; padding: 0.65rem 1.25rem; font-size: 0.88rem; border-radius: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                <i class="bx bx-download" style="font-size: 1.1rem;"></i> Export Excel Report
             </a>
         </div>
     </div>

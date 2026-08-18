@@ -201,13 +201,6 @@
                 Detailed breakdown of project manager, engineer, documents, inspections, and financial summary
             </p>
         </div>
-
-        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-
-            <button onclick="window.print()" class="btn-custom" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; padding: 0.65rem 1.25rem; font-size: 0.88rem; border-radius: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); cursor: pointer;">
-                <i class="bx bx-printer" style="font-size: 1.1rem;"></i> Print Report
-            </button>
-        </div>
     </div>
 
     @if(!$targetProjectData)

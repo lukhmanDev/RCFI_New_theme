@@ -518,7 +518,7 @@
                             Verify your email address to unlock security credentials management and password updates.
                         </p>
 
-                        @if(!session('email_verification_code'))
+                        @if(!session('email_verification_code') && !\Illuminate\Support\Facades\Cache::has('email_otp_' . $user->id))
                             <form action="{{ route('profile.send_code') }}" method="POST">
                                 @csrf
                                 <button type="submit" class="pf-btn pf-btn-outline" style="width: 100%;">
@@ -790,6 +790,7 @@
 </div>
 
 <script>
+(function() {
     // Image Preview & Custom Upload Label Logic
     const photoInput = document.getElementById('photo');
     if (photoInput) {
@@ -829,5 +830,6 @@
             }
         });
     }
+})();
 </script>
 @endsection

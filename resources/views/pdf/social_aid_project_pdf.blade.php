@@ -470,6 +470,49 @@
 
     @php
         $app = $application ?? ($project->application ?? null);
+        if (!$app && !empty($project->application_id)) {
+            $socialAppClasses = [
+                \App\Models\OrphanCareApplication::class,
+                \App\Models\DifferentlyAbledApplication::class,
+                \App\Models\FamilyAidApplication::class,
+            ];
+            foreach ($socialAppClasses as $cls) {
+                $found = $cls::find($project->application_id);
+                if ($found) {
+                    $app = $found;
+                    break;
+                }
+            }
+        }
+        if (!$app && !empty($project->agency_project_no)) {
+            $socialAppClasses = [
+                \App\Models\OrphanCareApplication::class,
+                \App\Models\DifferentlyAbledApplication::class,
+                \App\Models\FamilyAidApplication::class,
+            ];
+            foreach ($socialAppClasses as $cls) {
+                $found = $cls::where('agency_number', $project->agency_project_no)->first();
+                if ($found) {
+                    $app = $found;
+                    break;
+                }
+            }
+        }
+        if (!$app && !empty($project->id)) {
+            $socialAppClasses = [
+                \App\Models\OrphanCareApplication::class,
+                \App\Models\DifferentlyAbledApplication::class,
+                \App\Models\FamilyAidApplication::class,
+            ];
+            foreach ($socialAppClasses as $cls) {
+                $found = $cls::find($project->id);
+                if ($found) {
+                    $app = $found;
+                    break;
+                }
+            }
+        }
+
         $meta = (isset($app->meta) && is_array($app->meta)) ? $app->meta : [];
 
         // Beneficiary Info
@@ -491,17 +534,70 @@
             ?? ($app?->mobile_1 
             ?? ($meta['contact_number_1'] ?? ($meta['mobile_1'] ?? ($app?->contact_number_2 ?? ($app?->mobile_2 ?? ($meta['mobile_2'] ?? 'N/A')))))));
 
-        $photoSrc = null;
+        $rawPhoto = null;
         if (!empty($project->photo)) {
-            $photoSrc = asset('storage/' . $project->photo);
+            $rawPhoto = $project->photo;
+        } elseif (!empty($project->student_photo)) {
+            $rawPhoto = $project->student_photo;
+        } elseif (!empty($project->beneficiary_photo)) {
+            $rawPhoto = $project->beneficiary_photo;
+        } elseif (!empty($project->meta['photo'])) {
+            $rawPhoto = $project->meta['photo'];
+        } elseif (!empty($project->meta['student_photo'])) {
+            $rawPhoto = $project->meta['student_photo'];
         } elseif ($app && !empty($app->student_photo)) {
-            $photoSrc = asset('storage/' . $app->student_photo);
+            $rawPhoto = $app->student_photo;
         } elseif (!empty($meta['student_photo'])) {
-            $photoSrc = asset('storage/' . $meta['student_photo']);
+            $rawPhoto = $meta['student_photo'];
         } elseif ($app && !empty($app->photo)) {
-            $photoSrc = asset('storage/' . $app->photo);
+            $rawPhoto = $app->photo;
         } elseif (!empty($meta['photo'])) {
-            $photoSrc = asset('storage/' . $meta['photo']);
+            $rawPhoto = $meta['photo'];
+        } elseif ($app && !empty($app->applicantAddress?->student_photo)) {
+            $rawPhoto = $app->applicantAddress->student_photo;
+        } elseif ($app && !empty($app->applicantAddress?->photo)) {
+            $rawPhoto = $app->applicantAddress->photo;
+        }
+
+        $photoSrc = null;
+        if (!empty($rawPhoto)) {
+            $rawStr = trim((string)$rawPhoto);
+            if (\Illuminate\Support\Str::startsWith($rawStr, ['http://', 'https://', 'data:image'])) {
+                $photoSrc = $rawStr;
+            } else {
+                $cleanPath = ltrim($rawStr, '/');
+                $strippedPath = preg_replace('#^(storage/|public/)+#i', '', $cleanPath);
+
+                // Priority 1: Check local disk and encode as base64 data URI to guarantee instant render in PDF/print
+                $candidates = [
+                    public_path($cleanPath),
+                    public_path('storage/' . $strippedPath),
+                    storage_path('app/public/' . $strippedPath),
+                    storage_path('app/' . $strippedPath),
+                    public_path($strippedPath),
+                ];
+
+                $foundOnDisk = false;
+                foreach ($candidates as $cand) {
+                    if (file_exists($cand) && is_file($cand)) {
+                        try {
+                            $mime = mime_content_type($cand) ?: 'image/jpeg';
+                            $photoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($cand));
+                            $foundOnDisk = true;
+                            break;
+                        } catch (\Exception $e) {}
+                    }
+                }
+
+                // Priority 2: Fallback to asset URL
+                if (!$foundOnDisk) {
+                    if (\Illuminate\Support\Str::startsWith($cleanPath, 'storage/')) {
+                        $photoSrc = asset($cleanPath);
+                    } else {
+                        $photoSrc = asset('storage/' . $strippedPath);
+                    }
+                }
+            }
         }
 
         // Project Info

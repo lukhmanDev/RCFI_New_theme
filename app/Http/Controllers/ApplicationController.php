@@ -207,13 +207,15 @@ class ApplicationController extends Controller
             'mobile_2' => ['nullable', 'string', 'max:255'],
             'contact_number_1' => ['nullable', 'string', 'max:255'],
             'contact_number_2' => ['nullable', 'string', 'max:255'],
+            'whatsapp' => ['nullable', 'string', 'max:255'],
+            'whatsapp_number' => ['nullable', 'string', 'max:255'],
             'cluster_id' => ['nullable', 'exists:clusters,id'],
-            'agency_number' => ['nullable', 'string', 'max:255'],
+            'agency_number' => ['nullable', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber()],
         ];
 
         if ($request->input('status') === 'Approved') {
             $rules['cluster_id'] = ['required', 'exists:clusters,id'];
-            $rules['agency_number'] = ['required', 'string', 'max:255'];
+            $rules['agency_number'] = ['required', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber()];
         }
 
         $meta = $request->input('meta', []);
@@ -270,6 +272,7 @@ class ApplicationController extends Controller
             $houseVal = $request->input('house_name') ?? $request->input('meta.house_name');
             $c1Val = $request->input('contact_number_1') ?? ($request->input('mobile_1') ?? ($request->input('mobile') ?? ($request->input('meta.contact_number_1') ?? ($request->input('meta.mobile_1') ?? $request->input('meta.mobile')))));
             $c2Val = $request->input('contact_number_2') ?? ($request->input('mobile_2') ?? ($request->input('meta.contact_number_2') ?? $request->input('meta.mobile_2')));
+            $waVal = $request->input('whatsapp_number') ?? ($request->input('whatsapp') ?? ($request->input('meta.whatsapp_number') ?? $request->input('meta.whatsapp')));
 
             $addressData = array_filter([
                 'house_name' => $houseVal,
@@ -282,8 +285,9 @@ class ApplicationController extends Controller
                 'pin_code' => $pinVal,
                 'contact_number_1' => $c1Val,
                 'contact_number_2' => $c2Val,
+                'whatsapp_number' => $waVal,
             ]);
-            $addressFields = ['house_name', 'place', 'location', 'post_office', 'post', 'town', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
+            $addressFields = ['house_name', 'place', 'location', 'post_office', 'post', 'town', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2', 'whatsapp', 'whatsapp_number'];
 
             if (isset($data['details']) && !isset($data['additional_note'])) {
                 $data['additional_note'] = $data['details'];
@@ -375,6 +379,8 @@ class ApplicationController extends Controller
             }
         }
 
+        $appTable = $config ? (new $config['model'])->getTable() : null;
+
         $rules = [
             'applicant_name' => ['required', 'string', 'min:2', 'max:255'],
             'category' => ['nullable', 'string'],
@@ -399,8 +405,10 @@ class ApplicationController extends Controller
             'mobile_2' => ['nullable', 'string', 'max:255'],
             'contact_number_1' => ['nullable', 'string', 'max:255'],
             'contact_number_2' => ['nullable', 'string', 'max:255'],
+            'whatsapp' => ['nullable', 'string', 'max:255'],
+            'whatsapp_number' => ['nullable', 'string', 'max:255'],
             'cluster_id' => ['nullable', 'exists:clusters,id'],
-            'agency_number' => ['nullable', 'string', 'max:255'],
+            'agency_number' => ['nullable', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber($appTable, $id)],
         ];
 
         $redirectCategory = $request->input('redirect_category');
@@ -408,7 +416,7 @@ class ApplicationController extends Controller
             || in_array($redirectCategory, ['orphan-care', 'differently-abled', 'family-aid']);
         if ($isClusterRequired && $request->input('status') === 'Approved') {
             $rules['cluster_id'] = ['required', 'exists:clusters,id'];
-            $rules['agency_number'] = ['required', 'string', 'max:255'];
+            $rules['agency_number'] = ['required', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber($appTable, $id)];
         }
 
         if ($request->hasFile('student_photo')) {
@@ -464,6 +472,7 @@ class ApplicationController extends Controller
             $houseVal = $request->input('house_name') ?? $request->input('meta.house_name');
             $c1Val = $request->input('contact_number_1') ?? ($request->input('mobile_1') ?? ($request->input('mobile') ?? ($request->input('meta.contact_number_1') ?? ($request->input('meta.mobile_1') ?? $request->input('meta.mobile')))));
             $c2Val = $request->input('contact_number_2') ?? ($request->input('mobile_2') ?? ($request->input('meta.contact_number_2') ?? $request->input('meta.mobile_2')));
+            $waVal = $request->input('whatsapp_number') ?? ($request->input('whatsapp') ?? ($request->input('meta.whatsapp_number') ?? $request->input('meta.whatsapp')));
 
             $addressData = array_filter([
                 'house_name' => $houseVal,
@@ -476,8 +485,9 @@ class ApplicationController extends Controller
                 'pin_code' => $pinVal,
                 'contact_number_1' => $c1Val,
                 'contact_number_2' => $c2Val,
+                'whatsapp_number' => $waVal,
             ]);
-            $addressFields = ['house_name', 'place', 'location', 'post_office', 'post', 'town', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2'];
+            $addressFields = ['house_name', 'place', 'location', 'post_office', 'post', 'town', 'village', 'panchayat', 'panchayath', 'district', 'state', 'pin_code', 'pin', 'contact_number_1', 'contact_number_2', 'mobile', 'mobile_1', 'mobile_2', 'whatsapp', 'whatsapp_number'];
 
             if (isset($data['details']) && !isset($data['additional_note'])) {
                 $data['additional_note'] = $data['details'];
@@ -743,7 +753,7 @@ class ApplicationController extends Controller
         if (in_array($category, ['orphan-care', 'differently-abled', 'family-aid'])) {
             $request->validate([
                 'cluster_id' => ['required', 'exists:clusters,id'],
-                'agency_number' => ['required', 'string', 'max:255'],
+                'agency_number' => ['required', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber($app->getTable(), $app->id)],
             ], [
                 'cluster_id.required' => 'The cluster field is required.',
                 'agency_number.required' => 'The agency number field is required.',
@@ -751,11 +761,14 @@ class ApplicationController extends Controller
 
             $app->cluster_id = $request->input('cluster_id');
             $app->agency_number = $request->input('agency_number');
-            if ($request->filled('agency_name')) {
-                $app->agency_name = $request->input('agency_name');
+            
+            $agencyName = $request->input('agency_name') ?? $request->input('meta.agency_name');
+            if ($agencyName !== null && $agencyName !== '') {
+                $app->agency_name = $agencyName;
             }
-            if ($request->filled('application_date')) {
-                $app->application_date = $request->input('application_date');
+            $appDate = $request->input('application_date') ?? $request->input('meta.application_date');
+            if ($appDate !== null && $appDate !== '') {
+                $app->application_date = $appDate;
             }
         }
 
@@ -1055,7 +1068,8 @@ class ApplicationController extends Controller
         $districts = array_values(array_unique(array_filter($addressDistricts)));
         sort($districts);
 
-        $agencyNames = [];
+        $agencyNames = \App\Models\Donor::whereNotNull('name')->where('name', '!=', '')->pluck('name')->toArray();
+
         foreach ($this->categories as $catKey => $catConf) {
             $catModel = $catConf['model'];
             if (class_exists($catModel)) {
@@ -1063,12 +1077,31 @@ class ApplicationController extends Controller
                 if (\Illuminate\Support\Facades\Schema::hasColumn($tbl, 'agency_name')) {
                     $agencyNames = array_merge($agencyNames, \Illuminate\Support\Facades\DB::table($tbl)->whereNotNull('agency_name')->where('agency_name', '!=', '')->pluck('agency_name')->toArray());
                 }
-                if (\Illuminate\Support\Facades\Schema::hasColumn($tbl, 'agency_number')) {
-                    $agencyNames = array_merge($agencyNames, \Illuminate\Support\Facades\DB::table($tbl)->whereNotNull('agency_number')->where('agency_number', '!=', '')->pluck('agency_number')->toArray());
+                if (\Illuminate\Support\Facades\Schema::hasColumn($tbl, 'agency')) {
+                    $agencyNames = array_merge($agencyNames, \Illuminate\Support\Facades\DB::table($tbl)->whereNotNull('agency')->where('agency', '!=', '')->pluck('agency')->toArray());
                 }
             }
         }
-        $agencies = array_values(array_unique(array_filter($agencyNames)));
+
+        foreach ($projectModels as $pCatKey => $pModelClass) {
+            if (class_exists($pModelClass)) {
+                $pTbl = (new $pModelClass)->getTable();
+                if (\Illuminate\Support\Facades\Schema::hasColumn($pTbl, 'agency')) {
+                    $agencyNames = array_merge($agencyNames, \Illuminate\Support\Facades\DB::table($pTbl)->whereNotNull('agency')->where('agency', '!=', '')->pluck('agency')->toArray());
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn($pTbl, 'donor')) {
+                    $agencyNames = array_merge($agencyNames, \Illuminate\Support\Facades\DB::table($pTbl)->whereNotNull('donor')->where('donor', '!=', '')->pluck('donor')->toArray());
+                }
+            }
+        }
+
+        // Filter out empty values and purely numeric IDs (like 67, 155) so only real agency names are displayed
+        $agencyNames = array_filter($agencyNames, function($val) {
+            $val = trim((string)$val);
+            return !empty($val) && !is_numeric($val) && strtolower($val) !== 'n/a';
+        });
+
+        $agencies = array_values(array_unique($agencyNames));
         sort($agencies);
 
         $pTypes = [];
@@ -1114,11 +1147,12 @@ class ApplicationController extends Controller
             if ($agencyParam !== 'all' && !empty($agencyParam)) {
                 $agencyVal = strtolower(trim($agencyParam));
                 $appAgencyName = strtolower(trim($appItem->agency_name ?? ''));
-                $appAgencyNum = strtolower(trim($appItem->agency_number ?? ''));
                 $appAgency = strtolower(trim($appItem->agency ?? ''));
                 $projAgency = strtolower(trim($project->agency ?? ''));
+                $projDonorName = strtolower(trim($project->donor?->name ?? ''));
+                $appDonor = strtolower(trim($appItem->donor ?? ''));
 
-                if ($appAgencyName !== $agencyVal && $appAgencyNum !== $agencyVal && $appAgency !== $agencyVal && $projAgency !== $agencyVal) {
+                if ($appAgencyName !== $agencyVal && $appAgency !== $agencyVal && $projAgency !== $agencyVal && $projDonorName !== $agencyVal && $appDonor !== $agencyVal) {
                     return false;
                 }
             }
@@ -1316,11 +1350,12 @@ class ApplicationController extends Controller
             if ($agencyParam !== 'all' && !empty($agencyParam)) {
                 $agencyVal = strtolower(trim($agencyParam));
                 $appAgencyName = strtolower(trim($appItem->agency_name ?? ''));
-                $appAgencyNum = strtolower(trim($appItem->agency_number ?? ''));
                 $appAgency = strtolower(trim($appItem->agency ?? ''));
                 $projAgency = strtolower(trim($project->agency ?? ''));
+                $projDonorName = strtolower(trim($project->donor?->name ?? ''));
+                $appDonor = strtolower(trim($appItem->donor ?? ''));
 
-                if ($appAgencyName !== $agencyVal && $appAgencyNum !== $agencyVal && $appAgency !== $agencyVal && $projAgency !== $agencyVal) {
+                if ($appAgencyName !== $agencyVal && $appAgency !== $agencyVal && $projAgency !== $agencyVal && $projDonorName !== $agencyVal && $appDonor !== $agencyVal) {
                     return false;
                 }
             }
@@ -1376,6 +1411,15 @@ class ApplicationController extends Controller
 
         // 1. Fast gathering of metadata keys using array keys set
         $metaKeysSet = [];
+        $excludedMeta = [
+            'category', 'theme', 'subtheme', 'activity', 'project_spec', 'unit', 'stage',
+            'application_id', 'applicant_name', 'father_name', 'mother_name', 'guardian_name', 
+            'guardian_relation', 'gender', 'age', 'dob', 'amount_requested', 'status', 
+            'sponsor_status', 'agency_number', 'contact_email', 'contact_number_1', 'contact_number_2', 
+            'mobile', 'mobile_1', 'mobile_2', 'whatsapp_number', 'aadhar_number', 'house_name', 
+            'place', 'post_office', 'town', 'village', 'panchayat', 'district', 'state', 'pin_code',
+            'health_status', 'monthly_income', 'monthly_expense', 'details', 'additional_note'
+        ];
         foreach ($allApprovedApps as $appItem) {
             $meta = $appItem->meta;
             if (is_string($meta)) {
@@ -1383,7 +1427,7 @@ class ApplicationController extends Controller
             }
             if (is_array($meta)) {
                 foreach (array_keys($meta) as $k) {
-                    if ($k !== 'category') {
+                    if (!in_array(strtolower($k), $excludedMeta)) {
                         $metaKeysSet[$k] = true;
                     }
                 }
@@ -1393,12 +1437,20 @@ class ApplicationController extends Controller
 
         // 2. Prepare comprehensive column headers
         $headers = [
+            // Application Core Details
             'Application ID',
             'Registration No',
             'Category',
             'Applicant Name',
+            'Father Name',
+            'Mother Name',
+            'Guardian Name',
+            'Guardian Relation',
+            'Gender',
+            'Age',
+            'Date of Birth',
             'Amount Requested',
-            'Status',
+            'Application Status',
             'Sponsor Status',
             'Cluster Code',
             'Cluster Name',
@@ -1406,6 +1458,8 @@ class ApplicationController extends Controller
             'Contact Email',
             'Contact Number 1',
             'Contact Number 2',
+            'WhatsApp Number',
+            'Aadhar Number',
             'House Name',
             'Place',
             'Post Office',
@@ -1415,6 +1469,25 @@ class ApplicationController extends Controller
             'District',
             'State',
             'Pin Code',
+            'Health Status',
+            'Monthly Income',
+            'Monthly Expense',
+            // Connected Project Details (if linked)
+            'Connected Project ID',
+            'Project Name',
+            'Project Status',
+            'Project Stage',
+            'Project Manager',
+            'Project Donor / Agency',
+            'Project Available Budget',
+            'Project Remarks',
+            // Fund Details
+            'Total Fund Received',
+            'Fund Breakdown (Amounts)',
+            'Fund Donor',
+            'Fund Date',
+            'Fund All Transactions',
+            // Notes & Timestamps
             'Details / Note',
             'Created At',
             'Updated At'
@@ -1440,43 +1513,107 @@ class ApplicationController extends Controller
 
         $rows = [];
         foreach ($allApprovedApps as $appItem) {
+            $project = $projectsMap[$appItem->category_slug . '_' . $appItem->id] ?? null;
+            $meta = $appItem->meta;
+            if (is_string($meta)) {
+                $meta = json_decode($meta, true);
+            }
+            if (!is_array($meta)) {
+                $meta = [];
+            }
+
             $prefix = $prefixes[$appItem->category_slug] ?? 'APP';
             $appYear = !empty($appItem->created_at) ? date('y', strtotime($appItem->created_at)) : '24';
             $appId = 'APLRCFI' . $appYear . $prefix . str_pad($appItem->id, 5, '0', STR_PAD_LEFT);
 
-            $regNo = $appItem->reg_number ?? ($appItem->meta['reg_number'] ?? 'N/A');
+            $regNo = $appItem->reg_number ?? ($meta['reg_number'] ?? 'N/A');
             $clusterCode = $appItem->cluster ? $appItem->cluster->code : 'N/A';
             $clusterName = $appItem->cluster ? $appItem->cluster->name : 'N/A';
 
             $addr = $appItem->address;
-            $houseName = $addr->house_name ?? ($appItem->house_name ?? ($appItem->meta['house_name'] ?? ''));
-            $place = $addr->place ?? ($appItem->place ?? ($appItem->meta['place'] ?? ''));
-            $postOffice = $addr->post_office ?? ($appItem->post_office ?? ($appItem->meta['post_office'] ?? ''));
-            $town = $addr->town ?? ($appItem->town ?? ($appItem->meta['town'] ?? ''));
-            $village = $addr->village ?? ($appItem->village ?? ($appItem->meta['village'] ?? ''));
-            $panchayat = $addr->panchayat ?? ($appItem->panchayat ?? ($appItem->meta['panchayat'] ?? ''));
-            $district = $addr->district ?? ($appItem->district ?? ($appItem->meta['district'] ?? ''));
-            $state = $addr->state ?? ($appItem->state ?? ($appItem->meta['state'] ?? ''));
-            $pinCode = $addr->pin_code ?? ($appItem->pin_code ?? ($appItem->meta['pin_code'] ?? ''));
-            $contact1 = $addr->contact_number_1 ?? ($appItem->contact_number_1 ?? ($appItem->mobile ?? ''));
-            $contact2 = $addr->contact_number_2 ?? ($appItem->contact_number_2 ?? ($appItem->mobile_2 ?? ''));
+            $houseName = $addr->house_name ?? ($appItem->house_name ?? ($meta['house_name'] ?? ''));
+            $place = $addr->place ?? ($appItem->place ?? ($meta['place'] ?? ''));
+            $postOffice = $addr->post_office ?? ($appItem->post_office ?? ($meta['post_office'] ?? ''));
+            $town = $addr->town ?? ($appItem->town ?? ($meta['town'] ?? ''));
+            $village = $addr->village ?? ($appItem->village ?? ($meta['village'] ?? ''));
+            $panchayat = $addr->panchayat ?? ($appItem->panchayat ?? ($meta['panchayat'] ?? ''));
+            $district = $addr->district ?? ($appItem->district ?? ($meta['district'] ?? ''));
+            $state = $addr->state ?? ($appItem->state ?? ($meta['state'] ?? ''));
+            $pinCode = $addr->pin_code ?? ($appItem->pin_code ?? ($meta['pin_code'] ?? ''));
+            $contact1 = $addr->contact_number_1 ?? ($appItem->contact_number_1 ?? ($appItem->mobile ?? ($meta['mobile_1'] ?? ($meta['contact_number_1'] ?? ''))));
+            $contact2 = $addr->contact_number_2 ?? ($appItem->contact_number_2 ?? ($appItem->mobile_2 ?? ($meta['mobile_2'] ?? ($meta['contact_number_2'] ?? ''))));
             $createdAt = $appItem->created_at ? (is_string($appItem->created_at) ? date('Y-m-d H:i:s', strtotime($appItem->created_at)) : $appItem->created_at->format('Y-m-d H:i:s')) : '';
             $updatedAt = $appItem->updated_at ? (is_string($appItem->updated_at) ? date('Y-m-d H:i:s', strtotime($appItem->updated_at)) : $appItem->updated_at->format('Y-m-d H:i:s')) : '';
 
+            // Connected Project Details
+            $projId = $project?->project_id ?? 'N/A';
+            $projName = $project?->project_name ?? ($project?->name ?? 'N/A');
+            $projStatus = $project?->status ?? 'Not Created';
+            $projStage = $project ? ('Stage ' . ($project->stage ?? 1)) : 'N/A';
+            $projPm = $project?->projectManager?->name ?? 'N/A';
+            $projDonor = $project?->donor?->name ?? ($project?->agency ?? 'N/A');
+            $projBudget = $project?->available_budget ? number_format((float)$project->available_budget, 2) : 'N/A';
+            $projRemarks = $project?->remarks ?? 'N/A';
+
+            // Social aid fund resolution
+            $totalFund = '0.00';
+            $fundBreakdown = '0.00';
+            $fundDonor = 'N/A';
+            $fundDate = 'N/A';
+            $fundAllTx = 'N/A';
+            $agencyNum = $appItem->agency_number ?? ($project?->agency_project_no ?? null);
+            if (!empty($agencyNum)) {
+                $fList = collect();
+                if ($appItem->category_slug === 'orphan-care') {
+                    $fList = \App\Models\OrphanCareFund::where('agency_project_no', $agencyNum)->get();
+                } elseif ($appItem->category_slug === 'differently-abled') {
+                    $fList = \App\Models\DifferentlyAbledFund::where('agency_project_no', $agencyNum)->get();
+                } elseif ($appItem->category_slug === 'family-aid') {
+                    $fList = \App\Models\FamilyAidFund::where('agency_project_no', $agencyNum)->get();
+                }
+                if ($fList->isNotEmpty()) {
+                    $sum = (float)$fList->sum('amount');
+                    $totalFund = $sum > 0 ? number_format($sum, 2, '.', '') : '0.00';
+                    $fundBreakdown = $fList->map(fn($f) => number_format((float)$f->amount, 2, '.', ''))->implode("\n");
+                    $fundDonor = $fList->map(fn($f) => $f->donor ?: 'N/A')->implode("\n");
+                    $fundDate = $fList->map(function($d) {
+                        $dt = $d->date;
+                        return $dt instanceof \DateTimeInterface ? $dt->format('d/m/Y') : ($dt ? date('d/m/Y', strtotime($dt)) : 'N/A');
+                    })->implode("\n");
+                    $fundAllTx = $fList->values()->map(function($f, $i) {
+                        $dStr = $f->date instanceof \DateTimeInterface ? $f->date->format('d/m/Y') : ($f->date ? date('d/m/Y', strtotime($f->date)) : 'N/A');
+                        $amtStr = number_format((float)$f->amount, 2);
+                        $dnrStr = $f->donor ?: 'N/A';
+                        $accStr = $f->account_number ?: 'N/A';
+                        return '#' . ($i + 1) . ' | Date: ' . $dStr . ' | Amount: ₹' . $amtStr . ' | Donor: ' . $dnrStr . ' | A/C: ' . $accStr;
+                    })->implode("\n");
+                }
+            }
+
             $row = [
+                // Application Core Details
                 $appId,
                 $this->formatCsvCell($regNo, 'reg_number'),
                 $appItem->category_name,
                 $appItem->applicant_name,
-                $appItem->amount_requested,
+                $appItem->father_name ?? ($meta['father_name'] ?? 'N/A'),
+                $appItem->mother_name ?? ($meta['mother_name'] ?? 'N/A'),
+                $appItem->guardian_name ?? ($meta['guardian_name'] ?? 'N/A'),
+                $appItem->guardian_relation ?? ($meta['guardian_relation'] ?? 'N/A'),
+                $appItem->gender ?? ($meta['gender'] ?? 'N/A'),
+                $appItem->age ?? ($meta['age'] ?? 'N/A'),
+                $appItem->dob ?? ($meta['dob'] ?? 'N/A'),
+                $appItem->amount_requested ?? ($meta['amount_requested'] ?? '0.00'),
                 $appItem->status,
                 $appItem->sponsor_status ?? 'N/A',
                 $clusterCode,
                 $clusterName,
                 $this->formatCsvCell($appItem->agency_number ?? 'N/A', 'agency_number'),
-                $appItem->contact_email ?? 'N/A',
+                $appItem->contact_email ?? ($meta['contact_email'] ?? 'N/A'),
                 $this->formatCsvCell($contact1, 'contact_number_1'),
                 $this->formatCsvCell($contact2, 'contact_number_2'),
+                $this->formatCsvCell($appItem->whatsapp_number ?? ($meta['whatsapp_number'] ?? 'N/A'), 'whatsapp_number'),
+                $this->formatCsvCell($appItem->aadhar_number ?? ($meta['aadhar_number'] ?? 'N/A'), 'aadhar_number'),
                 $houseName,
                 $place,
                 $postOffice,
@@ -1486,15 +1623,30 @@ class ApplicationController extends Controller
                 $district,
                 $state,
                 $this->formatCsvCell($pinCode, 'pin_code'),
-                $appItem->details ?? ($appItem->additional_note ?? ''),
+                $appItem->health_status ?? ($meta['health_status'] ?? 'N/A'),
+                $appItem->monthly_income ?? ($meta['monthly_income'] ?? 'N/A'),
+                $appItem->monthly_expense ?? ($meta['monthly_expense'] ?? 'N/A'),
+                // Connected Project Details
+                $projId,
+                $projName,
+                $projStatus,
+                $projStage,
+                $projPm,
+                $projDonor,
+                $projBudget,
+                $projRemarks,
+                // Fund Details
+                $totalFund,
+                $fundBreakdown,
+                $fundDonor,
+                $fundDate,
+                $fundAllTx,
+                // Notes & Timestamps
+                $appItem->details ?? ($appItem->additional_note ?? ($meta['additional_note'] ?? '')),
                 $createdAt,
                 $updatedAt
             ];
 
-            $meta = $appItem->meta;
-            if (is_string($meta)) {
-                $meta = json_decode($meta, true);
-            }
             foreach ($metaKeys as $key) {
                 $val = $meta[$key] ?? '';
                 $row[] = $this->formatCsvCell($val, (string)$key);
@@ -1589,14 +1741,6 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'Only Super Admin can edit cluster details after approval.');
         }
 
-        $request->validate([
-            'cluster_id' => ['required', 'exists:clusters,id'],
-            'agency_number' => ['required', 'string', 'max:255'],
-        ], [
-            'cluster_id.required' => 'The cluster field is required.',
-            'agency_number.required' => 'The agency number field is required.',
-        ]);
-
         $category = $request->input('category');
         $app = $this->findSocialAidApplication($id, $category);
         if (!$app) {
@@ -1606,16 +1750,28 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'Application not found.');
         }
 
+        $request->validate([
+            'cluster_id' => ['required', 'exists:clusters,id'],
+            'agency_number' => ['required', 'string', 'max:255', new \App\Rules\UniqueAgencyNumber($app->getTable(), $app->id)],
+        ], [
+            'cluster_id.required' => 'The cluster field is required.',
+            'agency_number.required' => 'The agency number field is required.',
+        ]);
+
         $app->cluster_id = $request->input('cluster_id');
         $app->agency_number = $request->input('agency_number');
         
         $meta = $app->meta ?? [];
         $metaInput = $request->input('meta', []);
-        if (isset($metaInput['agency_name'])) {
-            $meta['agency_name'] = $metaInput['agency_name'];
+        $agencyName = $request->input('agency_name') ?? ($metaInput['agency_name'] ?? null);
+        if ($agencyName !== null && $agencyName !== '') {
+            $app->agency_name = $agencyName;
+            $meta['agency_name'] = $agencyName;
         }
-        if (isset($metaInput['application_date'])) {
-            $meta['application_date'] = $metaInput['application_date'];
+        $appDate = $request->input('application_date') ?? ($metaInput['application_date'] ?? null);
+        if ($appDate !== null && $appDate !== '') {
+            $app->application_date = $appDate;
+            $meta['application_date'] = $appDate;
         }
         $app->meta = $meta;
         $app->save();
@@ -1718,24 +1874,7 @@ class ApplicationController extends Controller
         }
 
         $strVal = is_array($value) ? json_encode($value) : (string) $value;
-        $lowerKey = strtolower($keyName);
-
-        $isPhoneOrIdKey = str_contains($lowerKey, 'contact') 
-            || str_contains($lowerKey, 'mobile') 
-            || str_contains($lowerKey, 'phone') 
-            || str_contains($lowerKey, 'whatsapp') 
-            || str_contains($lowerKey, 'aadhar') 
-            || str_contains($lowerKey, 'pin') 
-            || str_contains($lowerKey, 'reg');
-
-        $trimmed = trim($strVal);
-        $isNumericLong = (preg_match('/^\+?\d{8,20}$/', $trimmed) === 1) || (preg_match('/^0\d+$/', $trimmed) === 1);
-
-        if ($isPhoneOrIdKey || $isNumericLong) {
-            return '="' . $trimmed . '"';
-        }
-
-        return $strVal;
+        return trim($strVal);
     }
 }
 

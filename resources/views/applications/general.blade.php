@@ -13,7 +13,7 @@
 
     <!-- Success & Error Alert Panels -->
     @if (session('success'))
-        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
@@ -229,7 +229,7 @@
 
     <!-- View Full Details Modal Dialog -->
     <div id="detailsAppModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.75); display: none; align-items: center; justify-content: center; z-index: 1100; overflow-y: auto;" onclick="closeDetailsModal()">
-        <div class="panel" style="width: 100%; max-width: 850px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+        <div class="panel" style="width: 95%; max-width: 750px; margin: 2rem auto; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: #2a3547; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
             
             <button onclick="closeDetailsModal()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; z-index: 10;"><i class="bx bx-x"></i></button>
             
@@ -783,12 +783,12 @@
             const form = document.getElementById('editAppForm');
             form.action = "{{ url('admin/applications') }}/" + appItem.id;
 
-            document.getElementById('edit_applicant_name').value = appItem.applicant_name;
-            document.getElementById('edit_status').value = appItem.status;
-            document.getElementById('edit_details').value = appItem.details || '';
+            document.getElementById('edit_applicant_name').value = appItem.applicant_name || '';
+            document.getElementById('edit_status').value = appItem.status || 'Pending';
+            document.getElementById('edit_details').value = appItem.details || appItem.additional_note || '';
 
             // Meta fields mapping
-                        const meta = appItem.meta || {};
+            const meta = appItem.meta || {};
             
             const getVal = (primary, alts = []) => {
                 if (meta[primary] !== undefined && meta[primary] !== null && meta[primary] !== '') return meta[primary];
@@ -802,9 +802,33 @@
 
             const setField = (id, val) => {
                 const el = document.getElementById(id);
-                if (el) el.value = val;
+                if (el) el.value = (val !== undefined && val !== null) ? val : '';
             };
 
+            // Application Type (Individual / Group)
+            if (meta.application_type === 'Group') {
+                if (document.getElementById('edit_app_type_group')) document.getElementById('edit_app_type_group').checked = true;
+            } else {
+                if (document.getElementById('edit_app_type_individual')) document.getElementById('edit_app_type_individual').checked = true;
+            }
+            if (typeof toggleGroupFields === 'function') {
+                toggleGroupFields('edit');
+            }
+            setField('edit_organization_name', meta.organization_name);
+            setField('edit_unit', meta.unit);
+
+            // Section 1: Personal Details
+            setField('edit_age', meta.age);
+            if (meta.sex === 'Male') {
+                if (document.getElementById('edit_sex_male')) document.getElementById('edit_sex_male').checked = true;
+            } else if (meta.sex === 'Female') {
+                if (document.getElementById('edit_sex_female')) document.getElementById('edit_sex_female').checked = true;
+            }
+            
+            setField('edit_status_of_applicant', meta.status_of_applicant || 'With family');
+            setField('edit_education', meta.education);
+
+            // Section 2: Address & Contact Details
             setField('edit_house_name', getVal('house_name'));
             setField('edit_location', getVal('location', ['place']));
             setField('edit_place', getVal('place', ['location']));
@@ -815,73 +839,53 @@
             setField('edit_panchayat', getVal('panchayat', ['panchayath']));
             setField('edit_district', getVal('district'));
             setField('edit_state', getVal('state'));
-            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code']));
-            setField('edit_pin', getVal('pin', ['pin_code']));
+            setField('edit_pin_code', getVal('pin_code', ['pin', 'locality_pin_code', 'pincode']));
+            setField('edit_pin', getVal('pin', ['pin_code', 'pincode']));
+            setField('edit_mobile_1', getVal('mobile_1', ['contact_number_1', 'mobile']));
+            setField('edit_mobile_2', getVal('mobile_2', ['contact_number_2']));
+            setField('edit_whatsapp_number', getVal('whatsapp_number', ['whatsapp']));
 
-            setField('edit_committee_name', getVal('committee_name'));
-            setField('edit_reg_number', getVal('reg_number'));
-            setField('edit_year', getVal('year'));
-            setField('edit_permitted_type', getVal('permitted_type'));
-            setField('edit_area', getVal('area'));
+            // Section 3: Family & Economic Details
+            setField('edit_num_male_family', meta.num_male_family);
+            setField('edit_num_female_family', meta.num_female_family);
+            setField('edit_num_total_family', meta.num_total_family || ((parseInt(meta.num_male_family) || 0) + (parseInt(meta.num_female_family) || 0)));
+            setField('edit_num_earning_members', meta.num_earning_members);
+            setField('edit_average_monthly_income', meta.average_monthly_income);
+            setField('edit_applying_for', meta.applying_for);
+            setField('edit_monthly_income_detail', meta.monthly_income_detail);
+
+            // Section 4: Office Use
+            setField('edit_office_application_type', meta.office_application_type);
             setField('edit_details', appItem.details || appItem.additional_note || meta.details || meta.additional_note || '');
 
-            const recName = getVal('recommendation_name', ['recommender_name']);
+            // Section 5: Recommendation Details
+            const recName = getVal('recommender_name', ['recommendation_name']);
             setField('edit_recommendation_name', recName);
-            setField('edit_recommender_name', recName);
 
-            const recOrg = getVal('recommendation_organization', ['recommender_org']);
-            setField('edit_recommendation_organization', recOrg);
-            setField('edit_recommender_org', recOrg);
-
-            const recOrgOther = getVal('recommendation_organization_other', ['recommender_org_other']);
-            setField('edit_recommendation_organization_other', recOrgOther);
-
-            const recPhone = getVal('recommendation_phone', ['recommender_phone']);
-            setField('edit_recommendation_phone', recPhone);
-            setField('edit_recommender_phone', recPhone);
-
-            const recPos = getVal('recommendation_position', ['recommender_position']);
-            setField('edit_recommendation_position', recPos);
-            setField('edit_recommender_position', recPos);
-
-            if (document.getElementById('edit_pin_code')) { document.getElementById('edit_pin_code').value = pinCode; }
-            if (document.getElementById('edit_mobile_1')) { document.getElementById('edit_mobile_1').value = mob1; }
-            if (document.getElementById('edit_mobile_2')) { document.getElementById('edit_mobile_2').value = mob2; }
-            
-            // Radio mapping
-            if (document.getElementById('edit_age')) document.getElementById('edit_age').value = meta.age || '';
-            if (meta.sex === 'Male') {
-                document.getElementById('edit_sex_male').checked = true;
-            } else if (meta.sex === 'Female') {
-                document.getElementById('edit_sex_female').checked = true;
-            }
-            
-            document.getElementById('edit_status_of_applicant').value = meta.status_of_applicant || 'With family';
-            document.getElementById('edit_education').value = meta.education || '';
-            
-            document.getElementById('edit_num_male_family').value = meta.num_male_family || '';
-            document.getElementById('edit_num_female_family').value = meta.num_female_family || '';
-            document.getElementById('edit_num_total_family').value = meta.num_total_family || '';
-            document.getElementById('edit_num_earning_members').value = meta.num_earning_members || '';
-            document.getElementById('edit_average_monthly_income').value = meta.average_monthly_income || '';
-            document.getElementById('edit_applying_for').value = meta.applying_for || '';
-            document.getElementById('edit_monthly_income_detail').value = meta.monthly_income_detail || '';
-            if (document.getElementById('edit_recommended_by')) document.getElementById('edit_recommended_by').value = meta.recommended_by || '';
-            if (document.getElementById('edit_recommended_phone')) document.getElementById('edit_recommended_phone').value = meta.recommended_phone || '';
-            document.getElementById('edit_office_application_type').value = meta.office_application_type || '';
-
-            if (document.getElementById('edit_recommendation_name')) document.getElementById('edit_recommendation_name').value = meta.recommendation_name || '';
-            if (document.getElementById('edit_recommendation_organization')) {
-                const orgSel = document.getElementById('edit_recommendation_organization');
-                orgSel.value = meta.recommendation_organization || '';
-                const orgOtherInput = document.getElementById('edit_recommendation_organization_other');
-                if (orgOtherInput) {
-                    orgOtherInput.value = meta.recommendation_organization_other || '';
-                    orgOtherInput.style.display = meta.recommendation_organization === 'Others' ? 'block' : 'none';
+            const recOrg = getVal('recommender_org', ['recommendation_organization']);
+            const orgSel = document.getElementById('edit_recommendation_organization');
+            const orgOtherInput = document.getElementById('edit_recommendation_organization_other');
+            if (orgSel) {
+                if (['KMJ', 'SYS', 'SSF', ''].includes(recOrg)) {
+                    orgSel.value = recOrg;
+                    if (orgOtherInput) {
+                        orgOtherInput.style.display = 'none';
+                        orgOtherInput.value = '';
+                    }
+                } else {
+                    orgSel.value = 'Others';
+                    if (orgOtherInput) {
+                        orgOtherInput.style.display = 'block';
+                        orgOtherInput.value = recOrg;
+                    }
                 }
             }
-            if (document.getElementById('edit_recommendation_phone')) document.getElementById('edit_recommendation_phone').value = meta.recommendation_phone || '';
-            if (document.getElementById('edit_recommendation_position')) document.getElementById('edit_recommendation_position').value = meta.recommendation_position || '';
+
+            const recPhone = getVal('recommender_phone', ['recommendation_phone']);
+            setField('edit_recommendation_phone', recPhone);
+
+            const recPos = getVal('recommender_position', ['recommendation_position']);
+            setField('edit_recommendation_position', recPos);
 
             document.getElementById('editAppModal').style.display = 'flex';
         }
@@ -982,53 +986,76 @@
             const unitVal = meta.unit || appItem.unit || '';
             
             let html = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                    <!-- Col 1 -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- 1. Personal Details of Applicant -->
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">1. Personal Details of Applicant</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Application Type:</td><td><span style="display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${appTypeVal === 'Group' ? 'background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);' : 'background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--panel-border);'}">${appTypeVal}</span></td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Application Type:</td><td><span style="display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${appTypeVal === 'Group' ? 'background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);' : 'background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--panel-border);'}">${appTypeVal}</span></td></tr>
                             ${appTypeVal === 'Group' ? `
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Institute/Org Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(orgNameVal)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Unit:</td><td>${formatVal(unitVal)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Institute/Org:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(orgNameVal)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Unit:</td><td>${formatVal(unitVal)}</td></tr>
                             ` : ''}
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 160px;">Applicant Name:</td><td>${formatVal(appItem.applicant_name)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Age:</td><td>${formatVal(meta.age)} yrs</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Sex / Gender:</td><td>${formatVal(meta.sex)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">House Name:</td><td>${formatVal(houseName)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Place:</td><td>${formatVal(placeName)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Village:</td><td>${formatVal(villageName)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Post Office:</td><td>${formatVal(postOffice)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(panchayatName)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">District:</td><td>${formatVal(districtName)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">State:</td><td>${formatVal(stateName)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(pinCode)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile Number 1:</td><td>${formatVal(mob1)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Mobile Number 2:</td><td>${formatVal(mob2)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Status of Applicant:</td><td>${formatVal(meta.status_of_applicant)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Education Level:</td><td>${formatVal(meta.education)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Applicant Name:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(appItem.applicant_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Age:</td><td>${formatVal(meta.age ? (meta.age + ' yrs') : null)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Sex / Gender:</td><td>${formatVal(meta.sex || meta.gender)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">House Name:</td><td>${formatVal(houseName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Place:</td><td>${formatVal(placeName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Village:</td><td>${formatVal(villageName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Post Office:</td><td>${formatVal(postOffice)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Panchayath:</td><td>${formatVal(panchayatName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">District:</td><td>${formatVal(districtName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">State:</td><td>${formatVal(stateName)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Pin Code:</td><td>${formatVal(pinCode)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mobile 1:</td><td>${formatVal(mob1)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Mobile 2:</td><td>${formatVal(mob2)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Status of Applicant:</td><td>${formatVal(meta.status_of_applicant)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Education Level:</td><td>${formatVal(meta.education)}</td></tr>
                         </table>
                     </div>
 
-                    <!-- Col 2 -->
+                    <!-- 2. Family & Economic Details -->
                     <div>
                         <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">2. Family & Economic Details</h4>
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 160px;">Male Family Members:</td><td>${formatVal(meta.num_male_family)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Female Family Members:</td><td>${formatVal(meta.num_female_family)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Total Family Members:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.num_total_family)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">No. of Earning Members:</td><td>${formatVal(meta.num_earning_members)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Average Monthly Income:</td><td>${meta.average_monthly_income ? '₹' + Number(meta.average_monthly_income).toLocaleString() : 'N/A'}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Applying for:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.applying_for)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Monthly Income:</td><td>${meta.monthly_income_detail ? '₹' + Number(meta.monthly_income_detail).toLocaleString() : 'N/A'}</td></tr>
-                        </table>
-
-                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. For Office Use Only</h4>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600; width: 150px;">Office Application Type:</td><td style="font-weight: 600; color: var(--accent-cyan);">${formatVal(meta.office_application_type)}</td></tr>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.5rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Male Members:</td><td>${formatVal(meta.num_male_family)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Female Members:</td><td>${formatVal(meta.num_female_family)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Total Members:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.num_total_family)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Earning Members:</td><td>${formatVal(meta.num_earning_members)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Avg Monthly Income:</td><td>${meta.average_monthly_income ? '₹' + Number(meta.average_monthly_income).toLocaleString() : 'N/A'}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Applying for:</td><td style="font-weight: 600; color: #ffffff;">${formatVal(meta.applying_for)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Amount Requested:</td><td style="color: var(--accent-green); font-weight: 600;">${appItem.amount_requested ? '₹' + Number(appItem.amount_requested).toLocaleString() : 'N/A'}</td></tr>
                         </table>
                     </div>
+
+                    <!-- 3. Office & Review Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">3. Office & Review Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Office App Type:</td><td style="font-weight: 600; color: var(--accent-cyan);">${formatVal(meta.office_application_type)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Review Status:</td><td style="font-weight: 600; color: #ffffff;">${appItem.status}</td></tr>
+                        </table>
+                    </div>
+
+                    <!-- 4. Recommendation Details -->
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">4. Recommendation Details</h4>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600; width: 170px;">Recommender Name:</td><td>${formatVal(meta.recommendation_name || meta.recommender_name)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Organization:</td><td>${formatVal((meta.recommendation_organization === 'Others' ? meta.recommendation_organization_other : meta.recommendation_organization) || meta.recommender_org)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Phone Number:</td><td>${formatVal(meta.recommendation_phone || meta.recommender_phone)}</td></tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.45rem 0; font-weight: 600;">Position:</td><td>${formatVal(meta.recommendation_position || meta.recommender_position)}</td></tr>
+                        </table>
+                    </div>
+
+                    ${appItem.details ? `
+                    <div>
+                        <h4 style="color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 700; text-transform: uppercase;">Additional Notes</h4>
+                        <p style="color: var(--text-muted); line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: #121824; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                            ${appItem.details}
+                        </p>
+                    </div>
+                    ` : ''}
                 </div>
 
                 ${(appItem.status === 'Rejected' && (appItem.rejected_reason || meta.rejected_reason)) ? `
@@ -1039,23 +1066,6 @@
                     </p>
                 </div>
                 ` : ''}
-                
-                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
-                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 700;">Additional Notes:</h5>
-                    <p style="color: var(--text-muted); line-height: 1.5; font-size: 0.85rem; margin: 0; background-color: #121824; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border); min-height: 50px;">
-                        ${appItem.details ? appItem.details : 'No additional notes provided.'}
-                    </p>
-                </div>
-                ${(meta.recommendation_name || meta.recommendation_organization || meta.recommendation_phone || meta.recommendation_position) ? `
-                <div style="margin-top: 1.5rem; border-top: 1px solid var(--panel-border); padding-top: 1rem;">
-                    <h5 style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 0.75rem; text-transform: uppercase; font-weight: 700;">Recommendation Details:</h5>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                        ${meta.recommendation_name ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600; width: 140px;">Name:</td><td>${meta.recommendation_name}</td></tr>` : ''}
-                        ${meta.recommendation_organization ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Organization:</td><td>${meta.recommendation_organization === 'Others' ? (meta.recommendation_organization_other || 'Others') : meta.recommendation_organization}</td></tr>` : ''}
-                        ${meta.recommendation_phone ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Phone:</td><td>${meta.recommendation_phone}</td></tr>` : ''}
-                        ${meta.recommendation_position ? `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);"><td style="padding: 0.4rem 0; font-weight: 600;">Position:</td><td>${meta.recommendation_position}</td></tr>` : ''}
-                    </table>
-                </div>` : ''}
             `;
             
             document.getElementById('details_content').innerHTML = html;

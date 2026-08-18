@@ -596,7 +596,7 @@
                                 <i class="bx bx-plus-circle"></i>
                             </button>
 
-                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Orphan Care') }}" class="btn-action-icon btn-view" title="Stage Details">
+                            <a href="{{ route('projects.show', $project->id) }}?type={{ urlencode($project->type_of_project ?? 'Orphan Care') }}" class="btn-action-icon btn-view" title="Project Details">
                                 <i class="bx bx-show-alt"></i>
                             </a>
                         </td>
@@ -1154,17 +1154,11 @@ function openStageDetailsModal(id, type, projectIdCode) {
 }
 window.openStageDetailsModal = openStageDetailsModal;
 
-        // Global Window Bindings
-        window.openModal = openModal;
-        window.closeModal = closeModal;
-        window.openEditModal = openEditModal;
-        window.closeEditModal = closeEditModal;
-    
-    function closeProgrammeModal() {
-        const modal = document.getElementById('addProgrammeModal');
-        if (modal) modal.style.display = 'none';
-    }
-
+function closeProgrammeModal() {
+    const modal = document.getElementById('addProgrammeModal');
+    if (modal) modal.style.display = 'none';
+}
+window.closeProgrammeModal = closeProgrammeModal;
 </script>
 
 @endsection

@@ -105,12 +105,12 @@
 
     </script>
 
-    <!-- Stage Navigation Tabs (Interactive Navigation) -->
+    <!-- Section Navigation Tabs -->
     <div class="stages-tabs" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--panel-border); margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; padding-bottom: 0.5rem;">
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             @php
                 $isSocialAidProject = in_array($project->type_of_project, ['Orphan Care', 'Differently Abled', 'Family Aid']);
-                $maxStages = $isSocialAidProject ? 3 : 6;
+                $maxStages = 3;
                 $projectRouteKeys = [
                     'Orphan Care' => 'orphan_care',
                     'Differently Abled' => 'differently_abled',
@@ -124,50 +124,31 @@
                 $projectRouteKey = $projectRouteKeys[$project->type_of_project] ?? 'orphan_care';
                 $projectRouteSlug = $projectRouteSlugs[$project->type_of_project] ?? 'orphan-care';
 
+                $secondTabLabel = $project->type_of_project === 'Orphan Care' ? 'Scholarship' : ($project->type_of_project === 'Differently Abled' ? 'Aid & Programmes' : 'Aid & Programmes');
+                $secondTabIcon = $project->type_of_project === 'Orphan Care' ? 'bx-book-reader' : 'bx-donate-heart';
+
                 $socialAidStageLabels = [
-                    1 => 'Profile',
-                    2 => 'Scholarship',
-                    3 => 'Report',
+                    1 => ['title' => 'Profile', 'icon' => 'bx-user-pin'],
+                    2 => ['title' => $secondTabLabel, 'icon' => $secondTabIcon],
+                    3 => ['title' => 'Reports & Documents', 'icon' => 'bx-file'],
                 ];
             @endphp
             @for($i = 1; $i <= $maxStages; $i++)
                 @php
-                    $isActive = $project->stage == $i;
-                    $isCompleted = $project->stage > $i;
-                    $class = $isActive ? 'active' : ($isCompleted ? 'completed' : '');
-                    
-                    //   Stage 1 & Stage 2: always accessible
-                    //   Stage 3 & Stage 4: unlocks when an application is assigned in Stage 2
-                    //   Stage 5 & Stage 6: unlocks when Stage 4 is approved
-                    if (in_array($project->type_of_project, ['Education Center', 'Cultural Center', 'Hospital or Clinics', 'Shops and Others', 'House', 'Drinking Water - Group Level', 'Drinking Water - Individual Level', 'General'])) {
-                        if ($i <= 2) {
-                            $isLocked = false;
-                        } elseif ($i == 3 || $i == 4) {
-                            $isLocked = empty($project->application_id);
-                        } else { // stage 5 or 6
-                            $isLocked = empty($project->application_id) || ($project->stage < 5 && $project->status !== 'Approved' && $project->status !== 'Completed');
-                        }
-                    } else {
-                        if ($isSocialAidProject) {
-                            $isLocked = false;
-                        } else {
-                            $isLocked = ($project->status !== 'Approved' && $project->status !== 'Completed' && $i > 1);
-                        }
-                    }
-
-                    if ($isLocked) {
-                        $class .= ' locked';
-                    }
-
-                    $stageTabTitle = $isSocialAidProject ? ($socialAidStageLabels[$i] ?? "Stage {$i}") : "Stage {$i}";
+                    $isActive = ($i == 1);
+                    $class = $isActive ? 'active' : '';
+                    $tabInfo = $socialAidStageLabels[$i] ?? ['title' => "Section {$i}", 'icon' => 'bx-folder'];
                 @endphp
-                <div class="stage-tab {{ $class }}" id="tab-{{ $i }}" onclick="switchStage({{ $i }})">
-                    @if($isLocked)
-                        <i class="bx bx-lock-alt" style="margin-right: 0.25rem;"></i>
-                    @endif
-                    {{ $stageTabTitle }}
+                <div class="stage-tab {{ $class }}" id="tab-{{ $i }}" onclick="switchStage({{ $i }})" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <i class="bx {{ $tabInfo['icon'] }}"></i>
+                    <span>{{ $tabInfo['title'] }}</span>
                 </div>
             @endfor
+        </div>
+        <div>
+            <a href="{{ route('projects.category', $projectRouteSlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; font-size: 0.85rem; border-radius: 6px; text-decoration: none; transition: all 0.2s;">
+                <i class="bx bx-arrow-back"></i> Back to Project List
+            </a>
         </div>
     </div>
 
@@ -203,12 +184,12 @@
 
     <!-- Success Panel -->
     @if (session('success'))
-        <div class=\"alert alert-success\" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-success" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green); color: #8cf5c6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('success') }}
         </div>
     @endif
     @if (session('error'))
-        <div class=\"alert alert-danger\" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff8a8a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
+        <div class="alert alert-danger" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red); color: #ff8a8a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500;">
             {{ session('error') }}
         </div>
     @endif
@@ -457,7 +438,10 @@
                                     </div>
                                     <div class="form-group-custom" style="margin-bottom: 0 !important;">
                                         <label style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.4rem;">Mother Re-Married Status</label>
-                                        <input type="text" name="mother_remarried_status" value="{{ $application->mother_remarried_status }}" placeholder="e.g. Yes / No" class="form-control-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                        <select name="mother_remarried_status" class="form-select-dark" style="width: 100%; box-sizing: border-box; background-color: var(--bg-color); border: 1px solid var(--panel-border); color: #fff; padding: 0.5rem; border-radius: 6px; outline: none;">
+                                            <option value="No" {{ ($application->mother_remarried_status ?? 'No') === 'No' ? 'selected' : '' }}>No</option>
+                                            <option value="Yes" {{ ($application->mother_remarried_status ?? '') === 'Yes' ? 'selected' : '' }}>Yes</option>
+                                        </select>
                                     </div>
 
                                     <div class="form-group-custom" style="margin-bottom: 0 !important;">
@@ -2703,6 +2687,13 @@
         }
     </script>
 @endif
+
+    <!-- Back to Project List Button -->
+    <div style="margin-top: 2rem; margin-bottom: 1.5rem;">
+        <a href="{{ route('projects.category', $projectRouteSlug) }}" class="btn-custom" style="background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.25rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: all 0.2s;">
+            <i class="bx bx-arrow-back"></i> Back to Project List
+        </a>
+    </div>
 
 <!-- Site Study Modal -->
 <div id="siteStudyModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">

@@ -1946,6 +1946,7 @@
 
 
         // Global PJAX Loader Bar functions
+        let pjaxLoaderTimeout = null;
         function showLoader() {
             const bar = document.getElementById('pjax-loader-bar');
             if (!bar) return;
@@ -1953,9 +1954,15 @@
             bar.style.width = '0%';
             setTimeout(() => { bar.style.width = '50%'; }, 10);
             setTimeout(() => { bar.style.width = '85%'; }, 300);
+            if (pjaxLoaderTimeout) clearTimeout(pjaxLoaderTimeout);
+            pjaxLoaderTimeout = setTimeout(() => { hideLoader(); }, 4000);
         }
         
         function hideLoader() {
+            if (pjaxLoaderTimeout) {
+                clearTimeout(pjaxLoaderTimeout);
+                pjaxLoaderTimeout = null;
+            }
             const bar = document.getElementById('pjax-loader-bar');
             if (!bar) return;
             bar.style.width = '100%';
@@ -2062,7 +2069,7 @@
                                 newScript.setAttribute(attr.name, attr.value);
                             }
                         }
-                        document.body.appendChild(newScript);
+                        document.head.appendChild(newScript);
                         if (newScript.parentNode) {
                             newScript.remove();
                         }
@@ -2074,6 +2081,13 @@
             
             window.scrollTo(0, 0);
             initAllTablePagers();
+            if (window.Livewire) {
+                try {
+                    if (typeof window.Livewire.rescan === 'function') {
+                        window.Livewire.rescan();
+                    }
+                } catch(e) {}
+            }
             document.dispatchEvent(new CustomEvent('pjax:complete', { detail: { url } }));
         }
 

@@ -1060,12 +1060,16 @@
                         const passwordInput = document.getElementById('edit_password');
                         if (passwordInput) passwordInput.value = '';
                     } else {
-                        alert('Failed to load user details for editing.');
+                        if (typeof showToast === 'function') {
+                            showToast('Failed to load user details for editing.', 'error');
+                        }
                     }
                 })
                 .catch(err => {
                     console.error('Error fetching details:', err);
-                    alert('Error loading staff details.');
+                    if (typeof showToast === 'function') {
+                        showToast('Error loading staff details.', 'error');
+                    }
                 });
         }
 
@@ -1217,13 +1221,17 @@
                             projectsWrapper.style.display = 'none';
                         }
                     } else {
-                        alert('Failed to retrieve user details.');
+                        if (typeof showToast === 'function') {
+                            showToast('Failed to retrieve user details.', 'error');
+                        }
                         closeViewModal();
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching details:', error);
-                    alert('Error loading details from server.');
+                    if (typeof showToast === 'function') {
+                        showToast('Error loading details from server.', 'error');
+                    }
                     closeViewModal();
                 });
         }
@@ -1270,8 +1278,13 @@
                             </button>
                         `;
                     }
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Status updated successfully!', 'success');
+                    }
                 } else {
-                    alert(data.message || 'Action failed');
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Action failed', 'error');
+                    }
                 }
             })
             .catch(err => {

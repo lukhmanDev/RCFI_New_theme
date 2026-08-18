@@ -10,186 +10,34 @@ class AdminController extends Controller
 {
     public function dashboard()
     {
-        $userCount = User::count();
-        $donorsCount = Donor::count();
-        
-        $applicationModels = [
-            'education-center' => \App\Models\EducationCenterApplication::class,
-            'cultural-center' => \App\Models\CulturalCenterApplication::class,
-            'hospital-or-clinics' => \App\Models\HospitalClinicApplication::class,
-            'shops-and-others' => \App\Models\ShopOtherApplication::class,
-            'house' => \App\Models\HouseApplication::class,
-            'drinking-water-group-level' => \App\Models\DrinkingWaterGroupApplication::class,
-            'drinking-water-individual-level' => \App\Models\DrinkingWaterIndividualApplication::class,
-            'orphan-care' => \App\Models\OrphanCareApplication::class,
-            'differently-abled' => \App\Models\DifferentlyAbledApplication::class,
-            'family-aid' => \App\Models\FamilyAidApplication::class,
-            'general' => \App\Models\GeneralApplication::class,
-        ];
-
         $user = auth()->user();
-        if ($user && $user->isSocialAid()) {
-            $applicationModels = [
-                'orphan-care' => \App\Models\OrphanCareApplication::class,
-                'differently-abled' => \App\Models\DifferentlyAbledApplication::class,
-                'family-aid' => \App\Models\FamilyAidApplication::class,
-            ];
+        if (!$user) {
+            return redirect()->route('login');
         }
-
-        $applicationsCount = 0;
-        $todayCount = 0;
-        $approvedCount = 0;
-        $pendingCount = 0;
-        $underReviewCount = 0;
-        $rejectedCount = 0;
-
-        $recentList = [];
-
-        foreach ($applicationModels as $slug => $model) {
-            $applicationsCount += $model::count();
-            $todayCount += $model::whereDate('created_at', now()->today())->count();
-            $approvedCount += $model::where('status', 'Approved')->count();
-            $pendingCount += $model::where('status', 'Pending')->count();
-            $underReviewCount += $model::whereIn('status', ['Under Review', 'In Review', 'Processing'])->count();
-            $rejectedCount += $model::where('status', 'Rejected')->count();
-
-            // Fetch recent 3 from each
-            $recentApps = $model::orderBy('created_at', 'desc')->take(3)->get();
-            foreach ($recentApps as $app) {
-                $recentList[] = [
-                    'id' => $app->id,
-                    'applicant_name' => $app->applicant_name,
-                    'status' => $app->status,
-                    'created_at' => $app->created_at,
-                    'category' => $slug,
-                    'category_name' => str_replace('-', ' ', ucwords($slug, '-')),
-                ];
-            }
-        }
-
-        // Sort by created_at desc
-        usort($recentList, function($a, $b) {
-            if (!$a['created_at'] && !$b['created_at']) return 0;
-            if (!$a['created_at']) return 1;
-            if (!$b['created_at']) return -1;
-            return strcmp($b['created_at']->toDateTimeString(), $a['created_at']->toDateTimeString());
-        });
-
-        $recentApplications = array_slice($recentList, 0, 3);
-
-        // Build Multi-Period Chart Trend Datasets for Applications Overview
-        // 1. This Month (Days of current month, e.g. May 1, May 7, May 13...)
-        $startOfMonth = now()->startOfMonth();
-        $endOfMonth = now()->endOfMonth();
-        $daysInMonth = now()->daysInMonth;
-        
-        $thisMonthLabels = [];
-        $thisMonthData = [];
-        // Sample 6-7 intervals across the month if daysInMonth > 7, or all days if <= 7
-        $step = max(1, (int)floor($daysInMonth / 5));
-        for ($day = 1; $day <= $daysInMonth; $day += ($day + $step > $daysInMonth && $day != $daysInMonth ? ($daysInMonth - $day) : $step)) {
-            $date = now()->startOfMonth()->addDays($day - 1);
-            $thisMonthLabels[] = $date->format('M j');
-            $sum = 0;
-            foreach ($applicationModels as $model) {
-                $sum += $model::whereDate('created_at', '<=', $date->endOfDay())->count();
-            }
-            $thisMonthData[] = $sum;
-            if ($day == $daysInMonth) break;
-        }
-
-        // 2. Last 7 Days
-        $last7Labels = [];
-        $last7Data = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $last7Labels[] = $date->format('M j');
-            $sum = 0;
-            foreach ($applicationModels as $model) {
-                $sum += $model::whereDate('created_at', '<=', $date->endOfDay())->count();
-            }
-            $last7Data[] = $sum;
-        }
-
-        // 3. Last 30 Days (6 data points)
-        $last30Labels = [];
-        $last30Data = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $date = now()->subDays($i * 5);
-            $last30Labels[] = $date->format('M j');
-            $sum = 0;
-            foreach ($applicationModels as $model) {
-                $sum += $model::whereDate('created_at', '<=', $date->endOfDay())->count();
-            }
-            $last30Data[] = $sum;
-        }
-
-        // 4. This Year (Months Jan - Dec)
-        $thisYearLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $thisYearData = [];
-        $currentMonthIndex = (int)now()->format('n');
-        for ($m = 1; $m <= 12; $m++) {
-            if ($m > $currentMonthIndex) {
-                $thisYearData[] = 0;
-            } else {
-                $date = now()->startOfYear()->addMonths($m - 1)->endOfMonth();
-                $sum = 0;
-                foreach ($applicationModels as $model) {
-                    $sum += $model::whereDate('created_at', '<=', $date)->count();
-                }
-                $thisYearData[] = $sum;
-            }
-        }
-
-        $chartPeriodData = [
-            'this_month' => ['labels' => $thisMonthLabels, 'data' => $thisMonthData],
-            'last_7_days' => ['labels' => $last7Labels, 'data' => $last7Data],
-            'last_30_days' => ['labels' => $last30Labels, 'data' => $last30Data],
-            'this_year' => ['labels' => $thisYearLabels, 'data' => $thisYearData],
-        ];
-
-        // Legacy compatibility
-        $chartLabels = $thisMonthLabels;
-        $chartAllData = $thisMonthData;
-
-        $viewData = compact(
-            'userCount', 
-            'donorsCount', 
-            'applicationsCount', 
-            'todayCount', 
-            'approvedCount', 
-            'pendingCount', 
-            'underReviewCount', 
-            'rejectedCount', 
-            'recentApplications', 
-            'chartLabels', 
-            'chartAllData',
-            'chartPeriodData'
-        );
 
         if ($user->isEmployee()) {
-            return view('dashboard.employee', $viewData);
+            return view('dashboard.employee');
         }
         if ($user->isReception()) {
-            return view('dashboard.reception', $viewData);
+            return view('dashboard.reception');
         }
         if ($user->isSocialAid()) {
-            return view('dashboard.social_aid', $viewData);
+            return view('dashboard.social_aid');
         }
         if ($user->isSuperAdmin()) {
-            return view('dashboard.admin', $viewData);
+            return view('dashboard.admin');
         }
         if ($user->isCoo()) {
-            return view('dashboard.coo', $viewData);
+            return view('dashboard.coo');
         }
         if ($user->isPm()) {
-            return view('dashboard.project_manager', $viewData);
+            return view('dashboard.project_manager');
         }
         if ($user->isHod()) {
-            return view('dashboard.hod', $viewData);
+            return view('dashboard.hod');
         }
 
-        return view('dashboard.others', $viewData);
+        return view('dashboard.others');
     }
 
     public function socialAidFundReport(\Illuminate\Http\Request $request)
@@ -208,8 +56,10 @@ class AdminController extends Controller
             $donorName = $f->donor ?? $f->agency ?? 'N/A';
             $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
 
-            $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
-            $photoPath = $app?->student_photo ?? (is_array($app?->meta) ? ($app->meta['student_photo'] ?? $app->meta['photo'] ?? null) : null);
+            $appMeta = is_array($app?->meta) ? $app->meta : (json_decode($app?->meta ?? '{}', true) ?: []);
+            $clusterName = $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A');
+            $photoPath = $app?->student_photo ?? ($appMeta['student_photo'] ?? $appMeta['photo'] ?? null);
+            $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
 
             return [
                 'id' => $f->id,
@@ -218,8 +68,35 @@ class AdminController extends Controller
                 'project_id' => $f->project->project_id ?? 'N/A',
                 'agency_project_no' => $f->agency_project_no ?? $f->project->agency_project_no ?? 'N/A',
                 'project_db_id' => $f->project->id ?? null,
-                'applicant_name' => $app?->applicant_name ?? $f->project->name ?? 'N/A',
-                'applicant_id' => $app?->applicant_id ?? 'N/A',
+                'application_id' => $appId,
+                'applicant_name' => $app?->applicant_name ?? ($appMeta['applicant_name'] ?? ($f->project->name ?? 'N/A')),
+                'father_name' => $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                'mother_name' => $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                'guardian_name' => $app?->guardian_name ?? ($appMeta['guardian_name'] ?? 'N/A'),
+                'guardian_relation' => $app?->guardian_relation ?? ($appMeta['guardian_relation'] ?? 'N/A'),
+                'gender' => $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
+                'age' => $app?->age ?? ($appMeta['age'] ?? 'N/A'),
+                'dob' => $app?->dob ?? ($appMeta['dob'] ?? 'N/A'),
+                'mobile_1' => $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($app?->contact_number_1 ?? ($appMeta['contact_number_1'] ?? 'N/A'))),
+                'mobile_2' => $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($app?->contact_number_2 ?? ($appMeta['contact_number_2'] ?? 'N/A'))),
+                'whatsapp_number' => $app?->whatsapp_number ?? ($appMeta['whatsapp_number'] ?? 'N/A'),
+                'contact_email' => $app?->contact_email ?? ($appMeta['contact_email'] ?? 'N/A'),
+                'aadhar_number' => $app?->aadhar_number ?? ($appMeta['aadhar_number'] ?? 'N/A'),
+                'house_name' => $app?->house_name ?? ($appMeta['house_name'] ?? 'N/A'),
+                'place' => $app?->place ?? ($appMeta['place'] ?? 'N/A'),
+                'post_office' => $app?->post_office ?? ($appMeta['post_office'] ?? 'N/A'),
+                'pin_code' => $app?->pin_code ?? ($appMeta['pin_code'] ?? 'N/A'),
+                'town' => $app?->town ?? ($appMeta['town'] ?? 'N/A'),
+                'district' => $app?->district ?? ($appMeta['district'] ?? 'N/A'),
+                'state' => $app?->state ?? ($appMeta['state'] ?? 'N/A'),
+                'health_status' => $app?->health_status ?? ($appMeta['health_status'] ?? 'N/A'),
+                'monthly_income' => $app?->monthly_income ?? ($appMeta['monthly_income'] ?? 'N/A'),
+                'monthly_expense' => $app?->monthly_expense ?? ($appMeta['monthly_expense'] ?? 'N/A'),
+                'sponsor_status' => $app?->sponsor_status ?? ($f->project->sponsor ?? 'N/A'),
+                'account_name' => $f->account_name ?: 'N/A',
+                'account_number' => $f->account_number ?: 'N/A',
+                'ifsc_number' => $f->ifsc_number ?: 'N/A',
+                'applicant_id' => $app?->applicant_id ?? $appId,
                 'photo' => $photoPath ? asset($photoPath) : null,
                 'donor' => $donorName,
                 'agency' => $displayDonor,
@@ -249,8 +126,10 @@ class AdminController extends Controller
             $donorName = $f->donor ?? $f->agency ?? 'N/A';
             $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
 
-            $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
-            $photoPath = $app?->student_photo ?? (is_array($app?->meta) ? ($app->meta['student_photo'] ?? $app->meta['photo'] ?? null) : null);
+            $appMeta = is_array($app?->meta) ? $app->meta : (json_decode($app?->meta ?? '{}', true) ?: []);
+            $clusterName = $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A');
+            $photoPath = $app?->student_photo ?? ($appMeta['student_photo'] ?? $appMeta['photo'] ?? null);
+            $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
 
             return [
                 'id' => $f->id,
@@ -259,8 +138,35 @@ class AdminController extends Controller
                 'project_id' => $f->project->project_id ?? 'N/A',
                 'agency_project_no' => $f->agency_project_no ?? $f->project->agency_project_no ?? 'N/A',
                 'project_db_id' => $f->project->id ?? null,
-                'applicant_name' => $app?->applicant_name ?? $f->project->name ?? 'N/A',
-                'applicant_id' => $app?->applicant_id ?? 'N/A',
+                'application_id' => $appId,
+                'applicant_name' => $app?->applicant_name ?? ($appMeta['applicant_name'] ?? ($f->project->name ?? 'N/A')),
+                'father_name' => $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                'mother_name' => $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                'guardian_name' => $app?->guardian_name ?? ($appMeta['guardian_name'] ?? 'N/A'),
+                'guardian_relation' => $app?->guardian_relation ?? ($appMeta['guardian_relation'] ?? 'N/A'),
+                'gender' => $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
+                'age' => $app?->age ?? ($appMeta['age'] ?? 'N/A'),
+                'dob' => $app?->dob ?? ($appMeta['dob'] ?? 'N/A'),
+                'mobile_1' => $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($app?->contact_number_1 ?? ($appMeta['contact_number_1'] ?? 'N/A'))),
+                'mobile_2' => $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($app?->contact_number_2 ?? ($appMeta['contact_number_2'] ?? 'N/A'))),
+                'whatsapp_number' => $app?->whatsapp_number ?? ($appMeta['whatsapp_number'] ?? 'N/A'),
+                'contact_email' => $app?->contact_email ?? ($appMeta['contact_email'] ?? 'N/A'),
+                'aadhar_number' => $app?->aadhar_number ?? ($appMeta['aadhar_number'] ?? 'N/A'),
+                'house_name' => $app?->house_name ?? ($appMeta['house_name'] ?? 'N/A'),
+                'place' => $app?->place ?? ($appMeta['place'] ?? 'N/A'),
+                'post_office' => $app?->post_office ?? ($appMeta['post_office'] ?? 'N/A'),
+                'pin_code' => $app?->pin_code ?? ($appMeta['pin_code'] ?? 'N/A'),
+                'town' => $app?->town ?? ($appMeta['town'] ?? 'N/A'),
+                'district' => $app?->district ?? ($appMeta['district'] ?? 'N/A'),
+                'state' => $app?->state ?? ($appMeta['state'] ?? 'N/A'),
+                'health_status' => $app?->health_status ?? ($appMeta['health_status'] ?? 'N/A'),
+                'monthly_income' => $app?->monthly_income ?? ($appMeta['monthly_income'] ?? 'N/A'),
+                'monthly_expense' => $app?->monthly_expense ?? ($appMeta['monthly_expense'] ?? 'N/A'),
+                'sponsor_status' => $app?->sponsor_status ?? ($f->project->sponsor ?? 'N/A'),
+                'account_name' => $f->account_name ?: 'N/A',
+                'account_number' => $f->account_number ?: 'N/A',
+                'ifsc_number' => $f->ifsc_number ?: 'N/A',
+                'applicant_id' => $app?->applicant_id ?? $appId,
                 'photo' => $photoPath ? asset($photoPath) : null,
                 'donor' => $donorName,
                 'agency' => $displayDonor,
@@ -290,8 +196,10 @@ class AdminController extends Controller
             $donorName = $f->donor ?? $f->agency ?? 'N/A';
             $displayDonor = $f->donorModel ? $f->donorModel->name : $donorName;
 
-            $clusterName = $app?->cluster?->name ?? (is_array($app?->meta) ? ($app->meta['cluster'] ?? 'N/A') : 'N/A');
-            $photoPath = $app?->student_photo ?? (is_array($app?->meta) ? ($app->meta['student_photo'] ?? $app->meta['photo'] ?? null) : null);
+            $appMeta = is_array($app?->meta) ? $app->meta : (json_decode($app?->meta ?? '{}', true) ?: []);
+            $clusterName = $app?->cluster?->name ?? ($appMeta['cluster'] ?? 'N/A');
+            $photoPath = $app?->student_photo ?? ($appMeta['student_photo'] ?? $appMeta['photo'] ?? null);
+            $appId = $app?->application_id ?? ($app ? 'APLRCFI' . $app->id : 'N/A');
 
             return [
                 'id' => $f->id,
@@ -300,8 +208,35 @@ class AdminController extends Controller
                 'project_id' => $f->project->project_id ?? 'N/A',
                 'agency_project_no' => $f->agency_project_no ?? $f->project->agency_project_no ?? 'N/A',
                 'project_db_id' => $f->project->id ?? null,
-                'applicant_name' => $app?->applicant_name ?? $f->project->name ?? 'N/A',
-                'applicant_id' => $app?->applicant_id ?? 'N/A',
+                'application_id' => $appId,
+                'applicant_name' => $app?->applicant_name ?? ($appMeta['applicant_name'] ?? ($f->project->name ?? 'N/A')),
+                'father_name' => $app?->father_name ?? ($appMeta['father_name'] ?? 'N/A'),
+                'mother_name' => $app?->mother_name ?? ($appMeta['mother_name'] ?? 'N/A'),
+                'guardian_name' => $app?->guardian_name ?? ($appMeta['guardian_name'] ?? 'N/A'),
+                'guardian_relation' => $app?->guardian_relation ?? ($appMeta['guardian_relation'] ?? 'N/A'),
+                'gender' => $app?->gender ?? ($appMeta['gender'] ?? 'N/A'),
+                'age' => $app?->age ?? ($appMeta['age'] ?? 'N/A'),
+                'dob' => $app?->dob ?? ($appMeta['dob'] ?? 'N/A'),
+                'mobile_1' => $app?->mobile_1 ?? ($appMeta['mobile_1'] ?? ($app?->contact_number_1 ?? ($appMeta['contact_number_1'] ?? 'N/A'))),
+                'mobile_2' => $app?->mobile_2 ?? ($appMeta['mobile_2'] ?? ($app?->contact_number_2 ?? ($appMeta['contact_number_2'] ?? 'N/A'))),
+                'whatsapp_number' => $app?->whatsapp_number ?? ($appMeta['whatsapp_number'] ?? 'N/A'),
+                'contact_email' => $app?->contact_email ?? ($appMeta['contact_email'] ?? 'N/A'),
+                'aadhar_number' => $app?->aadhar_number ?? ($appMeta['aadhar_number'] ?? 'N/A'),
+                'house_name' => $app?->house_name ?? ($appMeta['house_name'] ?? 'N/A'),
+                'place' => $app?->place ?? ($appMeta['place'] ?? 'N/A'),
+                'post_office' => $app?->post_office ?? ($appMeta['post_office'] ?? 'N/A'),
+                'pin_code' => $app?->pin_code ?? ($appMeta['pin_code'] ?? 'N/A'),
+                'town' => $app?->town ?? ($appMeta['town'] ?? 'N/A'),
+                'district' => $app?->district ?? ($appMeta['district'] ?? 'N/A'),
+                'state' => $app?->state ?? ($appMeta['state'] ?? 'N/A'),
+                'health_status' => $app?->health_status ?? ($appMeta['health_status'] ?? 'N/A'),
+                'monthly_income' => $app?->monthly_income ?? ($appMeta['monthly_income'] ?? 'N/A'),
+                'monthly_expense' => $app?->monthly_expense ?? ($appMeta['monthly_expense'] ?? 'N/A'),
+                'sponsor_status' => $app?->sponsor_status ?? ($f->project->sponsor ?? 'N/A'),
+                'account_name' => $f->account_name ?: 'N/A',
+                'account_number' => $f->account_number ?: 'N/A',
+                'ifsc_number' => $f->ifsc_number ?: 'N/A',
+                'applicant_id' => $app?->applicant_id ?? $appId,
                 'photo' => $photoPath ? asset($photoPath) : null,
                 'donor' => $donorName,
                 'agency' => $displayDonor,
@@ -326,38 +261,95 @@ class AdminController extends Controller
             return $item['date'] ?? '1970-01-01';
         })->values();
 
-        // Handle CSV Export
-        if ($request->input('export') === 'csv') {
-            $fileName = 'social_aid_fund_report_' . date('Y_m_d_H_i_s') . '.csv';
+        // Handle Excel / CSV Export
+        if ($request->input('export') === 'csv' || $request->input('export') === 'excel' || $request->input('export') === 'xls') {
+            $fileName = 'social_aid_fund_report_' . date('Y_m_d_H_i_s') . '.xls';
             $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => "attachment; filename=\"$fileName\"",
-                'Pragma' => 'no-cache',
-                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-                'Expires' => '0',
+                '#',
+                'Fund Date',
+                'Fund Amount (INR)',
+                'Fund Donor',
+                'Bank Account Name',
+                'Bank Account Number',
+                'Bank IFSC Code',
+                'Category',
+                'Project ID',
+                'Agency Project No',
+                'Application ID',
+                'Applicant Name',
+                'Father Name',
+                'Mother Name',
+                'Guardian Name',
+                'Guardian Relation',
+                'Gender',
+                'Age',
+                'Date of Birth',
+                'Mobile 1',
+                'Mobile 2',
+                'WhatsApp Number',
+                'Contact Email',
+                'Aadhar Number',
+                'House Name',
+                'Place',
+                'Post Office',
+                'Pin Code',
+                'Town',
+                'District',
+                'State',
+                'Cluster',
+                'Health Status',
+                'Monthly Income',
+                'Monthly Expense',
+                'Sponsor Status'
             ];
 
-            $callback = function() use ($allFunds) {
-                $file = fopen('php://output', 'w');
-                fputcsv($file, ['#', 'Date', 'Category', 'Cluster', 'Agency Project No', 'Project ID', 'Beneficiary / Applicant', 'Agency / Sponsor', 'Amount (INR)']);
+            $rows = [];
+            foreach ($allFunds as $index => $row) {
+                $rows[] = [
+                    $index + 1,
+                    $row['formatted_date'],
+                    number_format($row['amount'], 2, '.', ''),
+                    $row['donor'] ?: ($row['agency'] ?: 'N/A'),
+                    $row['account_name'] ?? 'N/A',
+                    $row['account_number'] ?? 'N/A',
+                    $row['ifsc_number'] ?? 'N/A',
+                    $row['category'],
+                    $row['project_id'],
+                    $row['agency_project_no'],
+                    $row['application_id'],
+                    $row['applicant_name'],
+                    $row['father_name'],
+                    $row['mother_name'],
+                    $row['guardian_name'],
+                    $row['guardian_relation'],
+                    $row['gender'],
+                    $row['age'],
+                    $row['dob'],
+                    $row['mobile_1'],
+                    $row['mobile_2'],
+                    $row['whatsapp_number'],
+                    $row['contact_email'],
+                    $row['aadhar_number'],
+                    $row['house_name'],
+                    $row['place'],
+                    $row['post_office'],
+                    $row['pin_code'],
+                    $row['town'],
+                    $row['district'],
+                    $row['state'],
+                    $row['cluster'],
+                    $row['health_status'],
+                    $row['monthly_income'],
+                    $row['monthly_expense'],
+                    $row['sponsor_status']
+                ];
+            }
 
-                foreach ($allFunds as $index => $row) {
-                    fputcsv($file, [
-                        $index + 1,
-                        $row['formatted_date'],
-                        $row['category'],
-                        $row['cluster'],
-                        $row['agency_project_no'],
-                        $row['project_id'],
-                        $row['applicant_name'],
-                        $row['agency'],
-                        number_format($row['amount'], 2, '.', '')
-                    ]);
-                }
-                fclose($file);
-            };
-
-            return response()->stream($callback, 200, $headers);
+            return \App\Services\ExcelExportHelper::streamDownload($fileName, $headers, $rows, [
+                'header_bg' => '#EAB308',      // Vivid Yellow
+                'header_color' => '#000000',   // Black bold text for high contrast on yellow
+                'header_border' => '#CA8A04'
+            ]);
         }
 
         // Summary calculations

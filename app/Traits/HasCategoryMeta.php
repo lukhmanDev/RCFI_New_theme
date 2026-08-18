@@ -71,6 +71,8 @@ trait HasCategoryMeta
             'mobile_2' => 'contact_number_2',
             'contact_number_1' => 'mobile_1',
             'contact_number_2' => 'mobile_2',
+            'whatsapp' => 'whatsapp_number',
+            'whatsapp_number' => 'whatsapp',
             'pin' => 'pin_code',
             'pin_code' => 'pin',
             'recommender_name' => 'recommendation_name',
@@ -373,6 +375,17 @@ trait HasCategoryMeta
     public function setMobile2Attribute($value)
     {
         $this->setAddressField('contact_number_2', $value);
+    }
+
+    public function getWhatsappNumberAttribute()
+    {
+        $addr = $this->getApplicantAddressObject();
+        return ($this->pendingAddressData['whatsapp_number'] ?? null) ?? ($addr ? ($addr->whatsapp_number ?? null) : ($this->attributes['whatsapp_number'] ?? null));
+    }
+
+    public function setWhatsappNumberAttribute($value)
+    {
+        $this->setAddressField('whatsapp_number', $value);
     }
 
     public function getTownAttribute()

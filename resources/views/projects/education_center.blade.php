@@ -501,7 +501,7 @@
 
                 <div class="form-group-custom">
                     <label for="project_manager_id">Project Manager</label>
-                    <select name="project_manager_id" id="project_manager_id" required>
+                    <select name="project_manager_id" id="project_manager_id">
                         <option value="">Select a manager</option>
                         @foreach($managers as $manager)
                             <option value="{{ $manager->id }}">{{ $manager->name }}</option>
@@ -627,7 +627,7 @@
 
                 <div class="form-group-custom">
                     <label for="edit_project_manager_id">Project Manager</label>
-                    <select name="project_manager_id" id="edit_project_manager_id" required>
+                    <select name="project_manager_id" id="edit_project_manager_id">
                         <option value="">Select a manager</option>
                         @foreach($managers as $manager)
                             <option value="{{ $manager->id }}">{{ $manager->name }}</option>
